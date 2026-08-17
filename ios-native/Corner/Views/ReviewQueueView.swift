@@ -32,6 +32,21 @@ struct ReviewQueueView: View {
         .groundBackground()
         .navigationTitle("Waiting on you")
         .navigationBarTitleDisplayMode(.inline)
+        // The same number the Files headline card prints, off the same property. The
+        // two screens disagreeing about the size of the backlog is what made the count
+        // unreadable in the first place — there is now only one number to disagree with.
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if review.waitingCount > 0 {
+                    Text(review.waitingCountLabel)
+                        .font(.hkCaption.weight(.bold).monospacedDigit())
+                        .foregroundStyle(Theme.ground)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(Theme.warning, in: Capsule())
+                        .accessibilityLabel("\(review.waitingCountLabel) waiting for review")
+                }
+            }
+        }
         .task { await review.load() }
         .refreshable { await review.load() }
         .sheet(item: $preview) { item in

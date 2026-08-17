@@ -231,4 +231,37 @@ final class FilesAndReviewTests: XCTestCase {
         let file = try XCTUnwrap(DeliveredFile(userInfo: ["file_url": "https://x/a/Q3%20report.pdf"]))
         XCTAssertEqual(file.name, "Q3 report.pdf")
     }
+
+    // MARK: - The review count is the backlog, never the page size
+
+    /// THE regression. A 247-file backlog fetched a page at a time must read 247 — the
+    /// old chip read `items.count`, so it printed "100" and then sat motionless while
+    /// the user cleared items, which is how a badge teaches people to distrust it.
+    func testWaitingCountIsTheServerTotalNotThePageSize() {
+        XCTAssertEqual(ReviewStore.count(total: 247, loaded: 100), 247)
+        XCTAssertEqual(ReviewStore.label(total: 247, loaded: 100, totalIsFromServer: true), "247")
+        XCTAssertEqual(
+            ReviewStore.sentence(total: 247, loaded: 100, totalIsFromServer: true),
+            "247 files need your review"
+        )
+    }
+
+    /// A full page and no server total is the one case where we genuinely do not know.
+    /// Printing the limit as if it were a count is the lie; "99+" is the truth.
+    func testFullPageWithNoServerTotalReadsAsApproximate() {
+        XCTAssertTrue(ReviewStore.isApproximate(loaded: ReviewStore.pageLimit, totalIsFromServer: false))
+        XCTAssertEqual(ReviewStore.label(total: 100, loaded: 100, totalIsFromServer: false), "99+")
+        XCTAssertEqual(
+            ReviewStore.sentence(total: 100, loaded: 100, totalIsFromServer: false),
+            "99+ files need your review"
+        )
+    }
+
+    /// A short page is exact whether or not the server sent a total — there is nothing
+    /// beyond it to be wrong about.
+    func testShortPageIsExact() {
+        XCTAssertFalse(ReviewStore.isApproximate(loaded: 7, totalIsFromServer: false))
+        XCTAssertEqual(ReviewStore.label(total: 7, loaded: 7, totalIsFromServer: true), "7")
+        XCTAssertEqual(ReviewStore.sentence(total: 1, loaded: 1, totalIsFromServer: true), "1 file needs your review")
+    }
 }

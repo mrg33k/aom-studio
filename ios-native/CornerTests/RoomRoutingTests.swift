@@ -258,4 +258,87 @@ final class RoomRoutingTests: XCTestCase {
         let meta = try XCTUnwrap(body["metadata"] as? [String: Any])
         XCTAssertNil(meta["routed"])
     }
+
+    // MARK: - Rooms with no canonical key (gauntlet R1)
+    //
+    // Every shape below is a REAL row copied off rooms:listRooms on the live
+    // deployment, where 24 of 391 rooms carry no legacyRoomId. The reader used to
+    // require that field, so those rooms — Wolfpack, AOM, and everything made with
+    // "+ New" — could never appear on the phone at all.
+
+    private func convexRoom(_ json: String) throws -> RoomStore.ConvexRoom {
+        try JSONDecoder().decode(RoomStore.ConvexRoom.self, from: Data(json.utf8))
+    }
+
+    /// legacyRoomId always wins. The backend is minting canonical keys for these rows;
+    /// the moment one carries a real key this reader must use it and stop guessing.
+    func testCanonicalKeyPrefersLegacyRoomID() throws {
+        let cr = try convexRoom("""
+        {"_id":"jn74dg7","legacyRoomId":"aom:mission:corner:convex-multi-agent",
+         "kind":"mission","project":"corner","title":"convex-multi-agent"}
+        """)
+        XCTAssertEqual(RoomStore.canonicalKey(for: cr, world: "aom"), "aom:mission:corner:convex-multi-agent")
+    }
+
+    /// A key-less project room derives the key the writer would have written — verified
+    /// against the deployment: "aom:project:wolfpack" returns Wolfpack's real thread.
+    func testKeylessProjectRoomDerivesItsCanonicalKey() throws {
+        let cr = try convexRoom("""
+        {"_id":"jn7aftk570t2f4d9cs19s6jam98ch202","kind":"project","project":"wolfpack","title":"Wolfpack"}
+        """)
+        XCTAssertEqual(RoomStore.canonicalKey(for: cr, world: "aom"), "aom:project:wolfpack")
+        let room = try XCTUnwrap(RoomStore.room(from: cr, world: "aom"))
+        XCTAssertEqual(room.roomID, "aom:project:wolfpack")
+        XCTAssertEqual(room.title, "Wolfpack")
+        XCTAssertEqual(room.convexID, "jn7aftk570t2f4d9cs19s6jam98ch202")
+    }
+
+    /// A mission with a project and a title but no slug: the canonical mission key is
+    /// two parts, "<project>:<mission>". "aom:mission:corner:native-ios" resolves a real
+    /// thread on the live deployment.
+    func testKeylessMissionRoomDerivesProjectAndLeaf() throws {
+        let cr = try convexRoom("""
+        {"_id":"jn739ekyk0892yr90xd53n2mxh8chtnr","kind":"mission","project":"corner","title":"Native iOS"}
+        """)
+        XCTAssertEqual(RoomStore.canonicalKey(for: cr, world: "aom"), "aom:mission:corner:native-ios")
+        let room = try XCTUnwrap(RoomStore.room(from: cr, world: "aom"))
+        XCTAssertEqual(room.kind, .mission(slug: "corner:native-ios", project: "corner"))
+    }
+
+    /// A dot is part of a real project slug and must survive slugification.
+    func testProjectSlugKeepsItsDot() throws {
+        let cr = try convexRoom("""
+        {"_id":"jn76h1r","kind":"mission","project":"aheadofmarket.com","title":"Home"}
+        """)
+        XCTAssertEqual(RoomStore.canonicalKey(for: cr, world: "aom"), "aom:mission:aheadofmarket.com:home")
+    }
+
+    func testKeylessAgentRoomDerivesFromSpecialist() throws {
+        let cr = try convexRoom("""
+        {"_id":"jn79wtv","kind":"agent","specialist":"corner","title":"Corner"}
+        """)
+        XCTAssertEqual(RoomStore.canonicalKey(for: cr, world: "aom"), "aom:agent:corner")
+    }
+
+    /// "New Room" — created with "+ New", no project, no slug, no name yet. Nothing can
+    /// be derived, so it falls back to the bare Convex id, which the server DOES resolve
+    /// as a room key. The old reader dropped it entirely and it could never be reopened.
+    func testUnnameableRoomFallsBackToTheBareConvexID() throws {
+        let cr = try convexRoom("""
+        {"_id":"jn76ap85bbhvaepj318wxxyt8s8cj2ts","kind":"project","title":"New Room"}
+        """)
+        XCTAssertNil(RoomStore.canonicalKey(for: cr, world: "aom"))
+        let room = try XCTUnwrap(RoomStore.room(from: cr, world: "aom"))
+        XCTAssertEqual(room.roomID, "jn76ap85bbhvaepj318wxxyt8s8cj2ts",
+                       "the bare id is the key — a prefixed 'aom:project:<id>' returns no messages")
+        XCTAssertEqual(room.title, "New Room")
+    }
+
+    /// nil and 0 are different answers. Absent means the backend has no read-state yet
+    /// and the row must fall back to its own dot, not render "all caught up".
+    func testUnreadCountIsAbsentUntilTheServerSendsIt() throws {
+        XCTAssertNil(try convexRoom(#"{"_id":"a","kind":"project","project":"corner"}"#).unreadCount)
+        XCTAssertEqual(try convexRoom(#"{"_id":"a","kind":"project","project":"corner","unreadCount":0}"#).unreadCount, 0)
+        XCTAssertEqual(try convexRoom(#"{"_id":"a","kind":"project","project":"corner","unreadCount":12}"#).unreadCount, 12)
+    }
 }

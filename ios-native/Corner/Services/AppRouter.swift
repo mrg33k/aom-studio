@@ -188,6 +188,22 @@ final class AppRouter: ObservableObject {
     /// dies in that rebuild would slam the sheet shut mid-choice.
     @Published var showingSettings = false
 
+    /// A link that arrived while a modal was on screen, held until it can actually be
+    /// applied.
+    ///
+    /// A navigation-stack change made in the same update as an alert dismissal is
+    /// swallowed by SwiftUI: the alert goes away (proving the URL was consumed) and the
+    /// stack never moves, so a notification tap lands the user in the room they were
+    /// already in with no signal that anything was asked for. That is precisely the
+    /// failure this file's header swears off. So the target is QUEUED rather than
+    /// applied, and it is never dropped — `flushPendingTarget()` runs it once the modal
+    /// is actually gone.
+    @Published private(set) var pendingTarget: DeepLinkTarget?
+
+    /// Anything presented over the navigation stack. A deep link that arrives now cannot
+    /// be applied in this update cycle.
+    private var isPresentingModal: Bool { unresolvedLink != nil || showingSettings }
+
     /// The swipe carousel (Patrik's R4 gesture spec): the open chat is one card in the
     /// recency stack — swiping toward "more recent" replaces it with the room above it
     /// on home, the other way with the room below. Replacing the top of the path keeps
@@ -222,18 +238,111 @@ final class AppRouter: ObservableObject {
         open(.room(room))
     }
 
+    /// A replace that is armed but not yet applied. See `open(_ route:)`.
+    private(set) var deferredPush: Route?
+
     func open(_ route: Route) {
         unresolvedLink = nil
-        if path.last == route { return }
+        if path.last == route { deferredPush = nil; return }
+
         // Replace rather than stack: tapping three banners for three rooms should leave
         // one screen open, not a three-deep back stack the user has to unwind.
+        if path.isEmpty {
+            path = [route]
+            return
+        }
+
+        // REPLACING THE TOP OF A NON-EMPTY STACK IS SWALLOWED IF DONE IN ONE ASSIGNMENT.
+        // `path = [other]` leaves the count at 1, and SwiftUI coalesces it away: the
+        // stack never moves. Measured on the simulator — opening any room while another
+        // room was on screen did nothing at all, with no alert anywhere near it. That is
+        // every notification tap taken while the app is sitting in a conversation, which
+        // is most of them.
+        //
+        // So: pop to the rail, then push on a later turn, guaranteeing a count change
+        // SwiftUI cannot fold together.
+        deferredPush = route
+        path = []
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(60))
+            self?.applyDeferredPush()
+        }
+    }
+
+    /// Apply the armed replace. Separate and callable so the two-phase navigation is
+    /// testable without racing a sleep.
+    func applyDeferredPush() {
+        guard let route = deferredPush else { return }
+        deferredPush = nil
         path = [route]
     }
 
     /// The one entry point for anything arriving from outside the app — a URL, a
     /// notification tap, a widget. Everything funnels here so "what does a tap do" has
     /// exactly one answer.
+    ///
+    /// With a modal up the answer is "in a moment", never "nothing": the target is held,
+    /// the modal is asked to close, and the link is applied on the far side of that
+    /// dismissal. The link is not consumed until the destination is on screen.
     func handle(_ target: DeepLinkTarget) {
+        guard !isPresentingModal else {
+            pendingTarget = target
+            // Close whatever is over the stack. `unresolvedLink` is cleared HERE and not
+            // in `apply` because the alert it drives is the thing in the way.
+            unresolvedLink = nil
+            showingSettings = false
+            // Belt: the views also flush on dismissal, and the flush is idempotent, so
+            // whichever path fires first wins and the other is a no-op. Braces: this
+            // timer means a view that never reports its dismissal still cannot eat the
+            // link.
+            Task { [weak self] in
+                try? await Task.sleep(for: .milliseconds(350))
+                self?.flushPendingTarget()
+            }
+            return
+        }
+        apply(target)
+    }
+
+    /// Apply a queued link, if there is one and nothing is in front of it.
+    ///
+    /// The link is consumed only when the stack ACTUALLY moved, or when the app said out
+    /// loud that it could not (the unresolved-link alert). A silent no-move puts the
+    /// target back and tries again — the swallow this whole mechanism exists for is
+    /// exactly "it looked applied and nothing happened", so it cannot be the exit
+    /// condition. `retriesLeft` bounds it so a genuinely unreachable destination stops
+    /// rather than spinning.
+    func flushPendingTarget(retriesLeft: Int = 2) {
+        guard let target = pendingTarget else { return }
+        guard !isPresentingModal else { return }
+        pendingTarget = nil
+        apply(target)
+
+        // A deferred push is a navigation already in flight — not a swallow.
+        if isShowing(target) || unresolvedLink != nil || deferredPush != nil { return }
+        guard retriesLeft > 0 else { return }
+        pendingTarget = target
+        Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(250))
+            self?.flushPendingTarget(retriesLeft: retriesLeft - 1)
+        }
+    }
+
+    /// Is this target the thing currently on screen? The test for "the navigation
+    /// actually happened", not "we called the function".
+    func isShowing(_ target: DeepLinkTarget) -> Bool {
+        switch target {
+        case .room(let link):
+            guard let want = link.resolveRoom() else { return false }
+            return openRoom?.roomID == want.roomID
+        case .route(let route):
+            return path.last == route
+        case .rail:
+            return path.isEmpty
+        }
+    }
+
+    private func apply(_ target: DeepLinkTarget) {
         switch target {
         case .room(let link): open(link)
         case .route(let route): open(route)
@@ -257,5 +366,9 @@ final class AppRouter: ObservableObject {
     func closeAll() {
         path = []
         unresolvedLink = nil
+        // Sign-out closes everything; a link queued against the previous session must
+        // not fire into the next one — neither the held target nor an armed replace.
+        pendingTarget = nil
+        deferredPush = nil
     }
 }

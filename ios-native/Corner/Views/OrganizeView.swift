@@ -85,7 +85,7 @@ struct OrganizeView: View {
                                 .frame(width: 34, height: 34)
                                 .background(Theme.warning.opacity(0.16), in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(review.waitingCount == 1 ? "1 file needs your review" : "\(review.waitingCount) files need your review")
+                                Text(review.waitingSentence)
                                     .font(.hkBody.weight(.semibold))
                                     .foregroundStyle(Theme.ink)
                                 Text("Start with the newest hand-off")

@@ -670,11 +670,13 @@ struct RoomListView: View {
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text("Waiting on you").font(.hkBody.weight(.semibold)).foregroundStyle(Theme.ink)
-                Text(review.waitingCount == 1 ? "1 file needs a verdict" : "\(review.waitingCount) files need a verdict")
+                Text(review.waitingCountIsApproximate
+                    ? "99+ files need a verdict"
+                    : (review.waitingCount == 1 ? "1 file needs a verdict" : "\(review.waitingCount) files need a verdict"))
                     .font(.hkCaption).foregroundStyle(Theme.inkSoft)
             }
             Spacer(minLength: 0)
-            Text("\(review.waitingCount)")
+            Text(review.waitingCountLabel)
                 .font(.hkCaption.weight(.bold).monospacedDigit())
                 .foregroundStyle(Theme.ground)
                 .padding(.horizontal, 8).padding(.vertical, 3)
@@ -863,7 +865,18 @@ private struct RoomRowCard: View {
     // is newer than when this device last opened it. ReadStateStore persists a
     // per-room epoch-ms in UserDefaults; ChatView.onAppear stamps it each visit.
     @ObservedObject private var readStore = ReadStateStore.shared
-    private var unread: Bool { entry.ts > 0 && entry.ts > readStore.lastRead(for: room.roomID) }
+    /// The server's count when it sends one, the device's own dot when it does not.
+    /// nil is not zero: a backend with no read-state must not be read as "all caught up".
+    private var unread: Bool {
+        if let count = entry.unreadCount { return count > 0 }
+        return entry.ts > 0 && entry.ts > readStore.lastRead(for: room.roomID)
+    }
+    /// Printed only when the server authored it. The device-local fallback knows THAT
+    /// something is new, never how much, so it stays a dot rather than inventing a "1".
+    private var unreadBadge: String? {
+        guard let count = entry.unreadCount, count > 0 else { return nil }
+        return count > 99 ? "99+" : "\(count)"
+    }
 
     var body: some View {
         Group { if isHero { hero } else { quiet } }
@@ -932,7 +945,17 @@ private struct RoomRowCard: View {
                 if !age.isEmpty {
                     Text(age).font(.hkCaption2.monospaced()).foregroundStyle(Theme.inkFaint)
                 }
-                if unread { Circle().fill(Theme.live).frame(width: 9, height: 9) }
+                if let badge = unreadBadge {
+                    Text(badge)
+                        .font(.hkCaption2.weight(.bold).monospacedDigit())
+                        .foregroundStyle(Theme.ground)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Theme.live, in: Capsule())
+                        .accessibilityLabel("\(badge) unread")
+                } else if unread {
+                    Circle().fill(Theme.live).frame(width: 9, height: 9)
+                        .accessibilityLabel("Unread")
+                }
             }
         }
         .padding(.vertical, Theme.s3)

@@ -58,6 +58,15 @@ final class ReviewStore: ObservableObject {
         }
     }
 
+    /// How many rows one fetch asks for. Named, because the whole defect this constant
+    /// exists to prevent is a page size wearing the costume of a backlog: `items.count`
+    /// pinned at exactly 100 forever, motionless while the user clears the queue.
+    nonisolated static let pageLimit = 100
+
+    /// True when the server told us how many are really waiting. False means the only
+    /// number we hold is "however many fit in one page", which is not a count.
+    @Published private(set) var totalIsFromServer = false
+
     private let api: CornerAPI
     private var refresher: Task<Void, Never>?
 
@@ -80,7 +89,55 @@ final class ReviewStore: ObservableObject {
         return out
     }
 
-    var waitingCount: Int { items.count }
+    /// How many files are waiting — the SERVER's number, not the page size.
+    ///
+    /// `items.count` is what one fetch returned, capped at `pageLimit`. Reading the badge
+    /// off it made a backlog of 247 render as "100" and then sit still while the user
+    /// worked, which is how a queue badge teaches people to stop believing it.
+    var waitingCount: Int { Self.count(total: total, loaded: items.count) }
+
+    /// True when the number cannot be trusted as exact: the server sent no total AND the
+    /// page came back full, so the real backlog is at least this and possibly much more.
+    var waitingCountIsApproximate: Bool {
+        Self.isApproximate(loaded: items.count, totalIsFromServer: totalIsFromServer)
+    }
+
+    /// The number as it should be printed. A precise-looking round number we cannot
+    /// stand behind is worse than an honest "99+".
+    var waitingCountLabel: String {
+        Self.label(total: total, loaded: items.count, totalIsFromServer: totalIsFromServer)
+    }
+
+    /// The full sentence both the Files headline card and the review header print, so
+    /// the two screens are physically incapable of naming different numbers.
+    var waitingSentence: String {
+        Self.sentence(total: total, loaded: items.count, totalIsFromServer: totalIsFromServer)
+    }
+
+    // MARK: - The count, as pure functions
+    //
+    // Free of the store's state so the exact regression this guards — a page size
+    // wearing the costume of a backlog — is a unit test and not a screenshot.
+
+    nonisolated static func count(total: Int, loaded: Int) -> Int { max(total, loaded) }
+
+    nonisolated static func isApproximate(loaded: Int, totalIsFromServer: Bool) -> Bool {
+        !totalIsFromServer && loaded >= pageLimit
+    }
+
+    nonisolated static func label(total: Int, loaded: Int, totalIsFromServer: Bool) -> String {
+        isApproximate(loaded: loaded, totalIsFromServer: totalIsFromServer)
+            ? "99+"
+            : "\(count(total: total, loaded: loaded))"
+    }
+
+    nonisolated static func sentence(total: Int, loaded: Int, totalIsFromServer: Bool) -> String {
+        if isApproximate(loaded: loaded, totalIsFromServer: totalIsFromServer) {
+            return "99+ files need your review"
+        }
+        let n = count(total: total, loaded: loaded)
+        return n == 1 ? "1 file needs your review" : "\(n) files need your review"
+    }
 
     // MARK: - Loading
 
@@ -104,8 +161,12 @@ final class ReviewStore: ObservableObject {
     func load() async {
         if items.isEmpty { state = .loading }
         do {
-            let envelope = try await api.fetchReviewQueue(limit: 100)
+            let envelope = try await api.fetchReviewQueue(limit: Self.pageLimit)
             items = envelope.items ?? []
+            // The server's own count is the only honest one. Remember WHETHER it sent
+            // one, so a full page with no total renders "99+" instead of a confident
+            // "100" that is really just the limit looking back at us.
+            totalIsFromServer = envelope.total != nil
             total = envelope.total ?? items.count
             state = .ready
         } catch {

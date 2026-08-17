@@ -47,11 +47,22 @@ struct Room: Identifiable, Hashable {
     /// canonical string, so the canonical value is always the correct key.
     var convexID: String?
 
+    /// The room key to use verbatim, for a room that had no canonical key and none
+    /// could be derived — a room created in-app with no project and no name yet.
+    ///
+    /// It holds the bare Convex document id, because the server resolves THAT as a room
+    /// key: `messages:list` with "jn7aftk…" returns the same thread as
+    /// "aom:project:wolfpack", while the prefixed "aom:project:jn7aftk…" returns
+    /// nothing. So a synthesized `<world>:<kind>:<_id>` would render a room that opens
+    /// empty; the bare id renders a room that opens.
+    var keyOverride: String?
+
     var id: String { roomID }
 
     /// The canonical room_id rows in this room carry — also the realtime filter value
     /// and the key an APNs payload deep-links with.
     var roomID: String {
+        if let keyOverride, !keyOverride.isEmpty { return keyOverride }
         switch kind {
         case .agent(let slug):      return "\(world):agent:\(slug)"
         case .project(let slug):    return "\(world):project:\(slug)"
@@ -283,6 +294,25 @@ struct Room: Identifiable, Hashable {
         default:
             return nil
         }
+    }
+
+    /// Inverse of `prettify`, for deriving a room key from a title when the row carried
+    /// no slug. Dots survive because a real project slug is "aheadofmarket.com"; runs of
+    /// anything else collapse to a single dash.
+    static func slugify(_ raw: String) -> String {
+        var out = ""
+        var lastWasDash = false
+        for ch in raw.lowercased() {
+            if ch.isLetter || ch.isNumber || ch == "." {
+                out.append(ch)
+                lastWasDash = false
+            } else if !lastWasDash && !out.isEmpty {
+                out.append("-")
+                lastWasDash = true
+            }
+        }
+        while out.hasSuffix("-") { out.removeLast() }
+        return out
     }
 
     static func prettify(_ slug: String) -> String {

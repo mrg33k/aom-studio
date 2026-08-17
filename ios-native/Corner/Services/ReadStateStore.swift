@@ -27,6 +27,10 @@ final class ReadStateStore: ObservableObject {
     /// roomID → epoch-ms of the most recent moment the user viewed that room.
     @Published private var data: [String: Double] = [:]
 
+    /// roomID → epoch-ms of the last receipt actually sent to the server. In memory
+    /// only: a fresh launch sending one receipt per room opened is the correct cost.
+    private var lastRemote: [String: Double] = [:]
+
     private init() {
         if let saved = UserDefaults.standard.dictionary(forKey: Self.udKey) as? [String: Double] {
             data = saved
@@ -47,5 +51,37 @@ final class ReadStateStore: ObservableObject {
         guard ts > (data[roomID] ?? 0) else { return }
         data[roomID] = ts
         UserDefaults.standard.set(data, forKey: Self.udKey)
+    }
+
+    /// Tell the SERVER the room has been read, so the badge clears on every surface
+    /// instead of only on this phone.
+    ///
+    /// Silent by design. `rooms:markRead` does not exist on the deployment yet; until it
+    /// lands this is a no-op and the local stamp above remains the whole answer. A read
+    /// receipt is not worth an error in the user's face, and the fallback is already
+    /// correct — so the failure path here is deliberately empty.
+    func markReadRemote(roomID: String, at ts: Double) async {
+        guard Config.useConvex, !roomID.isEmpty else { return }
+        // At most one receipt per room per 30s. Read state is not a live feed, and a
+        // write on every visit to a room the user is swiping through would cost more
+        // database I/O than the messages themselves.
+        if let last = lastRemote[roomID], ts - last < 30_000 { return }
+        lastRemote[roomID] = ts
+        try? await ConvexService.shared.mutation("rooms:markRead", args: [
+            "roomId": roomID,
+            "userId": Self.userIdentity(),
+            "lastReadAt": ts,
+        ])
+    }
+
+    /// The same identity `messages:send` writes, so a read receipt and a message from
+    /// this device belong to the same user server-side.
+    private static func userIdentity() -> String {
+        if let uid = CornerAPI.shared.session?.user.id.uuidString, !uid.isEmpty { return uid }
+        let key = "convex.anonUserId"
+        if let saved = UserDefaults.standard.string(forKey: key), !saved.isEmpty { return saved }
+        let fresh = "anon-\(UUID().uuidString.prefix(8).lowercased())"
+        UserDefaults.standard.set(fresh, forKey: key)
+        return fresh
     }
 }

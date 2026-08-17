@@ -33,6 +33,10 @@ final class RoomStore: ObservableObject {
         let room: Room
         let ts: Double
         let preview: String
+        /// The SERVER's unread count for this room, when it sends one. nil means the
+        /// backend has no read-state yet and the row falls back to the device-local dot.
+        /// nil and 0 are different answers: "nobody knows" and "nothing new".
+        var unreadCount: Int?
         var id: String { room.roomID }
         var hasActivity: Bool { ts > 0 }
     }
@@ -60,21 +64,8 @@ final class RoomStore: ObservableObject {
     func loadRooms() async throws -> [Room] {
         guard let world = api.world else { return [] }
         let convexRooms: [ConvexRoom] = try await ConvexService.shared.query("rooms:listRooms", args: ["worldId": world])
-        return convexRooms.compactMap { cr -> Room? in
-            let id = cr.resolvedID
-            guard !id.isEmpty else { return nil }
-            let title = cr.resolvedTitle
-            // Build Room directly from Convex fields instead of parsing the ID format
-            let kind: Room.Kind
-            switch cr.kind ?? cr.type ?? "project" {
-            case "agent": kind = .agent(slug: cr.specialist ?? cr.slug ?? id)
-            case "mission": kind = .mission(slug: cr.slug ?? id, project: cr.project ?? "")
-            default: kind = .project(slug: cr.project ?? cr.slug ?? id)
-            }
-            var room = Room(world: world, kind: kind, title: title, subtitle: cr.subtitle ?? "")
-            room.convexID = id  // Store the Convex _id for queries
-            return room
-        }
+        // Same resolver as the rail and the timeline — see `room(from:world:)`.
+        return convexRooms.compactMap { Self.room(from: $0, world: world) }
     }
 
     func load() async {
@@ -288,6 +279,10 @@ final class RoomStore: ObservableObject {
             let text: String?
         }
         let lastMessage: LastMessage?
+        /// Server-computed unread count, once `rooms:listRooms` returns it. Optional on
+        /// purpose: absent means the backend has not shipped read-state yet, and the
+        /// client falls back to its own device-local dot rather than inventing a number.
+        let unreadCount: Int?
         let roomId: String?
         let room_id: String?
         let name: String?
@@ -304,7 +299,7 @@ final class RoomStore: ObservableObject {
         let worldId: String?
 
         enum CodingKeys: String, CodingKey {
-            case _id, legacyRoomId, lastMessage, roomId, name, type, kind, slug, project, mission, specialist, subtitle, tint
+            case _id, legacyRoomId, lastMessage, unreadCount, roomId, name, type, kind, slug, project, mission, specialist, subtitle, tint
             case room_id = "room_id"
             case title
             case clientId = "clientId"
@@ -316,16 +311,104 @@ final class RoomStore: ObservableObject {
         var resolvedTitle: String { title ?? name ?? Room.prettify(slug ?? resolvedID) }
     }
 
-    /// The home timeline, straight from Convex room rows: canonical-parsed rooms
-    /// (agents included) ranked by their newest message. Machine rooms whose keys
-    /// don't parse (terminal/task) stay off the timeline by construction.
+    // MARK: - Resolving a Convex row into a Room
+
+    /// The room key for a Convex row, or nil when one cannot be built from its fields.
+    ///
+    /// `legacyRoomId` ALWAYS wins. The backend is minting canonical keys for the rows
+    /// that lack one, and this reader must converge on that work rather than race it —
+    /// the moment a row carries a real key, that key is the answer and nothing here
+    /// gets a vote.
+    ///
+    /// Everything below is the fallback for a row the backend has not reached yet. The
+    /// shapes mirror what the writer produces (`<world>:<kind>:<project|specialist>`),
+    /// so a room resolved here and the same room after the backfill land on the SAME
+    /// key — verified against the live deployment: every derived key in this shape
+    /// returns the room's real thread from `messages:list`.
+    nonisolated static func canonicalKey(for cr: ConvexRoom, world: String) -> String? {
+        if let legacy = cr.legacyRoomId?.trimmingCharacters(in: .whitespaces), !legacy.isEmpty {
+            return legacy
+        }
+        func clean(_ s: String?) -> String? {
+            guard let t = s?.trimmingCharacters(in: .whitespaces), !t.isEmpty else { return nil }
+            return t
+        }
+        let project = clean(cr.project)
+        switch (cr.kind ?? cr.type ?? "project").lowercased() {
+        case "agent":
+            guard let slug = clean(cr.specialist) ?? clean(cr.slug) else { return nil }
+            return "\(world):agent:\(slug)"
+        case "mission":
+            // A mission key is "<world>:mission:<project>:<mission>" — the canonical
+            // mission slug is itself two parts, which is why Room.parse splits on only
+            // the first two colons.
+            if let slug = clean(cr.slug) {
+                if slug.contains(":") { return "\(world):mission:\(slug)" }
+                guard let project else { return nil }
+                return "\(world):mission:\(project):\(slug)"
+            }
+            guard let project else { return nil }
+            let leaf = Room.slugify(clean(cr.title) ?? clean(cr.name) ?? "")
+            guard !leaf.isEmpty else { return nil }
+            return "\(world):mission:\(project):\(leaf)"
+        default:
+            guard let slug = project ?? clean(cr.slug) else { return nil }
+            return "\(world):project:\(slug)"
+        }
+    }
+
+    /// One Convex row → one Room, for every reader. The rail and the timeline calling
+    /// two different resolvers is how a room came to exist on one and not the other.
+    ///
+    /// A row that resolves no key at all still becomes a room, keyed by its bare Convex
+    /// id: a regression here must degrade to a room the user can see and open, never to
+    /// a room that silently does not exist.
+    nonisolated static func room(from cr: ConvexRoom, world: String) -> Room? {
+        let subtitle = cr.subtitle ?? ""
+        if let key = canonicalKey(for: cr, world: world),
+           var room = Room.parse(roomID: key, title: cr.resolvedTitle, subtitle: subtitle) {
+            room.convexID = cr._id
+            return room
+        }
+        guard let id = cr._id?.trimmingCharacters(in: .whitespaces), !id.isEmpty else { return nil }
+        let kind: Room.Kind
+        switch (cr.kind ?? cr.type ?? "project").lowercased() {
+        case "agent":   kind = .agent(slug: id)
+        case "mission": kind = .mission(slug: id, project: cr.project ?? "")
+        default:        kind = .project(slug: id)
+        }
+        var room = Room(world: world, kind: kind, title: cr.resolvedTitle, subtitle: subtitle)
+        room.convexID = id
+        room.keyOverride = id
+        return room
+    }
+
+    /// The home timeline, straight from Convex room rows: rooms ranked by their newest
+    /// message. Machine rooms whose keys don't parse (terminal/task) stay off the
+    /// timeline by construction.
+    ///
+    /// Deduped by room key, newest wins. Collapsing a key-less row onto an existing
+    /// canonical key is the CORRECT outcome (they are the same room, one imported and
+    /// one seeded) — but only if the timeline then shows it once.
     private func convexRecent(_ convexRooms: [ConvexRoom]) -> [RecentRoom] {
+        guard let world = api.world else { return [] }
         var rows: [RecentRoom] = []
+        var indexByID: [String: Int] = [:]
         for cr in convexRooms {
-            guard let key = cr.legacyRoomId,
-                  let room = Room.parse(roomID: key, title: cr.resolvedTitle),
+            guard let room = Self.room(from: cr, world: world),
                   let ts = cr.lastMessage?.createdAt, ts > 0 else { continue }
-            rows.append(RecentRoom(room: room, ts: ts, preview: RoomPreview.clean(cr.lastMessage?.text ?? "")))
+            let entry = RecentRoom(
+                room: room,
+                ts: ts,
+                preview: RoomPreview.clean(cr.lastMessage?.text ?? ""),
+                unreadCount: cr.unreadCount
+            )
+            if let existing = indexByID[room.roomID] {
+                if ts > rows[existing].ts { rows[existing] = entry }
+            } else {
+                indexByID[room.roomID] = rows.count
+                rows.append(entry)
+            }
         }
         return rows.enumerated()
             .sorted { l, r in l.element.ts != r.element.ts ? l.element.ts > r.element.ts : l.offset < r.offset }
@@ -336,38 +419,32 @@ final class RoomStore: ObservableObject {
         var groups: [ProjectGroup] = []
         var seen = Set<String>()
         for cr in convexRooms {
-            let rid = cr.resolvedID
-            guard !rid.isEmpty else { continue }
-            // Parse the CANONICAL key (legacyRoomId) first — resolvedID is usually the
-            // Convex document _id ("jn7..."), which Room.parse can never understand.
-            if let room = Room.parse(roomID: cr.legacyRoomId ?? rid, title: cr.resolvedTitle) {
-                switch room.kind {
-                case .project(let slug):
-                    if seen.contains(slug) { continue }
-                    seen.insert(slug)
-                    groups.append(ProjectGroup(room: room, missions: []))
-                case .mission(let slug, let project):
-                    // Find existing project group or create one
-                    if let idx = groups.firstIndex(where: { $0.room.kind == .project(slug: project) }) {
-                        var missions = groups[idx].missions
-                        if !missions.contains(where: { $0.roomID == room.roomID }) {
-                            missions.append(room)
-                            groups[idx] = ProjectGroup(room: groups[idx].room, missions: missions)
-                        }
-                    } else {
-                        let projRoom = Room(world: world, kind: .project(slug: project), title: Room.prettify(project), subtitle: "Project")
-                        groups.append(ProjectGroup(room: projRoom, missions: [room]))
-                        seen.insert(project)
-                    }
-                    _ = slug
-                case .agent:
-                    // Agent rooms are handled via AgentRoster, not ProjectGroup
-                    continue
-                }
-            } else if let slug = cr.slug, !slug.isEmpty, !seen.contains(slug) {
+            // ONE resolver for the grid and the timeline. The old code parsed
+            // `legacyRoomId` here and fell back to `cr.slug` — a field this deployment
+            // never returns — so a room without a canonical key was dropped from both
+            // surfaces at once and could never appear on the phone at all.
+            guard let room = Self.room(from: cr, world: world) else { continue }
+            switch room.kind {
+            case .project(let slug):
+                if seen.contains(slug) { continue }
                 seen.insert(slug)
-                let room = Room(world: world, kind: .project(slug: slug), title: cr.resolvedTitle, subtitle: "Project")
                 groups.append(ProjectGroup(room: room, missions: []))
+            case .mission(_, let project):
+                // Find existing project group or create one
+                if let idx = groups.firstIndex(where: { $0.room.kind == .project(slug: project) }) {
+                    var missions = groups[idx].missions
+                    if !missions.contains(where: { $0.roomID == room.roomID }) {
+                        missions.append(room)
+                        groups[idx] = ProjectGroup(room: groups[idx].room, missions: missions)
+                    }
+                } else {
+                    let projRoom = Room(world: world, kind: .project(slug: project), title: Room.prettify(project), subtitle: "Project")
+                    groups.append(ProjectGroup(room: projRoom, missions: [room]))
+                    seen.insert(project)
+                }
+            case .agent:
+                // Agent rooms are handled via AgentRoster, not ProjectGroup
+                continue
             }
         }
         groups.sort { $0.room.title.localizedCaseInsensitiveCompare($1.room.title) == .orderedAscending }
