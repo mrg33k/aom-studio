@@ -110,7 +110,11 @@ final class RoomStore: ObservableObject {
                 let convexRooms: [ConvexRoom] = try await ConvexService.shared.query("rooms:listRooms", args: ["worldId": world])
                 let groups = convexRoomsToProjectGroups(convexRooms, world: world)
                 projects = groups
-                recent = buildRecent(groups: groups, activity: nil)
+                // buildRecent(activity:) is the Supabase feed's shape and returns []
+                // when activity is nil — the timeline must come from the rows' own
+                // lastMessage instead, or the home screen renders "No rooms yet"
+                // over 600 healthy rooms.
+                recent = convexRecent(convexRooms)
                 AppRouter.shared.recencyOrder = recent.map(\.room)
                 railError = nil
             } catch {
@@ -275,6 +279,15 @@ final class RoomStore: ObservableObject {
         /// This is what Room.parse understands AND what messages:list keys on —
         /// without it every room fails the parse and the rail renders empty.
         let legacyRoomId: String?
+        /// Newest message, straight off the room row. The home timeline is built
+        /// from this — without it every room has activity 0 and the timeline
+        /// (which is what the phone's home screen renders) shows "No rooms yet".
+        struct LastMessage: Decodable {
+            let agentSlug: String?
+            let createdAt: Double?
+            let text: String?
+        }
+        let lastMessage: LastMessage?
         let roomId: String?
         let room_id: String?
         let name: String?
@@ -291,7 +304,7 @@ final class RoomStore: ObservableObject {
         let worldId: String?
 
         enum CodingKeys: String, CodingKey {
-            case _id, legacyRoomId, roomId, name, type, kind, slug, project, mission, specialist, subtitle, tint
+            case _id, legacyRoomId, lastMessage, roomId, name, type, kind, slug, project, mission, specialist, subtitle, tint
             case room_id = "room_id"
             case title
             case clientId = "clientId"
@@ -301,6 +314,22 @@ final class RoomStore: ObservableObject {
         /// Convex returns `_id` as the document ID — prefer it over all others
         var resolvedID: String { _id ?? roomId ?? room_id ?? slug ?? name ?? "" }
         var resolvedTitle: String { title ?? name ?? Room.prettify(slug ?? resolvedID) }
+    }
+
+    /// The home timeline, straight from Convex room rows: canonical-parsed rooms
+    /// (agents included) ranked by their newest message. Machine rooms whose keys
+    /// don't parse (terminal/task) stay off the timeline by construction.
+    private func convexRecent(_ convexRooms: [ConvexRoom]) -> [RecentRoom] {
+        var rows: [RecentRoom] = []
+        for cr in convexRooms {
+            guard let key = cr.legacyRoomId,
+                  let room = Room.parse(roomID: key, title: cr.resolvedTitle),
+                  let ts = cr.lastMessage?.createdAt, ts > 0 else { continue }
+            rows.append(RecentRoom(room: room, ts: ts, preview: RoomPreview.clean(cr.lastMessage?.text ?? "")))
+        }
+        return rows.enumerated()
+            .sorted { l, r in l.element.ts != r.element.ts ? l.element.ts > r.element.ts : l.offset < r.offset }
+            .map(\.element)
     }
 
     private func convexRoomsToProjectGroups(_ convexRooms: [ConvexRoom], world: String) -> [ProjectGroup] {
