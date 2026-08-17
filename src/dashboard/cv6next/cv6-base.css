@@ -1334,9 +1334,6 @@ html.cv6-keyboard-open [data-cv6].cv6-app-shell {
 [data-cv6] .cv6-composer-primary.cv6-mic:active {
   transform: scale(0.92) !important;
 }
-[data-cv6] .cv6-composer-wrap {
-  transition:max-height var(--dur-move) var(--ease-out), opacity var(--dur-press) ease, transform var(--dur-move) var(--ease-out), border-color var(--dur-press) ease, box-shadow var(--dur-move) var(--ease-out);
-}
 @media (prefers-reduced-motion:reduce) {
   [data-cv6], [data-cv6] * { scroll-behavior:auto !important; }
   [data-cv6] *, [data-cv6] *::before, [data-cv6] *::after {

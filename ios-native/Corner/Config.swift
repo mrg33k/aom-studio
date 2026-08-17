@@ -101,6 +101,15 @@ enum Config {
     /// fall back to the existing Supabase /api/* paths.
     static let useConvex = true
 
+    /// Unit tests use fake transports and must not reach the live data plane. UI
+    /// acceptance launches the real app on a simulator and opts back in explicitly;
+    /// treating every process with an XCTest configuration as a unit test made the
+    /// supposedly Convex acceptance silently exercise the retired fallback instead.
+    static var suppressLiveBackendsForTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            && ProcessInfo.processInfo.environment["UITEST_REAL_BACKEND"] != "1"
+    }
+
     /// Which APNs environment this binary's tokens belong to. It must agree with the
     /// `aps-environment` entitlement (development in Debug, production in Release) —
     /// a sandbox token offered to the production APNs host is rejected as

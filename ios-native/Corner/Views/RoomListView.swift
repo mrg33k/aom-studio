@@ -88,6 +88,7 @@ struct RoomListView: View {
                 searchRows
             }
         }
+        .accessibilityIdentifier("room-list-screen")
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .groundBackground()
@@ -733,11 +734,30 @@ struct RoomListView: View {
     }
 
     private var loadingRow: some View {
-        HStack(spacing: Theme.s2) {
-            ProgressView().controlSize(.small)
-            Text("Loading your rooms…").font(.hkFootnote).foregroundStyle(Theme.inkSoft)
+        VStack(spacing: Theme.s2) {
+            ForEach(0..<6, id: \.self) { index in
+                HStack(spacing: Theme.s3) {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(Theme.raised)
+                        .frame(width: 36, height: 36)
+                    VStack(alignment: .leading, spacing: 7) {
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(Theme.raised)
+                            .frame(width: CGFloat(82 + (index % 3) * 18), height: 10)
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(Theme.raised.opacity(0.72))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 9)
+                    }
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(Theme.raised.opacity(0.65))
+                        .frame(width: 26, height: 8)
+                }
+                .padding(.vertical, Theme.s1)
+            }
         }
-        .padding(.vertical, Theme.s3)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Loading recent rooms")
         .plainCardRow()
     }
 
@@ -861,21 +881,39 @@ private struct RoomRowCard: View {
     /// Loader only when work is actually happening — 5m window so an idle top row never shows a spinner.
     /// Work = recent activity + preview present; the bar and live dot fade with the newest line.
     private var heroActive: Bool { isHero && entry.hasActivity && !entry.preview.isEmpty && (Date().timeIntervalSince1970 * 1000 - entry.ts) < 300_000 }
-    // Unread (contract §7): the room has activity (ts > 0) and its last message
-    // is newer than when this device last opened it. ReadStateStore persists a
-    // per-room epoch-ms in UserDefaults; ChatView.onAppear stamps it each visit.
+    // Unread (contract §7): the device receipt wins immediately after the person
+    // opens this room, even if the next rail refresh still carries an older server
+    // count. Server truth resumes on the next genuinely newer message.
     @ObservedObject private var readStore = ReadStateStore.shared
+    private var locallyRead: Bool {
+        entry.ts > 0 && readStore.lastRead(for: room.roomID) >= entry.ts
+    }
     /// The server's count when it sends one, the device's own dot when it does not.
     /// nil is not zero: a backend with no read-state must not be read as "all caught up".
     private var unread: Bool {
+        if locallyRead { return false }
         if let count = entry.unreadCount { return count > 0 }
+        if let hasUnread = entry.hasUnread { return hasUnread }
         return entry.ts > 0 && entry.ts > readStore.lastRead(for: room.roomID)
     }
     /// Printed only when the server authored it. The device-local fallback knows THAT
     /// something is new, never how much, so it stays a dot rather than inventing a "1".
     private var unreadBadge: String? {
+        guard !locallyRead else { return nil }
         guard let count = entry.unreadCount, count > 0 else { return nil }
         return count > 99 ? "99+" : "\(count)"
+    }
+    private var attributedPreview: String {
+        entry.author.isEmpty ? entry.preview : "\(entry.author): \(entry.preview)"
+    }
+
+    private var typeChip: some View {
+        Text(room.typeLabel)
+            .font(.hkCaption2.weight(.bold).monospaced())
+            .foregroundStyle(Theme.inkFaint)
+            .padding(.horizontal, 6)
+            .frame(height: 18)
+            .background(Theme.chipFill, in: Capsule())
     }
 
     var body: some View {
@@ -889,22 +927,32 @@ private struct RoomRowCard: View {
             .accessibilityIdentifier("room-row")
     }
 
-    // The hero, per the LIVE web mobile home (webview-mobile-home.png): solid accent
-    // disc + single letter, no type chip, soft fill, blue edge, status word + track.
+    // The hero carries the same contract fields as every other row. Activity is a
+    // status signal, never a reason to hide who said the newest line.
     private var hero: some View {
         VStack(alignment: .leading, spacing: Theme.s3) {
             HStack(alignment: .top, spacing: Theme.s3) {
                 Monogram(title: room.title, tint: tint, hero: true)
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(room.title).font(.hkTitle2.weight(.bold)).foregroundStyle(Theme.ink).lineLimit(1)
+                    HStack(spacing: 7) {
+                        Text(room.title).font(.hkTitle2.weight(.bold)).foregroundStyle(Theme.ink).lineLimit(1)
+                        typeChip
+                    }
+                    if case .mission = room.kind, !room.subtitle.isEmpty {
+                        Text(room.subtitle)
+                            .font(.hkCaption.weight(.semibold))
+                            .foregroundStyle(Theme.inkFaint)
+                            .lineLimit(1)
+                    }
                     if heroActive {
                         HStack(spacing: 6) {
                             Circle().fill(Theme.live).frame(width: 8, height: 8)
                             Text("active").font(.hkSubheadline.weight(.semibold)).foregroundStyle(Theme.live)
                         }
                         .transition(.opacity)
-                    } else if !entry.preview.isEmpty {
-                        Text(entry.preview)
+                    }
+                    if !entry.preview.isEmpty {
+                        Text(attributedPreview)
                             .font(.hkSubheadline).foregroundStyle(Theme.inkSoft).lineLimit(2)
                             .id(entry.preview)
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
@@ -924,17 +972,26 @@ private struct RoomRowCard: View {
         .animation(.easeOut(duration: 0.25), value: heroActive)
     }
 
-    // A quiet row, per the live web mobile home: edge, single-letter avatar, title,
-    // preview, trailing time + dot. No type chip — the web home dropped them.
+    // A quiet row: edge, single-letter avatar, title + type, attributed preview,
+    // trailing time + unread truth.
     // P1.2: 18pt semibold title (lifted above the 17pt utility rows), 2-line preview,
     // full-opacity raised surface.
     private var quiet: some View {
         HStack(spacing: Theme.s3) {
             Monogram(title: room.title, tint: tint, hero: false)
             VStack(alignment: .leading, spacing: 3) {
-                Text(room.title).font(.hanken(18).weight(.semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                HStack(spacing: 7) {
+                    Text(room.title).font(.hanken(18).weight(.semibold)).foregroundStyle(Theme.ink).lineLimit(1)
+                    typeChip
+                }
+                if case .mission = room.kind, !room.subtitle.isEmpty {
+                    Text(room.subtitle)
+                        .font(.hkCaption2.weight(.semibold))
+                        .foregroundStyle(Theme.inkFaint)
+                        .lineLimit(1)
+                }
                 if !entry.preview.isEmpty {
-                    Text(entry.preview).font(.hkCaption).foregroundStyle(Theme.inkSoft).lineLimit(2)
+                    Text(attributedPreview).font(.hkCaption).foregroundStyle(Theme.inkSoft).lineLimit(2)
                         .id(entry.preview)
                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                 }

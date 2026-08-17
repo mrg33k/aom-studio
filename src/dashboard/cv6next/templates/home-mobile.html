@@ -67,7 +67,7 @@
             </div>
             <!-- Preview line: KEEP on every card. Single most important instruction per §1.
                  Hidden on empty by CSS :empty. -->
-            <span class="rprev" data-bind="rec.preview">agents reporting duplicate messages</span>
+            <span class="rprev"><strong class="recentauthor" data-bind="rec.author">Web</strong><span data-bind="rec.preview">agents reporting duplicate messages</span></span>
             <!-- Progress bar: hero only (CSS shows :first-child, hides :not(:first-child)).
                  §5: indeterminate shimmer — no fill %, no proportional fill.
                  Real per-room progress is not available on the home recent list; degraded
@@ -79,7 +79,7 @@
                inline on right. -->
           <div class="mresume-trail">
             <span class="mono mresumeage" data-bind="rec.age">1m</span>
-            <span class="sdot newdot" data-mod="is-:rec.dot"></span>
+            <span class="cv6-unread-count" data-mod="is-:rec.unreadState" data-bind="rec.unreadCount">3</span>
           </div>
         </div>
       </div>

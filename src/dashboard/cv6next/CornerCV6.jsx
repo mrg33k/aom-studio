@@ -183,6 +183,23 @@ function MobileAirPodsHeaderPortal({ canvasRef, activeColumnId }) {
 // design files also write the Scribe target as 'live-scribe'; accept both spellings.
 const LIVE_NAV = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'livescribe', 'live-scribe', 'back']);
 
+// Home first paint keeps the eventual information architecture on screen: directory
+// rail on the left, useful work surface on the right. A centered logo loader erased
+// both landmarks and made the product look empty during its most important second.
+const HOME_LOADING_HTML = `
+  <div data-state="loading" class="cv6-home-skeleton" role="status" aria-live="polite" aria-label="Loading rooms">
+    <div class="cv6-home-skeleton-rail">
+      <div class="sk cv6-home-sk-title"></div>
+      <div class="sk cv6-home-sk-search"></div>
+      ${Array.from({ length: 8 }, (_, i) => `<div class="cv6-home-sk-row"><span class="sk cv6-home-sk-dot"></span><span class="cv6-home-sk-copy"><i class="sk" style="width:${62 + (i % 3) * 9}%"></i><i class="sk" style="width:${78 - (i % 4) * 8}%"></i></span><span class="sk cv6-home-sk-time"></span></div>`).join('')}
+    </div>
+    <div class="cv6-home-skeleton-main">
+      <div class="sk cv6-home-sk-kicker"></div>
+      <div class="sk cv6-home-sk-composer"></div>
+      ${Array.from({ length: 5 }, (_, i) => `<div class="cv6-home-sk-card"><span class="sk cv6-home-sk-avatar"></span><span class="cv6-home-sk-copy"><i class="sk" style="width:${42 + i * 7}%"></i><i class="sk" style="width:${78 - i * 5}%"></i></span></div>`).join('')}
+    </div>
+  </div>`;
+
 function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false, dropEmbeddedStates = false } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
   const nodes = doc.querySelectorAll('[data-cv6]');
@@ -231,7 +248,13 @@ function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false, dropE
   if (ready) {
     const sd = new DOMParser().parseFromString(statesRaw, 'text/html');
     sd.querySelectorAll('[data-state="loading"], [data-state="error"], [data-state="empty"]').forEach((b) => {
-      host.appendChild(b.cloneNode(true));
+      if (b.getAttribute('data-state') === 'loading' && screen.getAttribute('data-screen')?.startsWith('home-')) {
+        const loadingDoc = new DOMParser().parseFromString(HOME_LOADING_HTML, 'text/html');
+        const skeleton = loadingDoc.querySelector('[data-state="loading"]');
+        if (skeleton) host.appendChild(skeleton);
+      } else {
+        host.appendChild(b.cloneNode(true));
+      }
     });
   }
   return screen.outerHTML;
@@ -500,9 +523,9 @@ function HomeFilesPanel({ host, worldId, room, onClose, onReview }) {
   );
 }
 
-function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed, knavZone = 'rail' }) {
+function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed, knavZone = 'rail', activeRoomColumnId = '' }) {
   const isDesktop = useIsDesktop();
-  const { state, data, worldId } = useHome();
+  const { state, data, worldId, railStatus, reloadRooms } = useHome();
   const { refetch: refetchHomeData } = useDataContext();
   const [missionReload, setMissionReload] = useState(0);
   const missionsByProject = useProjectMissions(worldId, missionReload);
@@ -1228,6 +1251,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       }
       onNav?.(target);
     },
+    retry: () => reloadRooms?.(),
+    viewOffline: () => {},
+    emptyAction: () => setComposerOpen('project'),
     // Desktop room selection is the whole interaction: append/focus its fixed
     // workspace column. Mobile keeps its single-room navigation behavior.
     openRoom: (id) => {
@@ -1251,13 +1277,16 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     openRecent: (key) => {
       const r = (data.recent || []).find((x) => x.key === key || x.id === key);
       if (!r) return;
-      let roomObj;
-      if (r.kind === 'mission') {
+      // Convex rows already carry their exact backend key. Never reconstruct and
+      // discard it here: native-only rooms cannot be recovered from a display slug,
+      // and even legacy rooms can otherwise point at the wrong tenant after routing.
+      let roomObj = r.roomObj || null;
+      if (!roomObj && r.kind === 'mission') {
         const slug = String(r.missionSlug || '');
         roomObj = { id: slug.split(':').pop(), name: r.name, initials: (r.name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: slug, projectSlug: slug.split(':')[0], status: 'ready', statusText: r.sub || slug.split(':')[0] };
-      } else if (r.kind === 'project') {
+      } else if (!roomObj && r.kind === 'project') {
         roomObj = { id: r.project, name: r.name, initials: (r.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: 'ready', statusText: 'project chat' };
-      } else {
+      } else if (!roomObj) {
         roomObj = (data.agents || []).find((a) => a.id === r.agent) || { id: r.agent || r.id, name: r.name, initials: (r.name || '?').slice(0, 2).toUpperCase(), status: 'ready' };
       }
       if (isDesktop) { onOpenRoom?.(roomObj, worldId); setKnavOpenedRoom(null); setKnavRoomOpenState('full'); setKnavOpenedKey(`rec:${r.key}`); }
@@ -1643,15 +1672,24 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     ...r,
     sub: recentTypeLabel(r),
     type: recentTypeKey(r),
-    typeLabel: RECENT_TYPE_WORD[recentTypeKey(r)],
+    // A mission name is only unique inside its project. Showing a generic
+    // "MISSION" chip made `corner:convex-multi-agent` and
+    // `aom:convex-multi-agent` indistinguishable in the room rail. Keep the
+    // kind explicit while carrying the parent people actually navigate by.
+    typeLabel: r.kind === 'mission' && r.sub && r.sub !== 'Mission'
+      ? `${r.sub} · Mission`
+      : RECENT_TYPE_WORD[recentTypeKey(r)],
     // Avatar circle monogram — TWO letters (room-row-contract §1 part 2, 2026-08-10):
     // first letters of the first two words, else first two letters of the single word.
     initial: roomMonogram(r.name),
     // Hero status label shown only on first card (CSS :first-child controls display).
     statusLabel: idx === 0 ? heroStatusLabel : '',
     knavSel: selectedKey === `rec:${r.key}` ? 'sel' : 'off',
-    roomOpen: knavOpenedKey === `rec:${r.key}` ? 'open' : 'off',
+    roomOpen: activeRoomColumnId === `chat:${roomColumnKey(recentRoomObj(r))}`
+      || knavOpenedKey === `rec:${r.key}` ? 'open' : 'off',
     dot: r.unread ? 'new' : 'none',
+    unreadCount: Number(r.needsCount) > 99 ? '99+' : String(Number(r.needsCount) || ''),
+    unreadState: Number(r.needsCount) > 0 ? 'has' : 'none',
   }));
   // Ring once when a room goes unread that was not unread a moment ago. Keyed by the
   // SET of unread rooms, not a count: two rooms going unread while one is read nets to
@@ -1718,6 +1756,18 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
 
   const homeData = {
     ...data,
+    loading: { label: 'Loading your rooms' },
+    empty: {
+      title: 'No rooms yet',
+      body: 'Create a project or start a room and it will appear here.',
+      actionLabel: 'New project',
+    },
+    error: {
+      title: "Couldn't load your rooms",
+      body: "Corner can't reach the room directory right now. Nothing was erased.",
+      code: 'rooms · connection failed',
+      offlineState: 'none',
+    },
     catchUp: catchUpRender,
     agents: agentsWithNav,
     agentsTotal,
@@ -1736,6 +1786,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       initialMode={composerOpen} onClose={() => setComposerOpen(null)}
       onCreated={() => setMissionReload((k) => k + 1)} />
   ) : null;
+  const retryRooms = () => reloadRooms?.();
   return (
     <div ref={homeWrapRef}
       onPointerEnter={() => { railPointerRef.current = true; }}
@@ -1743,6 +1794,13 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={homeHtml} data={homeData} actions={actions} state={state}
         aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />
+      {railStatus === 'stale' ? (
+        <div className="cv6-rail-recovery" role="status" aria-live="polite">
+          <span aria-hidden="true">!</span>
+          <div><strong>Rooms not syncing</strong><small>You&apos;re seeing the last rooms Corner loaded.</small></div>
+          <button type="button" onClick={retryRooms}>Try again</button>
+        </div>
+      ) : null}
       {treeCtxOverlay}
       {treeSettings ? (
         <RoomSettingsDialog
@@ -3039,7 +3097,18 @@ const DEMO_HOME_MESSAGES = [
 function DemoHomeQuickThread() {
   const [open, setOpen] = useState(false);
   const [threadHost, setThreadHost] = useState(null);
+  const wrapRef = useRef(null);
   const homeHtml = useMemo(() => composeScreen(homeDesktopRaw, { mobile: false, pick: 0, sharedNav: true }), []);
+  // Mount the production swipe delegate in this no-auth fixture. This keeps the
+  // browser regression honest: a room-row tap must survive the same pointerdown
+  // path that owns swipe-to-archive on the live Home rail.
+  useRoomSwipeArchive({
+    wrapRef,
+    worldId: 'demo-home-quick-thread',
+    resolveHit: () => ({ kind: 'project', projectSlug: 'renderer-room', name: 'Renderer Room' }),
+    refetch: () => {},
+    setMissionReload: () => {},
+  });
   useEffect(() => {
     const pick = () => {
       const el = document.querySelector('[data-screen="convo"] .convo-thread');
@@ -3096,7 +3165,7 @@ function DemoHomeQuickThread() {
     showMoreProjects: () => {},
   };
   return (
-    <div data-cv6 data-theme="dark" style={{ minHeight: '100dvh', background: 'var(--ground, #05080b)' }}>
+    <div ref={wrapRef} data-cv6 data-theme="dark" style={{ minHeight: '100dvh', background: 'var(--ground, #05080b)' }}>
       <TemplateScreen html={homeHtml} data={homeData} actions={actions} state="ready" aliases={HOME_ALIASES} style={{ width: '100vw', height: '100dvh' }} />
       <Cv6QuickThread
         target={open ? threadHost : null}
@@ -3449,12 +3518,26 @@ function parseRoomFromUrl() {
   return null;
 }
 function urlForRoom(room) {
-  if (!room) return '/dashboard';
-  if (room.isProject) return `/dashboard/projects/${encodeURIComponent(room.id)}/chat`;
-  if (room.isMission) return `/dashboard/mission/${encodeURIComponent(room.missionSlug || room.id)}`;
-  return `/dashboard/agent/${encodeURIComponent(room.id || room.slug || room.name)}`;
+  if (!room) return dashboardUrl('/dashboard');
+  if (room.isProject) return dashboardUrl(`/dashboard/projects/${encodeURIComponent(room.id)}/chat`);
+  if (room.isMission) return dashboardUrl(`/dashboard/mission/${encodeURIComponent(room.missionSlug || room.id)}`);
+  return dashboardUrl(`/dashboard/agent/${encodeURIComponent(room.id || room.slug || room.name)}`);
 }
-function urlForHome() { return '/dashboard'; }
+// Keep only the data-plane/tenant switches that define which product the URL opens.
+// This matters on render-only acceptance builds (`?client=aom`) and guarantees the
+// classic dashboard stays classic across an internal room navigation + reload.
+function dashboardUrl(path) {
+  if (typeof window === 'undefined') return path;
+  const current = new URLSearchParams(window.location.search || '');
+  const next = new URLSearchParams();
+  for (const key of ['client', 'classic', 'convex']) {
+    const value = current.get(key);
+    if (value != null && value !== '') next.set(key, value);
+  }
+  const query = next.toString();
+  return query ? `${path}?${query}` : path;
+}
+function urlForHome() { return dashboardUrl('/dashboard'); }
 const flattenDispatchMissions = (nodes, output = []) => {
   for (const node of nodes || []) {
     if (node && (node.slug || node.id)) output.push(node);
@@ -3494,6 +3577,11 @@ export default function CornerCV6() {
     }
     return [...agents, ...rooms];
   }, [roomRegistry.data, dispatchMissionsByProject]);
+  // The server-authored unread count is also the keyboard traversal order. Never
+  // infer unread from recency: if the backend reports none, the shortcut says so.
+  const unreadRooms = useMemo(() => (roomRegistry.data?.recent || [])
+    .filter((item) => Number(item?.needsCount) > 0 && item?.roomObj)
+    .map((item) => item.roomObj), [roomRegistry.data]);
   // Keep the shell on the full dynamic viewport at rest. While a text control is
   // focused, iOS shrinks and can also pan the *visual* viewport without moving the
   // layout viewport, so cover both its height and offsetTop. Using visualViewport
@@ -3574,13 +3662,21 @@ export default function CornerCV6() {
   // An EXPLICIT ?view= (any value, home included) always wins over the seed —
   // and a seed saved under another tenant never replays here (xhigh findings 5+6).
   const explicitView = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('view');
-  // corner:front-door: cold start no longer AUTO-OPENS the last room. The front
-  // door is the intake composer (mobile always lands on Home; desktop shows the
-  // composer with recents in the rail, the last room one click away). cv6.lastRoom
-  // is still written by onOpenRoom and read by the intake router as the primary
-  // "continue" candidate — it is just no longer replayed as a column on boot.
-  // Pop-out windows (chatWindowRoute) and explicit ?view= deep links still win.
-  const routeSeed = chatWindowRoute ? { room: chatWindowRoute.room, worldId: null } : null;
+  // Slack-level first minute: a returning user lands in the conversation they were
+  // already having. Only the bare /dashboard front door may restore it; explicit
+  // views and pasted room URLs continue to win. Tenant mismatch fails closed, and
+  // the existing live-registry validation below removes archived/stale rooms.
+  const [savedRoomSeed] = useState(() => {
+    if (explicitView || typeof window === 'undefined' || window.location.pathname !== '/dashboard') return null;
+    try {
+      const parsed = JSON.parse(localStorage.getItem('cv6.lastRoom') || 'null');
+      if (!parsed?.room?.id || (parsed.worldId && parsed.worldId !== worldId)) return null;
+      return { room: parsed.room, worldId: parsed.worldId || worldId };
+    } catch { return null; }
+  });
+  // Pop-out windows stay the strongest seed; otherwise the validated last room is
+  // the product on cold start, with Home one Back tap away.
+  const routeSeed = chatWindowRoute ? { room: chatWindowRoute.room, worldId: null } : savedRoomSeed;
   // URL-addressable room (reload/back/bookmark) — takes precedence over lastRoom replay
   const initialUrlRoom = (() => {
     if (typeof window === 'undefined') return null;
@@ -3667,7 +3763,13 @@ export default function CornerCV6() {
     };
     const initial = savedRoomExists(room, base);
     if (initial === false) { invalidate(); return () => { alive = false; }; }
-    if (initial === true) { setRestoredRoomPending(false); return () => { alive = false; }; }
+    if (initial === true) {
+      if (savedRoomSeed && roomColumnKey(savedRoomSeed.room) === roomColumnKey(room)) {
+        try { window.history.replaceState({ restoredRoom: roomColumnKey(room) }, '', urlForRoom(room)); } catch { /* ignore */ }
+      }
+      setRestoredRoomPending(false);
+      return () => { alive = false; };
+    }
 
     authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId)}`, { credentials: 'include' })
       .then((response) => (response.ok ? response.json() : null))
@@ -3679,7 +3781,7 @@ export default function CornerCV6() {
       })
       .catch(() => { if (alive) setRestoredRoomPending(false); });
     return () => { alive = false; };
-  }, [restoredRoomPending, workspaceColumns, roomRegistry.state, roomRegistry.data, worldId]);
+  }, [restoredRoomPending, workspaceColumns, roomRegistry.state, roomRegistry.data, worldId, savedRoomSeed]);
 
   // URL-derived room must survive the post-data rebuild (R18 handoff fix).
   // The initialUrlRoom seed fires before roomRegistry data lands; the
@@ -3941,7 +4043,7 @@ export default function CornerCV6() {
     const fallback = remaining[Math.min(Math.max(0, idx - 1), Math.max(0, remaining.length - 1))];
     try {
       const targetUrl = fallback?.room ? urlForRoom(fallback.room) : urlForHome();
-      if (window.location.pathname + window.location.search !== targetUrl) history.pushState({}, '', targetUrl);
+      if (window.location.pathname + window.location.search !== targetUrl) window.history.pushState({}, '', targetUrl);
     } catch { /* ignore */ }
     setWorkspaceColumns((columns) => {
       const index = columns.findIndex((column) => column.id === columnId);
@@ -3951,6 +4053,20 @@ export default function CornerCV6() {
       return next;
     });
   }, [workspaceColumns]);
+
+  // A room opened from inside Corner owns a real browser history entry. Its Back/X
+  // action should unwind that entry, exactly like the browser Back button. A room
+  // reached by a pasted/bookmarked URL has no Corner-authored state, so it closes
+  // locally and writes the safe Home URL instead of ejecting the user from the app.
+  const returnFromRoomColumn = useCallback((columnId) => {
+    const isActive = columnId === activeColumnId;
+    const authoredRoom = window.history.state?.room;
+    if (isActive && authoredRoom && `chat:${authoredRoom}` === columnId) {
+      window.history.back();
+      return;
+    }
+    closeWorkspaceColumn(columnId);
+  }, [activeColumnId, closeWorkspaceColumn]);
 
   // A room is a page-owned column, never a browser window or a route takeover.
   // Reopening an existing room focuses its live column; opening another room
@@ -3972,10 +4088,102 @@ export default function CornerCV6() {
     try { localStorage.setItem('cv6.lastRoom', JSON.stringify({ room, worldId: wid || worldId })); } catch { /* private mode */ }
     try {
       const targetUrl = urlForRoom(room);
-      if (window.location.pathname + window.location.search !== targetUrl) history.pushState({ room: roomColumnKey(room) }, '', targetUrl);
+      if (window.location.pathname + window.location.search !== targetUrl) window.history.pushState({ room: roomColumnKey(room) }, '', targetUrl);
     } catch { /* ignore */ }
     return true;
   }, [worldId]);
+
+  // Slack-class unread traversal and thread focus. Option/Alt+Shift+↑/↓ cycles
+  // only server-authored unread rooms; Shift+T lands keyboard focus on the latest
+  // message's Reply action in the active room. Both are inert while a person types.
+  useEffect(() => {
+    const onKey = (e) => {
+      const focused = document.activeElement;
+      const typing = focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA'
+        || focused.isContentEditable || focused.closest?.('[role="combobox"],[role="searchbox"]'));
+      if (typing) return;
+
+      const activeComposer = () => {
+        const column = activeColumnId
+          ? document.querySelector(`[data-workspace-column="${cssEscape(activeColumnId)}"]`) : null;
+        return column?.querySelector('.cv6-floating-composer textarea, .cv6-floating-composer input[type="text"]') || null;
+      };
+      const focusComposer = (character = '') => {
+        const composer = activeComposer();
+        if (!composer) {
+          setRoomNotice('Open a room to start a message.');
+          return false;
+        }
+        composer.focus({ preventScroll: true });
+        if (character) {
+          const start = Number.isFinite(composer.selectionStart) ? composer.selectionStart : composer.value.length;
+          const end = Number.isFinite(composer.selectionEnd) ? composer.selectionEnd : start;
+          const next = `${composer.value.slice(0, start)}${character}${composer.value.slice(end)}`;
+          const proto = composer.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+          const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+          if (setter) setter.call(composer, next); else composer.value = next;
+          composer.dispatchEvent(new Event('input', { bubbles: true }));
+          composer.setSelectionRange?.(start + character.length, start + character.length);
+        }
+        return true;
+      };
+
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        if (focusComposer()) setRoomNotice('Composer focused.');
+        return;
+      }
+
+      const unreadDirection = e.altKey && e.shiftKey && !e.metaKey && !e.ctrlKey
+        ? (e.key === 'ArrowDown' ? 1 : (e.key === 'ArrowUp' ? -1 : 0)) : 0;
+      if (unreadDirection) {
+        e.preventDefault();
+        if (!unreadRooms.length) {
+          setRoomNotice('No unread rooms. You are caught up.');
+          return;
+        }
+        const activeKey = activeColumnId.startsWith('chat:') ? activeColumnId.slice(5) : '';
+        const currentIndex = unreadRooms.findIndex((room) => roomColumnKey(room) === activeKey);
+        const nextIndex = currentIndex < 0
+          ? (unreadDirection > 0 ? 0 : unreadRooms.length - 1)
+          : (currentIndex + unreadDirection + unreadRooms.length) % unreadRooms.length;
+        const next = unreadRooms[nextIndex];
+        if (next) {
+          onOpenRoom(next, worldId);
+          setRoomNotice(`${unreadDirection > 0 ? 'Next' : 'Previous'} unread: ${next.name || 'Room'}`);
+        }
+        return;
+      }
+
+      if (e.shiftKey && !e.altKey && !e.metaKey && !e.ctrlKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        const column = activeColumnId
+          ? document.querySelector(`[data-workspace-column="${cssEscape(activeColumnId)}"]`) : null;
+        const actions = [...(column?.querySelectorAll('.cv6-message-reply-btn') || [])]
+          .filter((button) => button.getClientRects().length > 0);
+        const latest = actions[actions.length - 1];
+        if (!latest) {
+          setRoomNotice('No message thread to focus in this room yet.');
+          return;
+        }
+        latest.focus({ preventScroll: true });
+        latest.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        setRoomNotice('Latest message focused. Press Enter to reply.');
+        return;
+      }
+
+      // Slack-style handoff: a printable key typed while reading starts the
+      // message in the active composer. Controls retain Space/Enter and their
+      // own type-ahead semantics; the help key remains owned by the ? overlay.
+      const interactive = focused?.closest?.('button, a, [role="button"], [role="menuitem"], [role="option"], [tabindex]:not([tabindex="-1"])');
+      if (e.key.length === 1 && e.key !== '?' && !e.metaKey && !e.ctrlKey && !e.altKey && !interactive) {
+        e.preventDefault();
+        focusComposer(e.key);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [activeColumnId, onOpenRoom, unreadRooms, worldId]);
 
   // ---- Mobile swipe inside a chat (Patrik 2026-08-06, direction confirmed twice) ----
   // Swipe LEFT -> Home. Swipe RIGHT -> the next chat in "Pick up where you left off".
@@ -3995,7 +4203,7 @@ export default function CornerCV6() {
     const canvas = workspaceCanvasRef.current;
     if (canvas) canvas.scrollTo({ left: 0, behavior: 'smooth' });
     setActiveColumnId('');
-    try { if (window.location.pathname + window.location.search !== urlForHome()) history.pushState({}, '', urlForHome()); } catch { /* ignore */ }
+    try { if (window.location.pathname + window.location.search !== urlForHome()) window.history.pushState({}, '', urlForHome()); } catch { /* ignore */ }
   }, []);
 
   const swipeNextChat = useCallback(() => {
@@ -4117,7 +4325,12 @@ export default function CornerCV6() {
           setActiveColumnId(id);
           setKnavZone(id);
         } else {
+          // Home must become the whole surface again. Keeping the old chat columns
+          // mounted left data-column-count nonzero, so browser Back changed the URL
+          // but left the 340px rail + room visually open.
+          setWorkspaceColumns((cols) => cols.filter((column) => column.type !== 'chat'));
           setActiveColumnId((cur) => cur && cur.startsWith('chat:') ? '' : cur);
+          setKnavZone('rail');
         }
       } catch { /* ignore */ }
     };
@@ -4136,7 +4349,7 @@ export default function CornerCV6() {
   const closeNav = useCallback(() => setNavOpen(false), []);
   const goHome = useCallback(() => {
     setHistory([]); setOpenedRoom(null); setView('home');
-    try { if (window.location.pathname + window.location.search !== urlForHome()) history.pushState({}, '', urlForHome()); } catch { /* ignore */ }
+    try { if (window.location.pathname + window.location.search !== urlForHome()) window.history.pushState({}, '', urlForHome()); } catch { /* ignore */ }
   }, []);
 
   // ?demo=blocks — render the full chat-element preview through the real renderer and stop.
@@ -4192,7 +4405,7 @@ export default function CornerCV6() {
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onSearch={onSearch} onAssignBug={(bugId, extra) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent', ...(extra || {}) })} />; viewKey = 'tracker'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={onSearch} />; viewKey = 'chatlist'; }
-  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} knavZone={knavZone} />; viewKey = 'home'; }
+  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={onSearch} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} knavZone={knavZone} activeRoomColumnId={activeColumnId} />; viewKey = 'home'; }
 
   const current = view === 'chatlist' ? 'chat' : view;
   const parkedLabel = { organize: 'Files', command: 'Command', tracker: 'Tracker', livescribe: 'Scribe' }[view] || '';
@@ -4225,7 +4438,7 @@ export default function CornerCV6() {
           screen; each screen's baked topbar was stripped so this is the only nav. */}
       {/* DEF-12: onOpenProfile was missing — avatar click was a dead no-op. Route to the
           settings view which already exists and is reached via onNav('settings'). */}
-      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenEmailColumn={onOpenEmailColumn} onOpenWorkersColumn={onOpenWorkersColumn} onOpenProfile={() => onNav('settings', { section: 'account' })} onOpenAlerts={() => setAlertsOpen((o) => !o)} theme={theme} onTheme={changeTheme} badges={navBadges} />}
+      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenShortcuts={() => setShortcutsOpen(true)} onOpenEmailColumn={onOpenEmailColumn} onOpenWorkersColumn={onOpenWorkersColumn} onOpenProfile={() => onNav('settings', { section: 'account' })} onOpenAlerts={() => setAlertsOpen((o) => !o)} theme={theme} onTheme={changeTheme} badges={navBadges} />}
       {!isDesktop && <MobileAirPodsHeaderPortal canvasRef={workspaceCanvasRef} activeColumnId={activeColumnId} />}
       {/* TOP-20 #15: 429 banner with retry — re-checks limit on account switch and auto-respawn via onAuthStateChange */}
       <div style={{ padding: '0 12px', marginTop: 6 }}>
@@ -4266,9 +4479,9 @@ export default function CornerCV6() {
           // Desktop only: on phone a column already fills the screen, so there is
           // nothing to widen and the button never renders (the shells no-op on a
           // missing handler).
-          const onToggleWidth = isDesktop ? () => toggleWorkspaceColumnWidth(column.id) : undefined;
+          const onToggleWidth = isDesktop && column.type !== 'chat' ? () => toggleWorkspaceColumnWidth(column.id) : undefined;
           return (
-          <section key={column.id} className="cv6-workspace-column" data-workspace-column={column.id} data-column-type={column.type} data-column-expanded={expanded ? '1' : undefined} data-knav-zone={knavZone === column.id ? 'on' : undefined} aria-label={column.type === 'email' ? 'Email column' : column.type === 'workers' ? 'Background work column' : `${column.room?.name || 'Chat'} chat column`}>
+          <section key={column.id} className="cv6-workspace-column" data-workspace-column={column.id} data-column-type={column.type} data-column-active={activeColumnId === column.id ? '1' : undefined} data-column-expanded={expanded ? '1' : undefined} data-knav-zone={knavZone === column.id ? 'on' : undefined} aria-label={column.type === 'email' ? 'Email column' : column.type === 'workers' ? 'Background work column' : `${column.room?.name || 'Chat'} chat column`}>
             {column.type === 'workers' ? (
               <WorkersShell onClose={() => closeWorkspaceColumn(column.id)} expanded={expanded} onToggleWidth={onToggleWidth} />
             ) : column.type === 'email' ? (
@@ -4286,10 +4499,10 @@ export default function CornerCV6() {
                 room={column.room}
                 worldId={column.worldId || worldId}
                 columnMode={isDesktop}
-                onClose={() => closeWorkspaceColumn(column.id)}
+                onClose={() => returnFromRoomColumn(column.id)}
                 expanded={expanded}
                 onToggleWidth={onToggleWidth}
-                onNav={(target, arg) => { if (target === 'back') closeWorkspaceColumn(column.id); else onNav(target, arg); }}
+                onNav={(target, arg) => { if (target === 'back') returnFromRoomColumn(column.id); else onNav(target, arg); }}
                 onSearch={onSearch}
               />
             )}
@@ -4304,6 +4517,10 @@ export default function CornerCV6() {
           onClose={() => setSearchOpen(false)}
           onOpenMenu={() => { setSearchOpen(false); setNavOpen(true); }}
           onOpenRoom={(room, wid) => { setSearchOpen(false); onOpenRoom(room, wid); }}
+          onAction={(action) => {
+            if (action === 'home') onNav('home');
+            if (action === 'shortcuts') requestAnimationFrame(() => setShortcutsOpen(true));
+          }}
         />
       )}
       <KeyboardShortcutsOverlay open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />

@@ -50,12 +50,16 @@ struct MessageRow: Decodable, Identifiable, Equatable {
         // Convex backend fields (BRIEF 04): _id, _creationTime, roomId etc.
         case convexID = "_id"
         case convexCreationTime = "_creationTime"
+        case convexCreatedAt = "createdAt"
+        case convexAgentSlug = "agentSlug"
         case convexRoomId = "roomId"
         case convexClientId = "clientId"
         case convexUserId = "userId"
         case convexUserName = "userName"
         case convexAttachmentURL = "attachmentUrl"
         case convexAttachmentMime = "attachmentMime"
+        case convexAttachments = "attachments"
+        case convexBlocks = "blocks"
     }
 
     init(from decoder: Decoder) throws {
@@ -70,18 +74,23 @@ struct MessageRow: Decodable, Identifiable, Equatable {
         } else {
             id = UUID().uuidString
         }
-        // timestamp: Supabase ISO string or Convex _creationTime (ms since epoch)
+        // timestamp: Supabase ISO string or the message's restored Convex source time.
+        // `_creationTime` is only the row import time and can be weeks newer than the
+        // conversation; it is a last-resort compatibility fallback.
         let rawTS: String? = (try? c.decodeIfPresent(String.self, forKey: .timestamp)) ?? nil
+        let convexCreatedAt: Double? = (try? c.decodeIfPresent(Double.self, forKey: .convexCreatedAt)) ?? nil
         let convexMS: Double? = (try? c.decodeIfPresent(Double.self, forKey: .convexCreationTime)) ?? nil
         if let s = rawTS, !s.isEmpty {
             timestamp = s
-        } else if let m = convexMS {
+        } else if let m = convexCreatedAt ?? convexMS {
             let date = Date(timeIntervalSince1970: m / 1000)
             timestamp = ISO8601DateFormatter().string(from: date)
         } else {
             timestamp = nil
         }
-        agent = (try? c.decodeIfPresent(String.self, forKey: .agent)) ?? nil
+        let rawAgent: String? = (try? c.decodeIfPresent(String.self, forKey: .agent)) ?? nil
+        let convexAgent: String? = (try? c.decodeIfPresent(String.self, forKey: .convexAgentSlug)) ?? nil
+        agent = (rawAgent?.isEmpty == false) ? rawAgent : convexAgent
         role = (try? c.decodeIfPresent(String.self, forKey: .role)) ?? nil
         text = (try? c.decodeIfPresent(String.self, forKey: .text)) ?? nil
         source = (try? c.decodeIfPresent(String.self, forKey: .source)) ?? nil
@@ -137,7 +146,13 @@ struct MessageRow: Decodable, Identifiable, Equatable {
         }
         fileSize = (try? c.decodeIfPresent(Int.self, forKey: .fileSize)) ?? nil
         replyTo = (try? c.decodeIfPresent(String.self, forKey: .replyTo)) ?? nil
-        metadata = (try? c.decodeIfPresent(JSONValue.self, forKey: .metadata)) ?? nil
+        let rawMetadata = (try? c.decodeIfPresent(JSONValue.self, forKey: .metadata)) ?? nil
+        let convexAttachments = (try? c.decodeIfPresent([JSONValue].self, forKey: .convexAttachments)) ?? nil
+        let convexBlocks = (try? c.decodeIfPresent(JSONValue.self, forKey: .convexBlocks)) ?? nil
+        var merged = rawMetadata?.objectValue ?? [:]
+        if let convexAttachments, !convexAttachments.isEmpty { merged["attachments"] = .array(convexAttachments) }
+        if let convexBlocks, !convexBlocks.isNull { merged["blocks"] = convexBlocks }
+        metadata = merged.isEmpty ? rawMetadata : .object(merged)
     }
 
     // MARK: - Derived
@@ -147,7 +162,8 @@ struct MessageRow: Decodable, Identifiable, Equatable {
     /// role was mandatory.
     var isUser: Bool {
         if let role { return role == "user" }
-        return (userName?.isEmpty == false)
+        if userName?.isEmpty == false { return true }
+        return userID?.isEmpty == false && agent?.isEmpty != false
     }
 
     var date: Date? {
@@ -158,8 +174,15 @@ struct MessageRow: Decodable, Identifiable, Equatable {
     var epoch: TimeInterval { date?.timeIntervalSince1970 ?? 0 }
 
     var displayName: String {
-        if isUser { return userName ?? "You" }
+        if isUser { return humanDisplayName }
         return AgentRoster.title(for: resolvedAgentSlug(roomAgent: nil))
+    }
+
+    /// Never call an unidentified human "You": a shared room can contain several
+    /// people, and that label falsely claims every legacy human row as the viewer.
+    private var humanDisplayName: String {
+        let name = userName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return name.isEmpty ? "Teammate" : name
     }
 
     /// Resolve which agent actually authored this row.
@@ -187,14 +210,14 @@ struct MessageRow: Decodable, Identifiable, Equatable {
     }
 
     func resolvedDisplayName(roomAgent: String?) -> String {
-        if isUser { return userName ?? "You" }
+        if isUser { return humanDisplayName }
         return AgentRoster.title(for: resolvedAgentSlug(roomAgent: roomAgent))
     }
 
     /// Project-qualified label "Project · Agent" or just "Agent" when no project.
     /// Satisfies "[project:agent](message)" — both names visible on every assistant row.
     func qualifiedDisplayName(room: Room?, roomAgent: String?) -> String {
-        if isUser { return userName ?? "You" }
+        if isUser { return humanDisplayName }
         let agentTitle = resolvedDisplayName(roomAgent: roomAgent)
         guard let room else { return agentTitle }
         switch room.kind {

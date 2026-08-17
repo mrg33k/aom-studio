@@ -43,6 +43,10 @@ struct RootView: View {
             }
         }
         .groundBackground()
+        .task(id: api.session?.user.id) {
+            guard api.session != nil else { return }
+            router.restoreLastRoom(for: api.world)
+        }
         .onChange(of: api.session?.user.id) { _, newValue in
             if newValue == nil {
                 router.closeAll()
@@ -94,7 +98,6 @@ struct RootView: View {
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
-                push.clearBadge()
                 // A user who enables notifications in Settings returns to an app
                 // that was already running. Refreshing only at cold launch left that
                 // phone with permission granted but no APNs token row until restart.

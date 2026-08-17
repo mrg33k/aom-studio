@@ -252,6 +252,38 @@ export function useRoomSwipeArchive({ wrapRef, worldId, resolveHit, refetch, set
       return el;
     };
 
+    // Mouse/keyboard users should not have to discover a touch gesture. Add a
+    // quiet action inside each archiveable desktop row; it calls the exact same
+    // recoverable archive driver and never reparents the row, so the row's own
+    // click remains intact.
+    const enhanceDesktopRows = () => {
+      if (!window.matchMedia?.('(min-width: 900px)').matches) return;
+      root.querySelectorAll('[data-cv6-arg]').forEach((row) => {
+        if (!findRow(row) || row.querySelector(':scope > .cv6-desktop-archive-btn')) return;
+        const target = resolveRef.current?.(row);
+        if (!target) return;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'cv6-desktop-archive-btn';
+        button.setAttribute('aria-label', `Archive ${target.name || 'room'}`);
+        button.setAttribute('title', 'Archive room');
+        button.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>';
+        button.addEventListener('click', async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          button.disabled = true;
+          button.setAttribute('aria-busy', 'true');
+          await doArchive(target, null);
+          button.disabled = false;
+          button.removeAttribute('aria-busy');
+        });
+        row.appendChild(button);
+      });
+    };
+    enhanceDesktopRows();
+    const rowObserver = new MutationObserver(enhanceDesktopRows);
+    rowObserver.observe(root, { childList: true, subtree: true });
+
     const onPointerDown = (e) => {
       // Only primary pointer, and only touch/pen — mouse drags on desktop
       // should still work for manual testing, so allow mouse with button 0
@@ -282,36 +314,12 @@ export function useRoomSwipeArchive({ wrapRef, worldId, resolveHit, refetch, set
         }
         closeOpen();
       }
-      const { wrap, inner, panel, btn } = ensureStructure(row);
-      // Button tap archives.
-      const onBtnClick = (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
-        doArchive(target, { wrap, inner, row });
-      };
-      // Ensure we don't leak listeners across re-wraps: store on wrap.
-      if (!btn._swipeBound) {
-        btn.addEventListener('click', onBtnClick);
-        btn._swipeBound = onBtnClick;
-        // Keep handle for cleanup on rebind (not strictly needed as wrap is recreated).
-      } else {
-        // Update closure's target for this interaction (btn persists across data ticks).
-        btn._swipeTarget = target;
-        btn._swipeCtx = { wrap, inner, row };
-        // Rebind to latest target (remove old, add new).
-        btn.removeEventListener('click', btn._swipeBound);
-        const fresh = (ev) => {
-          ev.preventDefault(); ev.stopPropagation();
-          const t = btn._swipeTarget || target;
-          const c = btn._swipeCtx || { wrap, inner, row };
-          doArchive(t, c);
-        };
-        btn._swipeBound = fresh;
-        btn.addEventListener('click', fresh);
-      }
-      btn._swipeTarget = target;
-      btn._swipeCtx = { wrap, inner, row };
-      active = { wrap, inner, panel, btn, row, target, startX: e.clientX, startY: e.clientY, startTime: Date.now(), isCloseTap: false };
+      // A plain tap must leave the DOM untouched until its click fires. Reparenting
+      // the row here used to make Chromium cancel the synthetic click between
+      // pointerdown and pointerup, so only the tiny trailing arrow appeared to open
+      // desktop rooms. The swipe structure is created lazily once horizontal intent
+      // is proven in onPointerMove.
+      active = { row, target, startX: e.clientX, startY: e.clientY, startTime: Date.now(), isCloseTap: false };
       isDragging = false;
       // Capture so we keep receiving moves even if the finger leaves the row.
       try { e.target.setPointerCapture?.(e.pointerId); } catch {}
@@ -325,6 +333,19 @@ export function useRoomSwipeArchive({ wrapRef, worldId, resolveHit, refetch, set
         if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
         if (Math.abs(dy) > Math.abs(dx) * VERTICAL_RATIO) { active = null; return; }
         isDragging = true;
+        const { wrap, inner, panel, btn } = ensureStructure(active.row);
+        Object.assign(active, { wrap, inner, panel, btn });
+        // Bind/update the archive control only after this interaction is a swipe.
+        if (btn._swipeBound) btn.removeEventListener('click', btn._swipeBound);
+        const onBtnClick = (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          doArchive(btn._swipeTarget || active?.target, btn._swipeCtx || { wrap, inner, row: active?.row });
+        };
+        btn._swipeTarget = active.target;
+        btn._swipeCtx = { wrap, inner, row: active.row };
+        btn._swipeBound = onBtnClick;
+        btn.addEventListener('click', onBtnClick);
         // Once we commit to horizontal, claim the gesture so the parent
         // scroll and the long-press menu don't steal it.
         active.wrap.classList.add('is-dragging');
@@ -366,11 +387,10 @@ export function useRoomSwipeArchive({ wrapRef, worldId, resolveHit, refetch, set
       const dx = e.clientX - active.startX;
       const dt = Date.now() - active.startTime;
       const wasCloseTap = active.isCloseTap;
-      const { wrap, inner, target } = active;
-      const wasOpen = wrap.classList.contains('is-open');
 
       // Close-tap: tap on an already-open row closes it and swallows the click.
       if (wasCloseTap && Math.abs(dx) < 10 && dt < 400) {
+        const { wrap, inner } = active;
         inner.style.transition = 'width 0.22s ease';
         inner.style.width = '100%';
         wrap.classList.remove('is-open', 'is-dragging');
@@ -382,6 +402,13 @@ export function useRoomSwipeArchive({ wrapRef, worldId, resolveHit, refetch, set
         isDragging = false;
         return;
       }
+
+      // A normal tap never created or moved a wrapper. Let the template engine's
+      // existing click handler open the room.
+      if (!isDragging) { active = null; return; }
+
+      const { wrap, inner, target } = active;
+      const wasOpen = wrap.classList.contains('is-open');
 
       // Far swipe auto-archives without needing the button.
       if (dx < -FAR_THRESH) {
@@ -395,8 +422,6 @@ export function useRoomSwipeArchive({ wrapRef, worldId, resolveHit, refetch, set
         isDragging = false;
         return;
       }
-
-      if (!isDragging) { active = null; return; }
 
       inner.style.transition = 'width 0.22s ease';
       if (dx < -OPEN_THRESH) {
@@ -461,6 +486,7 @@ export function useRoomSwipeArchive({ wrapRef, worldId, resolveHit, refetch, set
     document.addEventListener('scroll', onScroll, true);
 
     return () => {
+      rowObserver.disconnect();
       root.removeEventListener('pointerdown', onPointerDown);
       root.removeEventListener('pointermove', onPointerMove);
       root.removeEventListener('pointerup', onPointerUp);

@@ -34,6 +34,7 @@ import {
   useChatAttachmentsCtx,
   useChatVoiceCtx,
   useChatRecordingCtx,
+  useChatContextMenuCtx,
 } from '../components/cv3/chat/ChatPanelContext.jsx';
 
 const I = {
@@ -184,9 +185,8 @@ function CommandsMenu({
         {/* Full-viewport backdrop: dims the thread behind the open menu and is an
             always-there tap-to-dismiss target (Steffen gate R1, defects 1+2 —
             the document-listener alone missed synthetic taps and left the thread
-            visually competing with the panel). Portaled out of .cv6-composer-wrap
-            which has overflow:hidden (PARITY #2: menu clipped invisible while scrim
-            dimmed the screen). */}
+            visually competing with the panel). Portaled to the document so the menu
+            can never be clipped by a composer or workspace host. */}
         <div data-testid="cv6-commands-menu-scrim" onClick={() => setOpen(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 44, background: 'rgba(0,0,0,.38)' }} />
         <div data-testid="cv6-commands-menu-popover" style={popoverStyle}>
@@ -306,6 +306,7 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
   const { uploading, fileInputRef, handleFileSelection } = useChatAttachmentsCtx();
   const { isVoiceActive, setIsVoiceActive } = useChatVoiceCtx();
   const { isRecording, handleMicToggle } = useChatRecordingCtx();
+  const { replyTo, setReplyTo } = useChatContextMenuCtx();
 
   const [commandsOpen, setCommandsOpen] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
@@ -458,6 +459,14 @@ export default function Cv6InputBar({ onOpenFiles, room, worldId, roomOptions = 
     <div className={`cv6-floating-composer${checklistOpen ? ' is-checklist-open' : ''}`} data-swipe-guard="" style={{ width: '100%', maxWidth: 700, margin: '0 auto', fontFamily: 'var(--font-sans)', padding: checklistOpen ? 12 : 9, borderRadius: 14, background: 'var(--composer-solid, #131317)', border: '1px solid var(--hair)', boxShadow: '0 18px 42px -24px rgba(0,0,0,.92)', transition: 'padding .18s ease, background .18s ease' }}>
       {/* Hidden file input — no accept filter on purpose: any file type is allowed. */}
       <input ref={fileInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleFileSelection} />
+      {replyTo ? (
+        <div className="cv6-compose-reply" data-test-id="reply-to-chip">
+          <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 17-5-5 5-5" /><path d="M20 18v-2a4 4 0 0 0-4-4H4" /></svg>
+          <strong>Replying to {replyTo.label || 'message'}</strong>
+          <span>{String(replyTo.snippet || '').replace(/\s+/g, ' ').trim()}</span>
+          <button type="button" data-test-id="reply-to-chip-dismiss" aria-label="Cancel reply" title="Cancel reply" onClick={() => setReplyTo(null)}>×</button>
+        </div>
+      ) : null}
       {/* Pinned image tool + recording state, as quiet chips above the bar. */}
       {(toolName || isRecording) ? (
         <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>

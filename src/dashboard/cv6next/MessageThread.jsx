@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
 import MessageReactions from './MessageReactions.jsx';
@@ -46,6 +46,63 @@ export function MessageFailedNote({ message }) {
         <button type="button" className="cv6-msg-failed-retry" onClick={() => message.onRetry()}>Try again</button>
       ) : null}
     </div>
+  );
+}
+
+function scrollToReply(messageId) {
+  if (!messageId || typeof document === 'undefined') return;
+  const target = [...document.querySelectorAll('[data-message-id]')]
+    .find((node) => node.getAttribute('data-message-id') === String(messageId));
+  if (!target) return;
+  target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  target.classList.add('cv6-reply-highlight');
+  window.setTimeout(() => target.classList.remove('cv6-reply-highlight'), 1400);
+}
+
+function replyTargetForMessage(message) {
+  if (!message?.id) return null;
+  return {
+    type: 'message',
+    id: String(message.id),
+    label: message.agentName || (message.isUser ? 'You' : 'message'),
+    snippet: String(message.text || '').replace(/\s+/g, ' ').trim().slice(0, 240),
+  };
+}
+
+function ThreadSummary({ parent, replies, onOpen }) {
+  if (!parent?.id || !Array.isArray(replies) || !replies.length || typeof onOpen !== 'function') return null;
+  const participants = [];
+  for (const reply of replies) {
+    const key = reply.agentName || (reply.isUser ? 'You' : 'Message');
+    if (!participants.some((item) => item.key === key)) participants.push({ key, initials: reply.agentInitials || key.slice(0, 2).toUpperCase(), tint: reply.agentTint || 'muted' });
+  }
+  const latest = replies[replies.length - 1];
+  return (
+    <button type="button" className="cv6-thread-summary" aria-label={`Open thread with ${replies.length} ${replies.length === 1 ? 'reply' : 'replies'}`} onClick={() => onOpen(replyTargetForMessage(parent))}>
+      <span className="cv6-thread-faces" aria-hidden="true">{participants.slice(0, 3).map((person) => <i key={person.key} className={`is-${person.tint}`}>{person.initials}</i>)}</span>
+      <strong>{replies.length} {replies.length === 1 ? 'reply' : 'replies'}</strong>
+      <span>{latest?.time ? `Last reply ${latest.time}` : 'Open thread'}</span>
+    </button>
+  );
+}
+
+function ReplyQuote({ message, original }) {
+  const preview = message?.replyPreview || null;
+  const messageId = message?.replyTo || preview?.message_id || '';
+  if (!messageId) return null;
+  const sender = preview?.sender || original?.agentName || (original?.isUser ? 'You' : 'Message');
+  const snippet = preview?.snippet || original?.text || 'Original message';
+  return (
+    <button
+      type="button"
+      className="cv6-reply-quote"
+      data-testid="cv6-reply-quote"
+      onClick={() => scrollToReply(messageId)}
+      title="Jump to original message"
+    >
+      <strong>{sender}</strong>
+      <span>{String(snippet).replace(/\s+/g, ' ').trim().slice(0, 140)}</span>
+    </button>
   );
 }
 
@@ -129,13 +186,17 @@ export function Cv6MessageTurn({
   allowChips = true,
   chipsPrimaryFirst = true,
   onReviewAttachment,
+  onReply,
+  replyOriginal,
+  threadReplies,
 }) {
   if (!message) return null;
   const bubbleClass = message.isUser ? 'pb-me' : 'pb';
   const hasText = !!String(message.text || '').trim();
   const extras = hasMessageExtras(message, { allowBlocks, allowAttachments, allowLinkCards, allowChips });
   return (
-    <span data-cv6-message-turn="" data-message-id={message.id || undefined} data-variant={variant} style={{ display: 'contents' }}>
+    <div className="cv6-message-turn-shell" data-cv6-message-turn="" data-message-id={message.id || undefined} data-variant={variant}>
+      <ReplyQuote message={message} original={replyOriginal} />
       {hasText ? (
         <div className={`${bubbleClass}${message.failed ? ' is-failed' : ''}`}>
           <ChatMessageRenderer content={message.text} />
@@ -159,8 +220,9 @@ export function Cv6MessageTurn({
           onReviewAttachment={onReviewAttachment}
         />
       ) : null}
-      <MessageReactions messageId={message.id} reactions={message.reactions} />
-    </span>
+      <MessageReactions messageId={message.id} reactions={message.reactions} message={message} onReply={onReply} />
+      <ThreadSummary parent={message} replies={threadReplies} onOpen={onReply} />
+    </div>
   );
 }
 
@@ -175,6 +237,9 @@ export function Cv6MessageGroup({
   allowChips = true,
   chipsPrimaryFirst = true,
   onReviewAttachment,
+  onReply,
+  messageById,
+  repliesByParent,
 }) {
   if (!group?.items?.length) return null;
   const head = group.items[0];
@@ -197,6 +262,9 @@ export function Cv6MessageGroup({
               allowChips={allowChips}
               chipsPrimaryFirst={chipsPrimaryFirst}
               onReviewAttachment={onReviewAttachment}
+              onReply={onReply}
+              threadReplies={repliesByParent?.get(String(m.id || '')) || []}
+              replyOriginal={messageById?.get(String(m.replyTo || m.replyPreview?.message_id || ''))}
             />
           ))}
           {lastTime ? <div className="ts">{lastTime}</div> : null}
@@ -222,6 +290,9 @@ export function Cv6MessageGroup({
             allowChips={allowChips}
             chipsPrimaryFirst={chipsPrimaryFirst}
             onReviewAttachment={onReviewAttachment}
+            onReply={onReply}
+            threadReplies={repliesByParent?.get(String(m.id || '')) || []}
+            replyOriginal={messageById?.get(String(m.replyTo || m.replyPreview?.message_id || ''))}
           />
         ))}
         {lastTime ? <div className="ts">{lastTime}</div> : null}
@@ -247,15 +318,7 @@ function MobileAvatar({ message }) {
   );
 }
 
-function MobileMessageTurn({ message, onAction }) {
-  const ref = useRef(null);
-  const [clamped, setClamped] = useState(false);
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (el && !open) setClamped(el.scrollHeight > 168 + 4);
-  }, [message.text, open]);
-
+function MobileMessageTurn({ message, onAction, onReply, replyOriginal, threadReplies }) {
   // User message: right-aligned accent bubble. No avatar (it's the user). Time below.
   // Surgical JSX change: CSS cannot reorder the name/time header below the text bubble.
   if (message.isUser) {
@@ -265,15 +328,15 @@ function MobileMessageTurn({ message, onAction }) {
         data-message-id={message.id || undefined}
         data-variant="mobile"
         data-userturn=""
+        className="cv6-message-turn-shell"
         style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}
       >
         <div style={{ maxWidth: '82%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+          <ReplyQuote message={message} original={replyOriginal} />
           <div
-            ref={ref}
-            className={`cv6-mob-bubble cv6-mob-bubble--user${clamped && !open ? ' is-clamped' : ''}${message.failed ? ' is-failed' : ''}`}
-            style={open ? { maxHeight: 'none' } : undefined}
+            className={`cv6-mob-bubble cv6-mob-bubble--user${message.failed ? ' is-failed' : ''}`}
           >
-            <div style={{ fontSize: 14, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            <div style={{ fontSize: 15.5, lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
               {message.text}
             </div>
           </div>
@@ -281,15 +344,12 @@ function MobileMessageTurn({ message, onAction }) {
           {message.isUser && message.receipt ? (
             <div style={{ fontSize: 10.5, color: 'var(--faint)', textAlign: 'right', marginTop: 2, opacity: 0.7 }}>Sent</div>
           ) : null}
-          {clamped ? (
-            <button className="longmsg-more cv6-mob-more-user" onClick={() => setOpen((v) => !v)}>
-              {open ? 'Show less' : 'Show more'}
-            </button>
-          ) : null}
           {message.time ? (
             <span className="cv6-mob-ts" style={{ marginTop: 3 }}>{message.time}</span>
           ) : null}
+          <ThreadSummary parent={message} replies={threadReplies} onOpen={onReply} />
         </div>
+        <MessageReactions messageId={message.id} reactions={message.reactions} message={message} onReply={onReply} />
       </div>
     );
   }
@@ -300,6 +360,7 @@ function MobileMessageTurn({ message, onAction }) {
       data-cv6-message-turn=""
       data-message-id={message.id || undefined}
       data-variant="mobile"
+      className="cv6-message-turn-shell"
       style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'flex-start' }}
     >
       <MobileAvatar message={message} />
@@ -307,20 +368,14 @@ function MobileMessageTurn({ message, onAction }) {
         {message.agentName ? (
           <div className="cv6-mob-name">{message.agentName}</div>
         ) : null}
+        <ReplyQuote message={message} original={replyOriginal} />
         <div
-          ref={ref}
-          className={`cv6-mob-bubble cv6-mob-bubble--agent${clamped && !open ? ' is-clamped' : ''}`}
-          style={open ? { maxHeight: 'none' } : undefined}
+          className="cv6-mob-bubble cv6-mob-bubble--agent"
         >
-          <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--fg)', wordBreak: 'break-word' }}>
+          <div style={{ fontSize: 15.5, lineHeight: 1.5, color: 'var(--fg)', wordBreak: 'break-word' }}>
             <ChatMessageRenderer content={message.text} />
           </div>
         </div>
-        {clamped ? (
-          <button className="longmsg-more" onClick={() => setOpen((v) => !v)}>
-            {open ? 'Show less' : 'Show more'}
-          </button>
-        ) : null}
         {message.time ? (
           <span className="cv6-mob-ts" style={{ marginTop: 3 }}>{message.time}</span>
         ) : null}
@@ -332,30 +387,36 @@ function MobileMessageTurn({ message, onAction }) {
           </div>
         ) : null}
         {message.linkCards?.length ? <ResultLinkCards cards={message.linkCards} /> : null}
+        <ThreadSummary parent={message} replies={threadReplies} onOpen={onReply} />
       </div>
+      <MessageReactions messageId={message.id} reactions={message.reactions} message={message} onReply={onReply} />
     </div>
   );
 }
 
-function MobileGoalTurn({ message, goal, blocks, live = false }) {
+function MobileGoalTurn({ message, goal, blocks, live = false, onReply, replyOriginal, threadReplies }) {
   const renderedBlocks = live ? (blocks || message.blocks || []) : settleHistoricalBlocks(blocks || message.blocks);
   return (
-    <div data-cv6-message-turn="" data-message-id={message.id || undefined} data-variant="mobile-goal" data-cv6-live-work={live ? '' : undefined} className={live ? 'cv6-live-work' : undefined} style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+    <div data-cv6-message-turn="" data-message-id={message.id || undefined} data-variant="mobile-goal" data-cv6-live-work={live ? '' : undefined} className={`cv6-message-turn-shell${live ? ' cv6-live-work' : ''}`} style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
       <MobileAvatar message={message} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{message.agentName}</span>
           <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{message.time}</span>
         </div>
+        <ReplyQuote message={message} original={replyOriginal} />
         <GoalThreadBody goal={goal} blocks={renderedBlocks} header={false} />
         {!message.isUser && message.linkCards?.length ? <ResultLinkCards cards={message.linkCards} /> : null}
+        {!live ? <ThreadSummary parent={message} replies={threadReplies} onOpen={onReply} /> : null}
       </div>
+      {!live ? <MessageReactions messageId={message.id} reactions={message.reactions} message={message} onReply={onReply} /> : null}
     </div>
   );
 }
 
 function MobileMessageThread({
   messages,
+  newMessageId,
   goal,
   room,
   mode,
@@ -369,6 +430,9 @@ function MobileMessageThread({
   onReviewFiles,
   empty,
   hasNewMessages,
+  onReply,
+  messageById,
+  repliesByParent,
 }) {
   const list = Array.isArray(messages) ? messages : [];
   const liveBlocks = liveStepsToBlocks(liveSteps);
@@ -391,8 +455,17 @@ function MobileMessageThread({
     }
     fileRun = [];
   };
-  let prevAgentKey = null;
   list.forEach((message, i) => {
+    if (newMessageId && String(message?.id || '') === String(newMessageId)) {
+      flushFiles(`new-${i}`);
+      out.push(
+        <div key={`new-${message.id || i}`} className="cv6-new-divider" role="separator" aria-label="New messages">
+          <span />
+          <strong>New</strong>
+          <span />
+        </div>,
+      );
+    }
     if (message?.isFile && renderAttachments === 'mobileGallery') {
       // Same-sender guard as ChatLifecycle's renderItems: never fold the user's
       // own upload into the agent's "sent N files" card, or vice versa.
@@ -401,25 +474,11 @@ function MobileMessageThread({
       return;
     }
     flushFiles(i);
-    // Specialist handoff divider: when a different agent takes the thread
-    if (!message?.isUser && message?.agentName) {
-      if (prevAgentKey && prevAgentKey !== message.agentName) {
-        out.push(
-          <div key={`handoff-${i}`} className="cv6-handoff-divider" aria-hidden="true">
-            <span className="cv6-handoff-line" />
-            <span className="cv6-handoff-label">{message.agentName}</span>
-            <span className="cv6-handoff-line" />
-          </div>
-        );
-      }
-      prevAgentKey = message.agentName;
-    } else if (message?.isUser) {
-      prevAgentKey = null;
-    }
+    const replyOriginal = messageById?.get(String(message?.replyTo || message?.replyPreview?.message_id || ''));
     if (message?.blocks?.length) {
-      out.push(<MobileGoalTurn key={message.id || i} message={message} goal={goal} />);
+      out.push(<MobileGoalTurn key={message.id || i} message={message} goal={goal} onReply={onReply} replyOriginal={replyOriginal} threadReplies={repliesByParent?.get(String(message.id || '')) || []} />);
     } else {
-      out.push(<MobileMessageTurn key={message?.id || i} message={message} onAction={onAction} />);
+      out.push(<MobileMessageTurn key={message?.id || i} message={message} onAction={onAction} onReply={onReply} replyOriginal={replyOriginal} threadReplies={repliesByParent?.get(String(message.id || '')) || []} />);
     }
   });
   flushFiles('end');
@@ -444,6 +503,7 @@ function MobileMessageThread({
 
 export function Cv6MessageThread({
   messages,
+  newMessageId = '',
   goal,
   room,
   variant = 'desktop',
@@ -459,13 +519,30 @@ export function Cv6MessageThread({
   allowLinkCards = true,
   chipsPrimaryFirst = true,
   onAction,
+  onReply,
   onReviewAttachment,
   onOpenFile,
   onReviewFiles,
   MobileFileGallery,
+  repliesByParentOverride,
   empty = 'No conversation yet.',
 }) {
   const list = Array.isArray(messages) ? messages : [];
+  const messageById = useMemo(
+    () => new Map(list.filter((message) => message?.id).map((message) => [String(message.id), message])),
+    [list],
+  );
+  const localRepliesByParent = useMemo(() => {
+    const map = new Map();
+    for (const message of list) {
+      const parentId = String(message?.replyTo || message?.replyPreview?.message_id || '');
+      if (!parentId) continue;
+      if (!map.has(parentId)) map.set(parentId, []);
+      map.get(parentId).push(message);
+    }
+    return map;
+  }, [list]);
+  const repliesByParent = repliesByParentOverride || localRepliesByParent;
 
   // ── SMOOTHNESS: new-message entrance animation ──
   // Track previous message count so only genuinely NEW messages animate in.
@@ -495,6 +572,7 @@ export function Cv6MessageThread({
         }}>
           <MobileMessageThread
             messages={list}
+            newMessageId={newMessageId}
             goal={goal}
             room={room}
             mode={mode}
@@ -508,6 +586,9 @@ export function Cv6MessageThread({
             onReviewFiles={onReviewFiles}
             empty={empty}
             hasNewMessages={hasNewMessages}
+            onReply={onReply}
+            messageById={messageById}
+            repliesByParent={repliesByParent}
           />
         </ReviewCtx.Provider>
       </SendCtx.Provider>
@@ -524,33 +605,24 @@ export function Cv6MessageThread({
     <SendCtx.Provider value={onAction || (() => {})}>
       <ReviewCtx.Provider value={(file) => { if (file) onReviewAttachment?.(file); }}>
         <div className="pconv" data-cv6-message-thread="" data-variant={variant} data-mode={mode} data-cv6-new-messages={hasNewMessages || undefined}>
-          {groups.map((group, i) => {
-            const prev = i > 0 ? groups[i - 1] : null;
-            const showHandoff = prev && !prev.isUser && !group.isUser && prev.key !== group.key;
-            return (
-              <React.Fragment key={`${group.key}-${i}`}>
-                {showHandoff ? (
-                  <div className="cv6-handoff-divider" aria-hidden="true">
-                    <span className="cv6-handoff-line" />
-                    <span className="cv6-handoff-label">{group.items[0]?.agentName || 'Agent'}</span>
-                    <span className="cv6-handoff-line" />
-                  </div>
-                ) : null}
-                <Cv6MessageGroup
-                  group={group}
-                  goal={goal}
-                  variant={variant}
-                  renderBlocks={renderBlocks}
-                  allowBlocks={allowBlocks}
-                  allowAttachments={allowAttachments}
-                  allowLinkCards={allowLinkCards}
-                  allowChips={allowChips}
-                  chipsPrimaryFirst={chipsPrimaryFirst}
-                  onReviewAttachment={onReviewAttachment}
-                />
-              </React.Fragment>
-            );
-          })}
+          {groups.map((group, i) => (
+            <Cv6MessageGroup
+              key={`${group.key}-${i}`}
+              group={group}
+              goal={goal}
+              variant={variant}
+              renderBlocks={renderBlocks}
+              allowBlocks={allowBlocks}
+              allowAttachments={allowAttachments}
+              allowLinkCards={allowLinkCards}
+              allowChips={allowChips}
+              chipsPrimaryFirst={chipsPrimaryFirst}
+              onReviewAttachment={onReviewAttachment}
+              onReply={onReply}
+              messageById={messageById}
+              repliesByParent={repliesByParent}
+            />
+          ))}
           {showLive && renderLiveWork === 'goalBody' ? (
             <div data-cv6-live-work="" className="cv6-live-work" style={{ marginTop: 16 }}>
               <GoalThreadBody goal={askGoal} blocks={liveBlocks} header={false} />

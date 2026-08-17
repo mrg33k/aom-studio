@@ -1,8 +1,8 @@
 /* cv6-nav.css -- workspace canvas, columns, mobile navigation */
 
-/* R11 one-page workspace. Home/tools stay mounted as the base column while
-   every room and Email appends an independent, fixed-width sibling. The page
-   never navigates away; overflow belongs to this horizontal canvas. */
+/* Workspace shell. Surfaces stay mounted for draft/thread continuity, but the
+   product presents one active destination at a time: rooms rail + active room
+   on desktop, and only the active surface on phone. */
 [data-cv6] .cv6-workspace-canvas {
   flex:1;
   min-width:0;
@@ -47,7 +47,19 @@
    is nothing to widen INTO, and CornerCV6 passes no toggle there so the button is
    absent too. Declared before that query so the 100% rule still wins on phone. */
 @media (min-width:900px) {
-  [data-cv6] .cv6-workspace-column[data-column-expanded="1"] { flex:0 0 800px; }
+  /* Slack-speed switching: inactive destinations remain mounted so drafts and
+     scroll state survive, but never consume layout space. The active room owns
+     every pixel after the persistent 340px rooms rail. */
+  [data-cv6] .cv6-workspace-canvas { overflow:hidden; }
+  [data-cv6] .cv6-workspace-column { display:none; }
+  [data-cv6] .cv6-workspace-canvas:not([data-column-count="0"]) .cv6-workspace-column[data-column-active="1"] {
+    display:flex;
+    flex:1 1 auto;
+    width:auto;
+    min-width:0;
+    max-width:none;
+  }
+  [data-cv6] .cv6-workspace-column[data-column-active="1"][data-column-expanded="1"] { flex:1 1 auto; }
 }
 /* On glass the workspace column must read as frosted glass, not a solid panel:
    at .72 the fill sat as an opaque dark box over the wallpaper, so the chat
@@ -137,19 +149,26 @@ html.cv6-keyboard-open [data-cv6][data-screen="home-mobile"] .mintake { bottom:8
 /* Corner-logo thinking mark in the routing modal. */
 [data-cv6] .cv6-intake-thinking-mark { width:40px; height:40px; flex:none; }
 @media (max-width:899px) {
-  /* Native snap-paging is OFF on mobile (Patrik 2026-08-06): it walks the opposite way
-     to the swipe he asked for (left = Home, right = next chat), and two mechanisms
-     fighting over one gesture is worse than either. JS-driven swipe handles navigation;
-     overflow-x:hidden prevents the anti-hijack walk from bailing on the canvas. */
-  [data-cv6] .cv6-workspace-canvas { scroll-snap-type:none; scrollbar-width:none; overflow-x:hidden; scroll-behavior:smooth; }
+  /* A phone renders exactly one viewport-wide surface. The old horizontal canvas kept
+     Home at x=0..375 and the open room at x=375..750, then scrolled the second child
+     into view. It looked right in a casual screenshot but the document remained 750px
+     wide, clipped controls during keyboard/toolbar changes, and failed the 375px judge.
+     Keep inactive columns mounted for state continuity; only the active surface takes
+     layout space. JS swipe still changes activeColumnId. */
+  [data-cv6] .cv6-workspace-canvas { scroll-snap-type:none; scrollbar-width:none; overflow:hidden; scroll-behavior:auto; width:100%; max-width:100vw; }
   [data-cv6] .cv6-workspace-canvas::-webkit-scrollbar { display:none; }
   [data-cv6] .cv6-workspace-base,
   [data-cv6] .cv6-workspace-canvas:not([data-column-count="0"]) .cv6-workspace-base,
   [data-cv6] .cv6-workspace-column {
-    flex:0 0 100%;
+    flex:1 1 100%;
     width:100%;
+    max-width:100%;
+    min-width:0;
     scroll-snap-align:none;
   }
+  [data-cv6] .cv6-workspace-canvas:not([data-column-count="0"]) .cv6-workspace-base,
+  [data-cv6] .cv6-workspace-column { display:none; }
+  [data-cv6] .cv6-workspace-column[data-column-active="1"] { display:flex; }
   [data-cv6] .cv6-workspace-column { border-left:0; box-shadow:none; }
 }
 

@@ -107,7 +107,7 @@ test('mobile and desktop room rows both carry the type chip', () => {
 });
 
 test('the chip has a tone for each of the three room kinds', () => {
-  const css = read('src/dashboard/cv6next/cv6.css');
+  const css = read('src/dashboard/cv6next/cv6.css') + read('src/dashboard/cv6next/cv6-base.css');
   for (const kind of ['project', 'mission', 'agent']) {
     assert.match(css, new RegExp(`\\.tag-pill\\.is-${kind}\\s*\\{`), `no tone for ${kind}`);
   }
@@ -118,7 +118,10 @@ test('the shaper emits the chip data for every kind', () => {
   assert.match(src, /recentTypeKey = \(r\) => \(r\.kind === 'project' \? 'project' : r\.kind === 'mission' \? 'mission' : 'agent'\)/);
   assert.match(src, /RECENT_TYPE_WORD = \{ project: 'Project', mission: 'Mission', agent: 'Agent' \}/);
   assert.match(src, /type: recentTypeKey\(r\)/);
-  assert.match(src, /typeLabel: RECENT_TYPE_WORD\[recentTypeKey\(r\)\]/);
+  assert.match(src, /typeLabel: r\.kind === 'mission'[\s\S]{0,180}?`\$\{r\.sub\} · Mission`/,
+    'same-named missions must carry their parent project in the chip');
+  assert.match(src, /: RECENT_TYPE_WORD\[recentTypeKey\(r\)\]/,
+    'every non-mission room and an unqualified mission need a kind label');
 });
 
 // ── §4 Deep-link name map ────────────────────────────────────────────────────
@@ -142,4 +145,42 @@ test('native still answers every route the map names', () => {
     assert.match(router, new RegExp(`case "${host}"`), `native lost corner://${host}`);
   }
   assert.match(router, /"organize", "files"/);
+});
+
+test('desktop room taps are not reparented before their click event', () => {
+  const src = read('src/dashboard/cv6next/useRoomSwipeArchive.js');
+  const pointerDown = src.slice(src.indexOf('const onPointerDown ='), src.indexOf('const onPointerMove ='));
+  const pointerMove = src.slice(src.indexOf('const onPointerMove ='), src.indexOf('const onPointerUp ='));
+
+  assert.doesNotMatch(pointerDown, /ensureStructure\(/, 'pointerdown DOM surgery cancels Chromium room clicks');
+  assert.match(pointerMove, /isDragging = true;[\s\S]{0,240}?ensureStructure\(active\.row\)/,
+    'swipe wrapping must wait until horizontal drag intent is proven');
+  assert.match(src, /if \(!isDragging\) \{ active = null; return; \}[\s\S]{0,160}?const \{ wrap, inner, target \} = active;/,
+    'plain taps must return before code assumes a swipe wrapper exists');
+});
+
+test('desktop rooms own the remaining viewport and browser history', () => {
+  const shell = read('src/dashboard/cv6next/CornerCV6.jsx');
+  const lifecycle = read('src/dashboard/cv6next/ChatLifecycle.jsx');
+  const navCss = read('src/dashboard/cv6next/cv6-nav.css');
+
+  // `const [history, setHistory]` is local navigation state. Calling bare
+  // history.pushState therefore throws; only the browser object is valid here.
+  assert.doesNotMatch(shell, /(?<!window\.)history\.pushState/);
+  assert.match(shell, /window\.history\.pushState\(\{ room: roomColumnKey\(room\) \}/);
+  assert.match(shell, /window\.history\.back\(\)/);
+  assert.match(shell, /column\.type !== 'chat'/,
+    'browser Back to Home must unmount chat columns, not only change the URL');
+  assert.match(shell, /let roomObj = r\.roomObj \|\| null/,
+    'a recent-row click must preserve the exact Convex room identity');
+  assert.match(shell, /for \(const key of \['client', 'classic', 'convex'\]\)/,
+    'canonical room routes must preserve tenant and data-plane switches');
+  assert.match(shell, /isDesktop && column\.type !== 'chat'/,
+    'a full-width chat must not expose a dead Widen control');
+  assert.match(shell, /<Chat[\s\S]{0,500}?onClose=\{\(\) => returnFromRoomColumn\(column\.id\)\}/,
+    'visible room close/back must unwind the authored browser history entry');
+
+  assert.match(navCss, /\.cv6-workspace-canvas:not\(\[data-column-count="0"\]\) \.cv6-workspace-column\[data-column-active="1"\][\s\S]{0,180}?display:flex;[\s\S]{0,80}?flex:1 1 auto;[\s\S]{0,80}?width:auto;/,
+    'the one active desktop destination must own all space after the 340px rail');
+  assert.match(lifecycle, /aria-label="Back to rooms"/);
 });

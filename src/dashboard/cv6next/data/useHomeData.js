@@ -20,7 +20,7 @@ import { isRoomActivityNoise, roomPreviewLine } from './presentationClean.js';
 import { fetchRoomActivity } from './roomActivity.js';
 import { prefetchThread } from './useRoomThread.js';
 import { convexPlaneActive } from './convexClient.js';
-import { useConvexRail } from './convexRooms.js';
+import { refreshConvexRooms, useConvexRail } from './convexRooms.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
 
@@ -428,10 +428,11 @@ export function useHome() {
     // Convex plane: ONLY the room lists swap (agents/projects/recent/total) —
     // catchUp/missionActivity and every other surface keep their Supabase shape.
     // Readiness comes from the Convex rooms fetch, not the Supabase pipe (which
-    // may never resolve on a local no-Supabase build); a failed fetch is an
-    // honest empty rail, never a spinner that spins forever.
+    // may never resolve on a local no-Supabase build). A first-load failure is
+    // an error, while a later failure keeps the last verified directory visible.
     if (!convexRail) return base;
-    const cx = convexRail.status === 'ready' ? convexRail.shaped : null;
+    const canShowRooms = ['ready', 'refreshing', 'stale'].includes(convexRail.status);
+    const cx = canShowRooms ? convexRail.shaped : null;
     const empty = []; empty.count = 0;
     const data = {
       ...base.data,
@@ -440,10 +441,10 @@ export function useHome() {
       recent: cx ? cx.recent : empty,
       rooms: { total: cx ? cx.total : 0 },
     };
-    const state = convexRail.status === 'ready'
+    const state = canShowRooms
       ? (data.recent.length ? 'ready' : 'empty')
-      : (convexRail.status === 'error' ? 'empty' : 'loading');
-    return { state, data, convexPlane: true };
+      : (convexRail.status === 'error' ? 'error' : 'loading');
+    return { state, data, convexPlane: true, railStatus: convexRail.status };
   }, [agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms, worldId, convexRail]);
 
   // Prefetch top 5 recent rooms' threads (#6)
@@ -469,7 +470,13 @@ export function useHome() {
   const stillLoadingCounts = agents == null || projectRooms == null;
   const loading = (supabase && status === 'loading') || (supabase && !worldId) || stillLoadingCounts || (agents == null && projectRooms == null && inboxItems == null);
   // Convex plane: shaped.state already carries the Convex readiness (see the memo).
-  if (shaped.convexPlane) return { state: shaped.state, data: shaped.data, worldId };
+  if (shaped.convexPlane) return {
+    state: shaped.state,
+    data: shaped.data,
+    worldId,
+    railStatus: shaped.railStatus,
+    reloadRooms: refreshConvexRooms,
+  };
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
 
@@ -522,11 +529,40 @@ export function shapeChatList({ agents = [], projectRooms = [], inboxItems = [],
 export function useChatList() {
   const { status, worldId } = useTenantContext();
   const { agents, projectRooms, inboxItems } = useDataContext();
-  const shaped = useMemo(() => shapeChatList({ agents, projectRooms, inboxItems, worldId }), [agents, projectRooms, inboxItems, worldId]);
+  // Search and the mobile room directory must read the same Convex room plane as
+  // Home. Leaving this hook on the legacy arrays made ⌘K appear functional while
+  // it could only find three agents and none of the 323 visible rooms.
+  const convexRail = useConvexRail(worldId);
+  const shaped = useMemo(() => {
+    const base = shapeChatList({ agents, projectRooms, inboxItems, worldId });
+    if (!convexRail) return base;
+    const canShowRooms = ['ready', 'refreshing', 'stale'].includes(convexRail.status);
+    const cx = canShowRooms ? convexRail.shaped : null;
+    const empty = []; empty.count = 0;
+    const agentRows = cx ? cx.agents.map((agent) => ({
+      ...agent,
+      status: agent.status || 'ready',
+      statusLabel: agent.statusLabel || 'READY',
+      snippet: agent.snippet || '',
+      time: agent.time || '',
+    })) : empty;
+    const projectRows = cx ? cx.projects : empty;
+    const recentRows = cx ? cx.recent : empty;
+    agentRows.count = agentRows.length;
+    projectRows.count = projectRows.length;
+    return {
+      state: canShowRooms
+        ? ((agentRows.length || projectRows.length) ? 'ready' : 'empty')
+        : (convexRail.status === 'error' ? 'error' : 'loading'),
+      data: { ...base.data, agents: agentRows, projects: projectRows, recent: recentRows },
+      convexPlane: true,
+    };
+  }, [agents, projectRooms, inboxItems, worldId, convexRail]);
   // Same DEF-2 null-check fix applied to the chat-list hook. Both supabase-only
   // clauses stay gated behind `supabase &&` so local no-Supabase mode never blocks
   // on an auth-derived worldId (the branch's local-mode contract holds).
   const loading = (supabase && status === 'loading') || (supabase && !worldId) || (agents == null && projectRooms == null && inboxItems == null);
+  if (shaped.convexPlane) return { state: shaped.state, data: shaped.data, worldId };
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
 

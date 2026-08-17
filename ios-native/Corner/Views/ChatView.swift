@@ -87,12 +87,6 @@ struct ChatView: View {
     @State private var clearBusy = false
     @State private var clearFailed = false
 
-    // ── Composer collapse → FAB (composer extras R6) ──────────────────────────
-    // Composer starts open; collapses 120ms after a successful send.
-    // FAB (pencil icon) taps to re-expand and focus. Resets on room navigation.
-    @State private var composerCollapsed = false
-    @State private var collapseWorkItem: DispatchWorkItem? = nil
-
     // ── Checklist panel (R11) ────────────────────────────────────────────────
     // When checklistOpen, the input shell is replaced by RoomChecklistPanelView.
     // Mirrors web's checklistOpen state in Cv6InputBar: the composer card stays
@@ -107,6 +101,10 @@ struct ChatView: View {
     @State private var distanceFromBottom: CGFloat = 0
     @State private var scrollViewportHeight: CGFloat = 0
     @State private var showJump = false
+    /// Snapshot the read receipt before this room marks itself read. It pins the one
+    /// "New" boundary for this visit even as live receipts advance underneath it.
+    @State private var readCutoffOnOpen: Double?
+    @State private var capturedReadCutoff = false
 
     /// Computed ONCE per thread render and handed down to every bubble, rather than each
     /// bubble subscribing to the review store itself.
@@ -115,6 +113,8 @@ struct ChatView: View {
     init(room: Room) {
         _model = StateObject(wrappedValue: ChatViewModel(room: room))
     }
+
+    private var draftStorageKey: String { "chatDraft.\(model.room.roomID)" }
 
     var body: some View {
         messageList
@@ -133,13 +133,7 @@ struct ChatView: View {
                     if !isSearching, let notice = model.stopNotice {
                         stopNoticeStrip(notice)
                     }
-                    // Collapse: 0-height clear placeholder keeps the thread from
-                    // resizing when we swap composer ↔ nothing.
-                    if composerCollapsed {
-                        Color.clear.frame(height: 0)
-                    } else {
-                        composer
-                    }
+                    composer
                 }
                 // Interruptible spring (iOS 17 model): the card can retarget
                 // mid-flight when a turn ends the moment another begins.
@@ -165,35 +159,14 @@ struct ChatView: View {
             .safeAreaInset(edge: .top, spacing: 0) {
                 if isSearching { searchBar }
             }
-            // ── FAB — appears when the composer is collapsed ─────────────────
-            .overlay(alignment: .bottomTrailing) {
-                if composerCollapsed {
-                    Button {
-                        expandComposer()
-                    } label: {
-                        ZStack {
-                            Circle()
-                                .fill(Theme.accent)
-                                .frame(width: 52, height: 52)
-                                .shadow(color: .black.opacity(0.45), radius: 10, y: 5)
-                            Image(systemName: "pencil")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(Color.white)
-                        }
-                        .frame(width: 52, height: 52)
-                    }
-                    .padding(.trailing, Theme.s4)
-                    .safeAreaPadding(.bottom, Theme.s4)
-                    .accessibilityLabel("Open composer — type a message")
-                    .transition(.scale(scale: 0.6).combined(with: .opacity))
-                }
-            }
-            .animation(.spring(response: 0.28, dampingFraction: 0.72), value: composerCollapsed)
             .groundBackground()
+            .accessibilityIdentifier("chat-screen")
             // Custom title: avatar + room name + live status.
             // Empty string keeps the back-button chevron but clears the default label.
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Theme.ground, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 // ── Principal: avatar + room name + live status ──────────────
                 ToolbarItem(placement: .principal) {
@@ -280,15 +253,28 @@ struct ChatView: View {
                 Text("Nothing is deleted — messages stay in History. The agent will receive a scoped reset.")
             }
             .onAppear {
+                router.remember(model.room)
                 model.start()
                 // The waiting set marks files inside the thread too, so it loads with the
                 // room rather than only when the review screen is opened.
                 Task { await review.load() }
                 Task { await model.loadModelPreference() }
                 Task { await model.loadRoomAgentPreference() }
+                // Capture the prior receipt before advancing it; the transcript uses
+                // this stable value to draw the one "New" boundary for this visit.
+                if !capturedReadCutoff {
+                    let previous = ReadStateStore.shared.lastRead(for: model.room.roomID)
+                    readCutoffOnOpen = previous > 0 ? previous : nil
+                    capturedReadCutoff = true
+                }
+                if model.draft.isEmpty,
+                   let savedDraft = UserDefaults.standard.string(forKey: draftStorageKey) {
+                    model.draft = savedDraft
+                }
                 // Stamp the per-room read time so the home dot clears immediately.
                 let now = Date().timeIntervalSince1970 * 1000
                 ReadStateStore.shared.markRead(roomID: model.room.roomID, ts: now)
+                PushService.shared.markRoomRead(model.room.roomID)
                 // And tell the server, so the badge clears on the web too rather than
                 // this phone being the only place that knows the room was read.
                 Task { await ReadStateStore.shared.markReadRemote(roomID: model.room.roomID, at: now) }
@@ -313,6 +299,11 @@ struct ChatView: View {
             // (i.e. a paste rather than typing), extract the inserted text and convert
             // it to a chip rather than filling the field with a wall of text.
             .onChange(of: model.draft) { old, new in
+                if new.isEmpty {
+                    UserDefaults.standard.removeObject(forKey: draftStorageKey)
+                } else {
+                    UserDefaults.standard.set(new, forKey: draftStorageKey)
+                }
                 guard new.count - old.count > 50 else { return } // cheap early exit
                 guard let inserted = extractInserted(old: old, new: new) else { return }
                 guard PasteChip.shouldChip(inserted) else { return }
@@ -321,29 +312,6 @@ struct ChatView: View {
                 pasteChips.append(chip)
                 model.draft = old
             }
-    }
-
-    // MARK: - Composer collapse helpers
-
-    private func expandComposer() {
-        withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
-            composerCollapsed = false
-        }
-        // Focus after the spring animation completes so the keyboard opens cleanly.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
-            composerFocused = true
-        }
-    }
-
-    private func scheduleCollapse() {
-        collapseWorkItem?.cancel()
-        let item = DispatchWorkItem {
-            withAnimation(.easeOut(duration: 0.2)) {
-                composerCollapsed = true
-            }
-        }
-        collapseWorkItem = item
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12, execute: item)
     }
 
     // MARK: - /clear helpers
@@ -596,6 +564,12 @@ struct ChatView: View {
                             centeredNotice("No messages match \"\(searchQuery)\"", systemImage: "magnifyingglass")
                         } else {
                             ForEach(Array(thread.enumerated()), id: \.element.id) { index, item in
+                                if opensDay(at: index, in: thread), let date = threadDate(item) {
+                                    dayDivider(for: date)
+                                }
+                                if opensUnread(at: index, in: thread) {
+                                    unreadDivider
+                                }
                                 switch item {
                                 case .message(let row):
                                     MessageBubbleView(
@@ -761,6 +735,70 @@ struct ChatView: View {
         return authorKey(thread[index - 1]) != authorKey(thread[index])
     }
 
+    private func threadDate(_ item: ThreadItem) -> Date? {
+        switch item {
+        case .message(let row): return row.date
+        case .outbox(let pending): return pending.createdAt
+        }
+    }
+
+    private var phoenixCalendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "America/Phoenix") ?? .current
+        return calendar
+    }
+
+    private func opensDay(at index: Int, in thread: [ThreadItem]) -> Bool {
+        guard let current = threadDate(thread[index]) else { return false }
+        guard index > 0, let previous = threadDate(thread[index - 1]) else { return true }
+        return !phoenixCalendar.isDate(current, inSameDayAs: previous)
+    }
+
+    private func opensUnread(at index: Int, in thread: [ThreadItem]) -> Bool {
+        guard let cutoff = readCutoffOnOpen,
+              let current = threadDate(thread[index]),
+              current.timeIntervalSince1970 * 1000 > cutoff
+        else { return false }
+        guard index > 0, let previous = threadDate(thread[index - 1]) else { return true }
+        return previous.timeIntervalSince1970 * 1000 <= cutoff
+    }
+
+    private func dayDivider(for date: Date) -> some View {
+        let calendar = phoenixCalendar
+        let label: String
+        if calendar.isDateInToday(date) {
+            label = "Today"
+        } else if calendar.isDateInYesterday(date) {
+            label = "Yesterday"
+        } else {
+            let formatter = DateFormatter()
+            formatter.timeZone = calendar.timeZone
+            formatter.dateFormat = "EEEE, MMM d"
+            label = formatter.string(from: date)
+        }
+        return HStack(spacing: Theme.s3) {
+            Rectangle().fill(Theme.hairline).frame(height: 1)
+            Text(label)
+                .font(.hkCaption.weight(.semibold))
+                .foregroundStyle(Theme.inkSoft)
+            Rectangle().fill(Theme.hairline).frame(height: 1)
+        }
+        .padding(.vertical, Theme.s2)
+        .accessibilityLabel("Messages from \(label)")
+    }
+
+    private var unreadDivider: some View {
+        HStack(spacing: Theme.s3) {
+            Rectangle().fill(Theme.accent).frame(height: 1)
+            Text("New")
+                .font(.hkCaption.weight(.bold))
+                .foregroundStyle(Theme.accent)
+            Rectangle().fill(Theme.accent).frame(height: 1)
+        }
+        .padding(.vertical, Theme.s2)
+        .accessibilityLabel("New messages")
+    }
+
 
     // MARK: - Turn indicator
 
@@ -854,7 +892,8 @@ struct ChatView: View {
         return !trimmed.isEmpty || !model.staged.isEmpty || !pasteChips.isEmpty
     }
 
-    /// Wrapped send: appends paste chip text then fires model.send(), then collapses.
+    /// Wrapped send: appends paste chip text then fires model.send(). The composer stays
+    /// present so one send never hides the primary action for the next.
     private func sendWithChips() {
         let trimmed = model.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         // /clear detection — arm the confirm bar instead of sending.
@@ -870,7 +909,6 @@ struct ChatView: View {
             pasteChips = []
         }
         model.send()
-        scheduleCollapse()
     }
 
     // MARK: - Checklist helpers
@@ -882,7 +920,7 @@ struct ChatView: View {
         guard !trimmed.isEmpty else { return }
         model.draft = trimmed
         model.send()
-        // No scheduleCollapse(): checklist panel stays open after play.
+        // The checklist panel stays open after play.
     }
 
     private var composer: some View {

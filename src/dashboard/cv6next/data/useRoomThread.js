@@ -13,6 +13,7 @@ import { useDataContext } from '../providers/DataContext.jsx';
 import { deriveRoomStatus, deriveTurnState } from './roomStatus.js';
 import { convexPlaneActive, convexQuery, convexMutation, convexWorldId } from './convexClient.js';
 import { refreshConvexRooms, convexUnreadSupported } from './convexRooms.js';
+import { convexViewerIdentity, convexReadIdentity } from './convexIdentity.js';
 
 const TINTS = ['violet', 'pink', 'teal', 'lime', 'amber', 'accent'];
 function initials(name) {
@@ -249,15 +250,31 @@ function roomFingerprint(worldId, room) {
 // dedupe on that pair; _id would keep both and double-render the thread.
 function convexRowsToThreadRows(value) {
   const rows = [];
-  const seen = new Set();
-  for (const m of (Array.isArray(value) ? value : [])) {
+  const indexByKey = new Map();
+  const sourceRows = Array.isArray(value) ? value : [];
+  const sourceById = new Map(sourceRows.filter((row) => row?._id).map((row) => [String(row._id), row]));
+  for (const m of sourceRows) {
     if (!m || typeof m !== 'object') continue;
     // Imported rows can lack `role`; an agentSlug marks the agent's side.
     const role = m.role || (m.agentSlug ? 'assistant' : 'user');
     const key = `${m.createdAt}|${role}|${String(m.text || '').slice(0, 120)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    rows.push({
+    const replyMetadata = m.replyTo ? (() => {
+      const parent = sourceById.get(String(m.replyTo));
+      if (!parent) return null;
+      const parentRole = parent.role || (parent.agentSlug ? 'assistant' : 'user');
+      return { reply_to: {
+        message_id: String(m.replyTo),
+        sender: parentRole === 'user' ? (parent.userName || 'You') : titleForAgent(parent.agentSlug || 'corner'),
+        snippet: String(parent.text || '').replace(/\s+/g, ' ').trim().slice(0, 140),
+      } };
+    })() : null;
+    const metadata = {
+      ...(replyMetadata || {}),
+      ...(Array.isArray(m.attachments) && m.attachments.length ? { attachments: m.attachments } : {}),
+      ...(Array.isArray(m.blocks) && m.blocks.length ? { blocks: m.blocks } : {}),
+      ...(Array.isArray(m.reactions) && m.reactions.length ? { reactions: m.reactions } : {}),
+    };
+    const mapped = {
       id: String(m._id || ''),
       text: m.text || '',
       role,
@@ -265,10 +282,20 @@ function convexRowsToThreadRows(value) {
       user_name: role === 'user' ? (m.userName || '') : '',
       timestamp: m.createdAt ? new Date(m.createdAt).toISOString() : null,
       source: m.source || '',
-      // No metadata mapping yet: Convex `blocks` are not the CV6 block schema,
-      // and rendering an unknown shape would be worse than rendering the text.
-      metadata: null,
-    });
+      reply_to: m.replyTo ? String(m.replyTo) : null,
+      // Convex stores a real document relationship. Shape a small preview from
+      // the same bounded thread window so replies stay useful after reload.
+      metadata: Object.keys(metadata).length ? metadata : null,
+    };
+    const existingIndex = indexByKey.get(key);
+    if (existingIndex !== undefined) {
+      // Imported/native twins can differ only because one payload was clipped.
+      // Keep the fuller truth, independent of which sibling room was read first.
+      if (mapped.text.length > rows[existingIndex].text.length) rows[existingIndex] = mapped;
+      continue;
+    }
+    indexByKey.set(key, rows.length);
+    rows.push(mapped);
   }
   return rows;
 }
@@ -604,8 +631,13 @@ class RoomThreadEngine {
   markConvexRead() {
     if (this.convexReadMarked || !convexUnreadSupported()) return;
     this.convexReadMarked = true;
-    convexMutation('rooms:markRead', { roomId: this.canonicalRoomKey(), worldId: convexWorldId(this.worldId) })
-      .then(() => refreshConvexRooms())
+    convexViewerIdentity()
+      .then((viewer) => {
+        const userId = convexReadIdentity(viewer);
+        if (!userId) return null;
+        return convexMutation('reads:markRead', { roomId: this.canonicalRoomKey(), userId, at: Date.now() });
+      })
+      .then((result) => { if (result) refreshConvexRooms(); })
       .catch(() => { /* no read-state backend / renamed mutation: stay silent */ });
   }
 
@@ -811,11 +843,14 @@ class RoomThreadEngine {
         blocks: msgBlocks,
         chips: msgChips, // tappable suggestion chips from metadata.chips
         linkCards, // [{url, summary}] → ResultLinkCards on every chat surface
+        replyTo: m.reply_to || m.metadata?.reply_to?.message_id || '',
+        replyPreview: m.metadata?.reply_to || null,
+        reactions: Array.isArray(m.metadata?.reactions) ? m.metadata.reactions : [],
       };
     }).filter((m) => m.text || m.isFile || m.blocks || m.attachments?.length || m.linkCards?.length);
     // Only re-commit when the thread actually changed. A no-op reconcile keeps the
     // existing array ref, so the list doesn't re-render and the scroll holds its place.
-    const sig = msgs.map((m) => `${m.ts}|${m.text}|${m.attachments?.length || 0}|${m.blocks ? m.blocks.length : 0}|${m.linkCards?.length || 0}`).join('~');
+    const sig = msgs.map((m) => `${m.ts}|${m.text}|${m.attachments?.length || 0}|${m.blocks ? m.blocks.length : 0}|${m.linkCards?.length || 0}|${m.replyTo || ''}|${(m.reactions || []).map((r) => `${r.emoji}:${r.actor || (r.self ? 'self' : '')}`).join(',')}`).join('~');
     const patch = { archivedMessages: archived, blocks: liveBlocks };
     if (sig !== this.sig) { this.sig = sig; patch.messages = msgs; }
     patch.status = msgs.length ? 'ready' : 'empty';
@@ -1201,6 +1236,8 @@ class RoomThreadEngine {
       agentInitials: initials('You'), agentName: 'You', agentTint: 'accent', isUser: true,
       text: body, time: hhmm(now.toISOString()), ts: now.toISOString(),
       isFile: false, fileName: '', attachmentUrl: '', fileMime: '', fileSize: 0, blocks: null,
+      replyTo: options?.replyTo ? String(options.replyTo) : '',
+      replyPreview: options?.metadata?.reply_to || null,
     }]);
     const interactionMode = options?.interactionMode === 'plan' ? 'plan' : 'work';
     // Project and mission rooms keep one shared thread, but the room's saved
@@ -1222,6 +1259,7 @@ class RoomThreadEngine {
       : room.isProject
         ? { client_id: worldId, agent: roomAgent, project: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode, ...mergedMeta } }
         : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode, ...mergedMeta } };
+    if (options?.replyTo) payload.reply_to = String(options.replyTo);
     // Show "working" the instant you send, so the thread never looks dead.
     this.sawLiveSteps = false;
     this.lastSentTs = now.getTime();
@@ -1261,12 +1299,18 @@ class RoomThreadEngine {
     // "Not sent", with a one-tap retry.
     if (this.convex) {
       try {
+        const viewer = await convexViewerIdentity();
         const id = await convexMutation('messages:send', {
           roomId: this.canonicalRoomKey(),
           text: body,
           role: 'user',
           clientId: convexWorldId(worldId),
           source: 'cv6-dashboard',
+          userId: viewer.userId,
+          userEmail: viewer.userEmail,
+          userName: viewer.userName,
+          metadata: mergedMeta,
+          ...(options?.replyTo ? { replyTo: String(options.replyTo) } : {}),
         });
         if (id) {
           this.commit({ lastSentId: String(id) });

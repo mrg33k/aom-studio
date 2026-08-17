@@ -421,7 +421,7 @@ final class ChatViewModel: ObservableObject {
 
     /// Convex-backed send: mirrors web `convex/messages.ts:send` and `App.tsx:handleSend`.
     /// Web shape: { roomId: string, text: string, role: "user", userId, userName, clientId, source, metadata }
-    func sendMessage(roomId: String, text: String) async throws {
+    func sendMessage(roomId: String, text: String, attachments: [Attachment] = []) async throws {
         let concreteAPI = CornerAPI.shared
         let world = concreteAPI.world ?? "aom"
         // Prefer real session identity when available; fall back to the local anon shape the web preview uses.
@@ -434,12 +434,11 @@ final class ChatViewModel: ObservableObject {
             UserDefaults.standard.set(fresh, forKey: key)
             return fresh
         }()
-        let userName: String = {
+        let userName: String? = {
             if let meta = concreteAPI.session?.user.userMetadata,
-               let n = (meta["name"] as? String ?? meta["full_name"] as? String ?? meta["user_name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+               let n = (meta["name"]?.stringValue ?? meta["full_name"]?.stringValue ?? meta["user_name"]?.stringValue)?.trimmingCharacters(in: .whitespacesAndNewlines),
                !n.isEmpty { return n }
-            if let email = concreteAPI.session?.user.email, !email.isEmpty { return email }
-            return "iOS"
+            return concreteAPI.session == nil ? "iOS" : nil
         }()
         var args: [String: Any] = [
             "roomId": roomId,
@@ -448,12 +447,20 @@ final class ChatViewModel: ObservableObject {
             "clientId": world,
             "source": Config.messageSource,
             "userId": userId,
-            "userName": userName,
         ]
-        // Preserve work/plan intent the same way the web does (metadata.interaction_mode)
-        if !chatMode.isEmpty {
-            args["metadata"] = ["interaction_mode": chatMode]
+        if let email = concreteAPI.session?.user.email, !email.isEmpty { args["userEmail"] = email }
+        if let userName { args["userName"] = userName }
+        // Preserve work/plan intent and staged files in the same metadata shape
+        // the web and the historical Supabase source use. messages:send reduces
+        // this to the schema-safe direct `attachments` field.
+        var metadata: [String: Any] = [:]
+        if !chatMode.isEmpty { metadata["interaction_mode"] = chatMode }
+        if !attachments.isEmpty {
+            metadata["attachments"] = attachments.map {
+                ["url": $0.url, "name": $0.name, "mime": $0.mime, "size": $0.size]
+            }
         }
+        if !metadata.isEmpty { args["metadata"] = metadata }
         // Real Convex deployment uses `messages:send`; keep the legacy `messages:sendMessage`
         // as a fallback so older preview deployments don't brick.
         do {
@@ -501,8 +508,7 @@ final class ChatViewModel: ObservableObject {
     func load() async {
         do {
             let fetched: [MessageRow]
-            let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-            if Config.useConvex && !isTesting {
+            if Config.useConvex && !Config.suppressLiveBackendsForTests {
                 // Convex is the source of truth — same as web `useQuery(api.messages.list)`.
                 // Use canonical roomId (not document _id) — the Convex `messages` table is
                 // indexed by the canonical string like "aom:project:xxx".
@@ -543,10 +549,9 @@ final class ChatViewModel: ObservableObject {
     func catchUp() async {
         let anchor = newestKnownID
         let hadRows = !rows.isEmpty
-        let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
         do {
             var fetched: [MessageRow]
-            if Config.useConvex && !isTesting {
+            if Config.useConvex && !Config.suppressLiveBackendsForTests {
                 // Same source of truth as load() — catching up from Supabase would
                 // replace a live Convex thread with stale rows on every foreground.
                 let canonicalID = room.roomID
@@ -1353,9 +1358,8 @@ final class ChatViewModel: ObservableObject {
                 // Convex path: when enabled, Convex is the source of truth. Failures surface
                 // to the outer catch (message marked failed) instead of silently falling
                 // through to Supabase — a dead backend must not look like a working app.
-                let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-                if Config.useConvex && !isTesting {
-                    try await self.sendMessage(roomId: self.room.roomID, text: item.text)
+                if Config.useConvex && !Config.suppressLiveBackendsForTests {
+                    try await self.sendMessage(roomId: self.room.roomID, text: item.text, attachments: item.attachments)
                     self.turn = .working(detail: nil)
                     self.lastTurnActivity = Date()
                     if self.turnStartedAt == nil { self.turnStartedAt = Date() }

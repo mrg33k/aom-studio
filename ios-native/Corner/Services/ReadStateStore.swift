@@ -56,10 +56,8 @@ final class ReadStateStore: ObservableObject {
     /// Tell the SERVER the room has been read, so the badge clears on every surface
     /// instead of only on this phone.
     ///
-    /// Silent by design. `rooms:markRead` does not exist on the deployment yet; until it
-    /// lands this is a no-op and the local stamp above remains the whole answer. A read
-    /// receipt is not worth an error in the user's face, and the fallback is already
-    /// correct — so the failure path here is deliberately empty.
+    /// Silent by design. A read receipt is not worth an error in the user's face,
+    /// and the device-local stamp above remains the offline fallback.
     func markReadRemote(roomID: String, at ts: Double) async {
         guard Config.useConvex, !roomID.isEmpty else { return }
         // At most one receipt per room per 30s. Read state is not a live feed, and a
@@ -67,7 +65,7 @@ final class ReadStateStore: ObservableObject {
         // database I/O than the messages themselves.
         if let last = lastRemote[roomID], ts - last < 30_000 { return }
         lastRemote[roomID] = ts
-        try? await ConvexService.shared.mutation("rooms:markRead", args: [
+        try? await ConvexService.shared.mutation("reads:markRead", args: [
             "roomId": roomID,
             "userId": Self.userIdentity(),
             "lastReadAt": ts,
@@ -77,6 +75,8 @@ final class ReadStateStore: ObservableObject {
     /// The same identity `messages:send` writes, so a read receipt and a message from
     /// this device belong to the same user server-side.
     private static func userIdentity() -> String {
+        // Convex users are indexed by email; the Supabase UUID is not a Convex id.
+        if let email = CornerAPI.shared.session?.user.email, !email.isEmpty { return email }
         if let uid = CornerAPI.shared.session?.user.id.uuidString, !uid.isEmpty { return uid }
         let key = "convex.anonUserId"
         if let saved = UserDefaults.standard.string(forKey: key), !saved.isEmpty { return saved }

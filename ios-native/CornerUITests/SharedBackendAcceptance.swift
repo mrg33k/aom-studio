@@ -64,9 +64,17 @@ final class SharedBackendAcceptance: XCTestCase {
         app.textFields["chat-composer"].firstMatch
     }
 
+    private var chatScreen: XCUIElement {
+        app.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch
+    }
+
+    private var roomListScreen: XCUIElement {
+        app.descendants(matching: .any).matching(identifier: "room-list-screen").firstMatch
+    }
+
     /// True only when a conversation is genuinely on screen.
     private var inAConversation: Bool {
-        chatComposer.exists
+        chatScreen.exists
     }
 
     private func waitForText(_ needle: String, timeout: TimeInterval) -> Bool {
@@ -90,16 +98,12 @@ final class SharedBackendAcceptance: XCTestCase {
     /// `Button`, so it comes through as a BUTTON, not an otherElement. Querying one type
     /// reported "no room rows" on a home screen that was plainly full of them.
     private func roomRow(timeout: TimeInterval) -> XCUIElement? {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            for q in [app.buttons, app.otherElements, app.cells, app.staticTexts] {
-                let e = q["room-row"].firstMatch
-                if e.exists { return e }
-            }
-            let any = app.descendants(matching: .any)["room-row"].firstMatch
-            if any.exists { return any }
-            Thread.sleep(forTimeInterval: 1.0)
-        }
+        // One identifier query is materially cheaper than snapshotting every button,
+        // cell, static text, and other element in a 300-room SwiftUI list once per
+        // second. The broad loop could keep the app's accessibility main run loop
+        // busy for 30s before the test ever reached a room.
+        let row = app.descendants(matching: .any).matching(identifier: "room-row").firstMatch
+        if row.waitForExistence(timeout: timeout) { return row }
         return nil
     }
 
@@ -109,12 +113,46 @@ final class SharedBackendAcceptance: XCTestCase {
             return
         }
         row.tap()
-        XCTAssertTrue(chatComposer.waitForExistence(timeout: 30),
-                      "tapped a room but no conversation composer appeared — still on the home screen")
+        XCTAssertTrue(chatScreen.waitForExistence(timeout: 30),
+                      "tapped a room but no conversation appeared — still on the home screen")
         XCTAssertTrue(inAConversation, "not in a conversation after tapping a room")
     }
 
     // MARK: - the acceptance run
+
+    /// The one-human Slack loop without creating test chatter: pick a room once,
+    /// cold-launch back into that same conversation, then use the native edge-back
+    /// gesture to return to the room rail. This catches a shell-first launch, a
+    /// custom-button-only navigation stack, and restoration that remembers a room
+    /// name but not the actual screen.
+    func test_roomSelectionRestoresAndNativeBackReturnsToRail() throws {
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+
+        // On a clean install, make the human room choice. On repeat runs the whole
+        // point of the contract is that launch is already inside the saved room.
+        if !inAConversation {
+            XCTAssertNotNil(roomRow(timeout: 30), "no room rows on the home screen")
+            try openFirstRoom()
+        }
+        shot("07-room-selected")
+
+        app.terminate()
+        XCTAssertTrue(app.wait(for: .notRunning, timeout: 30), "app did not terminate")
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not relaunch")
+        XCTAssertTrue(chatScreen.waitForExistence(timeout: 30),
+                      "cold relaunch returned to the room directory instead of the last conversation")
+        shot("08-room-restored")
+
+        // Exercise the system gesture, not the visible chevron.
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.01, dy: 0.5))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.82, dy: 0.5))
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .fast, thenHoldForDuration: 0)
+        XCTAssertTrue(roomListScreen.waitForExistence(timeout: 15),
+                      "native edge-back did not return to the room rail")
+        shot("09-native-back-to-rooms")
+    }
 
     func test_sendAMessageAndItSurvivesARelaunch() throws {
         app.launch()

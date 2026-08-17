@@ -15,7 +15,9 @@
 
 import { useSyncExternalStore, useEffect } from 'react';
 import { convexPlaneActive, convexQuery, convexWorldId } from './convexClient.js';
+import { convexViewerIdentity, convexReadIdentity } from './convexIdentity.js';
 import { roomPreviewLine } from './presentationClean.js';
+import { titleForAgent } from './agentTitles.js';
 
 // A preview is one line a person reads. lastMessage.text is a whole message BODY
 // (the live workspace carries one 5,011 characters long), so the Convex rail caps
@@ -67,7 +69,7 @@ export function convexUnreadSupported() { return unreadSupported; }
 //               unreadCount? }.
 export function shapeConvexRail(rooms, worldId) {
   const list = Array.isArray(rooms) ? rooms : [];
-  unreadSupported = list.some((r) => r && r.unreadCount !== undefined);
+  unreadSupported = list.some((r) => r && typeof r.unreadCount === 'number');
   const projectTitleBySlug = {};
   for (const r of list) {
     if (r.kind !== 'project') continue;
@@ -88,6 +90,10 @@ export function shapeConvexRail(rooms, worldId) {
     // SUPRV- correlation id. roomPreviewLine is the SAME pipeline the Supabase rail
     // runs (useHomeData's rowPreview), now named once so neither plane can ship half.
     const preview = roomPreviewLine(r.lastMessage?.text || '', { source: r.lastMessage?.source }, { max: PREVIEW_MAX });
+    // listRooms persists the last answering specialist on the room. Human turns do
+    // not yet persist a display name in that summary, so call them "Teammate" rather
+    // than lying with "You" or omitting attribution entirely.
+    const author = !preview ? '' : (r.lastMessage?.agentSlug ? titleForAgent(r.lastMessage.agentSlug) : 'Teammate');
     const name = r.title;
     // Unread, consumed only when the backend actually authors it (a per-room
     // readState + unreadCount is landing on the Convex API in a parallel lane).
@@ -95,7 +101,7 @@ export function shapeConvexRail(rooms, worldId) {
     // Present → the server's number is the only number this rail renders.
     const unreadCount = unreadCountOf(r);
     const base = {
-      key: `cx:${convexKey}`, id: '', kind: r.kind, name, ts, preview,
+      key: `cx:${convexKey}`, id: '', kind: r.kind, name, ts, preview, author,
       unread: unreadCount > 0, needsCount: unreadCount,
       initials: initials(name), tint: tintFor(name),
       age: relTime(ts), status: (Date.now() - ts) < 3600000 ? 'live' : 'ready',
@@ -107,7 +113,7 @@ export function shapeConvexRail(rooms, worldId) {
       const sub = projectTitleBySlug[projectSlug] || 'Mission';
       recent.push({
         ...base, id: missionSlug, missionSlug, project: projectSlug, sub,
-        roomObj: { id: missionSlug.split(':').pop(), name, initials: base.initials, isMission: true, missionSlug, projectSlug, status: 'ready', statusText: sub, convexKey },
+        roomObj: { id: missionSlug.split(':').pop(), name, initials: base.initials, isMission: true, missionSlug, projectSlug, status: 'ready', statusText: sub, convexKey, unreadCount },
       });
     } else if (r.kind === 'project') {
       const slug = legacyTail(r, worldId) || r.project || r._id;
@@ -117,14 +123,14 @@ export function shapeConvexRail(rooms, worldId) {
       });
       recent.push({
         ...base, id: slug, project: slug, sub: 'Project chat',
-        roomObj: { id: slug, name, initials: base.initials, isProject: true, status: 'ready', statusText: 'project chat', convexKey },
+        roomObj: { id: slug, name, initials: base.initials, isProject: true, status: 'ready', statusText: 'project chat', convexKey, unreadCount },
       });
     } else {
       const slug = legacyTail(r, worldId) || r.specialist || r._id;
       agents.push({ id: slug, name, status: 'idle', statusText: 'idle', initials: base.initials, needsCount: unreadCount });
       recent.push({
         ...base, id: slug, agent: slug, sub: 'Direct chat',
-        roomObj: { id: slug, name, initials: base.initials, status: 'ready', convexKey },
+        roomObj: { id: slug, name, initials: base.initials, status: 'ready', convexKey, unreadCount },
       });
     }
   }
@@ -160,16 +166,28 @@ let inFlight = false;
 function fetchRooms(worldId) {
   if (!worldId || inFlight) return;
   inFlight = true;
-  if (store.status === 'idle') { store = { ...store, status: 'loading', worldId }; emit(); }
-  convexQuery('rooms:listRooms', { worldId })
+  // A retry must visibly leave the error state, while a background refresh keeps
+  // the last real directory on screen. `shaped` is never replaced with an empty
+  // invention just because the network failed after one successful load.
+  const hasOfflineCopy = store.worldId === worldId && !!store.shaped;
+  store = { ...store, status: hasOfflineCopy ? 'refreshing' : 'loading', worldId };
+  emit();
+  convexViewerIdentity()
+    .then((viewer) => {
+      const userId = convexReadIdentity(viewer);
+      return convexQuery('rooms:listRooms', { worldId, ...(userId ? { userId } : {}) });
+    })
     .then((rooms) => {
       store = { status: 'ready', shaped: shapeConvexRail(rooms, worldId), worldId };
       emit();
     })
     .catch((err) => {
-      // Honest failure: an empty rail with an error status — never stale fakes.
+      // First load: a real error state. Later refresh: retain the last verified
+      // rooms and mark them stale so Home can say exactly what is happening.
       console.error('[convex] rooms:listRooms failed:', err);
-      store = { status: 'error', shaped: null, worldId };
+      store = hasOfflineCopy
+        ? { status: 'stale', shaped: store.shaped, worldId }
+        : { status: 'error', shaped: null, worldId };
       emit();
     })
     .finally(() => { inFlight = false; });

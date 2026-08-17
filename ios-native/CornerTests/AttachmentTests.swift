@@ -60,6 +60,22 @@ final class AttachmentTests: XCTestCase {
         XCTAssertTrue(parsed.isPure)
     }
 
+    /// Convex stores files directly on the message document, not under a
+    /// Supabase-style metadata object. MessageRow must bridge that field back
+    /// into the one parser every native file surface shares.
+    func testConvexDirectAttachmentsSurviveDecoding() throws {
+        let parsed = Attachment.parse(row: try row("""
+        {"_id":"convex-file","role":"assistant","agentSlug":"pixel",
+         "text":"Attached file: ipad13-chat.png",
+         "attachments":[{"url":"https://files.example/ipad13-chat.png","name":"ipad13-chat.png","mime":"image/png","size":9216}]}
+        """))
+        XCTAssertEqual(parsed.attachments.count, 1)
+        XCTAssertEqual(parsed.attachments.first?.name, "ipad13-chat.png")
+        XCTAssertEqual(parsed.attachments.first?.url, "https://files.example/ipad13-chat.png")
+        XCTAssertEqual(parsed.attachments.first?.kind, .photo)
+        XCTAssertTrue(parsed.isPure)
+    }
+
     /// Shape 4a with NO url lines. The names are real; the bytes are not reachable.
     /// The web deliberately stopped pointing the extra names at file 1's URL because
     /// that lied about what you were opening and dedup then swallowed the extra file.

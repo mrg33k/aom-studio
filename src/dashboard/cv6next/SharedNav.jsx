@@ -155,7 +155,7 @@ function ThemeCycle({ theme, onTheme, compact }) {
 }
 
 // --- DESKTOP: the top tool bar -------------------------------------------------
-export function DesktopNav({ current, onPick, onOpenCommandK, onOpenEmailColumn, onOpenWorkersColumn, onOpenProfile, onOpenAlerts, alertCount = 0, userInitials = 'P', badges = {}, theme, onTheme }) {
+export function DesktopNav({ current, onPick, onOpenCommandK, onOpenShortcuts, onOpenEmailColumn, onOpenWorkersColumn, onOpenProfile, onOpenAlerts, alertCount = 0, userInitials = 'P', badges = {}, theme, onTheme }) {
   return (
     <div className="topbar">
       <div className="tgreet" style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
@@ -191,6 +191,10 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenEmailColumn,
         ) : null}
         <button type="button" className={`ib${current === 'support' ? ' is-active' : ''}`} onClick={() => onOpenEmailColumn?.() || onPick?.('support')} aria-label="Open Email column" title="Open Email column"><Icon id="support" size={18} /></button>
         <button type="button" className="ib" onClick={() => onOpenCommandK?.()} aria-label="Search"><SearchGlyph /></button>
+        {onOpenShortcuts ? (
+          <button type="button" className="ib" onClick={onOpenShortcuts} aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)"
+            style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700 }}>?</button>
+        ) : null}
         {/* The bell: notification sound + phone notifications. The home template has
             always drawn one; the live shell never did, so the panel behind it had no
             way in until now (Patrik 2026-08-06). */}

@@ -35,6 +35,7 @@ final class PushService: NSObject, ObservableObject {
     /// "notifications are off because the server never got this device" instead of
     /// leaving the user to wonder why a granted permission produces no banners.
     @Published private(set) var registrationError: String?
+    @Published private(set) var badgeCount = 0
 
     /// Set from a notification tap; RootView routes on it and clears it. A target rather
     /// than a room since Stage 3: the app has four addressable surfaces and a push that
@@ -45,6 +46,7 @@ final class PushService: NSObject, ObservableObject {
     @Published var pendingFile: DeliveredFile?
 
     private var hasAskedThisLaunch = false
+    private var unreadByRoom: [String: Int] = [:]
 
     private override init() {
         super.init()
@@ -221,7 +223,42 @@ final class PushService: NSObject, ObservableObject {
     }
 
     func clearBadge() {
-        UNUserNotificationCenter.current().setBadgeCount(0) { _ in }
+        unreadByRoom = [:]
+        applyBadgeCount()
+    }
+
+    /// Reconcile the icon against the same room rows the rail renders. Exact server
+    /// counts win; an unscanned `hasUnread` contributes one (an honest lower bound),
+    /// and device-local receipts suppress stale server rows immediately.
+    func reconcileUnread(_ rooms: [RoomStore.RecentRoom]) {
+        var next: [String: Int] = [:]
+        for entry in rooms {
+            let roomID = entry.room.roomID
+            if ReadStateStore.shared.lastRead(for: roomID) >= entry.ts {
+                next[roomID] = 0
+            } else if let count = entry.unreadCount {
+                next[roomID] = max(0, count)
+            } else if entry.hasUnread == true {
+                next[roomID] = 1
+            } else if entry.hasUnread == false {
+                next[roomID] = 0
+            } else {
+                next[roomID] = entry.ts > 0 ? 1 : 0
+            }
+        }
+        unreadByRoom = next
+        applyBadgeCount()
+    }
+
+    /// Opening one room clears one room — never the whole app's unread state.
+    func markRoomRead(_ roomID: String) {
+        unreadByRoom[roomID] = 0
+        applyBadgeCount()
+    }
+
+    private func applyBadgeCount() {
+        badgeCount = min(999, unreadByRoom.values.reduce(0, +))
+        UNUserNotificationCenter.current().setBadgeCount(badgeCount) { _ in }
     }
 }
 
@@ -278,7 +315,9 @@ extension PushService: UNUserNotificationCenterDelegate {
             if response.actionIdentifier == PushService.openActionID {
                 PushService.shared.pendingFile = file
             }
-            PushService.shared.clearBadge()
+            if case .room(let link) = target {
+                PushService.shared.markRoomRead(link.roomID)
+            }
         }
     }
 }

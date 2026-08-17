@@ -79,13 +79,52 @@ const CornerVG = lazy(() => import('./dashboard/CornerVG.jsx'))
 // Every screen is a Claude Design fill-in template, mounted verbatim through the
 // template engine and fed real data. Nothing hand-drawn, nothing faked. Screens
 // fill in as Claude Design labels them. CV4 stays the fallback at ?cv4=1.
-const CornerCV6 = lazy(() => import('./dashboard/cv6next/CornerCV6.jsx'))
+const loadCornerCV6 = () => import('./dashboard/cv6next/CornerCV6.jsx')
+const CornerCV6 = lazy(loadCornerCV6)
+// Auth and the 1.1MB dashboard graph used to run serially: the chunk did not even
+// start until getSession finished. Warm the dashboard graph immediately on dashboard
+// routes so both waits overlap behind the same useful skeleton.
+if (typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard')) loadCornerCV6()
 
 // corner:gut-pruning-ship — CV6 is now the ONLY dashboard surface.
 // CV3/CV4 sticky escape hatch removed (pruning Round 3). /dashboard always
 // renders CornerCV6 via DataProvider + CommandProvider.
 function DashboardSurface() {
   return <TenantProvider><WorldOverrideBanner /><DataProvider><CommandProvider><AirPodsProvider><CornerCV6 /></AirPodsProvider></CommandProvider></DataProvider></TenantProvider>
+}
+
+// The HTML boot screen, lazy-chunk fallback, and auth gate deliberately share this
+// exact product-shaped shell. A cold start should feel like one dashboard filling in,
+// never a logo screen followed by a skeleton followed by the real app.
+function DashboardBootSkeleton() {
+  useEffect(() => {
+    document.getElementById('cv6-boot-loader')?.remove()
+    document.documentElement.removeAttribute('data-cv6-boot')
+  }, [])
+  const rows = Array.from({ length: 8 })
+  return (
+    <div className="cv6-boot-workspace" role="status" aria-live="polite" aria-label="Loading your rooms and conversation">
+      <header className="cv6-boot-topbar">
+        <span className="cv6-boot-wordmark" aria-hidden="true" />
+        <span className="cv6-boot-top-actions" aria-hidden="true"><i /><i /><i /></span>
+      </header>
+      <aside className="cv6-boot-rail" aria-hidden="true">
+        <i className="cv6-boot-sk cv6-boot-section" />
+        <i className="cv6-boot-sk cv6-boot-search" />
+        {rows.map((_, index) => <span className="cv6-boot-row" key={index}><i className="cv6-boot-sk cv6-boot-avatar" /><b><i className="cv6-boot-sk" /><i className="cv6-boot-sk" /></b><i className="cv6-boot-sk cv6-boot-time" /></span>)}
+      </aside>
+      <main className="cv6-boot-main" aria-hidden="true">
+        <i className="cv6-boot-sk cv6-boot-kicker" />
+        <i className="cv6-boot-sk cv6-boot-compose" />
+        {rows.slice(0, 5).map((_, index) => <span className="cv6-boot-card" key={index}><i className="cv6-boot-sk cv6-boot-avatar" /><b><i className="cv6-boot-sk" /><i className="cv6-boot-sk" /></b></span>)}
+      </main>
+    </div>
+  )
+}
+
+function RouteLoadingFallback() {
+  const { pathname } = useLocation()
+  return pathname.startsWith('/dashboard') ? <DashboardBootSkeleton /> : <FullscreenLoading label="Preparing your workspace" />
 }
 // corner:corner-ui-cv6 — /cv6 component gallery. Renders the real app
 // components on one page as the design surface for the CV6 redesign.
@@ -357,7 +396,7 @@ function AuthGuard({ children }) {
   }, [navigate])
 
   if (!checked) {
-    return <FullscreenLoading label="Preparing your workspace" />
+    return <DashboardBootSkeleton />
   }
 
   return authed ? children : null
@@ -477,7 +516,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <TestModeBanner />
       <SystemToastProvider>
-      <Suspense fallback={<FullscreenLoading label="Preparing your workspace" />}>
+      <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
           <Route path="/" element={<HomeR38Preview />} />
           <Route path="/r38" element={<HomeR38Preview />} />

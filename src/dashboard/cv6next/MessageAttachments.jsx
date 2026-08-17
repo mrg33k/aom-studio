@@ -284,6 +284,7 @@ function SingleFile({ file, onReview }) {
 // File collection card: header + grid/list + footer with "Review all" button.
 function FileCollection({ files, onReviewAll, onReview }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const usableFiles = files.filter(hasUsableUrl);
   // Classify: >=2 images → .fc-grid; otherwise → .fc-list
   const hasImages = files.some((f) => fileKind(f.name, f.mime) === 'photo');
   const gridMode = hasImages && files.filter((f) => fileKind(f.name, f.mime) === 'photo').length >= 2;
@@ -345,11 +346,13 @@ function FileCollection({ files, onReviewAll, onReview }) {
           </div>
         )}
         <div className="fc-foot">
-          <span style={{ flex: 1, fontSize: '11.5px', color: 'var(--muted)' }}>Tap to preview</span>
-          <button onClick={() => onReviewAll?.(files)} className="fc-rev">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>
-            Review all
-          </button>
+          <span style={{ flex: 1, fontSize: '11.5px', color: 'var(--muted)' }}>{usableFiles.length ? 'Tap to preview' : 'Original preview unavailable'}</span>
+          {usableFiles.length ? (
+            <button onClick={() => onReviewAll?.(usableFiles)} className="fc-rev">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>
+              Review all
+            </button>
+          ) : null}
         </div>
       </div>
 

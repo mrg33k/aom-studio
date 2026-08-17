@@ -111,7 +111,7 @@ const SEND_ERROR_COPY = {
   server: 'Corner could not accept that message. It is still in the conversation, tap it to try again.',
 };
 
-function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agents = [], roomOptions = [], onOpenFiles, onClearRoom }) {
+function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agents = [], roomOptions = [], onOpenFiles, onClearRoom, replyTo: controlledReplyTo, onReplyToChange }) {
   // CornerCV6 is NOT mounted under the CV4 Corner context providers (it uses
   // useHome/useDataPipe standalone), so we can't read useCornerAuth/Data here —
   // worldId + agents come in as props and the user comes straight from supabase.
@@ -132,7 +132,26 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   }), [currentUser?.id]);
 
   // ── Composer state ──
-  const [input, setInput] = useState('');
+  const draftStorageKey = `cv6.draft.${currentChatKey}`;
+  const [input, setInput] = useState(() => {
+    try { return localStorage.getItem(draftStorageKey) || ''; } catch { return ''; }
+  });
+  const restoringDraftRef = useRef(false);
+  useEffect(() => {
+    restoringDraftRef.current = true;
+    try { setInput(localStorage.getItem(draftStorageKey) || ''); }
+    catch { setInput(''); }
+  }, [draftStorageKey]);
+  useEffect(() => {
+    if (restoringDraftRef.current) {
+      restoringDraftRef.current = false;
+      return;
+    }
+    try {
+      if (input) localStorage.setItem(draftStorageKey, input);
+      else localStorage.removeItem(draftStorageKey);
+    } catch { /* private mode / quota: keep the in-memory draft */ }
+  }, [draftStorageKey, input]);
   const inputRef = useRef(null);
   const [selectedImageTool, setSelectedImageTool] = useState(null);
   const [pasteChips, setPasteChips] = useState([]);
@@ -145,7 +164,19 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   const [sendError, setSendError] = useState('');
   // SMOOTHNESS: brief "launch" pop on the send button after successful send
   const [sent, setSent] = useState(false);
-  const [replyTo, setReplyTo] = useState(null);
+  const [localReplyTo, setLocalReplyTo] = useState(null);
+  const replyTo = controlledReplyTo === undefined ? localReplyTo : controlledReplyTo;
+  const setReplyTo = useCallback((next) => {
+    if (typeof onReplyToChange === 'function') onReplyToChange(next);
+    else setLocalReplyTo(next);
+  }, [onReplyToChange]);
+  useEffect(() => {
+    if (controlledReplyTo === undefined) setLocalReplyTo(null);
+  }, [currentChatKey, controlledReplyTo]);
+  useEffect(() => {
+    if (!replyTo?.id) return;
+    window.requestAnimationFrame(() => inputRef.current?.focus?.());
+  }, [replyTo?.id]);
   const [interactionMode, setInteractionMode] = useState(() => {
     try { return localStorage.getItem(`cv6.chatMode.${currentChatKey}`) === 'plan' ? 'plan' : 'work'; } catch { return 'work'; }
   });
@@ -402,6 +433,15 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
       let keptInThread = false;
       const sendAgent = effectiveAgent || dispatchAgent
       const sendOpts = { interactionMode, agent: sendAgent, onKeptInThread: (reason) => { keptInThread = true; setSendError(SEND_ERROR_COPY[reason] || SEND_ERROR_COPY.server); } }
+      const replySnap = replyTo
+      if (replySnap?.id) {
+        sendOpts.replyTo = String(replySnap.id)
+        sendOpts.metadata = { reply_to: {
+          message_id: String(replySnap.id),
+          sender: replySnap.label || 'Message',
+          snippet: String(replySnap.snippet || '').replace(/\s+/g, ' ').trim().slice(0, 140),
+        } }
+      }
       if (handoffMeta) {
         sendOpts.handoffTo = handoffMeta.handoffTo
         sendOpts.handoffFrom = handoffMeta.handoffFrom
@@ -409,7 +449,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
       const ok = typeof quickSend === 'function'
         ? await quickSend(text, sendOpts)
         : false;
-      if (ok !== false) { acceptIfRouted(); setSent(true); setTimeout(() => setSent(false), 250); }
+      if (ok !== false) { acceptIfRouted(); setReplyTo(null); setSent(true); setTimeout(() => setSent(false), 250); }
       if (ok === false && !keptInThread) {
         // Honest failure: put the words back so nothing typed is ever lost — but
         // never clobber something newly typed during the in-flight window
@@ -420,7 +460,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
     } finally {
       sendingRef.current = false;
     }
-  }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom, interactionMode, dispatchAgent, acceptIfRouted, hostSlug, room]);
+  }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom, interactionMode, dispatchAgent, acceptIfRouted, hostSlug, room, replyTo, setReplyTo]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }

@@ -59,6 +59,25 @@ function dayLabel(ts) {
   return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+function roomDraftKey(roomKey) {
+  return roomKey ? `cv6.draft.${String(roomKey)}` : '';
+}
+
+function readRoomDraft(roomKey) {
+  const key = roomDraftKey(roomKey);
+  if (!key) return '';
+  try { return localStorage.getItem(key) || ''; } catch { return ''; }
+}
+
+function writeRoomDraft(roomKey, value) {
+  const key = roomDraftKey(roomKey);
+  if (!key) return;
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch { /* private mode / quota: keep the in-memory draft */ }
+}
+
 // Group messages (oldest -> newest) into day buckets, preserving order.
 function groupByDay(messages) {
   const groups = [];
@@ -205,6 +224,7 @@ function GridTileImg({ src, alt, kind }) {
 // sends folds to ONE card — a preview grid for images, a compact list for docs — with a
 // count and "Review all". Tapping any opens the look-only viewer below. Real files only.
 function FileGallery({ files, sender, onOpen, onReview }) {
+  const usableFiles = files.filter((file) => Boolean(file?.attachmentUrl || file?.url));
   // A lone video an agent sends reads as a VIDEO, not a grey "Documents" card:
   // it plays INLINE in the bubble (tap play / scrub / fullscreen) so it visibly
   // opens in place, and a one-tap "Comment on frames" jumps to the Review viewer
@@ -297,11 +317,15 @@ function FileGallery({ files, sender, onOpen, onReview }) {
             </div>
           )}
           <div className="fc-foot">
-            <span style={{ flex: 1, fontSize: 11.5, color: 'var(--muted)' }}>{overflow > 0 ? `+${overflow} more` : 'Tap any to preview'}</span>
-            <button className="fc-rev" onClick={() => onReview(files)}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="2.6" /></svg>
-              Review all
-            </button>
+            <span style={{ flex: 1, fontSize: 11.5, color: 'var(--muted)' }}>
+              {usableFiles.length ? (overflow > 0 ? `+${overflow} more` : 'Tap any to preview') : 'Original preview unavailable'}
+            </span>
+            {usableFiles.length ? (
+              <button className="fc-rev" onClick={() => onReview(usableFiles)}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="2.6" /></svg>
+                Review all
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -450,7 +474,7 @@ function renderItems(items, onOpenFile, goal, onReview, onSend) {
 }
 
 // An older day, folded into a one-line card you tap to open.
-function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
+function DayCard({ group, onOpenFile, goal, onReview, onSend, newMessageId = '' }) {
   const [open, setOpen] = useState(false);
   return (
     <div className={`goalcard${open ? ' is-open' : ''}`} style={{ marginBottom: 10 }}>
@@ -462,6 +486,7 @@ function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
       <div className="gc-body">
         <Cv6MessageThread
           messages={group.items}
+          newMessageId={newMessageId}
           goal={goal}
           variant="mobile"
           mode="day-folded"
@@ -1195,7 +1220,10 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
 }
 
 export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, draft: streamDraft, turnHealth, turnState: turnStateProp, connection, onRetryTurn, onNudgeTurn, onReloadThread, onRepairTurn, onStopTurn, stopAvailable = true, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
-  const [draft, setDraft] = useState('');
+  const roomKeyForSheet = fullRoom?.id || room?.name;
+  const [draft, setDraft] = useState(() => readRoomDraft(roomKeyForSheet));
+  const activeDraftRoomRef = useRef(roomKeyForSheet);
+  const restoringDraftRef = useRef(false);
   // The Convex plane is writable without Supabase — sends go to messages:send.
   const localReadOnly = !supabase && !convexPlaneActive();
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
@@ -1208,12 +1236,71 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   const [workOpen, setWorkOpen] = useState(false);
   useEffect(() => { setSettingsOpen(false); setMoreOpen(false); setWorkOpen(false); }, [fullRoom?.id, fullRoom?.missionSlug]);
   const [mComposerHost, setMComposerHost] = useState(null);
+  const [replyTo, setReplyTo] = useState(null);
+  const [threadParent, setThreadParent] = useState(null);
   const richComposer = !!(fullRoom && worldId);
-  const roomKeyForSheet = fullRoom?.id || room?.name;
-  // Room switch: close the sheet AND drop any plain-bar draft, so text typed in
-  // one room never reappears when the fallback composer mounts in another
-  // (fresh-eyes review 2026-07-06, finding 4).
-  useEffect(() => { setFilesSheetOpen(false); setDraft(''); }, [roomKeyForSheet]);
+  // Room switch: close the sheet and restore that room's own draft. The active-key
+  // guard keeps React's first effect pass from writing the previous room's text into
+  // the new key before the restore state update lands.
+  useEffect(() => {
+    setFilesSheetOpen(false);
+    setReplyTo(null);
+    setThreadParent(null);
+    restoringDraftRef.current = true;
+    activeDraftRoomRef.current = roomKeyForSheet;
+    setDraft(readRoomDraft(roomKeyForSheet));
+  }, [roomKeyForSheet]);
+
+  const threadIndex = useMemo(() => {
+    const map = new Map();
+    for (const message of (messages || [])) {
+      const parentId = String(message?.replyTo || message?.replyPreview?.message_id || '');
+      if (!parentId) continue;
+      if (!map.has(parentId)) map.set(parentId, []);
+      map.get(parentId).push(message);
+    }
+    return map;
+  }, [messages]);
+  const threadParentMessage = useMemo(() => {
+    if (!threadParent?.id) return null;
+    return (messages || []).find((message) => String(message?.id || '') === String(threadParent.id)) || {
+      id: threadParent.id,
+      agentName: threadParent.label,
+      agentInitials: String(threadParent.label || '?').slice(0, 2).toUpperCase(),
+      agentTint: 'muted',
+      isUser: threadParent.label === 'You',
+      text: threadParent.snippet || '',
+      time: '',
+    };
+  }, [messages, threadParent]);
+  const threadReplies = threadParent?.id ? (threadIndex.get(String(threadParent.id)) || []) : [];
+  const openReplyTarget = useCallback((target) => {
+    if (!target) return;
+    setReplyTo(target);
+    if (columnMode) setThreadParent(target);
+  }, [columnMode]);
+  const closeThread = useCallback(() => {
+    setThreadParent(null);
+    setReplyTo(null);
+  }, []);
+  useEffect(() => {
+    if (!threadParent || !columnMode) return undefined;
+    const onKey = (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      closeThread();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [closeThread, columnMode, threadParent]);
+  useEffect(() => {
+    if (activeDraftRoomRef.current !== roomKeyForSheet) return;
+    if (restoringDraftRef.current) {
+      restoringDraftRef.current = false;
+      return;
+    }
+    writeRoomDraft(roomKeyForSheet, draft);
+  }, [draft, roomKeyForSheet]);
   const filesLiftRef = useRef(null);
 
   // At the newest message, a deliberate upward overscroll opens Files. Restricting
@@ -1256,8 +1343,15 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
     return { threadMessages: thread, systemAlerts: alerts };
   }, [messages]);
   const groups = useMemo(() => groupByDay(threadMessages), [threadMessages]);
-  const older = groups.slice(0, -1);
-  const latest = groups[groups.length - 1] || null;
+  // The rail's server-authored unread count is captured in the opened room object.
+  // Counting backward over the ordered visible thread gives an honest boundary without
+  // inventing a client timestamp. If unread exceeds the 100-row read window, the first
+  // visible row is correctly marked New: older unread history is outside this window.
+  const newMessageId = useMemo(() => {
+    const count = Math.max(0, Number(fullRoom?.unreadCount || 0));
+    if (!count || !threadMessages.length) return '';
+    return threadMessages[Math.max(0, threadMessages.length - count)]?.id || '';
+  }, [fullRoom?.unreadCount, threadMessages]);
 
   // The goal thread's heading is the user's ask. Prefer the live goal title; fall back to
   // the most recent user message so the header reads "Goal: <what you asked>" right away.
@@ -1278,24 +1372,9 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
     return goal?.title || '';
   }, [goal?.title, messages]);
 
-  // ── Mobile composer collapse → FAB (task 24452dfa, 2026-08-07) ──────────
-  // Composer starts open on room entry; collapses to a FAB after successful send.
-  const [composerCollapsed, setComposerCollapsed] = useState(false);
-  const composerCollapseTimerRef = useRef(null);
-  // Reset to open whenever the room changes.
-  useEffect(() => {
-    setComposerCollapsed(false);
-    clearTimeout(composerCollapseTimerRef.current);
-  }, [roomKeyForSheet]);
-  // Wrap the incoming onSend so a successful post triggers the collapse.
-  const onSendAndCollapse = useCallback(async (text, opts) => {
-    const { keepComposerOpen = false, ...sendOptions } = opts || {};
-    const result = await onSend?.(text, sendOptions);
-    if (result !== false && !keepComposerOpen) {
-      clearTimeout(composerCollapseTimerRef.current);
-      composerCollapseTimerRef.current = setTimeout(() => setComposerCollapsed(true), 120);
-    }
-    return result;
+  const onSendFromComposer = useCallback(async (text, opts) => {
+    const { keepComposerOpen: _keepComposerOpen, ...sendOptions } = opts || {};
+    return onSend?.(text, sendOptions);
   }, [onSend]);
 
   const submit = async () => {
@@ -1303,13 +1382,10 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
     if (!t || localReadOnly) return;
     // Optimistic: clear the box sub-100ms, bubble is already pending via updatePending
     setDraft('');
-    clearTimeout(composerCollapseTimerRef.current);
-    composerCollapseTimerRef.current = setTimeout(() => setComposerCollapsed(true), 120);
     const ok = await onSend?.(t);
     if (ok === false) {
       // Send failed — bubble stays as "Not sent" with retry, restore text so you can edit
       setDraft(t);
-      setComposerCollapsed(false);
     }
   };
 
@@ -1397,9 +1473,16 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
   }, []);
 
   return (
-    <div data-cv6 data-theme="dark" data-screen="chat-room" className="cv6-screen" ref={screenRef} style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--ground, #05080b)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div data-cv6 data-theme="dark" data-screen="chat-room" data-thread-open={threadParent && columnMode ? '1' : undefined} className="cv6-screen" ref={screenRef} style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--ground, #05080b)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div className="mhdr">
-        {/* .mback removed 2026-08-07: swipe left returns Home, swipe right advances to next chat */}
+        {/* A desktop room is a real destination with a real way back. Mobile keeps
+            its requested swipe navigation; columnMode gets the visible browser-like
+            Back action the blind judge could not find. */}
+        {columnMode ? (
+          <button type="button" className="mback cv6-room-back" aria-label="Back to rooms" title="Back to rooms" onClick={onClose}>
+            <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+          </button>
+        ) : null}
         <RoomAvatar room={fullRoom || room} worldId={worldId} size={40} turnState={turnState} />
         <div className="mhtitle">
           <div className="mhname">
@@ -1451,7 +1534,6 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               <div className="cv6-chat-more-menu" role="menu" aria-label={`More for ${room.name}`}>
                 <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); onSearch?.(); }}>Search conversation</button>
                 <button type="button" role="menuitem" data-testid="room-settings-trigger" onClick={() => { setMoreOpen(false); setSettingsOpen(true); }}>Room settings</button>
-                <button type="button" role="menuitem" onClick={() => { setMoreOpen(false); setComposerCollapsed((c) => !c); }}>{composerCollapsed ? 'Show composer' : 'Hide composer'}</button>
               </div>
             </>
           ) : null}
@@ -1491,20 +1573,19 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
               </div>
           ) : (
             <>
-              {/* No divider above folded days — the DayCard header already carries the same
-                  date label; the pair read as a duplicate header (loop R16). */}
-              {older.map((g, i) => (
-                <DayCard key={g.key + i} group={g} onOpenFile={openFile} goal={threadGoal} onReview={reviewHandoff} onSend={onSend} />
-              ))}
-              {latest && (
-                <>
-                  <div className="daydiv"><span>{latest.label.toUpperCase()}</span></div>
+              {/* Chat history stays readable in place. Every day is an ordinary section,
+                  not a collapsed summary card, and its marker remains visible while that
+                  day scrolls through the reading lane. */}
+              {groups.map((group, index) => (
+                <React.Fragment key={`${group.key}-${index}`}>
+                  <div className="daydiv"><span>{group.label.toUpperCase()}</span></div>
                   <Cv6MessageThread
-                    messages={latest.items}
+                    messages={group.items}
+                    newMessageId={newMessageId}
                     goal={threadGoal}
                     room={{ name: room?.name, initials: room?.initials || '·' }}
                     variant="mobile"
-                    mode="latest-day"
+                    mode="day"
                     liveSteps={liveSteps}
                     awaiting={awaiting}
                     renderBlocks="goalBody"
@@ -1515,12 +1596,14 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
                     allowLinkCards
                     allowChips={false}
                     onAction={onSend}
+                    onReply={openReplyTarget}
+                    repliesByParentOverride={threadIndex}
                     onOpenFile={openFile}
                     onReviewFiles={reviewHandoff}
                     MobileFileGallery={FileGallery}
                   />
-                </>
-              )}
+                </React.Fragment>
+              ))}
             </>
           )}
           {/* One live surface at the conversation tail in every room state. It replaces
@@ -1547,6 +1630,29 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
         </SendCtx.Provider>
       </div>
 
+      {threadParent && columnMode && threadParentMessage ? (
+        <aside className="cv6-thread-panel" role="complementary" aria-label={`Thread on message from ${threadParent.label || 'message'}`}>
+          <div className="cv6-thread-panel-head">
+            <div><strong>Thread</strong><span>{threadReplies.length} {threadReplies.length === 1 ? 'reply' : 'replies'}</span></div>
+            <button type="button" aria-label="Close thread" onClick={closeThread}>×</button>
+          </div>
+          <div className="cv6-thread-panel-scroll">
+            <div className="cv6-thread-parent">
+              <Cv6MessageThread messages={[threadParentMessage]} room={room} variant="desktop" mode="thread-parent" onReply={setReplyTo} />
+            </div>
+            <div className="cv6-thread-replies" aria-label="Thread replies">
+              {threadReplies.length ? (
+                <Cv6MessageThread messages={threadReplies} room={room} variant="desktop" mode="thread-replies" onReply={setReplyTo} />
+              ) : <div className="cv6-thread-empty">No replies yet. Write the first one below.</div>}
+            </div>
+          </div>
+          <button type="button" className="cv6-thread-compose-jump" onClick={() => {
+            const composer = screenRef.current?.querySelector('.cv6-floating-composer textarea, .cv6-floating-composer input[type="text"]');
+            composer?.focus?.({ preventScroll: true });
+          }}>Reply in composer</button>
+        </aside>
+      ) : null}
+
       {showJump && (
         <button className="jumplive" onClick={jumpToLatest}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M19 12l-7 7-7-7" /></svg>
@@ -1557,17 +1663,16 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
       {richComposer ? (
         <>
           {/* The rich composer (CV4 functionality, CV6 look: attach, command menu,
-              slash commands, image gen, voice) portals into this host.
-              cv6-mcomposer-host adds the collapse transition (opacity+translateY). */}
-          <div className={`mcomposer cv6-mcomposer-host${composerCollapsed ? ' is-collapsed' : ''}`}
+              slash commands, image gen, voice) portals into this persistent host. */}
+          <div className="mcomposer cv6-mcomposer-host"
             ref={(node) => { setMComposerHost(node); setMComposerRef(node); }}
             style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }} />
           <Cv6FullComposer target={mComposerHost} room={fullRoom} worldId={worldId} agents={[]}
-            roomOptions={roomOptions} quickSend={onSendAndCollapse} onOpenFiles={() => setFilesSheetOpen(true)}
-            onClearRoom={onClearRoom} />
+            roomOptions={roomOptions} quickSend={onSendFromComposer} onOpenFiles={() => setFilesSheetOpen(true)}
+            onClearRoom={onClearRoom} replyTo={replyTo} onReplyToChange={setReplyTo} />
         </>
       ) : (
-      <div className={`mcomposer cv6-mcomposer-host${composerCollapsed ? ' is-collapsed' : ''}`}
+      <div className="mcomposer cv6-mcomposer-host"
         ref={setMComposerRef}
         style={{ background: 'var(--chat-bar, rgba(5,8,11,.9))', backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)' }}>
         {dictate.supported && (
@@ -1589,26 +1694,6 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
         </button>
       </div>
       )}
-      {/* Mobile FAB — springs in when the composer collapses (cv6-chat-fab.is-visible). */}
-      <button
-        type="button"
-        className={`cv6-chat-fab${composerCollapsed ? ' is-visible' : ''}`}
-        onClick={() => {
-          setComposerCollapsed(false);
-          clearTimeout(composerCollapseTimerRef.current);
-          // Focus after the CSS transition (220ms) so the keyboard opens immediately.
-          setTimeout(() => {
-            mComposerHost?.querySelector('input:not([type="file"]):not([type="hidden"]), textarea')?.focus();
-          }, 60);
-        }}
- aria-label="Open composer, type a message"
-        title="Type a message"
-      >
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-        </svg>
-      </button>
 
       {filesSheetOpen && (
         <RoomFilesSheet worldId={worldId} room={fullRoom}

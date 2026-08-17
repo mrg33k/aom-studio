@@ -159,6 +159,11 @@ final class AppRouter: ObservableObject {
 
     static let shared = AppRouter()
 
+    private static let lastRoomIDKey = "navigation.lastRoomID"
+    private static let lastRoomTitleKey = "navigation.lastRoomTitle"
+    private static let lastRoomSubtitleKey = "navigation.lastRoomSubtitle"
+    private let defaults: UserDefaults
+
     /// The navigation stack. One element deep in practice, but a path rather than a
     /// binding so a notification tap can replace the destination outright instead of
     /// pushing a second copy of a screen already on screen.
@@ -172,7 +177,34 @@ final class AppRouter: ObservableObject {
     /// Not private: the routing rules (replace-don't-stack, refuse-don't-guess) are worth
     /// testing, and a singleton nothing can instantiate is a singleton whose rules are
     /// only ever exercised in production.
-    init() {}
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    /// Restore the conversation the signed-in user was last looking at. RootView calls
+    /// this only after auth/world resolution, so a room from another tenant can never
+    /// flash on screen during account switching.
+    func restoreLastRoom(for world: String?) {
+        guard path.isEmpty,
+              let world,
+              let roomID = defaults.string(forKey: Self.lastRoomIDKey),
+              let room = Room.parse(
+                roomID: roomID,
+                title: defaults.string(forKey: Self.lastRoomTitleKey),
+                subtitle: defaults.string(forKey: Self.lastRoomSubtitleKey) ?? ""
+              ),
+              room.world == world
+        else { return }
+        path = [.room(room)]
+    }
+
+    /// Persist enough display truth to restore the room without first waiting for the
+    /// rail request. The canonical room id remains the navigation identity.
+    func remember(_ room: Room) {
+        defaults.set(room.roomID, forKey: Self.lastRoomIDKey)
+        defaults.set(room.title, forKey: Self.lastRoomTitleKey)
+        defaults.set(room.subtitle, forKey: Self.lastRoomSubtitleKey)
+    }
 
     var openRoom: Room? {
         if case .room(let room) = path.last { return room }
@@ -213,12 +245,17 @@ final class AppRouter: ObservableObject {
         guard let idx = recencyOrder.firstIndex(where: { $0.roomID == current.roomID }) else {
             // Not on the recency list (deep-linked agent room): land on the most
             // recent room rather than doing nothing.
-            if !toMoreRecent, let first = recencyOrder.first { path[path.count - 1] = .room(first) }
+            if !toMoreRecent, let first = recencyOrder.first {
+                remember(first)
+                path[path.count - 1] = .room(first)
+            }
             return
         }
         let target = toMoreRecent ? idx - 1 : idx + 1
         guard recencyOrder.indices.contains(target) else { return }
-        path[path.count - 1] = .room(recencyOrder[target])
+        let room = recencyOrder[target]
+        remember(room)
+        path[path.count - 1] = .room(room)
     }
 
     func isShowing(_ link: DeepLink?) -> Bool {
@@ -235,6 +272,7 @@ final class AppRouter: ObservableObject {
     }
 
     func open(_ room: Room) {
+        remember(room)
         open(.room(room))
     }
 

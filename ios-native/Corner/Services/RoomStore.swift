@@ -33,10 +33,16 @@ final class RoomStore: ObservableObject {
         let room: Room
         let ts: Double
         let preview: String
+        /// Visible author of the preview. Empty only when the hygiene gate removed the
+        /// preview too; a line with words never appears to have spoken itself.
+        var author: String = ""
         /// The SERVER's unread count for this room, when it sends one. nil means the
         /// backend has no read-state yet and the row falls back to the device-local dot.
         /// nil and 0 are different answers: "nobody knows" and "nothing new".
         var unreadCount: Int?
+        /// Server-authored unread state even when the count was outside its bounded
+        /// scan. Lets the app badge remain an honest lower bound instead of clearing.
+        var hasUnread: Bool?
         var id: String { room.roomID }
         var hasActivity: Bool { ts > 0 }
     }
@@ -63,7 +69,7 @@ final class RoomStore: ObservableObject {
     /// `ConvexService.shared.query("rooms:listRooms", args: ["worldId": worldId])`
     func loadRooms() async throws -> [Room] {
         guard let world = api.world else { return [] }
-        let convexRooms: [ConvexRoom] = try await ConvexService.shared.query("rooms:listRooms", args: ["worldId": world])
+        let convexRooms: [ConvexRoom] = try await ConvexService.shared.query("rooms:listRooms", args: convexListArgs(world: world))
         // Same resolver as the rail and the timeline — see `room(from:world:)`.
         return convexRooms.compactMap { Self.room(from: $0, world: world) }
     }
@@ -72,6 +78,8 @@ final class RoomStore: ObservableObject {
         guard let world = api.world else {
             agents = []
             projects = []
+            recent = []
+            PushService.shared.reconcileUnread([])
             railError = nil
             hasLoadedOnce = true
             return
@@ -95,10 +103,9 @@ final class RoomStore: ObservableObject {
         // hours-old rooms that look perfectly healthy — a dead backend must show
         // as a failure, and an empty world must show as empty.
         // In unit tests the Convex endpoint is not mocked — skip to keep tests fast and deterministic.
-        let isTesting = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-        if Config.useConvex && !isTesting {
+        if Config.useConvex && !Config.suppressLiveBackendsForTests {
             do {
-                let convexRooms: [ConvexRoom] = try await ConvexService.shared.query("rooms:listRooms", args: ["worldId": world])
+                let convexRooms: [ConvexRoom] = try await ConvexService.shared.query("rooms:listRooms", args: convexListArgs(world: world))
                 let groups = convexRoomsToProjectGroups(convexRooms, world: world)
                 projects = groups
                 // buildRecent(activity:) is the Supabase feed's shape and returns []
@@ -106,6 +113,7 @@ final class RoomStore: ObservableObject {
                 // lastMessage instead, or the home screen renders "No rooms yet"
                 // over 600 healthy rooms.
                 recent = convexRecent(convexRooms)
+                PushService.shared.reconcileUnread(recent)
                 AppRouter.shared.recencyOrder = recent.map(\.room)
                 railError = nil
             } catch {
@@ -178,6 +186,7 @@ final class RoomStore: ObservableObject {
         groups.sort { $0.room.title.localizedCaseInsensitiveCompare($1.room.title) == .orderedAscending }
         projects = groups
         recent = buildRecent(groups: groups, activity: activity)
+        PushService.shared.reconcileUnread(recent)
         // The chat swipe carousel navigates this exact order; the router holds it so
         // ChatView never needs its own copy of the rail.
         AppRouter.shared.recencyOrder = recent.map(\.room)
@@ -263,6 +272,17 @@ final class RoomStore: ObservableObject {
 
     // MARK: - Convex helpers (BRIEF 04)
 
+    private func convexListArgs(world: String) -> [String: Any] {
+        var args: [String: Any] = ["worldId": world]
+        // Email is the shared identity between Supabase auth and Convex's users table.
+        if let email = api.session?.user.email, !email.isEmpty {
+            args["userId"] = email
+        } else if let id = api.session?.user.id.uuidString, !id.isEmpty {
+            args["userId"] = id
+        }
+        return args
+    }
+
     /// Raw room shape as Convex may return it (matches web response).
     struct ConvexRoom: Decodable {
         let _id: String?           // Convex document ID (primary key)
@@ -279,10 +299,14 @@ final class RoomStore: ObservableObject {
             let text: String?
         }
         let lastMessage: LastMessage?
+        /// Room creation time is the fallback for rooms whose first message has not
+        /// arrived yet. Such rooms stay reachable at the bottom of the timeline.
+        let createdAt: Double?
         /// Server-computed unread count, once `rooms:listRooms` returns it. Optional on
         /// purpose: absent means the backend has not shipped read-state yet, and the
         /// client falls back to its own device-local dot rather than inventing a number.
         let unreadCount: Int?
+        let hasUnread: Bool?
         let roomId: String?
         let room_id: String?
         let name: String?
@@ -299,7 +323,7 @@ final class RoomStore: ObservableObject {
         let worldId: String?
 
         enum CodingKeys: String, CodingKey {
-            case _id, legacyRoomId, lastMessage, unreadCount, roomId, name, type, kind, slug, project, mission, specialist, subtitle, tint
+            case _id, legacyRoomId, lastMessage, unreadCount, hasUnread, createdAt, roomId, name, type, kind, slug, project, mission, specialist, subtitle, tint
             case room_id = "room_id"
             case title
             case clientId = "clientId"
@@ -395,13 +419,19 @@ final class RoomStore: ObservableObject {
         var rows: [RecentRoom] = []
         var indexByID: [String: Int] = [:]
         for cr in convexRooms {
-            guard let room = Self.room(from: cr, world: world),
-                  let ts = cr.lastMessage?.createdAt, ts > 0 else { continue }
+            guard let room = Self.room(from: cr, world: world) else { continue }
+            let ts = cr.lastMessage?.createdAt ?? cr.createdAt ?? 0
+            let preview = RoomPreview.clean(cr.lastMessage?.text ?? "")
+            let author = preview.isEmpty
+                ? ""
+                : cr.lastMessage?.agentSlug.map { AgentRoster.title(for: $0) } ?? "Teammate"
             let entry = RecentRoom(
                 room: room,
                 ts: ts,
-                preview: RoomPreview.clean(cr.lastMessage?.text ?? ""),
-                unreadCount: cr.unreadCount
+                preview: preview,
+                author: author,
+                unreadCount: cr.unreadCount,
+                hasUnread: cr.hasUnread
             )
             if let existing = indexByID[room.roomID] {
                 if ts > rows[existing].ts { rows[existing] = entry }

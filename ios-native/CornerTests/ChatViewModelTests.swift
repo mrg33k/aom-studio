@@ -621,6 +621,32 @@ final class ChatViewModelTests: XCTestCase {
         XCTAssertEqual(result.count, 2)
     }
 
+    // MARK: - Gauntlet R27: Convex truth decoding
+
+    func testConvexRowPrefersRestoredCreatedAtAndDecodesAgentSlug() throws {
+        let restored = 1_765_000_000_000.0
+        let imported = restored + 86_400_000
+        let message = try row("""
+        {"_id":"cx1","role":"assistant","agentSlug":"rex","text":"Done.",
+         "createdAt":\(restored),"_creationTime":\(imported)}
+        """)
+
+        XCTAssertEqual(message.agent, "rex")
+        XCTAssertEqual(message.epoch, restored / 1000, accuracy: 0.001,
+                       "the transcript must use restored message time, not import time")
+        XCTAssertEqual(message.resolvedDisplayName(roomAgent: nil), AgentRoster.title(for: "rex"))
+    }
+
+    func testLegacyHumanWithUserIDIsNotRenderedAsTheBotOrCalledYou() throws {
+        let human = try row(#"{"_id":"cx2","userId":"person-1","text":"hello"}"#)
+        XCTAssertTrue(human.isUser)
+        XCTAssertEqual(human.displayName, "Teammate")
+
+        let named = try row(#"{"_id":"cx3","userId":"person-2","userName":"Patrik","text":"hello"}"#)
+        XCTAssertTrue(named.isUser)
+        XCTAssertEqual(named.displayName, "Patrik")
+    }
+
     private func row(_ json: String) throws -> MessageRow {
         try JSONDecoder().decode(MessageRow.self, from: Data(json.utf8))
     }
