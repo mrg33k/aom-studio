@@ -865,18 +865,21 @@ html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-
 }
 
 @media (max-width:899px) {
-  /* Compact chat chrome preserves more of the iPad's vertical canvas while the
-     invisible ::before hit areas retain comfortable touch targets. */
+  /* Touch controls own a real 44px box. Invisible hit slop around smaller visual
+     boxes overlapped adjacent controls and failed geometry/accessibility audits. */
   [data-cv6] .cv6-floating-composer { padding:8px !important; border-radius:13px !important; }
   [data-cv6] .cv6-composer-input-shell { min-height:40px !important; border-radius:8px !important; }
-  [data-cv6] button.cv6-composer-util { height:30px !important; min-height:30px; min-block-size:30px; border-radius:7px !important; }
-  [data-cv6] button.cv6-composer-primary { width:34px !important; height:34px !important; min-width:34px; min-height:34px; min-block-size:34px; border-radius:8px !important; }
-  [data-cv6] button.cv6-composer-attach { width:32px !important; height:32px !important; min-width:32px; min-height:32px; min-block-size:32px; border-radius:7px !important; }
+  [data-cv6] button.cv6-composer-util { height:44px !important; min-height:44px; min-block-size:44px; border-radius:9px !important; }
+  /* Primaries press to 92% for feedback, so a 48px resting box remains >=44px
+     throughout the press instead of shrinking the live hit target under the bar. */
+  [data-cv6] button.cv6-composer-primary { width:48px !important; height:48px !important; min-width:48px; min-height:48px; min-block-size:48px; border-radius:11px !important; }
+  [data-cv6] button.cv6-composer-attach { width:44px !important; height:44px !important; min-width:44px; min-height:44px; min-block-size:44px; border-radius:9px !important; }
   [data-cv6] [data-role="composer-actions"] { gap:6px !important; margin-top:7px !important; }
-  [data-cv6] :is(button.cv6-composer-util, button.cv6-composer-primary, button.cv6-composer-attach)::before { inset:-6px -4px; }
+  [data-cv6] :is(button.cv6-composer-util, button.cv6-composer-primary, button.cv6-composer-attach)::before { inset:0; }
 }
 
 @media (max-width:640px) {
+  [data-cv6] .cv6-room-avatar-button { width:44px !important; height:44px !important; min-width:44px; min-height:44px; min-block-size:44px; }
   [data-cv6][data-screen="chat-room"] > .scrbody { padding-left:12px !important; padding-right:12px !important; padding-bottom:calc(var(--cv6-composer-h, 108px) + 32px) !important; }
 }
 
