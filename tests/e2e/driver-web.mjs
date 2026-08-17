@@ -413,6 +413,41 @@ export function createWebDriver({ surface, cfg, cdp, headless = true, slowMo = 0
       } catch { return 0; }
     },
 
+    // Geometry of the open-room desktop layout: the composer's box, plus the box of any
+    // visible room row that sits fully BESIDE it (no horizontal overlap). A phone layout
+    // shows one pane at a time, so beside-the-conversation room rows only exist when the
+    // surface actually has a desktop shape.
+    async desktopSideBySideInfo() {
+      const rowSel = cfg.roomRow?.selector;
+      try {
+        // The composer selector can match more than one input (Home intake + room chat)
+        // and hidden matches return a null box — take the first VISIBLE one, waiting
+        // briefly for the thread to finish rendering.
+        let compBox = null;
+        for (let attempt = 0; attempt < 5 && !compBox; attempt++) {
+          const comps = composer();
+          const count = Math.min(await comps.count().catch(() => 0), 6);
+          for (let i = 0; i < count; i++) {
+            const b = await comps.nth(i).boundingBox().catch(() => null);
+            if (b && b.width > 40 && b.height > 10) { compBox = b; break; }
+          }
+          if (!compBox) await d.settle(1000);
+        }
+        if (!compBox) return null;
+        let rail = null;
+        if (rowSel) {
+          const rows = page.locator(rowSel);
+          const n = Math.min(await rows.count().catch(() => 0), 40);
+          for (let i = 0; i < n; i++) {
+            const b = await rows.nth(i).boundingBox().catch(() => null);
+            if (!b || b.width < 40 || b.height < 10) continue;
+            if (b.x + b.width <= compBox.x + 1 || b.x >= compBox.x + compBox.width - 1) { rail = b; break; }
+          }
+        }
+        return { composer: compBox, rail, viewport: page.viewportSize() };
+      } catch { return null; }
+    },
+
     // Escape hatch for the debug tools: the live Page, for ad-hoc evaluation.
     raw() { return page; },
 

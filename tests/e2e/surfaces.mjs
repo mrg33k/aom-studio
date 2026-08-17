@@ -84,7 +84,10 @@ export const SURFACES = {
     },
 
     composer: { placeholder: /message|type|write/i },
-    inRoomMarker: { placeholder: /message|type|write/i },
+    // "In a room" must NOT key on the composer placeholder: the Home intake box says
+    // "Type a task..." which matches /type/i, so every screen read as a room and
+    // openAnyRoom was silently skipped. The room column only exists when a room is open.
+    inRoomMarker: { selector: '.cv6-workspace-column' },
     sendButton: { role: 'button', name: /send/i },
 
     roomRow: { selector: '[data-room-id], a[href^="/room/"]' },

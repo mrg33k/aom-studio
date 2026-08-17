@@ -421,6 +421,49 @@ export const CAPABILITIES = [
     },
   },
 
+  // ---------------------------------------------------------------- desktop shape
+  // Added 2026-08-16 after a full day of green runs on a desktop that rendered as a
+  // phone column: every layout check above pins the viewport to 390x844, so the suite
+  // was structurally blind to the desktop. These two make that class of miss impossible.
+  {
+    id: 'desktop.rooms-beside-conversation',
+    title: 'On a big screen, opening a room keeps the rooms list visible beside the conversation',
+    tier: 'parity',
+    async run(d) {
+      if (!d.supportsViewport) return true; // native decides its own layout
+      await d.setViewport(1440, 900);
+      if (!(await d.isSignedIn())) { await d.signIn(); }
+      if (!(await d.inRoom())) { if (!(await d.openAnyRoom())) return 'no room could be opened'; }
+      const info = await d.desktopSideBySideInfo?.();
+      if (!info) return 'could not measure the desktop layout';
+      return !!info.rail || 'opening a room leaves nothing beside it — one pane at a time is phone behaviour at 1440px';
+    },
+  },
+  {
+    id: 'desktop.uses-the-width',
+    title: 'On a big screen the app uses the screen, not a centred phone column',
+    tier: 'parity',
+    async run(d) {
+      if (!d.supportsViewport) return true;
+      await d.setViewport(1440, 900);
+      if (!(await d.isSignedIn())) { await d.signIn(); }
+      if (!(await d.inRoom())) { if (!(await d.openAnyRoom())) return 'no room could be opened'; }
+      const info = await d.desktopSideBySideInfo?.();
+      if (!info?.composer) return 'could not measure the desktop layout';
+      // Thresholds are bracketed by live measurements (2026-08-16): CV6's real desktop
+      // spans 48% by this measure (the right-hand drawer is invisible to it), while the
+      // shipped phone-column defect measured 39% with nothing beside it. Two ways to pass:
+      // panes beside the conversation, or a single pane that is genuinely wide (focus mode).
+      const left = Math.min(info.composer.x, info.rail ? info.rail.x : info.composer.x);
+      const right = Math.max(info.composer.x + info.composer.width, info.rail ? info.rail.x + info.rail.width : 0);
+      const used = Math.round(right - left);
+      const ratio = used / info.viewport.width;
+      if (info.rail && ratio >= 0.45) return true;
+      if (!info.rail && info.composer.width / info.viewport.width >= 0.55) return true;
+      return `layout spans ${used}px of ${info.viewport.width} (${Math.round(ratio * 100)}%)${info.rail ? '' : ' with nothing beside it'} — a phone column on a desktop display`;
+    },
+  },
+
   // ---------------------------------------------------------------- the backend claim
   {
     id: 'backend.convex-only-messages',

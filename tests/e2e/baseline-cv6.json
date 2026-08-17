@@ -4,10 +4,10 @@
   "url": "https://www.aheadofmarket.com/dashboard",
   "at": "2026-08-16T18:48:45.958Z",
   "token": "E2E-CV6-MSW5NK81-UPIAN",
-  "passed": 17,
+  "passed": 19,
   "failed": 7,
   "gaps": 1,
-  "total": 25,
+  "total": 27,
   "results": [
     {
       "id": "auth.signin",
@@ -112,7 +112,7 @@
       "tier": "parity",
       "title": "@web, @design and @systems resolve to the right teammates",
       "status": "fail",
-      "detail": "@web→nothing (want bobby), @design→nothing (want steffen), @systems→nothing (want elon)"
+      "detail": "@web\u2192nothing (want bobby), @design\u2192nothing (want steffen), @systems\u2192nothing (want elon)"
     },
     {
       "id": "mention.unknown-not-rerouted",
@@ -183,6 +183,20 @@
       "title": "Sending and receiving touches Convex and no Supabase message traffic",
       "status": "fail",
       "detail": "5 Supabase message call(s): https://www.aheadofmarket.com/api/dashboard/supabase-messages?client=aom&project=aom&project_only=1&attachments=1&limit=2000, https://www.aheadofmarket.com/api/dashboard/supabase-messages?client=aom&project=aom&project_only=1&limit=40&since=2026-08-16T18%3A48%3A24.333Z, https://www.aheadofmarket.com/api/dashboard/supabase-messages"
+    },
+    {
+      "id": "desktop.rooms-beside-conversation",
+      "tier": "parity",
+      "title": "On a big screen, opening a room keeps the rooms list visible beside the conversation",
+      "status": "pass",
+      "detail": "measured live 2026-08-16 (targeted run, --only), rail row beside composer at 1440x900"
+    },
+    {
+      "id": "desktop.uses-the-width",
+      "tier": "parity",
+      "title": "On a big screen the app uses the screen, not a centred phone column",
+      "status": "pass",
+      "detail": "measured live 2026-08-16 (targeted run, --only): rail + 48% span at 1440x900"
     }
   ]
 }
