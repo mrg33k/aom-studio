@@ -69,9 +69,19 @@ test('a machine preview blanks the LINE, never the row', () => {
   assert.match(mod, /export function isRoomActivityNoise/);
 });
 
-test('both preview derivation points run the gate', () => {
+test('every preview derivation point runs the gate', () => {
+  // The gate is one named pipeline (roomPreviewLine: machine gate, then normalize).
+  // It was an anonymous arrow inside useHomeData until the Convex rail shipped
+  // half of it onto 390 live rooms (gauntlet R1) — so the contract is now that
+  // EVERY rail runs the named function, and there is no second derivation.
+  const clean = read('src/dashboard/cv6next/data/presentationClean.js');
+  assert.match(clean, /export function roomPreviewLine/);
+  assert.match(clean, /isMachinePreview\(text, message\)/);
   assert.match(read('src/dashboard/hooks/useDataPipe.js'), /isMachinePreview\(t, m\)/);
-  assert.match(read('src/dashboard/cv6next/data/useHomeData.js'), /const rowPreview = \(text, message\) => \(isMachinePreview/);
+  for (const rail of ['src/dashboard/cv6next/data/useHomeData.js', 'src/dashboard/cv6next/data/convexRooms.js']) {
+    assert.match(read(rail), /roomPreviewLine\(/, `${rail} derives a preview without the gate`);
+    assert.equal(/normalizePreview\((?:text|r\.lastMessage)/.test(read(rail)), false, `${rail} still normalizes a preview outside the gate`);
+  }
 });
 
 // ── §2 Recency ordering ──────────────────────────────────────────────────────

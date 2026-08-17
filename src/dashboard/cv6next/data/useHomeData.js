@@ -16,7 +16,7 @@ import { useDataContext } from '../providers/DataContext.jsx';
 import { curateTitledAgents, titleForAgent } from './agentTitles.js';
 import { normalizePreview } from './previewText.js';
 import { missionRecencyKey } from './roomKeys.js';
-import { isRoomActivityNoise, isMachinePreview } from './presentationClean.js';
+import { isRoomActivityNoise, roomPreviewLine } from './presentationClean.js';
 import { fetchRoomActivity } from './roomActivity.js';
 import { prefetchThread } from './useRoomThread.js';
 import { convexPlaneActive } from './convexClient.js';
@@ -200,7 +200,10 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   // upstream pipe already blanks machine text on the recency scan; this is the second
   // gate, at the shaping layer, so any caller of shapeHome() gets the same guarantee.
   // Returns '' for machine text — the row survives, the line collapses (.rprev:empty).
-  const rowPreview = (text, message) => (isMachinePreview(text, message) ? '' : normalizePreview(text));
+  // ONE preview pipeline, shared with the Convex rail (presentationClean.roomPreviewLine).
+  // Same two steps this line always did — machine gate, then normalize — now named
+  // once so a second plane cannot ship half of it.
+  const rowPreview = (text, message) => roomPreviewLine(text, message);
 
   const recentMap = {};
   // A fresher timestamp-only bump (projectRooms/missionRooms carry no text) must not erase

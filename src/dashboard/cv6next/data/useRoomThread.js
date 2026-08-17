@@ -12,7 +12,7 @@ import { extractLinkCards, stripTrailingCardUrl } from './resultLinks.js';
 import { useDataContext } from '../providers/DataContext.jsx';
 import { deriveRoomStatus, deriveTurnState } from './roomStatus.js';
 import { convexPlaneActive, convexQuery, convexMutation, convexWorldId } from './convexClient.js';
-import { refreshConvexRooms } from './convexRooms.js';
+import { refreshConvexRooms, convexUnreadSupported } from './convexRooms.js';
 
 const TINTS = ['violet', 'pink', 'teal', 'lime', 'amber', 'accent'];
 function initials(name) {
@@ -297,6 +297,7 @@ class RoomThreadEngine {
     this.convex = convexPlaneActive();
     this.convexPollTimer = null;
     this.convexInFlight = false;
+    this.convexReadMarked = false;   // markRead fires once per room open, not per poll
     if (this.convex) this.stopUnavailable = true;
 
     // ── Rows we hold. `rows` is the raw server window (merged across deltas); the
@@ -583,8 +584,23 @@ class RoomThreadEngine {
         this.newestTs = this.rows.reduce((max, row) => Math.max(max, rowTime(row)), 0);
         this.project();
       })
+      .then(() => { if (this.alive) this.markConvexRead(); })
       .catch(() => { if (this.alive) this.markFeedStale(); })
       .finally(() => { this.convexInFlight = false; });
+  }
+
+  // Reading a room clears its unread — server-side, once, on open (gauntlet R1,
+  // finding 3). GUARDED: it fires only after listRooms has actually answered with
+  // an `unreadCount` field, so on today's deployment (no read-state table yet)
+  // this is a no-op and costs nothing. One call per room open, never per poll —
+  // the Convex free plan bills on Database I/O. A failure is silent by design:
+  // an unread badge that did not clear is not worth an error in the user's face.
+  markConvexRead() {
+    if (this.convexReadMarked || !convexUnreadSupported()) return;
+    this.convexReadMarked = true;
+    convexMutation('rooms:markRead', { roomId: this.canonicalRoomKey(), worldId: convexWorldId(this.worldId) })
+      .then(() => refreshConvexRooms())
+      .catch(() => { /* no read-state backend / renamed mutation: stay silent */ });
   }
 
   // Poll cadence (iOS ChatViewModel parity): 1s while a turn is open (60s after

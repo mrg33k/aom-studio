@@ -25,7 +25,11 @@ export function normalizePreview(text) {
   let t = String(text || '').replace(/\s+/g, ' ').trim();
   // Strip markdown before humanizing
   t = t.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/`([^`]+)`/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-  const m = t.match(/^(?:attached file|attachment)\s*[:\-]?\s*([^\s|,]+\.[a-z0-9]{2,5})/i);
+  // Filenames contain spaces ("The Rosie - TITLED.decision.md" previewed as the raw
+  // "Attached file: …" line on the live workspace, gauntlet R1). Match up to the
+  // extension instead of up to the first space, but stop at a separator so a
+  // sentence that merely follows the announcement is never eaten into the name.
+  const m = t.match(/^(?:attached file|attachment)\s*[:\-]?\s*([^|,]+?\.[a-z0-9]{2,5})(?=$|[\s|,])/i);
   if (!m) return humanizeUrls(t);
   const filename = m[1].replace(/^.*[/\\]/, '');
   return `Shared a file: ${filename}`;
