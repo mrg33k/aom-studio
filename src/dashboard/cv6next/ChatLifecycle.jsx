@@ -77,6 +77,19 @@ function writeRoomDraft(roomKey, value) {
     else localStorage.removeItem(key);
   } catch { /* private mode / quota: keep the in-memory draft */ }
 }
+function roomFollowKey(roomKey) {
+  return roomKey ? `cv6.followedThreads.${String(roomKey)}` : '';
+}
+function addFollowedThread(roomKey, threadId) {
+  const key = roomFollowKey(roomKey);
+  if (!key || !threadId) return;
+  try {
+    const raw = localStorage.getItem(key);
+    const set = new Set(raw ? JSON.parse(raw) : []);
+    set.add(String(threadId));
+    localStorage.setItem(key, JSON.stringify([...set]));
+  } catch { /* quota: ignore */ }
+}
 
 // Group messages (oldest -> newest) into day buckets, preserving order.
 function groupByDay(messages) {
@@ -1278,7 +1291,8 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
     if (!target) return;
     setReplyTo(target);
     if (columnMode) setThreadParent(target);
-  }, [columnMode]);
+    try { addFollowedThread(roomKeyForSheet, target?.id || target?.message_id); } catch {}
+  }, [columnMode, roomKeyForSheet]);
   const closeThread = useCallback(() => {
     setThreadParent(null);
     setReplyTo(null);
