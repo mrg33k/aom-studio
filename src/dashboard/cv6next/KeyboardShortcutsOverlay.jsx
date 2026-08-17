@@ -14,6 +14,7 @@ const SHORTCUTS = [
   { keys: ['Shift', 'T'], desc: 'Focus the latest message thread' },
   { keys: ['Any letter'], desc: 'Start typing from the conversation' },
   { keys: ['Enter'], desc: 'Send message' },
+  { keys: ['↑'], desc: 'Edit last message (when composer empty)' },
 ];
 
 export default function KeyboardShortcutsOverlay({ open, onClose }) {

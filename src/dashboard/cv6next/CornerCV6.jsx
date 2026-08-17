@@ -1690,6 +1690,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     dot: r.unread ? 'new' : 'none',
     unreadCount: Number(r.needsCount) > 99 ? '99+' : String(Number(r.needsCount) || ''),
     unreadState: Number(r.needsCount) > 0 ? 'has' : 'none',
+    // Draft indicator (row 23): read localStorage cv6.draft.{canonicalKey} without resurrecting deleted files
+    hasDraft: (() => { try { const k = r.key || r.id || ''; const ws = worldId || 'aom'; const keys = [`cv6.draft.${k}`, `cv6.draft.${ws}:${k}`, `cv6.draft.${ws}:${String(k).split(':').pop()}`]; for (const dk of keys) { const v = localStorage.getItem(dk); if (v && String(v).trim()) return 'has'; } return 'none'; } catch { return 'none'; } })(),
+    draftPreview: (() => { try { const k = r.key || r.id || ''; const ws = worldId || 'aom'; const keys = [`cv6.draft.${k}`, `cv6.draft.${ws}:${k}`, `cv6.draft.${ws}:${String(k).split(':').pop()}`]; for (const dk of keys) { const v = localStorage.getItem(dk); if (v && String(v).trim()) return String(v).trim().slice(0, 40); } return ''; } catch { return ''; } })(),
   }));
   // Ring once when a room goes unread that was not unread a moment ago. Keyed by the
   // SET of unread rooms, not a count: two rooms going unread while one is read nets to

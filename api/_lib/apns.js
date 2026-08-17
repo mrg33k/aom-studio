@@ -384,9 +384,20 @@ export async function notifyDevicesForMessageRow({ supabaseUrl, headers, row }) 
 
     const delivery = deliveryForRow(row);
 
+    // Badge truth (row 40): count unread for world via recent-unread view when available, else 1
+    let badge = 1;
+    try {
+      const cntUrl = `${supabaseUrl}/rest/v1/messages?select=id&world_id=eq.${encodeURIComponent(world)}&is_read=eq.false&limit=200`;
+      const cRes = await fetch(cntUrl, { headers });
+      if (cRes.ok) {
+        const rows = await cRes.json().catch(() => []);
+        if (Array.isArray(rows)) badge = Math.min(99, rows.length || 1);
+      }
+    } catch {}
     const result = await sendApnsBatch(devices, {
       title: titleForRow(row),
       body: previewForRow(row),
+      badge,
       // One banner per room, replaced in place — a room that produced six replies
       // while you were away is one notification, not six.
       collapseId: row.room_id || undefined,

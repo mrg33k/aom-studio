@@ -1471,6 +1471,28 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
     const h = Math.round(node.getBoundingClientRect().height);
     screen.style.setProperty('--cv6-composer-h', `${h}px`);
   }, []);
+  // Soft-keyboard viewport (row 29): keep composer above iOS keyboard at 375px via visualViewport
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return undefined;
+    const update = () => {
+      try {
+        const screen = screenRef.current || document.querySelector('[data-screen="chat-room"]');
+        if (!screen) return;
+        const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+        screen.style.setProperty('--cv6-kb', `${Math.round(kb)}px`);
+      } catch {}
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    window.addEventListener('resize', update);
+    update();
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, []);
 
   return (
     <div data-cv6 data-theme="dark" data-screen="chat-room" data-thread-open={threadParent && columnMode ? '1' : undefined} className="cv6-screen" ref={screenRef} style={{ position: 'relative', width: '100%', height: '100%', background: 'var(--ground, #05080b)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -1686,7 +1708,7 @@ export default function ChatLifecycle({ room, fullRoom, worldId, projectId, room
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
           </button>
         )}
-        <input value={draft} disabled={localReadOnly} readOnly={localReadOnly} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
+        <input value={draft} disabled={localReadOnly} readOnly={localReadOnly} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } else if (e.key === 'ArrowUp' && !draft.trim() && e.target.selectionStart === 0 && e.target.selectionEnd === 0) { for (let i = (messages?.length || 0) - 1; i >= 0; i -= 1) { const m = messages[i]; if (m?.isUser && m?.text) { e.preventDefault(); setDraft(m.text); requestAnimationFrame(() => { try { e.target.setSelectionRange(m.text.length, m.text.length); } catch {} }); break; } } } }}
           placeholder={localReadOnly ? 'Chat needs a connected workspace.' : (dictate.listening ? 'Listening…' : `Message ${room.name}…`)}
           style={{ flex: 1, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 14px', fontSize: 16, color: localReadOnly ? 'var(--muted)' : 'var(--fg)', fontFamily: 'var(--font-sans)', outline: 'none', opacity: 1, touchAction: 'manipulation' }} />
         <button onClick={submit} disabled={localReadOnly} title={localReadOnly ? 'Local mode is read-only' : 'Send'} style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', opacity: localReadOnly ? .55 : 1 }}>

@@ -107,6 +107,7 @@ export default function useChatSend({
   // sends. lastSendSigRef blocks same-text double-submits within 2s.
   const inFlightSendRef = useRef(false)
   const lastSendSigRef = useRef({ sig: '', ts: 0 })
+  const lastSentRef = useRef('')
   // Temp ids carry a random suffix so two sends in the same millisecond
   // (possible now that sends overlap) can't collide.
   const makeTempId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
@@ -210,6 +211,7 @@ export default function useChatSend({
       })
       return
     }
+    if (rawText) lastSentRef.current = rawText
     const cleanText = rawText
     const attSnapshot = pendingAttachmentsRef.current
     const chipsKey = chips.map(c => c.id).join(',')
@@ -413,8 +415,17 @@ export default function useChatSend({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
+    } else if (e.key === 'ArrowUp' && !input?.trim() && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+      const el = e.target
+      if (el && el.selectionStart === 0 && el.selectionEnd === 0 && lastSentRef.current) {
+        e.preventDefault()
+        setInput(lastSentRef.current)
+        requestAnimationFrame(() => {
+          try { el.setSelectionRange(lastSentRef.current.length, lastSentRef.current.length) } catch {}
+        })
+      }
     }
-  }, [handleSend])
+  }, [handleSend, input, setInput])
 
   // ── sendProjectText: project chat send path ──────────────────────────────
   const sendProjectText = useCallback(async (rawText) => {

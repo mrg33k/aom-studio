@@ -269,7 +269,7 @@
    stranded the whole card roughly one extra toolbar-height above Patrik's iPhone
    home indicator. Twenty pixels matches the requested visual landing line. */
 [data-cv6] .cv6-floating-composer { box-sizing:border-box; }
-[data-cv6] .mcomposer { left:12px !important; right:12px !important; bottom:20px !important; padding:0 !important; border-top:none !important; background:transparent !important; z-index:10; }
+[data-cv6] .mcomposer { left:12px !important; right:12px !important; bottom:calc(20px + var(--cv6-kb, 0px)) !important; padding:0 !important; border-top:none !important; background:transparent !important; z-index:10; }
 /* Defect A fix: the transcript reserve tracks the composer's real measured height
    via --cv6-composer-h (set by ResizeObserver in ChatLifecycle.jsx), so textarea
    autogrow, chip rows, paste bar, and /clear confirm never occlude the progress bar. */
@@ -277,8 +277,9 @@
 /* WebKit keeps safe-area-inset-bottom populated after the software keyboard
    opens. The focused visual viewport is already rectangular, so retaining that
    inset creates the white moat visible in the iPhone capture. */
-html.cv6-keyboard-open [data-cv6] .mcomposer { bottom:8px !important; }
-html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-bottom:calc(var(--cv6-composer-h, 108px) + 32px) !important; }
+html.cv6-keyboard-open [data-cv6] .mcomposer { bottom:calc(8px + var(--cv6-kb, 0px)) !important; }
+html.cv6-keyboard-open [data-cv6][data-screen="chat-room"] > .scrbody { padding-bottom:calc(var(--cv6-composer-h, 108px) + var(--cv6-kb, 0px) + 32px) !important; }
+[data-cv6][data-screen="chat-room"] > .scrbody { padding-bottom:calc(var(--cv6-composer-h, 108px) + var(--cv6-kb, 0px) + 32px) !important; }
 [data-cv6] .jumplive { bottom:calc(var(--cv6-composer-h, 108px) + 44px) !important; }
 [data-cv6] .cv6-mode-toggle { min-width:62px; }
 
