@@ -21,6 +21,7 @@ import ColumnExpandButton from './ColumnExpandButton.jsx';
 import { FilesShelf, readFilesPrefs, useRoomCrossings, writeFilesPrefs } from './ChatDesktop.jsx';
 import { Cv6MessageThread } from './MessageThread.jsx';
 import { supabase } from '../lib/supabase.js';
+import { convexPlaneActive } from './data/convexClient.js';
 // The chat file modal renders REAL previews through the same machinery the
 // Review/Files viewer uses (R-CHAT-FILE-MODAL): buildDeliverableBody makes the
 // stage HTML for any type; the doc hooks hydrate pdf/docx/html shells in place.
@@ -1195,7 +1196,8 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
 
 export default function ChatLifecycle({ room, fullRoom, worldId, projectId, roomOptions = [], messages, archivedMessages, status, onBack, onSearch, onRoomRenamed, onClearRoom, onSend, goal, onOpenReview, liveSteps, draft: streamDraft, turnHealth, turnState: turnStateProp, connection, onRetryTurn, onNudgeTurn, onReloadThread, onRepairTurn, onStopTurn, stopAvailable = true, awaiting: awaitingProp, awaitingSince, columnMode = false, onClose, expanded = false, onToggleWidth }) {
   const [draft, setDraft] = useState('');
-  const localReadOnly = !supabase;
+  // The Convex plane is writable without Supabase — sends go to messages:send.
+  const localReadOnly = !supabase && !convexPlaneActive();
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
   // Files-from-chat + the rich composer bridge (chat-surface WD40 R1). The rich
   // CV4-functionality/CV6-look composer needs the room's full identity (project /

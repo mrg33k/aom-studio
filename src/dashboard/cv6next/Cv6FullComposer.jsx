@@ -19,10 +19,13 @@ import { createPortal } from 'react-dom';
 import { CornerNavProvider } from '../CornerContext.jsx';
 import { supabase } from '../lib/supabase.js';
 import { demoFixtureActive } from '../lib/fixtureClient.js';
+import { convexPlaneActive } from './data/convexClient.js';
 
 // Real local no-Supabase mode is read-only; explicit ?demo= fixtures keep the live
 // composer so the send path stays browser-testable (Playwright owns the POSTs).
-const composerLive = () => !!supabase || demoFixtureActive();
+// The Convex plane (?convex=1) is writable without Supabase: sends go straight
+// to messages:send (corner:convex-multi-agent).
+const composerLive = () => !!supabase || demoFixtureActive() || convexPlaneActive();
 import { authFetch } from '../lib/authFetch.js';
 import { readRoutedHere, acceptRoutedHere } from './data/routedHere.js';
 import {

@@ -11,6 +11,8 @@ import { titleForAgent } from './agentTitles.js';
 import { extractLinkCards, stripTrailingCardUrl } from './resultLinks.js';
 import { useDataContext } from '../providers/DataContext.jsx';
 import { deriveRoomStatus, deriveTurnState } from './roomStatus.js';
+import { convexPlaneActive, convexQuery, convexMutation, convexWorldId } from './convexClient.js';
+import { refreshConvexRooms } from './convexRooms.js';
 
 const TINTS = ['violet', 'pink', 'teal', 'lime', 'amber', 'accent'];
 function initials(name) {
@@ -233,7 +235,42 @@ function roomFingerprint(worldId, room) {
     worldId, room.id,
     room.isMission ? 'm' : room.isProject ? 'p' : 'a',
     room.missionSlug || '', room.projectSlug || '', room.name || '',
+    // Convex-plane rail entries carry the exact backend room key; always '' on
+    // the Supabase plane, so flagless fingerprints keep their old identity.
+    room.convexKey || '',
   ].join('|');
+}
+
+// ── Convex plane row mapping (corner:convex-multi-agent) ─────────────────────
+// A Convex message → the Supabase row shape project() consumes, so the entire
+// projection (attachments, link cards, turn logic, caching) runs unchanged.
+// Convex family reads can return the SAME message twice — an imported legacy
+// copy and a native copy live in sibling rooms and share createdAt+text — so
+// dedupe on that pair; _id would keep both and double-render the thread.
+function convexRowsToThreadRows(value) {
+  const rows = [];
+  const seen = new Set();
+  for (const m of (Array.isArray(value) ? value : [])) {
+    if (!m || typeof m !== 'object') continue;
+    // Imported rows can lack `role`; an agentSlug marks the agent's side.
+    const role = m.role || (m.agentSlug ? 'assistant' : 'user');
+    const key = `${m.createdAt}|${role}|${String(m.text || '').slice(0, 120)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    rows.push({
+      id: String(m._id || ''),
+      text: m.text || '',
+      role,
+      agent: m.agentSlug || '',
+      user_name: role === 'user' ? (m.userName || '') : '',
+      timestamp: m.createdAt ? new Date(m.createdAt).toISOString() : null,
+      source: m.source || '',
+      // No metadata mapping yet: Convex `blocks` are not the CV6 block schema,
+      // and rendering an unknown shape would be worse than rendering the text.
+      metadata: null,
+    });
+  }
+  return rows;
 }
 
 class RoomThreadEngine {
@@ -248,6 +285,19 @@ class RoomThreadEngine {
     this.alive = false;
     // Set by whichever mount holds the data context — every mount passes the same fn.
     this.bumpAgentThread = null;
+
+    // ── Convex plane (corner:convex-multi-agent) ────────────────────────────
+    // Decided once per page load; OFF = the Supabase plane, byte-for-byte as
+    // before. On the Convex plane this engine reads messages:list, writes
+    // messages:send, and POLLS instead of subscribing (1s while a turn is open,
+    // 2.5s idle, nothing while the tab is hidden). The Supabase-bridge
+    // machinery — realtime channel, step feeds, steward, SSE draft, stop/repair
+    // — has no Convex backend, so it stays off: empty liveSteps and a hidden
+    // Stop control are the honest rendering, never a mock.
+    this.convex = convexPlaneActive();
+    this.convexPollTimer = null;
+    this.convexInFlight = false;
+    if (this.convex) this.stopUnavailable = true;
 
     // ── Rows we hold. `rows` is the raw server window (merged across deltas); the
     // rendered thread is projected from it, exactly as the old single fetch was.
@@ -468,6 +518,14 @@ class RoomThreadEngine {
     // genuinely unknown thread shows the loader.
     if (this.state.status !== 'ready' && this.state.status !== 'empty') this.commit({ status: 'loading' });
     this.load({ full: true });
+    if (this.convex) {
+      // Convex plane: no socket, no step feeds — the visibility-aware poll IS
+      // the live thread. Wake listeners still fire the full reload on return.
+      this.updateConnection({ realtime: 'off' });
+      this.attachWakeListeners();
+      this.scheduleConvexPoll();
+      return;
+    }
     this.subscribeRoom();
     this.attachWakeListeners();
     // Live thread: the reconcile poll is the guarantee under a socket that can drop.
@@ -484,6 +542,7 @@ class RoomThreadEngine {
   stop() {
     this.alive = false;
     this.started = false;
+    if (this.convexPollTimer) { clearTimeout(this.convexPollTimer); this.convexPollTimer = null; }
     if (this.reconcileTimer) { clearInterval(this.reconcileTimer); this.reconcileTimer = null; }
     if (this.channelRetryTimer) { clearTimeout(this.channelRetryTimer); this.channelRetryTimer = null; }
     this.stopTurnPolls();
@@ -491,6 +550,70 @@ class RoomThreadEngine {
     this.detachWakeListeners();
     if (this.channel && supabase) { try { supabase.removeChannel(this.channel); } catch { /* already gone */ } }
     this.channel = null;
+  }
+
+  // ── Room identity: the canonical legacy room key ───────────────────────────
+  // "aom:mission:corner:convex-multi-agent" / "aom:project:wolfpack" /
+  // "aom:agent:elon" — the SAME string the Supabase realtime filter scopes on
+  // (every messages row carries it as room_id) and the key corner-convex
+  // resolves rooms by (legacyRoomId). Convex rail entries that know their exact
+  // backend key (including native rooms with no legacy slug, keyed by document
+  // _id) carry it as room.convexKey and it wins over derivation.
+  canonicalRoomKey() {
+    const room = this.room;
+    if (room.convexKey) return room.convexKey;
+    const world = convexWorldId(this.worldId);
+    if (room.isMission) return `${world}:mission:${String(room.missionSlug || room.id || '')}`;
+    if (room.isProject) return `${world}:project:${room.id}`;
+    return `${world}:agent:${room.id}`;
+  }
+
+  // ── Convex plane: read + poll ──────────────────────────────────────────────
+  // messages:list for the OPEN room only, full window each time (the endpoint
+  // has no delta cursor). Failure contract is identical to the Supabase load:
+  // a failed poll marks the feed stale and keeps the last good thread.
+  loadConvex() {
+    if (this.convexInFlight) return Promise.resolve();
+    this.convexInFlight = true;
+    return convexQuery('messages:list', { roomId: this.canonicalRoomKey(), limit: 100 })
+      .then((value) => {
+        if (!this.alive) return;
+        this.updateConnection({ feed: 'live' });
+        this.rows = convexRowsToThreadRows(value);
+        this.newestTs = this.rows.reduce((max, row) => Math.max(max, rowTime(row)), 0);
+        this.project();
+      })
+      .catch(() => { if (this.alive) this.markFeedStale(); })
+      .finally(() => { this.convexInFlight = false; });
+  }
+
+  // Poll cadence (iOS ChatViewModel parity): 1s while a turn is open (60s after
+  // a send), 2.5s idle — and NO requests while the tab is hidden; the wake
+  // listener reloads on return. Self-scheduling after each response so calls can
+  // never stack: worst case ≤1 request/second (Convex quota discipline).
+  scheduleConvexPoll() {
+    if (!this.alive || !this.convex) return;
+    if (this.convexPollTimer) clearTimeout(this.convexPollTimer);
+    const openTurn = this.state.awaiting || (this.lastSentTs && (Date.now() - this.lastSentTs) < 60000);
+    this.convexPollTimer = setTimeout(() => {
+      this.convexPollTimer = null;
+      if (!this.alive) return;
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        this.scheduleConvexPoll();
+        return;
+      }
+      // Dead-turn backstop (the step poll owns this on the Supabase plane): a
+      // turn silent past the ceiling says so out loud and offers Retry/Nudge.
+      if (this.state.awaiting && this.lastSentTs && Date.now() - this.lastSentTs > DEAD_TURN_MS) {
+        this.silentTurn = true;
+        const h = this.state.turnHealth;
+        this.commit({
+          awaiting: false,
+          turnHealth: (h && h.state === 'needs_attention') ? h : { state: 'needs_attention', cause: 'agent_silent', repaired: false },
+        });
+      }
+      Promise.resolve(this.loadConvex()).finally(() => { if (this.alive) this.scheduleConvexPoll(); });
+    }, openTurn ? 1000 : 2500);
   }
 
   // ── The thread request ─────────────────────────────────────────────────────
@@ -538,6 +661,7 @@ class RoomThreadEngine {
 
   load({ full = false } = {}) {
     if (!this.alive) return Promise.resolve();
+    if (this.convex) return this.loadConvex();
     // Delta only once we actually hold an anchor row. First load, a re-subscribe and a
     // foreground wake all ask for the whole window, the way the native app does.
     const useDelta = !full && this.rows.length > 0 && this.newestTs > 0;
@@ -713,6 +837,13 @@ class RoomThreadEngine {
       this.sawLiveSteps = false;
       this.commit({ lastSentId: String(newestUser.id), awaiting: true, liveSteps: [], draft: null });
     } else if (newestReply && tms(newestReply) >= this.lastSentTs && this.lastSentTs) {
+      // Convex plane: there is no settled sentinel and no step feed on this
+      // surface — a real reply row IS the turn ending (the round-table's answers
+      // land as rows). Without this the bar would only ever clear via the
+      // dead-turn backstop and every answered turn would read as a hang.
+      if (this.convex && this.state.awaiting) {
+        this.commit({ awaiting: false, turnHealth: null });
+      }
       // R-A2: an interim reply must NEVER end a turn. Only an explicit settled signal
       // (step_index 9999 / steward health settled) or the dead-turn timeout ends it.
       // The previous guard `!sawLiveSteps && reply >= lastSentTs` yanked the bar off
@@ -730,18 +861,17 @@ class RoomThreadEngine {
   // ── Realtime: one self-healing channel per room ─────────────────────────────
   subscribeRoom() {
     if (!this.alive) return;
+    // Convex plane has no realtime channel — the poll is the live feed, and the
+    // surface says so honestly ('off'), never a fake "live" pill.
+    if (this.convex) { this.updateConnection({ realtime: 'off' }); return; }
     if (!supabase) { this.updateConnection({ realtime: 'off' }); return; }
     // room_id single-filter subscription (corner:one-write-path R5, 2026-07-01).
     // postgres_changes supports exactly ONE `column=eq.value` filter. Every row now has
     // a canonical room_id (trigger + backfill), so one equality filter scopes the room
     // precisely. If a slug is ever non-canonical the filter just misses and the
-    // reconcile still covers.
-    const room = this.room;
-    let roomIdFilter;
-    if (room.isMission) roomIdFilter = `${this.worldId}:mission:${String(room.missionSlug || room.id || '')}`;
-    else if (room.isProject) roomIdFilter = `${this.worldId}:project:${room.id}`;
-    else roomIdFilter = `${this.worldId}:agent:${room.id}`;
-    const filter = `room_id=eq.${roomIdFilter}`;
+    // reconcile still covers. canonicalRoomKey() builds the identical string the
+    // inline derivation here always built.
+    const filter = `room_id=eq.${this.canonicalRoomKey()}`;
 
     try { if (this.channel) supabase.removeChannel(this.channel); } catch { /* already gone */ }
     // Self-healing channel (the cv3 R74 pattern — corner:bridge frontend-visibility D5).
@@ -973,6 +1103,10 @@ class RoomThreadEngine {
   // same restart-on-change semantics — just driven by the engine instead of React.
   syncTurnPolls() {
     if (!this.started) return;
+    // Convex plane: step feed, steward and SSE draft are Supabase-bridge
+    // machinery with no Convex backend — the 1s open-turn poll is the live
+    // feed, and liveSteps stay honestly empty.
+    if (this.convex) return;
     const key = this.state.awaiting ? `on|${this.state.lastSentId}` : 'off';
     if (key !== this.turnPollKey) {
       this.stopTurnPolls();
@@ -994,6 +1128,7 @@ class RoomThreadEngine {
   // regardless of `awaiting` and groups by parent_message_id, so a finished turn's steps
   // stay available to render in the conversation — and survive a reload.
   startStepsPoll() {
+    if (this.convex) return; // no Convex step feed — see syncTurnPolls
     if (this.stepsTimer) { clearInterval(this.stepsTimer); this.stepsTimer = null; }
     this.stepsCadence = this.state.awaiting ? 3000 : 12000;
     const q = this.stepQuery(100);
@@ -1027,7 +1162,8 @@ class RoomThreadEngine {
     if (!worldId || !room?.id || !body) return false;
     // Real local no-Supabase mode is read-only (no phantom sends); explicit ?demo=
     // fixtures keep the send path live because Playwright intercepts own the POST.
-    if (!supabase && !demoFixtureActive()) return false;
+    // The Convex plane needs neither: messages:send is a plain unauthenticated fetch.
+    if (!this.convex && !supabase && !demoFixtureActive()) return false;
     // DEDUP-11: 50ms client debounce — second identical POST within 50ms is a double-click
     const _dedupNow = Date.now();
     if (body === this._lastDedupText && (_dedupNow - this._lastDedupTs) < 50) {
@@ -1096,6 +1232,34 @@ class RoomThreadEngine {
       if (!r) return 'offline';
       return 'server';
     };
+    // ── Convex plane write: messages:send resolves/creates the room by its
+    // canonical key, inserts the row, and schedules ai.dispatchMessage — the
+    // agent reply arrives as a thread row through the poll. Same failure
+    // contract as the Supabase path: a failed send keeps its bubble, marked
+    // "Not sent", with a one-tap retry.
+    if (this.convex) {
+      try {
+        const id = await convexMutation('messages:send', {
+          roomId: this.canonicalRoomKey(),
+          text: body,
+          role: 'user',
+          clientId: convexWorldId(worldId),
+          source: 'cv6-dashboard',
+        });
+        if (id) {
+          this.commit({ lastSentId: String(id) });
+          this.updatePending((p) => p.map((m) => (m.optId === optId ? { ...m, serverId: String(id), receipt: true } : m)));
+        }
+        // Rooms rail: fetched on load and refreshed after a send — never polled.
+        refreshConvexRooms();
+        this.load({ full: true });
+        this.scheduleConvexPoll(); // snap to the 1s open-turn cadence now
+        return true;
+      } catch (err) {
+        markFailed((err && (err.name === 'TimeoutError' || err.name === 'AbortError')) ? 'timeout' : classify(null));
+        return false;
+      }
+    }
     try {
       const r = await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -1153,6 +1317,7 @@ class RoomThreadEngine {
   // run its server-allowlisted repair for this exact turn, then reload. Same
   // endpoint the 45s auto-repair path uses — a human tap just asks sooner.
   async repairTurn() {
+    if (this.convex) return false; // steward repair is Supabase-bridge machinery
     if (!this.state.lastSentId) return false;
     try {
       const res = await authFetch('/api/dashboard/room-health', {
@@ -1172,6 +1337,7 @@ class RoomThreadEngine {
   // sentinel says so. feature_off (bridge flag/tunnel not live) hides the
   // control for the rest of the session.
   async stopTurn() {
+    if (this.convex) return false; // no Convex stop endpoint; the control is hidden (stopUnavailable)
     if (!this.state.awaiting || !this.state.lastSentId) return false;
     this.commit({ turnHealth: { state: 'stopping', cause: null } });
     try {
@@ -1195,12 +1361,16 @@ class RoomThreadEngine {
   reload() {
     if (!this.started) return;
     this.load({ full: true });
+    if (this.convex) return; // no steps feed / socket to refresh on the Convex plane
     this.startStepsPoll();
     const socketState = this.channel && this.channel.state;
     if (supabase && (!this.channel || socketState === 'closed' || socketState === 'errored' || socketState === 'leaving')) this.subscribeRoom();
   }
 
   async clearRoom() {
+    // No Convex room-reset backend: report the honest failure rather than fake
+    // a wipe the server would undo on the next poll.
+    if (this.convex) return false;
     const worldId = this.worldId;
     const room = this.room;
     if (!worldId || !room?.id) return false;
@@ -1272,6 +1442,10 @@ function acquireEngine(worldId, room) {
 // Prefetch a room's thread into the render cache so opening it shows content instantly.
 // Called from useHome after the first successful data load for the top 5 recent rooms.
 export function prefetchThread(worldId, room) {
+  // Convex plane: never prefetch. It would (a) seed the render cache with rows
+  // from the WRONG plane and (b) spend Convex-adjacent traffic on rooms nobody
+  // opened — the open room's poll is the only thread read allowed.
+  if (convexPlaneActive()) return;
   const key = threadCacheKey(worldId, room);
   if (!worldId || !key || threadCache.has(key)) return;
   const params = new URLSearchParams();
