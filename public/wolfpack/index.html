@@ -19,7 +19,7 @@ body{background:var(--paper);color:var(--ink);
 
 /* ---- header ---- */
 .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;
-  border-bottom:2px solid var(--ink);margin-bottom:32px}
+  border-bottom:1.5px solid var(--rule);margin-bottom:32px}
 .hdr-left h1{font-family:'Druk Cond',ui-sans-serif,sans-serif;text-transform:uppercase;
   font-weight:400;font-size:44px;line-height:.9;letter-spacing:.01em;margin-bottom:4px}
 .hdr-left p{font-size:13px;color:var(--ink-2)}
@@ -29,37 +29,36 @@ body{background:var(--paper);color:var(--ink);
 /* ---- sections ---- */
 .sec{margin-bottom:32px}
 .sec-title{font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:800;
-  color:var(--ink-3);padding-bottom:10px;border-bottom:1.5px solid var(--rule);margin-bottom:16px}
+  color:var(--ink-3);padding-bottom:0;margin-bottom:14px}
 
 /* ---- milestones ---- */
-.ms-grid{display:grid;grid-template-columns:28px 1fr 120px 80px;gap:0;
-  font-size:13px;align-items:center}
-.ms-grid .hd{font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;
-  color:var(--ink-3);padding:8px 0;border-bottom:1.5px solid var(--rule)}
-.ms-row{display:contents}
-.ms-row>*{padding:11px 0;border-bottom:1px solid var(--soft)}
-.ms-num{font-weight:800;color:var(--ink-3);text-align:center}
-.ms-name{font-weight:600}
-.ms-bar-cell{padding-right:14px}
+.ms-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.ms-tbl th{font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;
+  color:var(--ink-3);padding:8px 12px 8px 0;text-align:left;border-bottom:1.5px solid var(--rule)}
+.ms-tbl td{padding:12px 12px 12px 0;border-bottom:1px solid var(--soft);vertical-align:middle}
+.ms-tbl tr:last-child td{border-bottom:none}
+.ms-tbl .ms-num{font-weight:800;color:var(--ink-3);text-align:center;width:28px}
+.ms-tbl .ms-name{font-weight:600}
+.ms-tbl .ms-bar-cell{width:120px;padding-right:14px}
 .ms-bar{height:7px;background:var(--soft);overflow:hidden}
-.ms-fill{height:100%;transition:width .4s ease}
+.ms-fill{height:100%}
 .ms-fill.done{background:var(--done)}
 .ms-fill.wip{background:var(--gold)}
 .tag{display:inline-block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
-  font-weight:800;padding:3px 8px;line-height:1}
+  font-weight:800;padding:3px 8px;line-height:1;white-space:nowrap}
 .tag.done{background:var(--done);color:#fff}
 .tag.wip{color:var(--doing);border:1.5px solid var(--doing)}
 .tag.next{color:var(--next);border:1.5px solid var(--next)}
 
 /* ---- tasks ---- */
-.tk-grid{display:grid;grid-template-columns:24px 1fr 88px 48px 24px;gap:0;font-size:13px;align-items:center}
-.tk-grid .hd{font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;
-  color:var(--ink-3);padding:6px 0;border-bottom:1.5px solid var(--rule)}
-.tk-row{display:contents}
-.tk-row>*{padding:10px 0;border-bottom:1px solid var(--soft)}
-.tk-num{font-weight:800;color:var(--ink-3);text-align:center;font-size:12px}
-.tk-pri{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
-.chk{color:var(--done);font-weight:900;font-size:15px;text-align:center}
+.tk-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tk-tbl th{font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;
+  color:var(--ink-3);padding:8px 12px 8px 0;text-align:left;border-bottom:1.5px solid var(--rule)}
+.tk-tbl td{padding:12px 12px 12px 0;border-bottom:1px solid var(--soft);vertical-align:middle}
+.tk-tbl tr:last-child td{border-bottom:none}
+.tk-tbl .tk-num{font-weight:800;color:var(--ink-3);text-align:center;width:28px;font-size:12px}
+.tk-pri{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding-left:16px!important}
+.chk{color:var(--done);font-weight:900;font-size:15px;text-align:center;width:28px}
 
 /* ---- asks ---- */
 .ask-row{display:flex;gap:16px;margin-bottom:8px;font-size:13px}
@@ -71,7 +70,7 @@ body{background:var(--paper);color:var(--ink);
   color:var(--ink-2);line-height:1.5}
 
 /* ---- footer ---- */
-.ftr{margin-top:32px;padding-top:12px;border-top:2px solid var(--ink);
+.ftr{margin-top:32px;padding-top:12px;border-top:1.5px solid var(--rule);
   font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);font-weight:700;
   display:flex;justify-content:space-between}
 
@@ -107,104 +106,30 @@ body{background:var(--paper);color:var(--ink);
 <!-- MILESTONES -->
 <div class="sec">
   <div class="sec-title">Project Milestones</div>
-  <div class="ms-grid">
-    <div class="hd">#</div><div class="hd">Milestone</div><div class="hd">Progress</div><div class="hd">Status</div>
-
-    <div class="ms-row">
-      <div class="ms-num">1</div>
-      <div class="ms-name">Lay of the land</div>
-      <div class="ms-bar-cell"><div class="ms-bar"><div class="ms-fill done" style="width:100%"></div></div></div>
-      <div><span class="tag done">Done</span></div>
-    </div>
-    <div class="ms-row">
-      <div class="ms-num">2</div>
-      <div class="ms-name">Website built &amp; live</div>
-      <div class="ms-bar-cell"><div class="ms-bar"><div class="ms-fill done" style="width:100%"></div></div></div>
-      <div><span class="tag done">Done</span></div>
-    </div>
-    <div class="ms-row">
-      <div class="ms-num">3</div>
-      <div class="ms-name">Jobber data &amp; baseline numbers</div>
-      <div class="ms-bar-cell"><div class="ms-bar"><div class="ms-fill wip" style="width:70%"></div></div></div>
-      <div><span class="tag wip">This week</span></div>
-    </div>
-    <div class="ms-row">
-      <div class="ms-num">4</div>
-      <div class="ms-name">Real photos &amp; video on site</div>
-      <div class="ms-bar-cell"><div class="ms-bar"><div class="ms-fill wip" style="width:60%"></div></div></div>
-      <div><span class="tag wip">This week</span></div>
-    </div>
-    <div class="ms-row">
-      <div class="ms-num">5</div>
-      <div class="ms-name">Website polish &amp; service pages</div>
-      <div class="ms-bar-cell"><div class="ms-bar"><div class="ms-fill" style="width:0%"></div></div></div>
-      <div><span class="tag next">Week 4</span></div>
-    </div>
-    <div class="ms-row">
-      <div class="ms-num">6</div>
-      <div class="ms-name">Property manager outreach</div>
-      <div class="ms-bar-cell"><div class="ms-bar"><div class="ms-fill" style="width:0%"></div></div></div>
-      <div><span class="tag next">Week 5</span></div>
-    </div>
-  </div>
+  <table class="ms-tbl">
+    <tr><th class="ms-num">#</th><th>Milestone</th><th>Progress</th><th>Status</th></tr>
+    <tr><td class="ms-num">1</td><td class="ms-name">Lay of the land</td><td class="ms-bar-cell"><div class="ms-bar"><div class="ms-fill done" style="width:100%"></div></div></td><td><span class="tag done">Done</span></td></tr>
+    <tr><td class="ms-num">2</td><td class="ms-name">Website built &amp; live</td><td class="ms-bar-cell"><div class="ms-bar"><div class="ms-fill done" style="width:100%"></div></div></td><td><span class="tag done">Done</span></td></tr>
+    <tr><td class="ms-num">3</td><td class="ms-name">Jobber data &amp; baseline numbers</td><td class="ms-bar-cell"><div class="ms-bar"><div class="ms-fill wip" style="width:70%"></div></div></td><td><span class="tag wip">This week</span></td></tr>
+    <tr><td class="ms-num">4</td><td class="ms-name">Real photos &amp; video on site</td><td class="ms-bar-cell"><div class="ms-bar"><div class="ms-fill wip" style="width:60%"></div></div></td><td><span class="tag wip">This week</span></td></tr>
+    <tr><td class="ms-num">5</td><td class="ms-name">Website polish &amp; service pages</td><td class="ms-bar-cell"><div class="ms-bar"><div class="ms-fill wip" style="width:20%"></div></div></td><td><span class="tag wip">This week</span></td></tr>
+    <tr><td class="ms-num">6</td><td class="ms-name">Property manager outreach</td><td class="ms-bar-cell"><div class="ms-bar"><div class="ms-fill" style="width:0%"></div></div></td><td><span class="tag next">Week 5</span></td></tr>
+  </table>
 </div>
 
 <!-- TASKS -->
 <div class="sec">
   <div class="sec-title">This Week&rsquo;s Tasks</div>
-  <div class="tk-grid">
-    <div class="hd">#</div><div class="hd">Task</div><div class="hd">Status</div><div class="hd">Pri</div><div class="hd"></div>
-
-    <div class="tk-row">
-      <div class="tk-num">1</div>
-      <div>Analyze Jobber client data &mdash; source performance, referral network, trends</div>
-      <div><span class="tag done">Done</span></div>
-      <div class="tk-pri">High</div>
-      <div class="chk">&check;</div>
-    </div>
-    <div class="tk-row">
-      <div class="tk-num">2</div>
-      <div>Vecina walkthrough video delivered to Ross, Robert &amp; Brian</div>
-      <div><span class="tag done">Done</span></div>
-      <div class="tk-pri">High</div>
-      <div class="chk">&check;</div>
-    </div>
-    <div class="tk-row">
-      <div class="tk-num">3</div>
-      <div>Video edit reviewed with Robert &mdash; feedback received, revisions in progress</div>
-      <div><span class="tag wip">In progress</span></div>
-      <div class="tk-pri">High</div>
-      <div></div>
-    </div>
-    <div class="tk-row">
-      <div class="tk-num">4</div>
-      <div>Swap remaining stock photos for real shoot photos on the website</div>
-      <div><span class="tag wip">In progress</span></div>
-      <div class="tk-pri">Med</div>
-      <div></div>
-    </div>
-    <div class="tk-row">
-      <div class="tk-num">5</div>
-      <div>Website design polish pass</div>
-      <div><span class="tag wip">In progress</span></div>
-      <div class="tk-pri">Med</div>
-      <div></div>
-    </div>
-    <div class="tk-row">
-      <div class="tk-num">6</div>
-      <div>Book next two shoots (gas-line testimonial, Redstone staff)</div>
-      <div><span class="tag next">Up next</span></div>
-      <div class="tk-pri">High</div>
-      <div></div>
-    </div>
-    <div class="tk-row">
-      <div class="tk-num">7</div>
-      <div>Build property manager target list from Jobber verticals</div>
-      <div><span class="tag next">Up next</span></div>
-      <div class="tk-pri">High</div>
-      <div></div>
-    </div>
-  </div>
+  <table class="tk-tbl">
+    <tr><th class="tk-num">#</th><th>Task</th><th>Status</th><th>Pri</th><th></th></tr>
+    <tr><td class="tk-num">1</td><td>Analyze Jobber client data &mdash; source performance, referral network, trends</td><td><span class="tag done">Done</span></td><td class="tk-pri">High</td><td class="chk">&check;</td></tr>
+    <tr><td class="tk-num">2</td><td>Vecina walkthrough video delivered to Ross, Robert &amp; Brian</td><td><span class="tag done">Done</span></td><td class="tk-pri">High</td><td class="chk">&check;</td></tr>
+    <tr><td class="tk-num">3</td><td>Video edit reviewed with Robert &mdash; feedback received, revisions in progress</td><td><span class="tag wip">In progress</span></td><td class="tk-pri">High</td><td></td></tr>
+    <tr><td class="tk-num">4</td><td>Swap remaining stock photos for real shoot photos on the website</td><td><span class="tag wip">In progress</span></td><td class="tk-pri">Med</td><td></td></tr>
+    <tr><td class="tk-num">5</td><td>Website design polish pass</td><td><span class="tag wip">This week</span></td><td class="tk-pri">High</td><td></td></tr>
+    <tr><td class="tk-num">6</td><td>Recommendations for meeting based on Jobber data</td><td><span class="tag wip">Tomorrow</span></td><td class="tk-pri">High</td><td></td></tr>
+    <tr><td class="tk-num">7</td><td>Book next two shoots (gas-line testimonial, Redstone staff)</td><td><span class="tag next">Up next</span></td><td class="tk-pri">High</td><td></td></tr>
+  </table>
 </div>
 
 <!-- WHAT WE NEED -->
