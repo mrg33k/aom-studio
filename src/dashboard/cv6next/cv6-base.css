@@ -215,12 +215,25 @@
   --glow-online: 0 0 8px rgba(52,211,153,.6);  
 
   
-  --ease-out: cubic-bezier(.22, 1, .36, 1); 
-  --dur-press: .12s; 
-  --dur-move: .2s; 
-  --dur-card: .4s; 
-  --press-scale: .94;     
-  --press-scale-lg: .97;  
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --dur-press: .12s;
+  --dur-move: .2s;
+  --dur-card: .4s;
+  --press-scale: .94;
+  --press-scale-lg: .97;
+
+  /* ---- motion language (shared across web + native) ---- */
+  /* spring-out: decelerating spring feel — the signature curve for room/panel/message transitions */
+  --spring-out: cubic-bezier(.32, .72, 0, 1);
+  /* spring-bounce: slight overshoot for arrivals (messages, badges, notifications) */
+  --spring-bounce: cubic-bezier(.34, 1.56, .64, 1);
+  /* spring-settle: critically damped for things that need to land without bounce (panels, drawers) */
+  --spring-settle: cubic-bezier(.25, .46, .45, .94);
+  /* durations: room-open and panel-slide are 280ms, message arrive is 220ms, badge pop is 180ms */
+  --dur-room: .28s;
+  --dur-msg: .22s;
+  --dur-panel: .28s;
+  --dur-badge: .18s;
 }
 
 /* ---- shared shell + pattern classes (from frame.css) ---- */
@@ -1256,40 +1269,108 @@ html.cv6-keyboard-open [data-cv6].cv6-app-shell {
 [data-cv6] .sdot.is-idle { display:none; }
 
 
-/* ---- SMOOTHNESS: motion that makes the app feel alive (R29) ---- */
+/* ---- SMOOTHNESS: motion language (R29 + R53 spring upgrade) ---- */
+/* Six key interactions share spring-based curves from the motion tokens above.
+   iOS mirrors these: spring(response:0.28, dampingFraction:0.82) ≈ --spring-out,
+   spring(response:0.22, dampingFraction:0.68) ≈ --spring-bounce. */
 
-/* #1 Room transition — workspace columns slide in from right on mount */
-@keyframes cv6ColIn { from { opacity:0; transform:translateX(8px); } to { opacity:1; transform:translateX(0); } }
-[data-cv6] .cv6-workspace-column { animation: cv6ColIn var(--dur-move) var(--ease-out) both; }
+/* #1 Room open — column slides in with spring deceleration, not a linear fade */
+@keyframes cv6ColIn {
+  from { opacity:0; transform:translateX(12px) scale(.98); }
+  to   { opacity:1; transform:translateX(0) scale(1); }
+}
+[data-cv6] .cv6-workspace-column { animation: cv6ColIn var(--dur-room) var(--spring-out) both; }
 
-/* #2 New-message entrance — last group slides up when thread count grows */
-@keyframes cv6MsgIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
-[data-cv6] [data-cv6-message-thread][data-cv6-new-messages] .grp:last-child { animation: cv6MsgIn var(--dur-press) var(--ease-out) both; }
-[data-cv6] [data-cv6-message-thread][data-cv6-new-messages] > [data-cv6-message-turn]:last-child { animation: cv6MsgIn var(--dur-press) var(--ease-out) both; }
+/* #2 Message arrive — new messages pop up from below with slight overshoot */
+@keyframes cv6MsgIn {
+  from { opacity:0; transform:translateY(8px) scale(.97); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+[data-cv6] [data-cv6-message-thread][data-cv6-new-messages] .grp:last-child { animation: cv6MsgIn var(--dur-msg) var(--spring-bounce) both; }
+[data-cv6] [data-cv6-message-thread][data-cv6-new-messages] > [data-cv6-message-turn]:last-child { animation: cv6MsgIn var(--dur-msg) var(--spring-bounce) both; }
 
-/* #3 Content fade-in — message thread + file list appear with a soft crossfade */
+/* #2b User's own message — slides up from the composer with a subtle pop */
+@keyframes cv6UserMsgIn {
+  from { opacity:0; transform:translateY(12px) scale(.95); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+[data-cv6] [data-cv6-message-thread][data-cv6-new-messages] .umsg:last-child { animation: cv6UserMsgIn var(--dur-msg) var(--spring-bounce) both; }
+
+/* #3 Content fade-in — room thread appears with a quick crossfade */
 @keyframes cv6ContentIn { from { opacity:0; } to { opacity:1; } }
-[data-cv6] .pconv { animation: cv6ContentIn 100ms ease both; }
+[data-cv6] .pconv { animation: cv6ContentIn 120ms var(--spring-settle) both; }
 
-/* #4 Theme switch — background + text crossfade when toggling dark/light/glass */
+/* #4 Panel slide — files drawer, thread panel slide in from right */
+@keyframes cv6PanelIn {
+  from { opacity:0; transform:translateX(16px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+@keyframes cv6PanelOut {
+  from { opacity:1; transform:translateX(0); }
+  to   { opacity:0; transform:translateX(8px); }
+}
+[data-cv6] .cv6-files-drawer { animation: cv6PanelIn var(--dur-panel) var(--spring-out) both; }
+[data-cv6] .cv6-thread-panel { animation: cv6PanelIn var(--dur-panel) var(--spring-out) both; }
+
+/* #5 Send-button pop — spring overshoot on successful send */
+@keyframes cv6SendPop {
+  0%   { transform:translateY(0) scale(1); }
+  35%  { transform:translateY(-3px) scale(1.08); }
+  70%  { transform:translateY(0.5px) scale(.98); }
+  100% { transform:translateY(0) scale(1); }
+}
+[data-cv6] .cv6-composer-primary[data-cv6-sent] { animation: cv6SendPop var(--dur-room) var(--spring-bounce); }
+
+/* #6 Badge pop — unread count pops in with overshoot */
+@keyframes cv6BadgeIn {
+  from { transform:scale(0); opacity:0; }
+  to   { transform:scale(1); opacity:1; }
+}
+@keyframes cv6BadgePulse {
+  0%   { transform:scale(1); }
+  50%  { transform:scale(1.15); }
+  100% { transform:scale(1); }
+}
+[data-cv6] .cv6-unread-count[data-mod*="is-has"] { animation: cv6BadgeIn var(--dur-badge) var(--spring-bounce) both; }
+[data-cv6] .cv6-unread-count[data-cv6-badge-update] { animation: cv6BadgePulse var(--dur-badge) var(--spring-bounce); }
+
+/* #7 Typing indicator — three dots with staggered spring bounce */
+@keyframes cv6TypingDot {
+  0%, 60%, 100% { transform:translateY(0); opacity:.4; }
+  30%           { transform:translateY(-4px); opacity:1; }
+}
+[data-cv6] .cv6-typing-indicator .dot { animation: cv6TypingDot 1.1s var(--spring-bounce) infinite; }
+[data-cv6] .cv6-typing-indicator .dot:nth-child(2) { animation-delay: .15s; }
+[data-cv6] .cv6-typing-indicator .dot:nth-child(3) { animation-delay: .30s; }
+
+/* Theme switch — background + text crossfade */
 [data-cv6],
 [data-cv6] .cv6-workspace-column,
 [data-cv6] .cv6-workspace-base,
 [data-cv6] .cv6-screen-stage,
 [data-cv6] .mhdr,
-[data-cv6] .topbar { transition: background-color var(--dur-move) ease, color var(--dur-move) ease; }
+[data-cv6] .topbar { transition: background-color var(--dur-room) ease, color var(--dur-room) ease; }
 
-/* #5 Send-button pop — brief launch after successful send */
-@keyframes cv6SendPop { 0% { transform:translateY(0) scale(1); } 40% { transform:translateY(-2px) scale(1.05); } 100% { transform:translateY(0) scale(1); } }
-[data-cv6] .cv6-composer-primary[data-cv6-sent] { animation: cv6SendPop var(--dur-move) var(--ease-out); }
+/* Room row hover — lift and highlight with spring feel */
+[data-cv6] .cv6-room-row {
+  transition: background-color var(--dur-press) ease, transform var(--dur-msg) var(--spring-out), box-shadow var(--dur-msg) var(--spring-out);
+}
+[data-cv6] .cv6-room-row:hover { transform:translateX(2px); }
+[data-cv6] .cv6-room-row:active { transform:scale(.985); }
+[data-cv6] .cv6-room-row[data-active] { transform:none; }
 
-/* Suggested-response chips stagger in */
-@keyframes cv6ChipIn { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:translateY(0); } }
-[data-cv6] .chip-btn { animation: cv6ChipIn var(--dur-press) var(--ease-out) both; }
-[data-cv6] .chip-btn:nth-child(2) { animation-delay: 50ms; }
-[data-cv6] .chip-btn:nth-child(3) { animation-delay: 100ms; }
-[data-cv6] .chip-btn:nth-child(4) { animation-delay: 150ms; }
-[data-cv6] .chip-btn:nth-child(5) { animation-delay: 200ms; }
+/* Suggested-response chips stagger in with spring */
+@keyframes cv6ChipIn { from { opacity:0; transform:translateY(4px) scale(.95); } to { opacity:1; transform:translateY(0) scale(1); } }
+[data-cv6] .chip-btn { animation: cv6ChipIn var(--dur-msg) var(--spring-bounce) both; }
+[data-cv6] .chip-btn:nth-child(2) { animation-delay: 60ms; }
+[data-cv6] .chip-btn:nth-child(3) { animation-delay: 120ms; }
+[data-cv6] .chip-btn:nth-child(4) { animation-delay: 180ms; }
+[data-cv6] .chip-btn:nth-child(5) { animation-delay: 240ms; }
+
+/* Message action shelf — spring in on hover */
+[data-cv6] .cv6-message-actions {
+  transition: opacity var(--dur-press) ease, transform var(--dur-msg) var(--spring-out);
+}
 
 /* Header progress bar — animated sweep below room header while agent works */
 [data-cv6] .cv6-header-progress {

@@ -1138,7 +1138,7 @@ function RoomFilesSheet({ worldId, room, onClose, onReview, columnMode = false }
     return (
       <div style={{ position: 'absolute', inset: 0, zIndex: 40 }}>
         <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.55)' }} />
-        <div style={{
+        <div className="cv6-files-drawer" style={{
           position: 'absolute', top: 0, right: 0, bottom: 0,
           width: 340, maxWidth: '88%',
           background: 'var(--ground)',

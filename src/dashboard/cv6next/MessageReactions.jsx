@@ -57,7 +57,7 @@ function QuickPicker({ onPick, onClose }) {
       display: 'flex', gap: 2, padding: '4px 6px', borderRadius: 20,
       background: 'var(--surface)', border: '1px solid var(--hair)',
       boxShadow: '0 8px 24px -8px rgba(0,0,0,.4)', zIndex: 5,
-      animation: 'cv6FadeIn .12s ease both',
+      animation: 'cv6ChipIn .18s cubic-bezier(.34,1.56,.64,1) both',
     }}>
       {QUICK_EMOJIS.map((emoji) => (
         <button
