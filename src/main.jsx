@@ -518,7 +518,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <SystemToastProvider>
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
-          <Route path="/" element={<HomeR38Preview />} />
+          <Route path="/" element={<HomeR6Baby />} />
           <Route path="/r38" element={<HomeR38Preview />} />
           <Route path="/home-options" element={<HomeLayoutOptions />} />
           <Route path="/r7" element={<HomeAOM2026 />} />
