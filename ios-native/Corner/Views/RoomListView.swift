@@ -971,9 +971,13 @@ private struct RoomRowCard: View {
                             .padding(.horizontal, 6).padding(.vertical, 2)
                             .background(Theme.live, in: Capsule())
                             .accessibilityLabel("\(badge) unread")
+                            // R53: badge pop — matches web's cv6BadgeIn (spring-bounce, 180ms)
+                            .transition(.scale.combined(with: .opacity))
+                            .animation(.spring(response: 0.18, dampingFraction: 0.68), value: unreadBadge)
                     } else if unread {
                         Circle().fill(Theme.live).frame(width: 9, height: 9)
                             .accessibilityLabel("Unread")
+                            .transition(.scale.combined(with: .opacity))
                     }
                 }
             }
@@ -1025,9 +1029,13 @@ private struct RoomRowCard: View {
                         .padding(.horizontal, 6).padding(.vertical, 2)
                         .background(Theme.live, in: Capsule())
                         .accessibilityLabel("\(badge) unread")
+                        // R53: badge pop — same spring as hero card
+                        .transition(.scale.combined(with: .opacity))
+                        .animation(.spring(response: 0.18, dampingFraction: 0.68), value: unreadBadge)
                 } else if unread {
                     Circle().fill(Theme.live).frame(width: 9, height: 9)
                         .accessibilityLabel("Unread")
+                        .transition(.scale.combined(with: .opacity))
                 }
             }
         }

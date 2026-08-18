@@ -604,6 +604,11 @@ struct ChatView: View {
                                             .padding(.vertical, -Theme.s1)
                                     )
                                     .animation(.easeInOut(duration: 0.22), value: highlightedMessageID)
+                                    // R53: message-arrive spring — matches web's cv6MsgIn (spring-bounce, 220ms)
+                                    .transition(.asymmetric(
+                                        insertion: .opacity.combined(with: .scale(scale: 0.97)).combined(with: .offset(y: 6)),
+                                        removal: .opacity
+                                    ))
                                     .id(row.id)
                                 case .outbox(let pending):
                                     OutboxBubbleView(
@@ -611,6 +616,11 @@ struct ChatView: View {
                                         retry: { model.retry(pending) },
                                         discard: { model.discard(pending) }
                                     )
+                                    // R53: outbox send spring — user's message pops up from composer
+                                    .transition(.asymmetric(
+                                        insertion: .opacity.combined(with: .scale(scale: 0.95)).combined(with: .offset(y: 10)),
+                                        removal: .opacity
+                                    ))
                                     .id(pending.id)
                                 }
                             }
