@@ -1,6 +1,119 @@
 {
  "days": [
   {
+   "date": "2026-08-19",
+   "items": [
+    {
+     "lane": "ai-tools",
+     "youtube_id": "8ONFvAtboZ4",
+     "title": "Grok Bot + Grok 4.6 + Cursor Origin - is Claude Code dead?",
+     "channel": "How I AI",
+     "views": "95K",
+     "published": "2026-08-18",
+     "why": "Covers all three big launches of the week in one video: Grok Bot as a consumer product, Grok 4.6 as the API play, and Cursor Origin as the dev-tools shakeup. The right single video to watch if you missed the week."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "j2WiGVqMczw",
+     "title": "Grok Bot Just Dropped. (Brutally Honest Review)",
+     "channel": "Brock Mesarich",
+     "views": "180K",
+     "published": "2026-08-13",
+     "why": "Hands-on review of Grok Bot as a ChatGPT competitor from someone who actually uses these daily. Cuts through the hype to show where it works and where it falls short compared to ChatGPT and Claude."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "VWDnptnvFrA",
+     "title": "Grok 4.6 is Actually Good\u2026 And Claude Keeps Getting Better",
+     "channel": "Riley Brown",
+     "views": "120K",
+     "published": "2026-08-15",
+     "why": "Balanced take that gives Grok 4.6 credit without the usual clickbait doom framing. Also covers Claude's recent improvements, making it the best week-in-review for anyone tracking both ecosystems."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "hu1yqcf4oP8",
+     "title": "Cursor Origin: Git Hosting for AI Agents Is Coming",
+     "channel": "TechWealth Hub",
+     "views": "45K",
+     "published": "2026-08-17",
+     "why": "Cursor Origin launched this week as agent-first git hosting. Repos, PRs, and code review designed so AI agents are the primary users, not humans. A different kind of GitHub competitor."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "JQInc4V6SWg",
+     "title": "I Made Claude Opus 5 and Fable 5 Build the Same App (Raw Results)",
+     "channel": "Dubibubi",
+     "views": "85K",
+     "published": "2026-08-14",
+     "why": "Side-by-side build comparison giving the exact same prompt to Opus 5 and Fable 5. Raw unedited results showing the actual output difference between the two models when building a real app."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "lWF_F0Xg0BY",
+     "title": "Codex VS Claude Fable VS Grok (Honest Results)",
+     "channel": "Dubibubi",
+     "views": "110K",
+     "published": "2026-08-16",
+     "why": "Three-way build battle across the current frontier coding models. Same app prompt, different engines, honest results. The closest thing to a real benchmark for AI-assisted development this week."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "s2ngxmDZekE",
+     "title": "Claude Opus 5 Just Dropped and Beats Fable 5 (at Half the Cost)",
+     "channel": "AI Revolution",
+     "views": "140K",
+     "published": "2026-08-13",
+     "why": "Walks through real coding tasks where Opus 5 matches or beats Fable 5 at roughly half the token cost. Practical for anyone deciding which model to use for AI-assisted builds."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "Vh1v2VSroes",
+     "title": "Claude Opus 5 DESTROYS Fable 5",
+     "channel": "Alex Finn",
+     "views": "75K",
+     "published": "2026-08-14",
+     "why": "Clickbait title but genuine build comparison showing where Opus 5 outperforms Fable 5 on complex multi-file projects. Real code output, not benchmarks."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "G5D053drKB8",
+     "title": "Best AI Video Tool for 2026 | Seedance 2.5 vs Minimax H3 vs Kling 3.0 vs Google Omni",
+     "channel": "Tao Prompts",
+     "views": "160K",
+     "published": "2026-08-14",
+     "why": "Head-to-head comparison of every major AI video model right now. Same prompts across Seedance 2.5, MiniMax H3, Kling 3.0, and Google Omni with side-by-side results. The definitive comparison for choosing a video tool this month."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "f35KjIMsTnU",
+     "title": "MINIMAX H3 IS THE NEW FREE VIDEO AI KING!",
+     "channel": "Aitrepreneur",
+     "views": "250K",
+     "published": "2026-08-12",
+     "why": "Deep dive into MiniMax H3 going open-source. Shows what you can generate locally for free, including native audio generation in the same pass as video. The open-weights angle matters for anyone building video workflows."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "d_wEd-fZcdg",
+     "title": "How To Use MiniMax H3 in ComfyUI: Best FREE AI Video Model of 2026!",
+     "channel": "MDMZ",
+     "views": "65K",
+     "published": "2026-08-15",
+     "why": "Step-by-step ComfyUI tutorial for running MiniMax H3 locally. Install, configure, generate. The practical workflow video for anyone who wants to actually use it."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "3R5GROj8Tcg",
+     "title": "MiniMax H3: The New Open-Source Video Champ?",
+     "channel": "Codebreakers",
+     "views": "55K",
+     "published": "2026-08-13",
+     "why": "Technical breakdown of H3: native stereo audio, 2K resolution, 15-second clips in one model pass. Covers the architecture and what it means for open-source video generation."
+    }
+   ]
+  },
+  {
    "date": "2026-08-18",
    "items": [
     {
@@ -79,7 +192,7 @@
      "lane": "creative-workflows",
      "youtube_id": "RwhsE-GydKc",
      "title": "How to Prompt Seedance 2.5 for AI Filmmaking (Full Workflow)",
-     "channel": "Thomas Lundström",
+     "channel": "Thomas Lundstr\u00f6m",
      "views": "25K",
      "published": "2026-08-14",
      "why": "Deep dive into prompting technique specifically for Seedance 2.5 filmmaking. Covers camera movement prompts, character consistency, and the prompt patterns that produce cinematic vs generic results."
@@ -110,7 +223,7 @@
     {
      "lane": "ai-tools",
      "youtube_id": "15NfwAlb0Oc",
-     "title": "Google Just Released Gemini 3.7 Flash — This Changes AI!",
+     "title": "Google Just Released Gemini 3.7 Flash \u2014 This Changes AI!",
      "channel": "TECHVERSE",
      "views": "65K",
      "published": "2026-08-15",
@@ -159,7 +272,7 @@
      "channel": "kaye.creatives",
      "views": "120K",
      "published": "2026-08-10",
-     "why": "Creator who actually hit 6M views on AI-generated content shares the exact workflow and tools. Not theory — real production pipeline from concept to viral post, with the numbers to prove it works."
+     "why": "Creator who actually hit 6M views on AI-generated content shares the exact workflow and tools. Not theory \u2014 real production pipeline from concept to viral post, with the numbers to prove it works."
     },
     {
      "lane": "creative-workflows",
@@ -168,7 +281,7 @@
      "channel": "Suno Music",
      "views": "180K",
      "published": "2026-08-13",
-     "why": "Official Suno launch video for Studio 2.0 — their biggest product update. Studio Chat for conversational music creation, track-level effects, automation lanes, and collaborative workflows. First-party source on the platform reshaping AI music production."
+     "why": "Official Suno launch video for Studio 2.0 \u2014 their biggest product update. Studio Chat for conversational music creation, track-level effects, automation lanes, and collaborative workflows. First-party source on the platform reshaping AI music production."
     },
     {
      "lane": "creative-workflows",
@@ -186,7 +299,7 @@
      "channel": "Lanewood Studios",
      "views": "35K",
      "published": "2026-08-13",
-     "why": "Independent music producer's deep dive into Suno Studio 2.0 from a working professional's perspective. Tests Studio Chat, stacks effects on AI-generated tracks, and builds automations — the real workflow review Suno's own channel doesn't do."
+     "why": "Independent music producer's deep dive into Suno Studio 2.0 from a working professional's perspective. Tests Studio Chat, stacks effects on AI-generated tracks, and builds automations \u2014 the real workflow review Suno's own channel doesn't do."
     }
    ]
   },
@@ -200,7 +313,7 @@
      "channel": "Zinho Automates",
      "views": "15K",
      "published": "2026-08-13",
-     "why": "Breaks vibe coding into beginner/intermediate/advanced tiers with Claude Code — each level ships a real app, showing the actual prompts and workflow at each stage. Practical ladder for anyone starting out."
+     "why": "Breaks vibe coding into beginner/intermediate/advanced tiers with Claude Code \u2014 each level ships a real app, showing the actual prompts and workflow at each stage. Practical ladder for anyone starting out."
     },
     {
      "lane": "ai-builds",
@@ -209,7 +322,7 @@
      "channel": "ProgrammingKnowledge2",
      "views": "22K",
      "published": "2026-08-09",
-     "why": "Full walkthrough of Opus 5 inside Claude Code — not benchmarks, but real agentic coding: multi-file edits, tool use, and workflow automation end to end."
+     "why": "Full walkthrough of Opus 5 inside Claude Code \u2014 not benchmarks, but real agentic coding: multi-file edits, tool use, and workflow automation end to end."
     },
     {
      "lane": "ai-tools",
@@ -227,7 +340,7 @@
      "channel": "Lev Selector",
      "views": "8K",
      "published": "2026-08-14",
-     "why": "Weekly AI roundup with date in the title — covers model releases, API changes, and tool updates from this exact week. Reliable signal for what shipped."
+     "why": "Weekly AI roundup with date in the title \u2014 covers model releases, API changes, and tool updates from this exact week. Reliable signal for what shipped."
     },
     {
      "lane": "ai-tools",
@@ -236,7 +349,7 @@
      "channel": "Jerome W. Dewald",
      "views": "3K",
      "published": "2026-08-12",
-     "why": "Daily AI news digest — 60 seconds, no filler. Wednesday's top developments compressed into something you can actually watch between meetings."
+     "why": "Daily AI news digest \u2014 60 seconds, no filler. Wednesday's top developments compressed into something you can actually watch between meetings."
     },
     {
      "lane": "ai-tools",
@@ -245,7 +358,7 @@
      "channel": "Jerome W. Dewald",
      "views": "2K",
      "published": "2026-08-11",
-     "why": "Tuesday's AI news in 60 seconds. Third episode that day — multiple drops worth covering. Same tight format."
+     "why": "Tuesday's AI news in 60 seconds. Third episode that day \u2014 multiple drops worth covering. Same tight format."
     },
     {
      "lane": "creative-workflows",
@@ -254,7 +367,7 @@
      "channel": "Runway",
      "views": "45K",
      "published": "2026-08-09",
-     "why": "Runway's own creative team shows their full pipeline — from first idea to finished medieval comedy scene. Not a feature demo but an actual production workflow, start to finish."
+     "why": "Runway's own creative team shows their full pipeline \u2014 from first idea to finished medieval comedy scene. Not a feature demo but an actual production workflow, start to finish."
     }
    ]
   },
@@ -277,7 +390,7 @@
      "channel": "BuildWithAI",
      "views": "95K",
      "published": "2026-08-12",
-     "why": "Same prompt, two brand-new models, one app — then he shows exactly where each model made different architectural choices. The kind of controlled experiment the AI coding community actually needs."
+     "why": "Same prompt, two brand-new models, one app \u2014 then he shows exactly where each model made different architectural choices. The kind of controlled experiment the AI coding community actually needs."
     },
     {
      "lane": "ai-builds",
@@ -286,7 +399,7 @@
      "channel": "Build Great Products",
      "views": "42K",
      "published": "2026-08-13",
-     "why": "Not another to-do app. Ships a production design system — tokens, components, documentation — in minutes using Fable 5. The kind of work that normally takes a design team weeks."
+     "why": "Not another to-do app. Ships a production design system \u2014 tokens, components, documentation \u2014 in minutes using Fable 5. The kind of work that normally takes a design team weeks."
     },
     {
      "lane": "ai-builds",
@@ -295,7 +408,7 @@
      "channel": "Prograamer",
      "views": "68K",
      "published": "2026-08-10",
-     "why": "Built a real multi-agent automation system with Claude Code that applies to jobs autonomously — scraping, tailoring resumes, submitting. Running in production while he sleeps."
+     "why": "Built a real multi-agent automation system with Claude Code that applies to jobs autonomously \u2014 scraping, tailoring resumes, submitting. Running in production while he sleeps."
     },
     {
      "lane": "ai-tools",
@@ -304,7 +417,7 @@
      "channel": "Skill Leap AI",
      "views": "185K",
      "published": "2026-08-09",
-     "why": "Day-one coverage from one of the largest AI tutorial channels. Full demo of Fable 5 with real tasks — not reading the blog post, actually using the model and showing what changed."
+     "why": "Day-one coverage from one of the largest AI tutorial channels. Full demo of Fable 5 with real tasks \u2014 not reading the blog post, actually using the model and showing what changed."
     },
     {
      "lane": "ai-tools",
@@ -313,7 +426,7 @@
      "channel": "Paul J Lipsky",
      "views": "120K",
      "published": "2026-08-11",
-     "why": "Direct comparison of Opus 5 vs Fable 5 with real coding tasks. Shows where the more expensive model actually justifies the cost — practical guide for developers choosing between them."
+     "why": "Direct comparison of Opus 5 vs Fable 5 with real coding tasks. Shows where the more expensive model actually justifies the cost \u2014 practical guide for developers choosing between them."
     },
     {
      "lane": "ai-tools",
@@ -322,7 +435,7 @@
      "channel": "How I AI",
      "views": "78K",
      "published": "2026-08-12",
-     "why": "Feature-by-feature walkthrough of Claude Code's latest capabilities. Real demos, not slides — shows the new workflows that shipped with recent updates."
+     "why": "Feature-by-feature walkthrough of Claude Code's latest capabilities. Real demos, not slides \u2014 shows the new workflows that shipped with recent updates."
     },
     {
      "lane": "ai-tools",
@@ -331,7 +444,7 @@
      "channel": "Vibe Coding with Naman",
      "views": "55K",
      "published": "2026-08-13",
-     "why": "Full test suite of Opus 5 for vibe coding workflows — not hype, actual test results showing where it outperforms Fable 5 for real development work."
+     "why": "Full test suite of Opus 5 for vibe coding workflows \u2014 not hype, actual test results showing where it outperforms Fable 5 for real development work."
     },
     {
      "lane": "construction",
@@ -340,7 +453,7 @@
      "channel": "ProLine",
      "views": "35K",
      "published": "2026-08-08",
-     "why": "Trade-specific lead gen strategy for roofers with real numbers and real campaigns. Not generic marketing advice — specific to roofing with proven funnels and conversion data."
+     "why": "Trade-specific lead gen strategy for roofers with real numbers and real campaigns. Not generic marketing advice \u2014 specific to roofing with proven funnels and conversion data."
     },
     {
      "lane": "construction",
@@ -349,7 +462,7 @@
      "channel": "Daniel Dimsey",
      "views": "28K",
      "published": "2026-08-09",
-     "why": "Step-by-step Facebook Ads setup for contractors — targeting, creative, budgets — with real campaign screenshots and results. Actionable enough to copy the setup."
+     "why": "Step-by-step Facebook Ads setup for contractors \u2014 targeting, creative, budgets \u2014 with real campaign screenshots and results. Actionable enough to copy the setup."
     },
     {
      "lane": "construction",
@@ -367,7 +480,7 @@
      "channel": "Contractor Dynamics",
      "views": "18K",
      "published": "2026-08-11",
-     "why": "Practical social media growth playbook for construction companies — what platforms, what content, what frequency. From a channel dedicated to contractor business growth."
+     "why": "Practical social media growth playbook for construction companies \u2014 what platforms, what content, what frequency. From a channel dedicated to contractor business growth."
     },
     {
      "lane": "creative-workflows",
@@ -376,7 +489,7 @@
      "channel": "Roboverse",
      "views": "110K",
      "published": "2026-08-09",
-     "why": "End-to-end guide covering the full 2026 AI filmmaking stack — image gen, video gen, upscaling, editing. The most comprehensive single-video resource for cinematic AI production."
+     "why": "End-to-end guide covering the full 2026 AI filmmaking stack \u2014 image gen, video gen, upscaling, editing. The most comprehensive single-video resource for cinematic AI production."
     },
     {
      "lane": "creative-workflows",
@@ -385,7 +498,7 @@
      "channel": "AI Video School",
      "views": "65K",
      "published": "2026-08-11",
-     "why": "Full production breakdown of a specific short film — every shot, every tool choice, every iteration. Shows Seedance 2.0, Kling, and Veo 3.1 working together in a real pipeline."
+     "why": "Full production breakdown of a specific short film \u2014 every shot, every tool choice, every iteration. Shows Seedance 2.0, Kling, and Veo 3.1 working together in a real pipeline."
     },
     {
      "lane": "creative-workflows",
@@ -403,7 +516,7 @@
      "channel": "Higgsfield AI",
      "views": "52K",
      "published": "2026-08-10",
-     "why": "Structured 5-step workflow from concept to 4K final render. Higgsfield (the AI video company) showing their recommended production pipeline — the studio's own method."
+     "why": "Structured 5-step workflow from concept to 4K final render. Higgsfield (the AI video company) showing their recommended production pipeline \u2014 the studio's own method."
     }
    ]
   },
@@ -417,7 +530,7 @@
      "channel": "Leon van Zyl",
      "views": "890K",
      "published": "2026-08-08",
-     "why": "The video that set the bar for AI builds. Leon recreated GTA 6 in Unreal Engine using Claude Code in 24 hours — full open-world, driving, NPCs — and the internet lost its mind. Massive press coverage, community rallying behind it as proof of what one person can ship."
+     "why": "The video that set the bar for AI builds. Leon recreated GTA 6 in Unreal Engine using Claude Code in 24 hours \u2014 full open-world, driving, NPCs \u2014 and the internet lost its mind. Massive press coverage, community rallying behind it as proof of what one person can ship."
     },
     {
      "lane": "ai-builds",
@@ -426,7 +539,7 @@
      "channel": "Jerad Hill",
      "views": "62K",
      "published": "2026-08-10",
-     "why": "Not a toy demo — Jerad built a full project management app he actually uses daily and walks through the complete Claude Code workflow from idea to production. Real tool, real usage, real workflow."
+     "why": "Not a toy demo \u2014 Jerad built a full project management app he actually uses daily and walks through the complete Claude Code workflow from idea to production. Real tool, real usage, real workflow."
     },
     {
      "lane": "ai-builds",
@@ -435,7 +548,7 @@
      "channel": "Astro K Joseph",
      "views": "215K",
      "published": "2026-08-07",
-     "why": "Built a real-time collaboration app (live cursors, shared whiteboard, synced Kanban board) in 15 minutes flat. The viral title landed because the build is genuinely impressive — the kind of app agencies quote five figures for."
+     "why": "Built a real-time collaboration app (live cursors, shared whiteboard, synced Kanban board) in 15 minutes flat. The viral title landed because the build is genuinely impressive \u2014 the kind of app agencies quote five figures for."
     },
     {
      "lane": "ai-builds",
@@ -444,7 +557,7 @@
      "channel": "Daytona",
      "views": "78K",
      "published": "2026-08-09",
-     "why": "An AI agent autonomously builds a complete application while the developer just watches. Open Hands + Daytona cloud environment — the zero-intervention build pattern that is redefining what 'coding' means."
+     "why": "An AI agent autonomously builds a complete application while the developer just watches. Open Hands + Daytona cloud environment \u2014 the zero-intervention build pattern that is redefining what 'coding' means."
     },
     {
      "lane": "ai-tools",
@@ -453,7 +566,7 @@
      "channel": "Dom the AI Tutor",
      "views": "145K",
      "published": "2026-08-08",
-     "why": "30-video stress test across the three AI video models that all dropped in the last two weeks. Data-driven comparison at a scale nobody else ran — actual test results showing where each model excels and fails."
+     "why": "30-video stress test across the three AI video models that all dropped in the last two weeks. Data-driven comparison at a scale nobody else ran \u2014 actual test results showing where each model excels and fails."
     },
     {
      "lane": "ai-tools",
@@ -480,7 +593,7 @@
      "channel": "Claude",
      "views": "180K",
      "published": "2026-08-12",
-     "why": "Official Anthropic retrospective on Claude Code's first year — from the team that built it. Covers what shipped, what users actually use, and where the product is headed. First-party insight you cannot get anywhere else."
+     "why": "Official Anthropic retrospective on Claude Code's first year \u2014 from the team that built it. Covers what shipped, what users actually use, and where the product is headed. First-party insight you cannot get anywhere else."
     },
     {
      "lane": "construction",
@@ -489,7 +602,7 @@
      "channel": "Marketing 360",
      "views": "48K",
      "published": "2026-08-09",
-     "why": "Concrete lead gen system for contractors — the 500+ leads framework with specific tactics from real campaigns. Marketing 360 works with actual contractors and the numbers come from measured results, not theory."
+     "why": "Concrete lead gen system for contractors \u2014 the 500+ leads framework with specific tactics from real campaigns. Marketing 360 works with actual contractors and the numbers come from measured results, not theory."
     },
     {
      "lane": "construction",
@@ -498,7 +611,7 @@
      "channel": "Trade Mastermind",
      "views": "35K",
      "published": "2026-08-11",
-     "why": "Actionable growth playbook for construction businesses from a channel that speaks contractor language. Each tip is immediately implementable — no agency jargon, just what works in the field right now."
+     "why": "Actionable growth playbook for construction businesses from a channel that speaks contractor language. Each tip is immediately implementable \u2014 no agency jargon, just what works in the field right now."
     },
     {
      "lane": "construction",
@@ -507,7 +620,7 @@
      "channel": "Jesse Lane",
      "views": "28K",
      "published": "2026-08-08",
-     "why": "Jesse Lane's full marketing system — the same framework contractors pay for as consulting, given away on YouTube. Complete system covering Google Business Profile, social content, and paid ads for construction businesses."
+     "why": "Jesse Lane's full marketing system \u2014 the same framework contractors pay for as consulting, given away on YouTube. Complete system covering Google Business Profile, social content, and paid ads for construction businesses."
     },
     {
      "lane": "construction",
@@ -516,7 +629,7 @@
      "channel": "Jesse Lane",
      "views": "22K",
      "published": "2026-08-10",
-     "why": "Zero-budget social media strategy built specifically for contractors. Shows how to create content that generates leads without ad spend — the first move most small contractors need to make."
+     "why": "Zero-budget social media strategy built specifically for contractors. Shows how to create content that generates leads without ad spend \u2014 the first move most small contractors need to make."
     },
     {
      "lane": "creative-workflows",
@@ -525,7 +638,7 @@
      "channel": "Ryan Collins",
      "views": "110K",
      "published": "2026-08-09",
-     "why": "Complete end-to-end AI video pipeline: storyboard to generate to edit to publish across TikTok, Shorts, and YouTube. Real production workflow, not theory — every step demonstrated with actual output."
+     "why": "Complete end-to-end AI video pipeline: storyboard to generate to edit to publish across TikTok, Shorts, and YouTube. Real production workflow, not theory \u2014 every step demonstrated with actual output."
     },
     {
      "lane": "creative-workflows",
@@ -534,7 +647,7 @@
      "channel": "Dope Motions",
      "views": "85K",
      "published": "2026-08-08",
-     "why": "Practical guide for professional motion designers integrating AI into their existing workflow. Not 'replace yourself with AI' — shows how to augment professional work with AI tools while keeping creative control."
+     "why": "Practical guide for professional motion designers integrating AI into their existing workflow. Not 'replace yourself with AI' \u2014 shows how to augment professional work with AI tools while keeping creative control."
     },
     {
      "lane": "creative-workflows",
@@ -566,7 +679,7 @@
      "views": "485K",
      "published": "2026-08-11",
      "lane": "ai-builds",
-     "why": "Multiple games from single prompts — shows the breadth of what Claude Code ships when the prompt is right. Community favorite for the speed-to-playable ratio."
+     "why": "Multiple games from single prompts \u2014 shows the breadth of what Claude Code ships when the prompt is right. Community favorite for the speed-to-playable ratio."
     },
     {
      "youtube_id": "TTeMU5iOE84",
@@ -575,7 +688,7 @@
      "views": "320K",
      "published": "2026-08-09",
      "lane": "ai-builds",
-     "why": "Step-by-step from zero to production website with Claude Code. Practical, not hype — shows the real workflow decisions that make the output pro-grade."
+     "why": "Step-by-step from zero to production website with Claude Code. Practical, not hype \u2014 shows the real workflow decisions that make the output pro-grade."
     },
     {
      "youtube_id": "7C_IHWkHKmU",
@@ -584,7 +697,7 @@
      "views": "890K",
      "published": "2026-08-08",
      "lane": "ai-tools",
-     "why": "Bloomberg Odd Lots interview with the Claude Code creator. The backstory on why it works differently from every other AI coding tool — and where it is going next."
+     "why": "Bloomberg Odd Lots interview with the Claude Code creator. The backstory on why it works differently from every other AI coding tool \u2014 and where it is going next."
     },
     {
      "youtube_id": "tmA1FChDslc",
@@ -593,7 +706,7 @@
      "views": "78K",
      "published": "2026-08-11",
      "lane": "ai-tools",
-     "why": "Deep dive into Skills, Agents, and Hooks — the three Claude Code primitives that turn it from a chatbot into a real development platform."
+     "why": "Deep dive into Skills, Agents, and Hooks \u2014 the three Claude Code primitives that turn it from a chatbot into a real development platform."
     },
     {
      "youtube_id": "lEaJgxbdUFs",
@@ -602,7 +715,7 @@
      "views": "189K",
      "published": "2026-08-05",
      "lane": "construction",
-     "why": "Owner-operator shares his actual lead gen system — Google Business Profile, yard signs, referral programs. Real numbers from a real contractor, not a marketing agency pitch."
+     "why": "Owner-operator shares his actual lead gen system \u2014 Google Business Profile, yard signs, referral programs. Real numbers from a real contractor, not a marketing agency pitch."
     },
     {
      "youtube_id": "igoCll8airU",
@@ -620,7 +733,7 @@
      "views": "210K",
      "published": "2026-08-11",
      "lane": "creative-workflows",
-     "why": "Claude orchestrating Seedance for batch UGC video production. The workflow AOM should study — prompt-to-video with brand constraints baked in."
+     "why": "Claude orchestrating Seedance for batch UGC video production. The workflow AOM should study \u2014 prompt-to-video with brand constraints baked in."
     },
     {
      "youtube_id": "ppSbdneOiIc",
@@ -629,7 +742,7 @@
      "views": "340K",
      "published": "2026-08-09",
      "lane": "creative-workflows",
-     "why": "The current ceiling of AI filmmaking quality. Every shot AI-generated or AI-assisted — color grading, compositing, sound design. This is the bar."
+     "why": "The current ceiling of AI filmmaking quality. Every shot AI-generated or AI-assisted \u2014 color grading, compositing, sound design. This is the bar."
     },
     {
      "lane": "claude-animation",
@@ -1204,9 +1317,9 @@
     {
      "lane": "claude-animation",
      "headline": "New community skill pack: GSAP/SVG/Lottie web-animation skills for Claude Code",
-     "body": "iart-ai/web-animation-skills is a separate 9-skill pack (gsap-web, 60fps-animation, page-transition-animation, accessible-animation, micro-interaction, glassmorphism, svg-animation, lottie-animation, ascii-animation) distinct from the already-covered motion-skills 51-pack — this one targets code-driven DOM/SVG web motion rather than full video production. Useful for CV6/dashboard UI polish, not just reels.",
+     "body": "iart-ai/web-animation-skills is a separate 9-skill pack (gsap-web, 60fps-animation, page-transition-animation, accessible-animation, micro-interaction, glassmorphism, svg-animation, lottie-animation, ascii-animation) distinct from the already-covered motion-skills 51-pack \u2014 this one targets code-driven DOM/SVG web motion rather than full video production. Useful for CV6/dashboard UI polish, not just reels.",
      "action": "Trial gsap-web + accessible-animation skills on one CV6 UI polish task and compare to impeccable's current motion guidance.",
-     "source_name": "GitHub — iart-ai/web-animation-skills",
+     "source_name": "GitHub \u2014 iart-ai/web-animation-skills",
      "source_url": "https://github.com/iart-ai/web-animation-skills",
      "image": "https://opengraph.githubassets.com/1830fed1a2297a9684395613c8467599b1fe21543cb324d16496ec62099dc7d2/iart-ai/web-animation-skills",
      "video": null
@@ -1216,7 +1329,7 @@
      "headline": "Independent Remotion skill for Claude adds automatic frame-inspection QA before delivery",
      "body": "haidrrrry/claude-remotion-skill is a community (MIT) alternative to remotion-dev/skills: it encodes 10 motion-design rules, 17 reusable motion patterns, and an automatic render-then-inspect-frames QA step before handing back a clip. That QA pattern maps directly onto how AOM's social-reels pipeline captures and verifies MP4 output.",
      "action": "Read the QA/frame-inspection pattern in this skill and consider porting it into social-reels' capture-and-verify step.",
-     "source_name": "GitHub — haidrrrry/claude-remotion-skill",
+     "source_name": "GitHub \u2014 haidrrrry/claude-remotion-skill",
      "source_url": "https://github.com/haidrrrry/claude-remotion-skill",
      "image": "https://opengraph.githubassets.com/31048b1d434727ab0cbd2411ea051835b946b8dd460424623f85c6b29ae828a6/haidrrrry/claude-remotion-skill",
      "video": null
@@ -1224,7 +1337,7 @@
     {
      "lane": "vs-corner",
      "headline": "Devin Desktop ships Spaces + Subagents: shared-context containers for multi-agent work",
-     "body": "Cognition's Devin Desktop added \"Spaces\" (July 29) that group agent sessions, PRs, files and context into one task-level container so multiple agents — Devin, Claude Agent, Codex, OpenCode — share the same working understanding via the open Agent Client Protocol. Aug 10 added a full Subagents management panel, flat agents/<name>.md subagent definitions, and org-level permission composition where an explicit deny always wins.",
+     "body": "Cognition's Devin Desktop added \"Spaces\" (July 29) that group agent sessions, PRs, files and context into one task-level container so multiple agents \u2014 Devin, Claude Agent, Codex, OpenCode \u2014 share the same working understanding via the open Agent Client Protocol. Aug 10 added a full Subagents management panel, flat agents/<name>.md subagent definitions, and org-level permission composition where an explicit deny always wins.",
      "action": "Prototype a Space-style container for Corner rooms bundling a task's chat, files, and worker sessions, and audit permission composition against theirs.",
      "source_name": "Devin Docs Changelog",
      "source_url": "https://docs.devin.ai/desktop/changelog",
@@ -1244,7 +1357,7 @@
     {
      "lane": "vs-aom",
      "headline": "Klaviyo acquires AI agent startup Agency, absorbing 25-person team into its marketing/support agents",
-     "body": "Klaviyo announced Aug 5, 2026 it's acquiring Agency, the AI-native customer-engagement startup founded by Elias Torres ($32M raised from Sequoia, Menlo, Felicis), who becomes Klaviyo's Chief Product Officer. The deal folds Agency's proactive AI agents into Klaviyo's Composer (AI campaign builder) and Customer Agent products, using Klaviyo's claimed 9 billion consumer profiles as the data layer — a template for how big martech platforms are buying AI-agency capability outright instead of building it.",
+     "body": "Klaviyo announced Aug 5, 2026 it's acquiring Agency, the AI-native customer-engagement startup founded by Elias Torres ($32M raised from Sequoia, Menlo, Felicis), who becomes Klaviyo's Chief Product Officer. The deal folds Agency's proactive AI agents into Klaviyo's Composer (AI campaign builder) and Customer Agent products, using Klaviyo's claimed 9 billion consumer profiles as the data layer \u2014 a template for how big martech platforms are buying AI-agency capability outright instead of building it.",
      "action": "Position AOM's pitch around judgment and brand-specific creative direction that platform-bundled AI agents can't replicate.",
      "source_name": "Klaviyo Newsroom",
      "source_url": "https://www.klaviyo.com/newsroom/agency-elias-torres",
@@ -1254,7 +1367,7 @@
     {
      "lane": "vs-aom",
      "headline": "Meta Business Agent starts charging per-token (~$2/M tokens) from Aug 1, 2026 after 1M-business pilot",
-     "body": "Meta's AI agent for WhatsApp/Instagram/Messenger — which fields customer inquiries, books appointments, vets leads, and completes transactions — moved from free pilot to metered paid usage on Aug 1, 2026, following a rollout that hit over 1 million businesses in pilot markets before its June global launch. Meta is now directly monetizing the AI-front-desk function small businesses previously paid agencies or dedicated tools to handle.",
+     "body": "Meta's AI agent for WhatsApp/Instagram/Messenger \u2014 which fields customer inquiries, books appointments, vets leads, and completes transactions \u2014 moved from free pilot to metered paid usage on Aug 1, 2026, following a rollout that hit over 1 million businesses in pilot markets before its June global launch. Meta is now directly monetizing the AI-front-desk function small businesses previously paid agencies or dedicated tools to handle.",
      "action": "Check whether any AOM construction-client retainer line item overlaps with Meta Business Agent's paid features, and reprice around what a platform-native agent can't do.",
      "source_name": "TechCrunch",
      "source_url": "https://techcrunch.com/2026/06/03/metas-ai-agent-for-whatsapp-business-is-now-available-globally/",
@@ -1266,7 +1379,7 @@
      "headline": "OpenMontage turns a Claude Code agent into a full video production studio",
      "body": "OpenMontage (47.8k stars, AGPL) is an agentic video system: 12 pipelines from Animated Explainer to Documentary Montage, 100+ tools, 15 video-gen providers, all driven from a CLAUDE.md so the agent runs research, script, assets, edit and composition end to end. It is a superset of a hand-built HTML/CSS reel pipeline.",
      "action": "Clone it, run the Animated Explainer pipeline on one AOM reel brief, A/B against our pipeline.",
-     "source_name": "GitHub — OpenMontage",
+     "source_name": "GitHub \u2014 OpenMontage",
      "source_url": "https://github.com/calesthio/OpenMontage",
      "image": "https://repository-images.githubusercontent.com/1195360525/645f0bc1-450d-4791-99b8-6102b4bb9f3d",
      "video": null
@@ -1283,7 +1396,7 @@
     },
     {
      "lane": "vs-aom",
-     "headline": "Superside now refunds AI-saved credits — efficiency is the product, not the margin",
+     "headline": "Superside now refunds AI-saved credits \u2014 efficiency is the product, not the margin",
      "body": "The biggest creative-subscription player went AI-first: Brand Brain agents carry each client's brand context through production, and when AI finishes a 10-credit project in 6, the 4 saved credits go back to the customer. AI efficiency became a visible, contractual client benefit.",
      "action": "Show clients per-project AI-savings receipts and build a reusable per-client brand brain.",
      "source_name": "Superside",
@@ -1294,9 +1407,9 @@
     {
      "lane": "claude-animation",
      "headline": "51 motion-graphics skills for coding agents just went open source, kinetic type included",
-     "body": "iart.ai's motion-skills packages 51 skills in 14 packs — kinetic typography, TikTok/Reels, data-viz, WebGL, Manim — that auto-discover in Claude Code and activate when the work matches. It injects motion-design craft directly into the agent authoring reels, without changing the render stack.",
+     "body": "iart.ai's motion-skills packages 51 skills in 14 packs \u2014 kinetic typography, TikTok/Reels, data-viz, WebGL, Manim \u2014 that auto-discover in Claude Code and activate when the work matches. It injects motion-design craft directly into the agent authoring reels, without changing the render stack.",
      "action": "Install the kinetic-typography and Reels packs into the social-reels build agent this week.",
-     "source_name": "GitHub — iart-ai/motion-skills",
+     "source_name": "GitHub \u2014 iart-ai/motion-skills",
      "source_url": "https://github.com/iart-ai/motion-skills",
      "image": "https://opengraph.githubassets.com/3d2ec9ee00c21305134a4ae1725895fec0fc74086e73eba63aabc20f5aafde38/iart-ai/motion-skills",
      "video": null
@@ -1304,7 +1417,7 @@
     {
      "lane": "vs-corner",
      "headline": "Claude Cowork went cloud: agent work survives every device going offline",
-     "body": "Cowork expanded from desktop to web and mobile; sessions run on Anthropic servers, so a task started on a laptop keeps running and scheduled jobs fire with the machine asleep, approvable from a phone. Corner's rooms ride a local Mac bridge — this is exactly the failure mode we have.",
+     "body": "Cowork expanded from desktop to web and mobile; sessions run on Anthropic servers, so a task started on a laptop keeps running and scheduled jobs fire with the machine asleep, approvable from a phone. Corner's rooms ride a local Mac bridge \u2014 this is exactly the failure mode we have.",
      "action": "Make rooms cloud-resumable with a mobile progress-and-approve view.",
      "source_name": "Anthropic",
      "source_url": "https://claude.com/blog/cowork-web-mobile",
@@ -1314,7 +1427,7 @@
     {
      "lane": "vs-aom",
      "headline": "YC is now funding AOM-shaped businesses as venture-scale software",
-     "body": "Y Combinator's Request for Startups explicitly calls for AI-native agencies — firms using AI to deliver finished work at 65-80% software-like margins instead of the headcount-scaled agency trap. A wave of funded competitors is coming into service verticals with our exact operating model.",
+     "body": "Y Combinator's Request for Startups explicitly calls for AI-native agencies \u2014 firms using AI to deliver finished work at 65-80% software-like margins instead of the headcount-scaled agency trap. A wave of funded competitors is coming into service verticals with our exact operating model.",
      "action": "Run AOM on software metrics and deepen the construction-niche moat before funded generalists arrive.",
      "source_name": "Y Combinator",
      "source_url": "https://x.com/ycombinator/status/2018414131720958094",
@@ -1324,9 +1437,9 @@
     {
      "lane": "claude-animation",
      "headline": "Remotion's official skills turn Claude into a deterministic prompt-to-MP4 renderer",
-     "body": "remotion-dev/skills ships 13 official skills so Claude writes correct Remotion React from a prompt, updated as of today. Remotion renders frame-accurately server-side — replacing browser capture of HTML storyboards: no capture flakiness, exact timing, parametrized batch renders.",
+     "body": "remotion-dev/skills ships 13 official skills so Claude writes correct Remotion React from a prompt, updated as of today. Remotion renders frame-accurately server-side \u2014 replacing browser capture of HTML storyboards: no capture flakiness, exact timing, parametrized batch renders.",
      "action": "Rebuild one shipped reel as a Remotion comp and compare frame fidelity against browser capture.",
-     "source_name": "GitHub — remotion-dev/skills",
+     "source_name": "GitHub \u2014 remotion-dev/skills",
      "source_url": "https://github.com/remotion-dev/skills",
      "image": "https://opengraph.githubassets.com/bea07cbbe6af64e95798e4413bd11ea349e36965fa6b9e96cd85e5aed8f70b76/remotion-dev/skills",
      "video": null
@@ -1334,7 +1447,7 @@
     {
      "lane": "vs-corner",
      "headline": "Dust turned rooms into governed agent spaces with write-once shared skills",
-     "body": "Dust shipped per-Pod instruction files auto-injected into prompts, default agents and skills per Pod, scheduled triggers, and admin governance. It is Corner's room concept but multiplayer — and one skill written once upgrades every agent in the workspace at the same time.",
+     "body": "Dust shipped per-Pod instruction files auto-injected into prompts, default agents and skills per Pod, scheduled triggers, and admin governance. It is Corner's room concept but multiplayer \u2014 and one skill written once upgrades every agent in the workspace at the same time.",
      "action": "Ship shared skills across Corner agents plus a per-room instructions file and default agent.",
      "source_name": "Dust.tt",
      "source_url": "https://docs.dust.tt/docs/changelog",
@@ -1344,9 +1457,9 @@
     {
      "lane": "vs-aom",
      "headline": "Palette sells the workflow, not the deliverable: brand-locked media on repeat",
-     "body": "Palette (YC, launched two weeks ago by MIT multimodal researchers) unifies creative tools into one engine where teams produce brand-consistent video and ads in one conversation — then save the process as a repeatable, controllable workflow. Workflow-as-asset beats one-off pieces from ad-hoc pipelines.",
-     "action": "Package AOM's pipelines as named per-client workflows — footage in, branded set out — and sell the system.",
-     "source_name": "YC Launches — Palette",
+     "body": "Palette (YC, launched two weeks ago by MIT multimodal researchers) unifies creative tools into one engine where teams produce brand-consistent video and ads in one conversation \u2014 then save the process as a repeatable, controllable workflow. Workflow-as-asset beats one-off pieces from ad-hoc pipelines.",
+     "action": "Package AOM's pipelines as named per-client workflows \u2014 footage in, branded set out \u2014 and sell the system.",
+     "source_name": "YC Launches \u2014 Palette",
      "source_url": "https://www.ycombinator.com/launches/SDV-palette-an-ai-native-media-platform",
      "image": "https://bookface-static.ycombinator.com/assets/ycdc/yc-og-image-c440a0ad1dacfb86eeeb343717479cc54d256614449b4ef719977a0a451f8bc8.png",
      "video": null
@@ -1354,9 +1467,9 @@
     {
      "lane": "claude-animation",
      "headline": "Seedance 2.0 renders designed kinetic typography with native audio at ~$0.30/sec",
-     "body": "ByteDance's Seedance 2.0 takes image plus text and outputs 4-15s clips up to 1080p with native music and SFX, multi-shot edits and director-level camera control — handling titles, lower thirds and lyric lines with beat-aware pacing. A generative lane for hero motion shots code rendering cannot produce.",
+     "body": "ByteDance's Seedance 2.0 takes image plus text and outputs 4-15s clips up to 1080p with native music and SFX, multi-shot edits and director-level camera control \u2014 handling titles, lower thirds and lyric lines with beat-aware pacing. A generative lane for hero motion shots code rendering cannot produce.",
      "action": "Generate 3 AOM title-card beats via Seedance and blind-judge against code-rendered versions.",
-     "source_name": "fal.ai — Seedance 2.0",
+     "source_name": "fal.ai \u2014 Seedance 2.0",
      "source_url": "https://fal.ai/models/bytedance/seedance-2.0/image-to-video",
      "image": "https://fal.ai/api/models/thumbnail/bytedance/seedance-2.0/image-to-video",
      "video": null
@@ -1374,7 +1487,7 @@
     {
      "lane": "vs-aom",
      "headline": "Arcads: 7 people, profitable, 100,000 AI ad assets a month for 6,000 clients",
-     "body": "Arcads generates UGC-style video ads with AI actors in 35+ languages and raised a $16M seed while already profitable with seven people. Paid-social video volume no longer requires shoots or editors — both a threat and a tool for a retainer studio's ad output.",
+     "body": "Arcads generates UGC-style video ads with AI actors in 35+ languages and raised a $16M seed while already profitable with seven people. Paid-social video volume no longer requires shoots or editors \u2014 both a threat and a tool for a retainer studio's ad output.",
      "action": "Add AI-actor UGC testimonial spots as a contractor retainer line item instead of scheduling shoots.",
      "source_name": "Arcads",
      "source_url": "https://www.arcads.ai/blog/arcads-raises-16m-seed",
