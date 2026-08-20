@@ -1,6 +1,92 @@
 {
  "days": [
   {
+   "date": "2026-08-20",
+   "items": [
+    {
+     "lane": "ai-builds",
+     "youtube_id": "L4g6GGLzAyo",
+     "title": "A Better Way to Build Software with AI (Full Tutorial & Workflow)",
+     "channel": "Traversy Media",
+     "views": "180K",
+     "published": "2026-08-13",
+     "why": "Traversy Media's structured AI coding workflow using Claude Code. Plans and reviews every step rather than blind prompting. From the biggest dev education channel on YouTube."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "IVx8OSMbTss",
+     "title": "Build & Sell AI SaaS Products (2 HOUR COURSE)",
+     "channel": "Nate Herk",
+     "views": "55K",
+     "published": "2026-08-13",
+     "why": "Full 2-hour course walking through building and selling AI SaaS products from scratch. Covers the complete lifecycle from idea to revenue."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "ORtPY029mZU",
+     "title": "Day 44 - Vibe Coding App in Hawaii - Grok 4.6 + Claude Opus 5",
+     "channel": "billy",
+     "views": "30K",
+     "published": "2026-08-14",
+     "why": "Daily vibe-coding series testing Grok 4.6 alongside Claude Opus 5 to build a real app live. No tutorials, just raw building and honest results."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "RqPrJ4WxBzA",
+     "title": "MYSTERIOUS New Claude Model, Grok 4.6 TODAY, Muse Glimmer 30B & More",
+     "channel": "WorldofAI",
+     "views": "90K",
+     "published": "2026-08-13",
+     "why": "Dense AI news roundup covering Grok 4.6 launch day, a mysterious new Claude model, and Meta's Muse Glimmer 30B. Best single catch-up video for the week."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "dUE4T4EDaBk",
+     "title": "First look at Origin, who this is actually for",
+     "channel": "Ray Fernando",
+     "views": "25K",
+     "published": "2026-08-17",
+     "why": "First real hands-on with Cursor Origin, the agent-first IDE. Cuts through the hype to explain who it actually helps versus who should stick with regular Cursor."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "3-ahsHfFjwk",
+     "title": "Grok 4.6 is Claude Fable 5, but dirt cheap",
+     "channel": "Alex Finn",
+     "views": "65K",
+     "published": "2026-08-13",
+     "why": "Price-vs-quality breakdown showing Grok 4.6 reaches Fable 5 level at a fraction of the cost. The kind of analysis that changes which model you actually route to."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "hN6HGsNl2Rc",
+     "title": "Grok 4.6 CRUSHES ChatGPT Sol and Claude Fable, and it's WAY cheaper",
+     "channel": "Vibe Code Guild",
+     "views": "35K",
+     "published": "2026-08-13",
+     "why": "Real cost-per-task benchmarks of Grok 4.6 against Sol and Fable. Shows where the cheaper model wins and where it still falls short on harder tasks."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "e2CPf06MDn4",
+     "title": "I Tried NEW Deepseek-v4-Pro-0813: Better Than v4-Flash?",
+     "channel": "AI Coding Daily",
+     "views": "15K",
+     "published": "2026-08-14",
+     "why": "Hands-on test of DeepSeek's newest V4 Pro build against V4 Flash. Open-source model that benchmarks near Fable at 23x lower cost on input tokens."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "0GO3-JzQjzg",
+     "title": "How to Start Making AI Videos In 2026 (Beginner to Advanced)",
+     "channel": "Youri van Hofwegen",
+     "views": "50K",
+     "published": "2026-08-13",
+     "why": "Complete AI video production workflow from beginner to advanced using Higgsfield and Seedance. Real cinematic output with a step-by-step process that actually ships."
+    }
+   ]
+  },
+  {
    "date": "2026-08-19",
    "items": [
     {
