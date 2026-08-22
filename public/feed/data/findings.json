@@ -1,6 +1,83 @@
 {
  "days": [
   {
+   "date": "2026-08-22",
+   "items": [
+    {
+     "lane": "ai-tools",
+     "youtube_id": "-Gj0-EIyx6g",
+     "title": "Meta's Claude Code clone is INSANELY cheap",
+     "channel": "Theo - t3.gg",
+     "views": "148K",
+     "published": "2026-08-07",
+     "why": "Theo breaks down Meta's Muse Code at $0.10/M tokens vs Claude Code's $3/M — a 30x price gap that's forcing the entire AI coding agent market to rethink pricing. 148K views in two weeks from one of tech YouTube's sharpest voices."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "LM7Ft7g8qJw",
+     "title": "Grok Bot Is The First AI Agent You Just Install. Is It Worth $200?",
+     "channel": "AI News & Strategy Daily",
+     "views": "95.7K",
+     "published": "2026-08-14",
+     "why": "First deep review of xAI's Grok Bot as a standalone installable agent. Covers whether the $200/mo price holds up against Claude Code and Codex. 95K views in 8 days — the Grok Bot wave is real."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "u0_5qgc3k0Y",
+     "title": "Every AI tool you need to be using in August 2026",
+     "channel": "Alex Finn",
+     "views": "20.8K",
+     "published": "2026-08-10",
+     "why": "Monthly landscape roundup covering the August stack: Claude Code, Muse Code, Grok Build, and the tools actually shipping. Alex Finn cuts through the noise to what's worth your time."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "vrgO4D_mUlA",
+     "title": "Grok Bot is the best AI agent ever. Here's how to set it up",
+     "channel": "Alex Finn",
+     "views": "50K",
+     "published": "2026-08-17",
+     "why": "Hands-on setup walkthrough and live building demo with Grok Bot. Shows the actual workflow of installing, configuring, and shipping real code with xAI's agent. 50K views in 5 days."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "QTcZPI-g7is",
+     "title": "Cursor Just Released Grok Bot (An Insanely Easy AI Agent)",
+     "channel": "Paul J Lipsky",
+     "views": "46.9K",
+     "published": "2026-08-11",
+     "why": "Shows Grok Bot integrated directly into Cursor IDE — building features in real-time with the agent handling multi-file edits. The IDE+agent combo that has developers switching workflows."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "piOSL8Ms9mY",
+     "title": "Codex Is Winning… So Why Am I Still Paying for Claude?",
+     "channel": "Riley Brown",
+     "views": "33.4K",
+     "published": "2026-08-10",
+     "why": "Head-to-head real coding comparison: same project built with Codex and Claude Code. Shows where each agent breaks down and why the answer isn't as simple as benchmarks suggest. 33K views in 12 days."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "TMPUUyQC5aM",
+     "title": "A Week of Grok Bot Lessons in 10 Mins",
+     "channel": "Nate Herk",
+     "views": "20.4K",
+     "published": "2026-08-18",
+     "why": "Condensed week of real building with Grok Bot — the failures, workarounds, and patterns that actually work. Practical lessons from someone shipping with the agent daily. 20K in 4 days."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "WnT0YWLYXGE",
+     "title": "SECOND EARTH | AI Short Film Made with Kimeric (Seedance 2.0 & Kling O3)",
+     "channel": "Brad Clark | AI Storyteller",
+     "views": "31.9K",
+     "published": "2026-08-07",
+     "why": "Full AI short film combining Seedance 2.0 and Kling O3 through the Kimeric pipeline. Brad Clark's most ambitious piece yet — the production quality gap between AI films and traditional shorts keeps shrinking."
+    }
+   ]
+  },
+  {
    "date": "2026-08-21",
    "items": [
     {
