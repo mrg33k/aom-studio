@@ -1,6 +1,92 @@
 {
  "days": [
   {
+   "date": "2026-08-23",
+   "items": [
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "QV9zIkvGce4",
+     "title": "Seedance 2.5 Just Changed Animation FOREVER",
+     "channel": "Joseph Martin",
+     "views": "156K",
+     "published": "2026-08-16",
+     "why": "Joseph Martin shows Seedance 2.5 generating full character animation sequences with consistent style across cuts. 156K views in one week \u2014 the single most-watched Seedance 2.5 animation tutorial right now."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "wTnrt_jKkDo",
+     "title": "Seedance 2.5 is CRAZY - Full Course For Cinematic AI Films",
+     "channel": "CyberJungle",
+     "views": "89.1K",
+     "published": "2026-08-17",
+     "why": "Complete start-to-finish course covering cinematic AI film production with Seedance 2.5 \u2014 from prompt structure to final export. 89K views in under a week makes this the go-to full-length tutorial."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "nkVF5_-i-oo",
+     "title": "Seedance 2.5 + Claude Just Changed Motion Graphics Forever",
+     "channel": "Zinho Automates",
+     "views": "44.7K",
+     "published": "2026-08-09",
+     "why": "Practical workflow combining Claude Code automation with Seedance 2.5 for motion graphics \u2014 the pipeline AOM cares about most. Shows how Claude orchestrates the generation, file management, and iteration loop."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "UxwV16jDglA",
+     "title": "Seedance 2.5 is an ABSOLUTE MONSTER - Master it in 20 minutes",
+     "channel": "Dan Kieft",
+     "views": "58.2K",
+     "published": "2026-08-09",
+     "why": "Dense 20-minute masterclass covering every Seedance 2.5 feature: text-to-video, image-to-video, R2V motion control, style transfer, and multi-reference scenes. Best single-sitting overview of the full toolkit."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "SXtB8JCEd8U",
+     "title": "This New Claude Skill Makes INSANE AI Films in Minutes! (Seedance 2.5)",
+     "channel": "Duncan Rogoff",
+     "views": "72.4K",
+     "published": "2026-08-16",
+     "why": "Walks through an open-source Claude Code skill that chains Seedance 2.5 into a one-command film pipeline. The skill handles prompting, generation, and assembly \u2014 turning Claude into a film director. 72K views in a week."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "hmWWrObx32s",
+     "title": "This Week in AI #3 (Aug 16, 2026): OpenAI Pauses Astra, AI Cyberattack & $500B AI Race",
+     "channel": "LearningHub",
+     "views": "41.2K",
+     "published": "2026-08-16",
+     "why": "Weekly roundup covering three big stories: OpenAI pausing Astra, a major AI-powered cyberattack disclosure, and the $500B infrastructure race. Good 15-minute catch-up on the week's biggest moves."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "CpjU21qx7Zs",
+     "title": "5 Minute AI News | August 18, 2026",
+     "channel": "5-Minute-AI-News",
+     "views": "11.8K",
+     "published": "2026-08-18",
+     "why": "Quick daily digest covering Wispr AI's $280M raise, Amazon's controversial training-data move, and Higgsfield quadrupling its valuation off Seedance 2.5 traction. Five minutes, no filler."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "G-F5Qvy-7KM",
+     "title": "How I Build Insane Three.js Websites With Claude Opus 5",
+     "channel": "DesignCode",
+     "views": "67.3K",
+     "published": "2026-08-16",
+     "why": "DesignCode walks through building production Three.js sites entirely with Claude Code \u2014 studying a live reference, inspecting its motion, building locally, and testing in the browser. 67K views in one week from one of the web's best design-to-code channels."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "YUWBku1cNEA",
+     "title": "Claude Code + Seedance 2.5 = Insane Websites",
+     "channel": "Kyle Skelly",
+     "views": "35.6K",
+     "published": "2026-08-10",
+     "why": "End-to-end build of a video-heavy website using Claude Code for structure and Seedance 2.5 for motion visuals \u2014 MP4s generated and embedded in one session with no post-processing. The exact workflow AOM uses."
+    }
+   ]
+  },
+  {
    "date": "2026-08-22",
    "items": [
     {
@@ -10,7 +96,7 @@
      "channel": "Theo - t3.gg",
      "views": "148K",
      "published": "2026-08-07",
-     "why": "Theo breaks down Meta's Muse Code at $0.10/M tokens vs Claude Code's $3/M — a 30x price gap that's forcing the entire AI coding agent market to rethink pricing. 148K views in two weeks from one of tech YouTube's sharpest voices."
+     "why": "Theo breaks down Meta's Muse Code at $0.10/M tokens vs Claude Code's $3/M \u2014 a 30x price gap that's forcing the entire AI coding agent market to rethink pricing. 148K views in two weeks from one of tech YouTube's sharpest voices."
     },
     {
      "lane": "ai-tools",
@@ -19,7 +105,7 @@
      "channel": "AI News & Strategy Daily",
      "views": "95.7K",
      "published": "2026-08-14",
-     "why": "First deep review of xAI's Grok Bot as a standalone installable agent. Covers whether the $200/mo price holds up against Claude Code and Codex. 95K views in 8 days — the Grok Bot wave is real."
+     "why": "First deep review of xAI's Grok Bot as a standalone installable agent. Covers whether the $200/mo price holds up against Claude Code and Codex. 95K views in 8 days \u2014 the Grok Bot wave is real."
     },
     {
      "lane": "ai-tools",
@@ -46,12 +132,12 @@
      "channel": "Paul J Lipsky",
      "views": "46.9K",
      "published": "2026-08-11",
-     "why": "Shows Grok Bot integrated directly into Cursor IDE — building features in real-time with the agent handling multi-file edits. The IDE+agent combo that has developers switching workflows."
+     "why": "Shows Grok Bot integrated directly into Cursor IDE \u2014 building features in real-time with the agent handling multi-file edits. The IDE+agent combo that has developers switching workflows."
     },
     {
      "lane": "ai-builds",
      "youtube_id": "piOSL8Ms9mY",
-     "title": "Codex Is Winning… So Why Am I Still Paying for Claude?",
+     "title": "Codex Is Winning\u2026 So Why Am I Still Paying for Claude?",
      "channel": "Riley Brown",
      "views": "33.4K",
      "published": "2026-08-10",
@@ -64,7 +150,7 @@
      "channel": "Nate Herk",
      "views": "20.4K",
      "published": "2026-08-18",
-     "why": "Condensed week of real building with Grok Bot — the failures, workarounds, and patterns that actually work. Practical lessons from someone shipping with the agent daily. 20K in 4 days."
+     "why": "Condensed week of real building with Grok Bot \u2014 the failures, workarounds, and patterns that actually work. Practical lessons from someone shipping with the agent daily. 20K in 4 days."
     },
     {
      "lane": "creative-workflows",
@@ -73,7 +159,7 @@
      "channel": "Brad Clark | AI Storyteller",
      "views": "31.9K",
      "published": "2026-08-07",
-     "why": "Full AI short film combining Seedance 2.0 and Kling O3 through the Kimeric pipeline. Brad Clark's most ambitious piece yet — the production quality gap between AI films and traditional shorts keeps shrinking."
+     "why": "Full AI short film combining Seedance 2.0 and Kling O3 through the Kimeric pipeline. Brad Clark's most ambitious piece yet \u2014 the production quality gap between AI films and traditional shorts keeps shrinking."
     }
    ]
   },
