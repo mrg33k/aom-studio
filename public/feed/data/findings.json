@@ -1,6 +1,92 @@
 {
  "days": [
   {
+   "date": "2026-08-24",
+   "items": [
+    {
+     "lane": "ai-tools",
+     "youtube_id": "J5HhFmjB9a4",
+     "title": "Claude Fable 5.1 LEAKS, HUGE Gemini Update, Anthropic To Cure Cancer?, & Qwen 3.8 27B Uncensored!",
+     "channel": "WorldofAI",
+     "views": "50.8K",
+     "published": "2026-08-18",
+     "why": "WorldofAI's weekly roundup covering the biggest leak of the week: Claude Fable 5.1 benchmark screenshots, plus Google's Gemini 3.7 update, Anthropic's biotech partnership, and Qwen 3.8 uncensored. 50K views in 6 days."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "SyrkC8Ks8QA",
+     "title": "GPT Astra This Week? Opus 6 Is Right Behind It",
+     "channel": "Universe of AI",
+     "views": "22K",
+     "published": "2026-08-17",
+     "why": "Breaks down the signals that GPT Astra is imminent and Opus 6 is weeks behind it. Covers OpenAI staff hints, Anthropic's release timing strategy, and what builders should expect from both models."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "Elwg-3Ql8u0",
+     "title": "GPT-6 Astra: OpenAI's Next Model Just Destroyed Claude AI",
+     "channel": "AI Master",
+     "views": "18.3K",
+     "published": "2026-08-16",
+     "why": "Deep dive into GPT-6 Astra's leaked benchmarks showing it outperforming Claude on reasoning tasks. Covers what the numbers actually mean for developers and where Claude still leads."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "ieqiNDdXSaw",
+     "title": "The 26 Best AI Tools of 2026 - Ranked",
+     "channel": "Skill Leap AI",
+     "views": "9.7K",
+     "published": "2026-08-17",
+     "why": "Tested over 1,000 AI tools and ranked the 26 that actually matter in 2026. Practical format covering the full stack from coding agents to creative tools."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "moVB1odDUvg",
+     "title": "Claude Fable 5.1 Is Ready But Anthropic Won't Release It...",
+     "channel": "Universe of AI",
+     "views": "9K",
+     "published": "2026-08-20",
+     "why": "Makes the case that Claude Fable 5.1 is fully ready but Anthropic is timing its release against OpenAI's Astra launch. Cites two Anthropic watchers who claim it's being held for strategic positioning."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "RlKg6oXLf7Y",
+     "title": "Seedance 2.5 is SCARY GOOD for AI Filmmaking",
+     "channel": "Dan Kieft",
+     "views": "60.7K",
+     "published": "2026-08-17",
+     "why": "Dan Kieft teaches 6 AI filmmaking techniques using Seedance 2.5, from motion control to style transfer. His second 60K+ video this month on AI filmmaking workflows."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "gXmEE8eJfSQ",
+     "title": "100 Episode Short Drama Series Using Single Text Prompt | AI Filmmaking With Seedance 2.5",
+     "channel": "Ai Lockup",
+     "views": "10.2K",
+     "published": "2026-08-18",
+     "why": "Full workflow for creating multi-episode short drama series using Seedance 2.5's long video mode and a single text prompt. Covers the end-to-end pipeline from script to finished episodes."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "MbiMwgbGdxw",
+     "title": "Every Claude Code Skill I Use to Drive My Entire Development Process",
+     "channel": "Cole Medin",
+     "views": "18.7K",
+     "published": "2026-08-12",
+     "why": "Cole Medin walks through every Claude Code skill he uses in his real development process. Covers custom slash commands, CLAUDE.md configuration, subagent orchestration, and the workflow patterns that let him ship full features in single sessions."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "AQ_Iqo3UYMk",
+     "title": "My Complete Development System (AI, Stack, Tools & Workflow)",
+     "channel": "Jan Marshal",
+     "views": "5.4K",
+     "published": "2026-08-16",
+     "why": "Walks through his full AI-powered development stack end to end: which models, which tools, which deployment pipeline, how they connect. Practical reference for anyone building their own AI dev workflow."
+    }
+   ]
+  },
+  {
    "date": "2026-08-23",
    "items": [
     {
