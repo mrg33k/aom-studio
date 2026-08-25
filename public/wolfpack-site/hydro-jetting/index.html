@@ -310,31 +310,6 @@ body.plot .hero-shot img{transform:scale(1)}
 body.reqopen 
 body.reqopen 
 
-/* ============================ FOOTER ============================ */
-.foot{background:#0C0E12;color:#F2F1EC;padding:var(--s7) 0}
-.foot .wrap{display:flex;flex-direction:column;gap:var(--s5)}
-.foot .brand{gap:var(--s3)}
-.foot .brandmark{height:40px}
-.foot .brandword{height:34px}
-.foot .fr{display:flex;flex-direction:column;gap:var(--s4);font-size:var(--t2)}
-.foot .fr>*{display:flex;align-items:flex-start;gap:var(--s3);padding:var(--s3) 0}
-.foot .fr svg{width:20px;height:20px;flex:none;margin-top:var(--s1);fill:none;stroke:var(--blue);
-  stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.foot .fr b{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
-  font-size:var(--t4);color:var(--blue);white-space:nowrap;line-height:1.2}
-.foot .cities{font-family:'IBM Plex Mono',monospace;font-size:var(--t1);
-  letter-spacing:.1em;text-transform:uppercase;color:#71767F;line-height:1.7}
-.foot .fcols{display:flex;flex-wrap:wrap;gap:var(--s6) var(--s8);width:100%}
-.foot .fcol{display:flex;flex-direction:column}
-.foot .fcol h4{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
-  text-transform:uppercase;font-size:var(--t1);letter-spacing:.16em;color:var(--blue);
-  margin-bottom:var(--s2)}
-.foot .fcol a{color:#A2A7B0;transition:color .2s,padding-left .2s var(--ease);
-  font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 88,'wght' 600;
-  font-size:var(--t2);letter-spacing:.03em;padding:var(--s2) 0}
-.foot .fcol a:hover{color:var(--blue);padding-left:var(--s2)}
-.foot .legal{font-family:'IBM Plex Mono',monospace;font-size:var(--t1);
-  letter-spacing:.08em;color:#71767F}
 
 /* sticky call dock — ours, not the reference's. A plumbing emergency is the
    reason anyone opens this on a phone, so the number never leaves. */
@@ -348,7 +323,7 @@ body.docked .dock{transform:none}
 .dock b{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
   font-size:var(--t4);letter-spacing:.02em}
 .dock span{font-size:var(--t1);letter-spacing:.14em;text-transform:uppercase;opacity:.9}
-body.docked .foot{padding-bottom:var(--s9)}
+body.docked 
 
 /* ============================ MOTION ============================ */
 .rv{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s var(--ease)}
@@ -405,7 +380,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   
   
   .dock{display:none}
-  body.docked .foot{padding-bottom:var(--s7)}
+  body.docked 
   .offer h2{max-width:none}
 }
 
@@ -419,8 +394,8 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   .cards{grid-template-columns:repeat(2,1fr);gap:var(--s5)}
   .ways{gap:var(--s5)}
   .stats{margin-top:var(--s7)}
-  .foot .wrap{flex-direction:row;align-items:flex-start;gap:var(--s7);flex-wrap:wrap}
-  .foot .fr{margin-left:auto;align-items:flex-end;text-align:right}
+  
+  
 }
 
 /* ============================ DESKTOP 1120+ ============================
@@ -532,14 +507,14 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   .ways{grid-template-columns:repeat(4,1fr);gap:var(--s5);margin-top:var(--s8)}
   .way{flex-direction:column;align-items:flex-start;padding:var(--s6) var(--s5)}
   .way svg{margin-bottom:var(--s4)}
-  .foot .wrap{gap:var(--s7);align-items:center}
-  .foot .brandmark{height:48px}
-  .foot .brandword{height:40px}
-  .foot .fr{flex-direction:row;align-items:center;gap:var(--s7)}
-  .foot .fr .cities-row{display:none}
-  .foot .fbrand .cities{display:block;margin-top:var(--s5)}
+  
+  
+  
+  
+  
+  
 }
-@media (max-width:1119px){ .foot .fbrand .cities{display:none} }
+@media (max-width:1119px){  }
 
 /* No display-size bump above this. Measured: .hero-copy is capped at maxw/2
    (656px), so the column never reaches the ~659px that 64px needs to hold
@@ -661,6 +636,70 @@ body.reqopen .reqdrawer{transform:none}
   .dh{padding:var(--s5) var(--s7)}
 }
 
+
+/* ==================== FOOTER 2.0 ==================== */
+.foot{background:#0C0E12;color:#F2F1EC;padding:0}
+.foot-cta{position:relative;overflow:hidden;min-height:320px;display:flex;align-items:center;
+  justify-content:center;text-align:center}
+.foot-cta img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35;
+  transition:transform 1.2s var(--ease)}
+.foot-cta:hover img{transform:scale(1.04)}
+.foot-cta .fc-content{position:relative;z-index:2;padding:var(--s8) var(--pad);max-width:640px}
+.foot-cta h2{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 80,'wght' 800;
+  text-transform:uppercase;font-size:var(--t6);line-height:.96;letter-spacing:-.005em;color:#fff}
+.foot-cta p{margin-top:var(--s3);color:rgba(255,255,255,.8);font-size:var(--t3);font-weight:500;line-height:1.5}
+.foot-cta .fc-btns{display:flex;flex-direction:column;gap:var(--s3);margin-top:var(--s5)}
+.foot-cta .fc-btn{display:block;padding:var(--s4) var(--s6);
+  font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
+  text-transform:uppercase;font-size:var(--t2);letter-spacing:.08em;text-align:center;
+  transition:background .25s,transform .25s var(--ease),border-color .25s;cursor:pointer;border:none}
+.foot-cta .fc-btn:hover{transform:translateY(-2px)}
+.foot-cta .fc-btn.primary{background:var(--blue);color:#fff}
+.foot-cta .fc-btn.primary:hover{background:var(--blue-dk)}
+.foot-cta .fc-btn.ghost{border:1px solid rgba(255,255,255,.4);color:#fff;background:none}
+.foot-cta .fc-btn.ghost:hover{border-color:#fff;background:rgba(255,255,255,.08)}
+.foot-bot{padding:var(--s7) 0;border-top:1px solid rgba(255,255,255,.08)}
+.foot-bot .wrap{display:flex;flex-direction:column;gap:var(--s5)}
+.foot-bot .brand{display:flex;align-items:center;gap:var(--s3)}
+.foot-bot .brandmark{height:36px;width:auto;flex:none}
+.foot-bot .brandword{height:30px;width:auto;flex:none}
+.foot-bot .fr{display:flex;flex-direction:column;gap:var(--s4)}
+.foot-bot .fr a{display:flex;align-items:center;gap:var(--s3);color:#A2A7B0;font-size:var(--t3);
+  font-weight:500;transition:color .2s}
+.foot-bot .fr a:hover{color:var(--blue)}
+.foot-bot .fr svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--blue);stroke-width:1.6;
+  stroke-linecap:round;stroke-linejoin:round}
+.foot-bot .fr b{color:#F2F1EC;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
+  font-size:var(--t3)}
+.foot-bot .cities{font-family:'IBM Plex Mono',monospace;font-size:var(--t1);
+  letter-spacing:.1em;text-transform:uppercase;color:#4A4F58;line-height:1.7;margin-top:var(--s4)}
+.foot-bot .fcols{display:flex;flex-wrap:wrap;gap:var(--s6) var(--s8);width:100%}
+.foot-bot .fcol{display:flex;flex-direction:column}
+.foot-bot .fcol h4{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
+  text-transform:uppercase;font-size:var(--t1);letter-spacing:.16em;color:var(--blue);margin-bottom:var(--s3)}
+.foot-bot .fcol a{color:#71767F;transition:color .2s,padding-left .2s var(--ease);
+  font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 88,'wght' 600;
+  font-size:var(--t2);letter-spacing:.03em;padding:var(--s2) 0}
+.foot-bot .fcol a:hover{color:var(--blue);padding-left:var(--s2)}
+.foot-bot .legal{font-family:'IBM Plex Mono',monospace;font-size:var(--t1);
+  letter-spacing:.08em;color:#4A4F58;padding-top:var(--s4);border-top:1px solid rgba(255,255,255,.06)}
+.foot-bot .legal span{margin-left:var(--s4)}
+@media(min-width:760px){
+  .foot-cta{min-height:400px}
+  .foot-cta h2{font-size:var(--t7)}
+  .foot-cta .fc-btns{flex-direction:row;justify-content:center}
+  .foot-cta .fc-btn{width:auto}
+  .foot-bot .wrap{flex-direction:row;align-items:flex-start;gap:var(--s7);flex-wrap:wrap}
+  .foot-bot .fr{margin-left:auto;align-items:flex-end;text-align:right;flex-direction:row;gap:var(--s7)}
+}
+@media(min-width:1120px){
+  .foot-cta h2{font-size:var(--t8)}
+  .foot-cta{min-height:480px}
+  .foot-bot .wrap{align-items:center}
+  .foot-bot .brandmark{height:44px}
+  .foot-bot .brandword{height:36px}
+}
+
 </style>
 </head>
 <body>
@@ -701,7 +740,7 @@ body.reqopen .reqdrawer{transform:none}
     <img class="brandword logo-lt" src="../assets/wolfpack-wordmark.png" alt="">
     <img class="brandword logo-dk" src="../assets/wolfpack-wordmark-knockout.png" alt="">
   </a>
-  <nav class="nav"><a href="/wolfpack-site/">Home</a><div class="navdd"><button class="trg" type="button" aria-haspopup="true" aria-expanded="false">Services<svg class="car" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><div class="menu"><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a></div></div><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/" data-req-open>Contact</a></nav>
+  <nav class="nav"><a href="/wolfpack-site/">Home</a><div class="navdd"><button class="trg" type="button" aria-haspopup="true" aria-expanded="false">Services<svg class="car" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><div class="menu"><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/air-compressor/">Air Compressor Install</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a></div></div><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/" data-req-open>Contact</a></nav>
   <button class="tt" id="tt" aria-label="Switch between light and dark">
     <svg data-v="light" viewBox="0 0 24 24"><use href="#i-sun"/></svg>
     <svg data-v="dark" viewBox="0 0 24 24"><use href="#i-moon"/></svg>
@@ -709,13 +748,14 @@ body.reqopen .reqdrawer{transform:none}
   <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><i></i></button>
   <a class="head-cta" href="tel:6025505452"><b>602-550-5452</b><span>24/7 Emergency</span></a>
 </div></header>
-<nav class="sheet" id="sheet"><a href="/wolfpack-site/">Home</a><div class="grp"><span class="grp-l">Services</span><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a></div><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a>
+<nav class="sheet" id="sheet"><a href="/wolfpack-site/">Home</a><div class="grp"><span class="grp-l">Services</span><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/air-compressor/">Air Compressor Install</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a></div><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a>
   <a class="sheet-call" href="tel:6025505452">Call 602-550-5452</a>
 </nav>
 <a class="callbar" href="tel:6025505452"><b>602-550-5452</b><span>24/7 Emergency</span></a>
 <div class="svcbar"><div class="wrap">
   <a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a>
   <a href="/wolfpack-site/drain-cleaning/">Drain &amp; Camera</a>
+  <a href="/air-compressor/">Air Compressor</a>
   
   <a href="/wolfpack-site/backflow-testing/">Backflow</a>
   <a href="/wolfpack-site/water-heaters/">Water Heaters</a>
@@ -789,25 +829,37 @@ body.reqopen .reqdrawer{transform:none}
   <h2 class="display rv">Free camera inspection<br>with every jetting job.</h2>
   <button class="btn rv" type="button" data-req-open>Book an inspection</button>
 </div></section></main>
-<footer class="foot"><div class="wrap">
-  <div class="fbrand">
-    <div class="brand">
-      <img class="brandmark" src="../assets/wolfpack-icon-knockout.png" alt="">
-      <img class="brandword" src="../assets/wolfpack-wordmark-knockout.png" alt="Wolfpack Companies LLC">
+<footer class="foot">
+  <div class="foot-cta">
+    <img src="../assets/hero-jetting.jpg" alt="Wolfpack crew on a commercial job" loading="lazy">
+    <div class="fc-content">
+      <h2>Ready to talk<br>about your project?</h2>
+      <p>Licensed, bonded, insured. AZ ROC #326629. A person answers the phone, 24 hours a day.</p>
+      <div class="fc-btns">
+        <button class="fc-btn primary" type="button" data-req-open>Request a Walkthrough</button>
+        <a class="fc-btn ghost" href="tel:6025505452">602-550-5452 / Call Now</a>
+      </div>
     </div>
-    <p class="cities">Phoenix &middot; Scottsdale &middot; Tempe &middot; Mesa &middot; Chandler &middot; Gilbert &middot; Glendale &middot; Peoria &middot; Surprise &middot; Goodyear &middot; Avondale &middot; Paradise Valley &middot; Apache Junction &middot; Litchfield Park &middot; San Tan Valley</p>
   </div>
-  <div class="fr">
-    <a href="tel:6025505452"><svg viewBox="0 0 24 24"><use href="#i-phone"/></svg><b>602-550-5452</b></a>
-    <a href="mailto:Service@wolfpackcompanies.com"><svg viewBox="0 0 24 24"><use href="#i-mail"/></svg><span>Service@wolfpackcompanies.com</span></a>
-    <p class="cities-row"><svg viewBox="0 0 24 24"><use href="#i-pin"/></svg><span class="cities">Phoenix &middot; Scottsdale &middot; Tempe &middot; Mesa &middot; Chandler &middot; Gilbert &middot; Glendale &middot; Peoria &middot; Surprise &middot; Goodyear &middot; Avondale &middot; Paradise Valley &middot; Apache Junction &middot; Litchfield Park &middot; San Tan Valley</span></p>
-  </div>
-  <div class="fcols">
-    <div class="fcol"><h4>Services</h4><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a></div>
-    <div class="fcol"><h4>Company</h4><a href="/wolfpack-site/">Home</a><a href="/wolfpack-site/property-managers/">Property &amp; Facility Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a></div>
-  </div>
-  <p class="legal">&copy; 2026 Wolfpack Companies LLC &middot; AZ ROC #326629</p>
-</div></footer>
+  <div class="foot-bot"><div class="wrap">
+    <div>
+      <div class="brand">
+        <img class="brandmark" src="../assets/wolfpack-icon-knockout.png" alt="">
+        <img class="brandword" src="../assets/wolfpack-wordmark-knockout.png" alt="Wolfpack Companies LLC">
+      </div>
+      <p class="cities">Phoenix &middot; Scottsdale &middot; Tempe &middot; Mesa &middot; Chandler &middot; Gilbert &middot; Glendale &middot; Peoria &middot; Surprise &middot; Goodyear &middot; Avondale &middot; Paradise Valley &middot; Apache Junction &middot; Litchfield Park &middot; San Tan Valley</p>
+    </div>
+    <div class="fr">
+      <a href="tel:6025505452"><svg viewBox="0 0 24 24"><use href="#i-phone"/></svg><b>602-550-5452</b></a>
+      <a href="mailto:Service@wolfpackcompanies.com"><svg viewBox="0 0 24 24"><use href="#i-mail"/></svg><span>Service@wolfpackcompanies.com</span></a>
+    </div>
+    <div class="fcols">
+      <div class="fcol"><h4>Services</h4><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/air-compressor/">Air Compressor Install</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a></div>
+      <div class="fcol"><h4>Company</h4><a href="/wolfpack-site/">Home</a><a href="/wolfpack-site/property-managers/">Property &amp; Facility Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/" data-req-open>Contact</a></div>
+    </div>
+    <p class="legal">&copy; 2026 Wolfpack Companies LLC<span>AZ ROC #326629</span></p>
+  </div></div>
+</footer>
 <a class="dock" href="tel:6025505452">
   <svg viewBox="0 0 24 24"><use href="#i-phone"/></svg>
   <b>602-550-5452</b><span>Call now</span>
