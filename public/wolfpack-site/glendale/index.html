@@ -802,65 +802,39 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   },{passive:true});
 })();
 </script>
+
+
 <div class="reqoverlay" data-req-close></div>
-<aside class="reqdrawer" id="reqDrawer" aria-hidden="true" aria-label="Request a walkthrough">
+<aside class="reqdrawer" id="reqDrawer" aria-hidden="true" aria-label="Contact Wolfpack">
   <div class="reqcard" id="req">
     <div class="reqcard-head">
-      <span class="dot"></span><b>Request a walkthrough</b><span class="rstep" id="reqStepLabel">Start</span>
+      <span class="dot"></span><b>Contact Wolfpack</b><span class="rstep" id="reqStepLabel">Start</span>
       <button class="reqx" type="button" data-req-close aria-label="Close">
         <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
     <div class="reqprog"><i id="reqBar"></i></div>
+
     <div data-panel="0">
       <div class="reqbody">
-        <p class="req-q">Which one<br>are you?</p>
-        <p class="req-qsub">Two different answers. Pick yours and skip the rest.</p>
-        <div class="reqfork">
-          <button class="reqpick" type="button" data-go="emergency">
-            <svg viewBox="0 0 24 24"><use href="#i-alert"/></svg>
-            <div><b>A line is down right now</b><span>Do not fill in a form. Call.</span></div><i>&rarr;</i>
-          </button>
-          <button class="reqpick" type="button" data-go="1">
-            <svg viewBox="0 0 24 24"><use href="#i-building"/></svg>
-            <div><b>I manage multiple properties</b><span>Request a walkthrough. Three fields.</span></div><i>&rarr;</i>
-          </button>
-        </div>
-      </div>
-    </div>
-    <div data-panel="emergency" hidden>
-      <div class="reqbody">
-        <p class="req-q">Call. We<br>answer.</p>
-        <div class="reqemer">
-          <span class="num">602-550-5452</span>
-          <p>A person picks up, 24 hours a day. Crews dispatch from Phoenix.</p>
+        <p class="req-q">What can we<br>do for you?</p>
+        <div class="reqchips" id="reqNeed" style="margin-top:var(--s5)">
+          <button class="reqchip" type="button" aria-pressed="false">New Install</button>
+          <button class="reqchip" type="button" aria-pressed="false">A line is down</button>
+          <button class="reqchip" type="button" aria-pressed="false">Request a Walkthrough</button>
+          <button class="reqchip" type="button" aria-pressed="false">We need service</button>
+          <button class="reqchip" type="button" aria-pressed="false">I manage multiple properties</button>
+          <button class="reqchip" type="button" aria-pressed="false">Something else</button>
         </div>
       </div>
       <div class="reqfoot">
-        <a class="btn btn-p" href="tel:6025505452">Call now</a>
-        <button class="reqback" type="button" data-go="0">&larr; Not an emergency</button>
+        <button class="btn btn-p" type="button" id="reqNeedCont" disabled>Continue</button>
       </div>
     </div>
+
     <div data-panel="1" hidden>
-      <div class="reqbody">
-        <p class="req-q">How many<br>properties?</p>
-        <p class="req-qsub">This tells us who walks the site with you.</p>
-        <div class="reqchips" id="reqChips">
-          <button class="reqchip" type="button" aria-pressed="false">1</button>
-          <button class="reqchip" type="button" aria-pressed="false">2 to 5</button>
-          <button class="reqchip" type="button" aria-pressed="false">6 to 15</button>
-          <button class="reqchip" type="button" aria-pressed="false">16 to 40</button>
-          <button class="reqchip" type="button" aria-pressed="false">More than 40</button>
-        </div>
-      </div>
-      <div class="reqfoot">
-        <button class="btn btn-p" type="button" id="reqCont" disabled>Continue</button>
-        <button class="reqback" type="button" data-go="0">&larr; Back</button>
-      </div>
-    </div>
-    <div data-panel="2" hidden>
       <form class="reqbody" id="reqForm" novalidate>
-        <p class="req-q">Where do<br>we send it?</p>
+        <p class="req-q">Where do<br>we reach you?</p>
         <p class="req-qsub">Three fields. We come back same business day.</p>
         <div class="fields">
           <div class="field"><label for="f-name">Name</label>
@@ -876,10 +850,11 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
       </form>
       <div class="reqfoot">
         <button class="btn btn-p" type="submit" form="reqForm" id="reqSend">Send request</button>
-        <button class="reqback" type="button" data-go="1">&larr; Back</button>
+        <button class="reqback" type="button" data-go="0">&larr; Back</button>
       </div>
     </div>
-    <div data-panel="3" hidden>
+
+    <div data-panel="2" hidden>
       <div class="reqbody">
         <div class="reqdone">
           <div class="tick"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></div>
@@ -898,9 +873,8 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   var panels=[].slice.call(card.querySelectorAll('[data-panel]'));
   var bar=document.getElementById('reqBar');
   var stepLabel=document.getElementById('reqStepLabel');
-  var meta={'0':['Start',0],'emergency':['Emergency',100],'1':['Step 1 of 2',50],
-    '2':['Step 2 of 2',100],'3':['Done',100]};
-  var chosenProperties='', lastFocus=null;
+  var meta={'0':['Start',0],'1':['Your info',50],'2':['Done',100]};
+  var chosenNeed='', lastFocus=null;
   function go(id){
     panels.forEach(function(p){ p.hidden = p.dataset.panel !== id; });
     var m=meta[id]; stepLabel.textContent=m[0]; bar.style.width=m[1]+'%'; drawer.scrollTop=0;
@@ -908,15 +882,15 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   card.querySelectorAll('[data-go]').forEach(function(b){
     b.addEventListener('click',function(){ go(b.dataset.go); });
   });
-  var chips=[].slice.call(card.querySelectorAll('#reqChips .reqchip'));
-  var cont=document.getElementById('reqCont');
-  chips.forEach(function(c){
+  var needChips=[].slice.call(card.querySelectorAll('#reqNeed .reqchip'));
+  var needCont=document.getElementById('reqNeedCont');
+  needChips.forEach(function(c){
     c.addEventListener('click',function(){
-      chips.forEach(function(x){ x.setAttribute('aria-pressed','false'); });
-      c.setAttribute('aria-pressed','true'); chosenProperties=c.textContent; cont.disabled=false;
+      needChips.forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+      c.setAttribute('aria-pressed','true'); chosenNeed=c.textContent; needCont.disabled=false;
     });
   });
-  cont.addEventListener('click',function(){ go('2'); });
+  needCont.addEventListener('click',function(){ go('1'); });
   var f=document.getElementById('reqForm');
   f.addEventListener('submit',function(e){
     e.preventDefault(); var ok=true;
@@ -926,9 +900,9 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
     });
     if(!ok){ var first=f.querySelector('.field.bad input'); if(first)first.focus(); return; }
     try{ localStorage.setItem('wp-request', JSON.stringify({
-      name:f.name.value, company:f.company.value, phone:f.phone.value, properties:chosenProperties
+      need:chosenNeed, name:f.name.value, company:f.company.value, phone:f.phone.value
     })); }catch(err){}
-    go('3');
+    go('2');
   });
   [].slice.call(f.querySelectorAll('input')).forEach(function(el){
     el.addEventListener('input',function(){ el.closest('.field').classList.remove('bad'); });
@@ -936,6 +910,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   function openDrawer(){
     lastFocus=document.activeElement; body.classList.add('reqopen');
     drawer.setAttribute('aria-hidden','false');
+    go('0'); needChips.forEach(function(x){x.setAttribute('aria-pressed','false');}); needCont.disabled=true;
     var x=drawer.querySelector('.reqx'); if(x)x.focus();
   }
   function closeDrawer(){
