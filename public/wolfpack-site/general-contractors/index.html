@@ -323,6 +323,22 @@ body.docked .foot{padding-bottom:var(--s9)}
   .foot .fbrand .cities{display:block;margin-top:var(--s5)}
 }
 @media (max-width:1119px){ .foot .fbrand .cities{display:none} }
+
+/* service sub-nav strip */
+.svcbar{background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.svcbar::-webkit-scrollbar{display:none}
+.svcbar .wrap{display:flex;gap:0;padding-top:0;padding-bottom:0;justify-content:flex-start}
+.svcbar a{white-space:nowrap;padding:var(--s3) var(--s4);
+  font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 88,'wght' 600;
+  font-size:var(--t1);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+  transition:color .2s,background .2s;flex:none;text-align:center}
+.svcbar a:hover{color:var(--blue);background:var(--tint)}
+.svcbar a[aria-current]{color:var(--blue)}
+@media(min-width:1120px){
+  .svcbar .wrap{justify-content:center}
+  .svcbar a{padding:var(--s3) var(--s5)}
+}
 </style>
 </head>
 <body>
@@ -347,7 +363,7 @@ body.docked .foot{padding-bottom:var(--s9)}
     <img class="brandword logo-lt" src="../assets/wolfpack-wordmark.png" alt="">
     <img class="brandword logo-dk" src="../assets/wolfpack-wordmark-knockout.png" alt="">
   </a>
-  <nav class="nav"><a href="/wolfpack-site/">Home</a><div class="navdd"><button class="trg" type="button" aria-haspopup="true" aria-expanded="false">Services<svg class="car" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><div class="menu"><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/grease-fog/">Grease Trap &amp; FOG</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a><a href="/wolfpack-site/general-contractors/">General Contracting</a></div></div><a href="/wolfpack-site/general-contractors/" aria-current="page">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a></nav>
+  <nav class="nav"><a href="/wolfpack-site/">Home</a><div class="navdd"><button class="trg" type="button" aria-haspopup="true" aria-expanded="false">Services<svg class="car" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><div class="menu"><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/grease-fog/">Grease Trap &amp; FOG</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a><a href="/wolfpack-site/general-contractors/">General Contracting</a></div></div><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a></nav>
   <button class="tt" id="tt" aria-label="Switch between light and dark">
     <svg data-v="light" viewBox="0 0 24 24"><use href="#i-sun"/></svg>
     <svg data-v="dark" viewBox="0 0 24 24"><use href="#i-moon"/></svg>
@@ -355,12 +371,23 @@ body.docked .foot{padding-bottom:var(--s9)}
   <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><i></i></button>
   <a class="head-cta" href="tel:6025505452"><b>602-550-5452</b><span>24/7 Emergency</span></a>
 </div></header>
-<nav class="sheet" id="sheet"><a href="/wolfpack-site/">Home</a><div class="grp"><span class="grp-l">Services</span><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/grease-fog/">Grease Trap &amp; FOG</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a></div><a href="/wolfpack-site/general-contractors/" aria-current="page">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a>
+<nav class="sheet" id="sheet"><a href="/wolfpack-site/">Home</a><div class="grp"><span class="grp-l">Services</span><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/grease-fog/">Grease Trap &amp; FOG</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a><a href="/wolfpack-site/general-contractors/">General Contracting</a></div><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a>
   <a class="sheet-call" href="tel:6025505452">Call 602-550-5452</a>
 </nav>
 <a class="callbar" href="tel:6025505452"><b>602-550-5452</b><span>24/7 Emergency</span></a>
 <div class="creds"><div class="wrap">
   <span>AZ ROC #326629</span><span>Licensed, Bonded &amp; Insured</span><span>OSHA Certified</span>
+</div></div>
+<div class="svcbar"><div class="wrap">
+  <a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a>
+  <a href="/wolfpack-site/drain-cleaning/">Drain &amp; Camera</a>
+  <a href="/wolfpack-site/grease-fog/">Grease Trap</a>
+  <a href="/wolfpack-site/backflow-testing/">Backflow</a>
+  <a href="/wolfpack-site/water-heaters/">Water Heaters</a>
+  <a href="/wolfpack-site/leak-detection/">Leak Detection</a>
+  <a href="/wolfpack-site/emergency/">24/7 Emergency</a>
+  <a href="/wolfpack-site/property-managers/">Maintenance</a>
+  <a href="/wolfpack-site/general-contractors/">General Contracting</a>
 </div></div>
 <main id="main">
 <section class="phero">
