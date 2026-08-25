@@ -300,91 +300,15 @@ body.plot .hero-shot img{transform:scale(1)}
 .way p{margin-top:var(--s1);color:var(--ink-2);font-size:var(--t2)}
 
 /* the form fields (step 2 of the request card, below) */
-.fields{margin-top:var(--s6);display:flex;flex-direction:column;gap:var(--s5)}
-.field label{display:block;font-family:'Archivo',sans-serif;
-  font-variation-settings:'wdth' 88,'wght' 700;font-size:var(--t1);letter-spacing:.14em;
-  text-transform:uppercase;color:var(--ink-2)}
-.field input,.field select{width:100%;margin-top:var(--s2);background:var(--field);
-  border:1px solid var(--line);padding:var(--s4);font-size:var(--t3);
-  transition:border-color .25s,background .25s;-webkit-appearance:none;appearance:none;border-radius:0}
-.field select{background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23489FD3' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right var(--s4) center;background-size:18px;
-  padding-right:var(--s7)}
-.field input:focus,.field select:focus{outline:none;border-color:var(--blue);background:var(--panel)}
 .field.bad input,.field.bad select{border-color:#C7502F}
-.field .err{display:none;margin-top:var(--s2);font-size:var(--t2);color:#C7502F}
 .field.bad .err{display:block}
 
 /* the request card: fork -> chips -> fields -> done. Ambition ContactDrawer's
    interaction model (progress bar, staged reveals, chip choices, success
    panel), adapted in-page instead of a slide-out drawer since this site is
    plain URLs, not an SPA. */
-.reqcard{position:relative;border:1px solid var(--line);background:var(--panel);
-  margin-top:var(--s5);box-shadow:0 32px 64px -32px rgba(18,20,15,.28)}
-.reqcard-head{background:#0C0E12;color:#F2F1EC;display:flex;align-items:center;gap:var(--s3);
-  padding:var(--s4) var(--s5)}
-.reqcard-head .dot{width:8px;height:8px;border-radius:50%;background:var(--blue);flex:none}
-.reqcard-head b{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
-  text-transform:uppercase;font-size:var(--t2);letter-spacing:.12em}
-.reqcard-head .rstep{margin-left:auto;white-space:nowrap;font-size:var(--t1);
-  letter-spacing:.14em;text-transform:uppercase;color:#9CA09A}
-.reqprog{height:4px;background:var(--line-2)}
-.reqprog i{display:block;height:100%;background:var(--blue);width:0;transition:width .4s var(--ease)}
-.reqbody{padding:var(--s6) var(--s5) var(--s5)}
-.reqfoot{padding:0 var(--s5) var(--s5)}
-.req-q{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 80,'wght' 800;
-  text-transform:uppercase;font-size:var(--t5);line-height:1.03;letter-spacing:-.005em}
-.req-qsub{color:var(--ink-2);font-size:var(--t3);margin-top:var(--s2)}
-.reqfork{display:grid;gap:var(--s3);margin-top:var(--s5)}
-.reqpick{display:grid;grid-template-columns:32px 1fr 16px;align-items:center;gap:var(--s4);
-  text-align:left;border:1px solid var(--line);background:var(--panel-2);padding:var(--s4);
-  transition:border-color .2s,transform .2s var(--ease);width:100%}
-.reqpick:hover{border-color:var(--blue);transform:translateX(3px)}
-.reqpick svg{width:24px;height:24px;fill:none;stroke:var(--blue);stroke-width:1.6;
-  stroke-linecap:round;stroke-linejoin:round}
-.reqpick b{display:block;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
-  text-transform:uppercase;font-size:var(--t3);letter-spacing:.02em}
-.reqpick span{display:block;color:var(--ink-2);font-size:var(--t2);margin-top:var(--s1)}
-.reqpick i{color:var(--ink-3);font-style:normal;font-size:var(--t4)}
-.reqchips{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s5)}
-.reqchip{border:1px solid var(--line);background:var(--panel-2);padding:var(--s3) var(--s5);
-  font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 88,'wght' 600;
-  text-transform:uppercase;font-size:var(--t2);letter-spacing:.04em;transition:.16s}
-.reqchip:hover{border-color:var(--blue);color:var(--blue)}
-.reqchip[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
-.reqback{display:block;margin-top:var(--s3);font-size:var(--t2);letter-spacing:.1em;
-  text-transform:uppercase;color:var(--ink-3);text-align:center;width:100%}
-.reqback:hover{color:var(--ink)}
-.reqemer{margin-top:var(--s5);border:1px solid var(--line);padding:var(--s5);
-  text-align:center;background:var(--panel-2)}
-.reqemer .num{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 80,'wght' 800;
-  font-size:var(--t7);letter-spacing:-.01em;display:block;line-height:1.1}
-.reqemer p{color:var(--ink-2);font-size:var(--t3);margin-top:var(--s2)}
-.reqdone{text-align:center;padding:var(--s3) 0}
-.reqdone .tick{width:56px;height:56px;border-radius:50%;background:var(--blue);
-  margin:0 auto var(--s5);display:grid;place-items:center}
-.reqdone .tick svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:2.4;
-  stroke-linecap:round;stroke-linejoin:round}
-.reqdone p{color:var(--ink-2);font-size:var(--t3);margin-top:var(--s3)}
-.reqdone p.req-q{color:var(--ink);font-size:var(--t5);margin-top:0}
-
-/* the request DRAWER — the same card above, opened from any button on any
-   page instead of a link to a whole page (Patrik, 2026-08-07). */
-.reqoverlay{position:fixed;inset:0;z-index:85;background:rgba(12,14,18,.55);
-  opacity:0;visibility:hidden;transition:opacity .3s ease,visibility .3s}
-body.reqopen .reqoverlay{opacity:1;visibility:visible}
-.reqdrawer{position:fixed;top:0;right:0;bottom:0;z-index:90;width:100%;max-width:480px;
-  background:var(--panel);box-shadow:-32px 0 64px -32px rgba(18,20,15,.35);
-  transform:translateX(100%);transition:transform .4s var(--ease);
-  overflow-y:auto;-webkit-overflow-scrolling:touch}
-body.reqopen .reqdrawer{transform:none}
-.reqdrawer .reqcard{border:none;box-shadow:none;margin-top:0;max-width:none;
-  margin-left:0;margin-right:0;min-height:100%}
-.reqcard-head .reqx{margin-left:var(--s3);width:28px;height:28px;flex:none;display:grid;
-  place-items:center;color:#F2F1EC}
-.reqcard-head .reqx svg{width:16px;height:16px;fill:none;stroke:currentColor;
-  stroke-width:2;stroke-linecap:round}
-@media (prefers-reduced-motion:reduce){.reqoverlay,.reqdrawer{transition:none}}
+body.reqopen 
+body.reqopen 
 
 /* ============================ FOOTER ============================ */
 .foot{background:#0C0E12;color:#F2F1EC;padding:var(--s7) 0}
@@ -477,9 +401,9 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   .cities-grid{grid-template-columns:repeat(3,1fr)}
   .city.wide{grid-column:auto}
   .ways{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s4)}
-  .reqcard{max-width:600px;margin-left:auto;margin-right:auto}
-  .reqbody{padding:var(--s7) var(--s7) var(--s6)}
-  .reqfoot{padding:0 var(--s7) var(--s6)}
+  
+  
+  
   .dock{display:none}
   body.docked .foot{padding-bottom:var(--s7)}
   .offer h2{max-width:none}
@@ -637,6 +561,106 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   .svcbar .wrap{justify-content:center}
   .svcbar a{padding:var(--s3) var(--s5)}
 }
+
+/* ==================== CONTACT DRAWER 2.0 ==================== */
+.reqoverlay{position:fixed;inset:0;z-index:85;background:rgba(12,14,18,.65);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  opacity:0;visibility:hidden;transition:opacity .3s ease,visibility .3s}
+body.reqopen .reqoverlay{opacity:1;visibility:visible}
+body.reqopen{overflow:hidden}
+.reqdrawer{position:fixed;top:0;right:0;bottom:0;z-index:90;width:100%;max-width:520px;
+  background:var(--panel);box-shadow:-32px 0 64px -16px rgba(18,20,15,.45);
+  transform:translateX(100%);transition:transform .4s var(--ease);
+  overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column}
+body.reqopen .reqdrawer{transform:none}
+@media(prefers-reduced-motion:reduce){.reqoverlay,.reqdrawer{transition:none}}
+
+/* drawer header — branded bar */
+.dh{background:#0C0E12;color:#F2F1EC;padding:var(--s5);display:flex;flex-direction:column;gap:var(--s4)}
+.dh-top{display:flex;align-items:center;gap:var(--s3)}
+.dh-logo{height:32px;width:auto;flex:none}
+.dh-title{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
+  text-transform:uppercase;font-size:var(--t2);letter-spacing:.12em;flex:1}
+.dh .reqx{width:32px;height:32px;flex:none;display:grid;place-items:center;color:#F2F1EC;
+  border:1px solid rgba(255,255,255,.15);transition:border-color .2s,background .2s}
+.dh .reqx:hover{border-color:var(--blue);background:rgba(72,159,211,.15)}
+.dh .reqx svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.dh-contact{display:flex;gap:var(--s5);padding-top:var(--s3);border-top:1px solid rgba(255,255,255,.1)}
+.dh-contact a{display:flex;align-items:center;gap:var(--s2);color:#A2A7B0;font-size:var(--t2);
+  transition:color .2s}
+.dh-contact a:hover{color:var(--blue)}
+.dh-contact svg{width:16px;height:16px;flex:none;fill:none;stroke:var(--blue);stroke-width:1.6;
+  stroke-linecap:round;stroke-linejoin:round}
+.dh-contact b{color:#F2F1EC;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
+  font-size:var(--t3)}
+
+/* drawer progress */
+.dprog{height:3px;background:var(--line-2)}
+.dprog i{display:block;height:100%;background:var(--blue);width:0;transition:width .5s var(--ease)}
+
+/* drawer body */
+.dbody{flex:1;padding:var(--s6) var(--s5) var(--s5)}
+.dfoot{padding:0 var(--s5) var(--s5)}
+.d-q{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 80,'wght' 800;
+  text-transform:uppercase;font-size:var(--t5);line-height:1.03;letter-spacing:-.005em}
+.d-qsub{color:var(--ink-2);font-size:var(--t3);margin-top:var(--s3);line-height:1.5}
+
+/* option cards (not pills) */
+.d-opts{display:flex;flex-direction:column;gap:var(--s3);margin-top:var(--s5)}
+.d-opt{display:flex;align-items:center;gap:var(--s4);text-align:left;
+  border:1px solid var(--line);background:var(--panel-2);padding:var(--s4) var(--s5);
+  transition:border-color .25s,transform .25s var(--ease),background .25s;width:100%;cursor:pointer}
+.d-opt:hover{border-color:var(--blue);transform:translateX(4px)}
+.d-opt[aria-pressed="true"]{border-color:var(--blue);background:var(--tint)}
+.d-opt[aria-pressed="true"] .d-opt-dot{background:var(--blue);border-color:var(--blue)}
+.d-opt[aria-pressed="true"] .d-opt-dot::after{opacity:1}
+.d-opt svg{width:24px;height:24px;flex:none;fill:none;stroke:var(--blue);stroke-width:1.5;
+  stroke-linecap:round;stroke-linejoin:round}
+.d-opt-dot{width:20px;height:20px;flex:none;border:2px solid var(--line);border-radius:50%;
+  margin-left:auto;position:relative;transition:border-color .2s,background .2s}
+.d-opt-dot::after{content:"";position:absolute;inset:4px;border-radius:50%;background:#fff;opacity:0;
+  transition:opacity .2s}
+.d-opt b{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
+  text-transform:uppercase;font-size:var(--t2);letter-spacing:.04em;line-height:1.25}
+.d-opt span{display:block;color:var(--ink-2);font-size:var(--t1);margin-top:var(--s1);
+  font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0}
+
+/* form fields */
+.d-fields{display:flex;flex-direction:column;gap:var(--s5);margin-top:var(--s6)}
+.d-field label{display:block;font-family:'Archivo',sans-serif;
+  font-variation-settings:'wdth' 88,'wght' 700;font-size:var(--t1);letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-2)}
+.d-field input{width:100%;margin-top:var(--s2);background:var(--field);
+  border:1px solid var(--line);padding:var(--s4);font-size:var(--t3);
+  transition:border-color .25s,background .25s;-webkit-appearance:none;appearance:none;border-radius:0}
+.d-field input:focus{outline:none;border-color:var(--blue);background:var(--panel)}
+.d-field.bad input{border-color:#C7502F}
+.d-field .err{display:none;margin-top:var(--s2);font-size:var(--t2);color:#C7502F}
+.d-field.bad .err{display:block}
+
+/* back link */
+.d-back{display:block;margin-top:var(--s4);font-size:var(--t2);letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ink-3);text-align:center;width:100%}
+.d-back:hover{color:var(--ink)}
+
+/* done state */
+.d-done{text-align:center;padding:var(--s7) 0}
+.d-done .tick{width:64px;height:64px;border-radius:50%;background:var(--blue);
+  margin:0 auto var(--s5);display:grid;place-items:center}
+.d-done .tick svg{width:24px;height:24px;fill:none;stroke:#fff;stroke-width:2.4;
+  stroke-linecap:round;stroke-linejoin:round}
+.d-done .d-q{margin-bottom:var(--s3)}
+.d-done p{color:var(--ink-2);font-size:var(--t3);line-height:1.5}
+
+/* line separator */
+.d-line{height:1px;background:var(--line);margin:var(--s5) 0}
+
+@media(min-width:760px){
+  .dbody{padding:var(--s7) var(--s7) var(--s6)}
+  .dfoot{padding:0 var(--s7) var(--s6)}
+  .dh{padding:var(--s5) var(--s7)}
+}
+
 </style>
 </head>
 <body>
@@ -677,7 +701,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
     <img class="brandword logo-lt" src="assets/wolfpack-wordmark.png" alt="">
     <img class="brandword logo-dk" src="assets/wolfpack-wordmark-knockout.png" alt="">
   </a>
-  <nav class="nav"><a href="/wolfpack-site/">Home</a><div class="navdd"><button class="trg" type="button" aria-haspopup="true" aria-expanded="false">Services<svg class="car" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><div class="menu"><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a></div></div><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a></nav>
+  <nav class="nav"><a href="/wolfpack-site/">Home</a><div class="navdd"><button class="trg" type="button" aria-haspopup="true" aria-expanded="false">Services<svg class="car" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><div class="menu"><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a></div></div><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/" data-req-open>Contact</a></nav>
   <button class="tt" id="tt" aria-label="Switch between light and dark">
     <svg data-v="light" viewBox="0 0 24 24"><use href="#i-sun"/></svg>
     <svg data-v="dark" viewBox="0 0 24 24"><use href="#i-moon"/></svg>
@@ -835,63 +859,96 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 </script>
 
 
+
+
 <div class="reqoverlay" data-req-close></div>
 <aside class="reqdrawer" id="reqDrawer" aria-hidden="true" aria-label="Contact Wolfpack">
-  <div class="reqcard" id="req">
-    <div class="reqcard-head">
-      <span class="dot"></span><b>Contact Wolfpack</b><span class="rstep" id="reqStepLabel">Start</span>
+  <div class="dh">
+    <div class="dh-top">
+      <img class="dh-logo" src="../assets/wolfpack-icon-knockout.png" alt="">
+      <span class="dh-title">Contact Wolfpack</span>
       <button class="reqx" type="button" data-req-close aria-label="Close">
         <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
-    <div class="reqprog"><i id="reqBar"></i></div>
+    <div class="dh-contact">
+      <a href="tel:6025505452"><svg viewBox="0 0 24 24"><use href="#i-phone"/></svg><b>602-550-5452</b></a>
+      <a href="mailto:Service@wolfpackcompanies.com"><svg viewBox="0 0 24 24"><use href="#i-mail"/></svg><span>Email</span></a>
+    </div>
+  </div>
+  <div class="dprog"><i id="reqBar"></i></div>
 
-    <div data-panel="0">
-      <div class="reqbody">
-        <p class="req-q">What can we<br>do for you?</p>
-        <div class="reqchips" id="reqNeed" style="margin-top:var(--s5)">
-          <button class="reqchip" type="button" aria-pressed="false">New Install</button>
-          <button class="reqchip" type="button" aria-pressed="false">A line is down</button>
-          <button class="reqchip" type="button" aria-pressed="false">Request a Walkthrough</button>
-          <button class="reqchip" type="button" aria-pressed="false">We need service</button>
-          <button class="reqchip" type="button" aria-pressed="false">I manage multiple properties</button>
-          <button class="reqchip" type="button" aria-pressed="false">Something else</button>
-        </div>
-      </div>
-      <div class="reqfoot">
-        <button class="btn btn-p" type="button" id="reqNeedCont" disabled>Continue</button>
+  <div data-panel="0">
+    <div class="dbody">
+      <p class="d-q">What can we<br>do for you?</p>
+      <div class="d-opts" id="reqNeed">
+        <button class="d-opt" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24"><use href="#i-building"/></svg>
+          <div><b>New Install</b><span>Ground-up or tenant improvement</span></div>
+          <span class="d-opt-dot"></span>
+        </button>
+        <button class="d-opt" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24"><use href="#i-alert"/></svg>
+          <div><b>A line is down</b><span>Emergency, need someone now</span></div>
+          <span class="d-opt-dot"></span>
+        </button>
+        <button class="d-opt" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24"><use href="#i-camera"/></svg>
+          <div><b>Request a Walkthrough</b><span>Come see the property first</span></div>
+          <span class="d-opt-dot"></span>
+        </button>
+        <button class="d-opt" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24"><use href="#i-jet"/></svg>
+          <div><b>We need service</b><span>Repair, maintenance, or jetting</span></div>
+          <span class="d-opt-dot"></span>
+        </button>
+        <button class="d-opt" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24"><use href="#i-building"/></svg>
+          <div><b>I manage multiple properties</b><span>Portfolio contract discussion</span></div>
+          <span class="d-opt-dot"></span>
+        </button>
+        <button class="d-opt" type="button" aria-pressed="false">
+          <svg viewBox="0 0 24 24"><use href="#i-doc"/></svg>
+          <div><b>Something else</b><span>Tell us what you need</span></div>
+          <span class="d-opt-dot"></span>
+        </button>
       </div>
     </div>
+    <div class="dfoot">
+      <button class="btn btn-p" type="button" id="reqNeedCont" disabled style="width:100%">Continue</button>
+    </div>
+  </div>
 
-    <div data-panel="1" hidden>
-      <form class="reqbody" id="reqForm" novalidate>
-        <p class="req-q">Where do<br>we reach you?</p>
-        <p class="req-qsub">Three fields. We come back same business day.</p>
-        <div class="fields">
-          <div class="field"><label for="f-name">Name</label>
+  <div data-panel="1" hidden>
+    <div class="dbody">
+      <p class="d-q">Where do we<br>reach you?</p>
+      <p class="d-qsub">Three fields. We come back same business day.</p>
+      <form id="reqForm" novalidate>
+        <div class="d-fields">
+          <div class="d-field"><label for="f-name">Name</label>
             <input id="f-name" name="name" type="text" autocomplete="name" required>
             <p class="err">Please add your name.</p></div>
-          <div class="field"><label for="f-co">Company</label>
+          <div class="d-field"><label for="f-co">Company</label>
             <input id="f-co" name="company" type="text" autocomplete="organization">
             <p class="err">Please add your company.</p></div>
-          <div class="field"><label for="f-tel">Phone</label>
+          <div class="d-field"><label for="f-tel">Phone</label>
             <input id="f-tel" name="phone" type="tel" autocomplete="tel" required inputmode="tel">
             <p class="err">Please add a number we can call back.</p></div>
         </div>
       </form>
-      <div class="reqfoot">
-        <button class="btn btn-p" type="submit" form="reqForm" id="reqSend">Send request</button>
-        <button class="reqback" type="button" data-go="0">&larr; Back</button>
-      </div>
     </div>
+    <div class="dfoot">
+      <button class="btn btn-p" type="submit" form="reqForm" id="reqSend" style="width:100%">Send request</button>
+      <button class="d-back" type="button" data-go="0">&larr; Back</button>
+    </div>
+  </div>
 
-    <div data-panel="2" hidden>
-      <div class="reqbody">
-        <div class="reqdone">
-          <div class="tick"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></div>
-          <p class="req-q">Got it.</p>
-          <p>We come back the same business day. If the line will not wait, call <a href="tel:6025505452" class="blue"><b>602-550-5452</b></a> and a person answers.</p>
-        </div>
+  <div data-panel="2" hidden>
+    <div class="dbody">
+      <div class="d-done">
+        <div class="tick"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></div>
+        <p class="d-q">Got it.</p>
+        <p>We come back the same business day. If the line will not wait, call <a href="tel:6025505452" class="blue"><b>602-550-5452</b></a> and a person answers.</p>
       </div>
     </div>
   </div>
@@ -900,25 +957,25 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 (function(){
   var body=document.body, drawer=document.getElementById('reqDrawer');
   if(!drawer) return;
-  var card=document.getElementById('req');
-  var panels=[].slice.call(card.querySelectorAll('[data-panel]'));
+  var panels=[].slice.call(drawer.querySelectorAll('[data-panel]'));
   var bar=document.getElementById('reqBar');
-  var stepLabel=document.getElementById('reqStepLabel');
-  var meta={'0':['Start',0],'1':['Your info',50],'2':['Done',100]};
+  var meta={'0':0,'1':50,'2':100};
   var chosenNeed='', lastFocus=null;
   function go(id){
     panels.forEach(function(p){ p.hidden = p.dataset.panel !== id; });
-    var m=meta[id]; stepLabel.textContent=m[0]; bar.style.width=m[1]+'%'; drawer.scrollTop=0;
+    bar.style.width=meta[id]+'%'; drawer.scrollTop=0;
   }
-  card.querySelectorAll('[data-go]').forEach(function(b){
+  drawer.querySelectorAll('[data-go]').forEach(function(b){
     b.addEventListener('click',function(){ go(b.dataset.go); });
   });
-  var needChips=[].slice.call(card.querySelectorAll('#reqNeed .reqchip'));
+  var opts=[].slice.call(drawer.querySelectorAll('#reqNeed .d-opt'));
   var needCont=document.getElementById('reqNeedCont');
-  needChips.forEach(function(c){
+  opts.forEach(function(c){
     c.addEventListener('click',function(){
-      needChips.forEach(function(x){ x.setAttribute('aria-pressed','false'); });
-      c.setAttribute('aria-pressed','true'); chosenNeed=c.textContent; needCont.disabled=false;
+      opts.forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+      c.setAttribute('aria-pressed','true');
+      chosenNeed=c.querySelector('b').textContent;
+      needCont.disabled=false;
     });
   });
   needCont.addEventListener('click',function(){ go('1'); });
@@ -926,23 +983,23 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   f.addEventListener('submit',function(e){
     e.preventDefault(); var ok=true;
     [].slice.call(f.querySelectorAll('input')).forEach(function(el){
-      var fld=el.closest('.field'), bad=el.hasAttribute('required')&&!el.value.trim();
+      var fld=el.closest('.d-field'), bad=el.hasAttribute('required')&&!el.value.trim();
       fld.classList.toggle('bad',bad); if(bad)ok=false;
     });
-    if(!ok){ var first=f.querySelector('.field.bad input'); if(first)first.focus(); return; }
+    if(!ok){ var first=f.querySelector('.d-field.bad input'); if(first)first.focus(); return; }
     try{ localStorage.setItem('wp-request', JSON.stringify({
       need:chosenNeed, name:f.name.value, company:f.company.value, phone:f.phone.value
     })); }catch(err){}
     go('2');
   });
   [].slice.call(f.querySelectorAll('input')).forEach(function(el){
-    el.addEventListener('input',function(){ el.closest('.field').classList.remove('bad'); });
+    el.addEventListener('input',function(){ el.closest('.d-field').classList.remove('bad'); });
   });
   function openDrawer(){
     lastFocus=document.activeElement; body.classList.add('reqopen');
     drawer.setAttribute('aria-hidden','false');
-    go('0'); needChips.forEach(function(x){x.setAttribute('aria-pressed','false');}); needCont.disabled=true;
-    var x=drawer.querySelector('.reqx'); if(x)x.focus();
+    go('0'); opts.forEach(function(x){x.setAttribute('aria-pressed','false');}); needCont.disabled=true;
+    f.reset(); f.querySelectorAll('.d-field').forEach(function(d){d.classList.remove('bad');});
   }
   function closeDrawer(){
     body.classList.remove('reqopen'); drawer.setAttribute('aria-hidden','true');
