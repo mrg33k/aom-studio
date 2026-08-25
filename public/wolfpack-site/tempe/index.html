@@ -679,7 +679,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
     <img class="brandword logo-lt" src="../assets/wolfpack-wordmark.png" alt="">
     <img class="brandword logo-dk" src="../assets/wolfpack-wordmark-knockout.png" alt="">
   </a>
-  <nav class="nav"><a href="/wolfpack-site/">Home</a><div class="navdd"><button class="trg" type="button" aria-haspopup="true" aria-expanded="false">Services<svg class="car" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><div class="menu"><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/grease-fog/">Grease Trap &amp; FOG</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a><a href="/wolfpack-site/general-contractors/">General Contracting</a></div></div><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a></nav>
+  <nav class="nav"><a href="/wolfpack-site/">Home</a><div class="navdd"><button class="trg" type="button" aria-haspopup="true" aria-expanded="false">Services<svg class="car" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button><div class="menu"><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/grease-fog/">Grease Trap &amp; FOG</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a></div></div><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a></nav>
   <button class="tt" id="tt" aria-label="Switch between light and dark">
     <svg data-v="light" viewBox="0 0 24 24"><use href="#i-sun"/></svg>
     <svg data-v="dark" viewBox="0 0 24 24"><use href="#i-moon"/></svg>
@@ -687,7 +687,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   <button class="burger" id="burger" aria-label="Menu" aria-expanded="false"><i></i></button>
   <a class="head-cta" href="tel:6025505452"><b>602-550-5452</b><span>24/7 Emergency</span></a>
 </div></header>
-<nav class="sheet" id="sheet"><a href="/wolfpack-site/">Home</a><div class="grp"><span class="grp-l">Services</span><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/grease-fog/">Grease Trap &amp; FOG</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a><a href="/wolfpack-site/general-contractors/">General Contracting</a></div><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a>
+<nav class="sheet" id="sheet"><a href="/wolfpack-site/">Home</a><div class="grp"><span class="grp-l">Services</span><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/grease-fog/">Grease Trap &amp; FOG</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a></div><a href="/wolfpack-site/property-managers/">Property Managers</a><a href="/wolfpack-site/general-contractors/">General Contractors</a><a href="/wolfpack-site/contact/">Contact</a>
   <a class="sheet-call" href="tel:6025505452">Call 602-550-5452</a>
 </nav>
 <a class="callbar" href="tel:6025505452"><b>602-550-5452</b><span>24/7 Emergency</span></a>
@@ -703,7 +703,6 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
   <a href="/wolfpack-site/leak-detection/">Leak Detection</a>
   <a href="/wolfpack-site/emergency/">24/7 Emergency</a>
   <a href="/wolfpack-site/property-managers/">Maintenance</a>
-  <a href="/wolfpack-site/general-contractors/">General Contracting</a>
 </div></div>
 <main id="main"><section class="hero">
   <div class="hero-copy">
@@ -742,7 +741,7 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
 
 <section class="offer"><div class="wrap">
   <h2 class="display rv">Commercial plumbing<br>in Tempe. Call direct.</h2>
-  <a class="btn rv" href="tel:6025505452">602-550-5452 / Call now</a>
+  <button class="btn btn-p" type="button" data-req-open>Request a walkthrough</button>
 </div></section></main>
 <footer class="foot"><div class="wrap">
   <div class="fbrand">
@@ -805,6 +804,155 @@ body.plot .hero-copy>*:nth-child(4){transition-delay:.28s}
     b.classList.toggle('scrolled', scrollY>8);
     b.classList.toggle('docked', scrollY>520);
   },{passive:true});
+})();
+</script>
+<div class="reqoverlay" data-req-close></div>
+<aside class="reqdrawer" id="reqDrawer" aria-hidden="true" aria-label="Request a walkthrough">
+  <div class="reqcard" id="req">
+    <div class="reqcard-head">
+      <span class="dot"></span><b>Request a walkthrough</b><span class="rstep" id="reqStepLabel">Start</span>
+      <button class="reqx" type="button" data-req-close aria-label="Close">
+        <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="reqprog"><i id="reqBar"></i></div>
+    <div data-panel="0">
+      <div class="reqbody">
+        <p class="req-q">Which one<br>are you?</p>
+        <p class="req-qsub">Two different answers. Pick yours and skip the rest.</p>
+        <div class="reqfork">
+          <button class="reqpick" type="button" data-go="emergency">
+            <svg viewBox="0 0 24 24"><use href="#i-alert"/></svg>
+            <div><b>A line is down right now</b><span>Do not fill in a form. Call.</span></div><i>&rarr;</i>
+          </button>
+          <button class="reqpick" type="button" data-go="1">
+            <svg viewBox="0 0 24 24"><use href="#i-building"/></svg>
+            <div><b>I manage multiple properties</b><span>Request a walkthrough. Three fields.</span></div><i>&rarr;</i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div data-panel="emergency" hidden>
+      <div class="reqbody">
+        <p class="req-q">Call. We<br>answer.</p>
+        <div class="reqemer">
+          <span class="num">602-550-5452</span>
+          <p>A person picks up, 24 hours a day. Crews dispatch from Phoenix.</p>
+        </div>
+      </div>
+      <div class="reqfoot">
+        <a class="btn btn-p" href="tel:6025505452">Call now</a>
+        <button class="reqback" type="button" data-go="0">&larr; Not an emergency</button>
+      </div>
+    </div>
+    <div data-panel="1" hidden>
+      <div class="reqbody">
+        <p class="req-q">How many<br>properties?</p>
+        <p class="req-qsub">This tells us who walks the site with you.</p>
+        <div class="reqchips" id="reqChips">
+          <button class="reqchip" type="button" aria-pressed="false">1</button>
+          <button class="reqchip" type="button" aria-pressed="false">2 to 5</button>
+          <button class="reqchip" type="button" aria-pressed="false">6 to 15</button>
+          <button class="reqchip" type="button" aria-pressed="false">16 to 40</button>
+          <button class="reqchip" type="button" aria-pressed="false">More than 40</button>
+        </div>
+      </div>
+      <div class="reqfoot">
+        <button class="btn btn-p" type="button" id="reqCont" disabled>Continue</button>
+        <button class="reqback" type="button" data-go="0">&larr; Back</button>
+      </div>
+    </div>
+    <div data-panel="2" hidden>
+      <form class="reqbody" id="reqForm" novalidate>
+        <p class="req-q">Where do<br>we send it?</p>
+        <p class="req-qsub">Three fields. We come back same business day.</p>
+        <div class="fields">
+          <div class="field"><label for="f-name">Name</label>
+            <input id="f-name" name="name" type="text" autocomplete="name" required>
+            <p class="err">Please add your name.</p></div>
+          <div class="field"><label for="f-co">Company</label>
+            <input id="f-co" name="company" type="text" autocomplete="organization">
+            <p class="err">Please add your company.</p></div>
+          <div class="field"><label for="f-tel">Phone</label>
+            <input id="f-tel" name="phone" type="tel" autocomplete="tel" required inputmode="tel">
+            <p class="err">Please add a number we can call back.</p></div>
+        </div>
+      </form>
+      <div class="reqfoot">
+        <button class="btn btn-p" type="submit" form="reqForm" id="reqSend">Send request</button>
+        <button class="reqback" type="button" data-go="1">&larr; Back</button>
+      </div>
+    </div>
+    <div data-panel="3" hidden>
+      <div class="reqbody">
+        <div class="reqdone">
+          <div class="tick"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></div>
+          <p class="req-q">Got it.</p>
+          <p>We come back the same business day. If the line will not wait, call <a href="tel:6025505452" class="blue"><b>602-550-5452</b></a> and a person answers.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</aside>
+<script>
+(function(){
+  var body=document.body, drawer=document.getElementById('reqDrawer');
+  if(!drawer) return;
+  var card=document.getElementById('req');
+  var panels=[].slice.call(card.querySelectorAll('[data-panel]'));
+  var bar=document.getElementById('reqBar');
+  var stepLabel=document.getElementById('reqStepLabel');
+  var meta={'0':['Start',0],'emergency':['Emergency',100],'1':['Step 1 of 2',50],
+    '2':['Step 2 of 2',100],'3':['Done',100]};
+  var chosenProperties='', lastFocus=null;
+  function go(id){
+    panels.forEach(function(p){ p.hidden = p.dataset.panel !== id; });
+    var m=meta[id]; stepLabel.textContent=m[0]; bar.style.width=m[1]+'%'; drawer.scrollTop=0;
+  }
+  card.querySelectorAll('[data-go]').forEach(function(b){
+    b.addEventListener('click',function(){ go(b.dataset.go); });
+  });
+  var chips=[].slice.call(card.querySelectorAll('#reqChips .reqchip'));
+  var cont=document.getElementById('reqCont');
+  chips.forEach(function(c){
+    c.addEventListener('click',function(){
+      chips.forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+      c.setAttribute('aria-pressed','true'); chosenProperties=c.textContent; cont.disabled=false;
+    });
+  });
+  cont.addEventListener('click',function(){ go('2'); });
+  var f=document.getElementById('reqForm');
+  f.addEventListener('submit',function(e){
+    e.preventDefault(); var ok=true;
+    [].slice.call(f.querySelectorAll('input')).forEach(function(el){
+      var fld=el.closest('.field'), bad=el.hasAttribute('required')&&!el.value.trim();
+      fld.classList.toggle('bad',bad); if(bad)ok=false;
+    });
+    if(!ok){ var first=f.querySelector('.field.bad input'); if(first)first.focus(); return; }
+    try{ localStorage.setItem('wp-request', JSON.stringify({
+      name:f.name.value, company:f.company.value, phone:f.phone.value, properties:chosenProperties
+    })); }catch(err){}
+    go('3');
+  });
+  [].slice.call(f.querySelectorAll('input')).forEach(function(el){
+    el.addEventListener('input',function(){ el.closest('.field').classList.remove('bad'); });
+  });
+  function openDrawer(){
+    lastFocus=document.activeElement; body.classList.add('reqopen');
+    drawer.setAttribute('aria-hidden','false');
+    var x=drawer.querySelector('.reqx'); if(x)x.focus();
+  }
+  function closeDrawer(){
+    body.classList.remove('reqopen'); drawer.setAttribute('aria-hidden','true');
+    if(lastFocus&&lastFocus.focus)lastFocus.focus();
+  }
+  document.addEventListener('click',function(e){
+    if(e.target.closest('[data-req-open]')){ e.preventDefault(); openDrawer(); return; }
+    if(e.target.closest('[data-req-close]')){ closeDrawer(); }
+  });
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&body.classList.contains('reqopen')) closeDrawer();
+  });
 })();
 </script>
 </body></html>
