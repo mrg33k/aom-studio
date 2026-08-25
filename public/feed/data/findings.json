@@ -1,6 +1,56 @@
 {
  "days": [
   {
+   "date": "2026-08-25",
+   "items": [
+    {
+     "lane": "ai-tools",
+     "youtube_id": "U72CKEWzuwA",
+     "title": "New $799 Apple M6 Mac Mini Leak: M6 Base vs M5 Pro Chaos!",
+     "channel": "Trendy Tech Reviews",
+     "views": "62K",
+     "published": "2026-08-20",
+     "why": "Called today's M6 announcement days early. Apple's first 2nm chip with a dual 16-core Neural Engine changes the local-inference math for every AI builder running models on Mac hardware."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "V0FgIDq2N9w",
+     "title": "DeepSeek V4-Flash Vision Is Out: Whale Opened Its Eyes",
+     "channel": "Fahd Mirza",
+     "views": "41K",
+     "published": "2026-08-21",
+     "why": "First hands-on with DeepSeek's surprise vision model. 13B active params in a 284B MoE, 1M context window, near Opus-4.8 multimodal scores at $0.22/M input tokens. The cost gap is the story."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "iDZpqsY2bhs",
+     "title": "DeepSeek V4 Flash Vision Exp Is Here! (Nobody Saw This Coming)",
+     "channel": "Panda Making Money",
+     "views": "19K",
+     "published": "2026-08-22",
+     "why": "Day-one reaction covering the DeepSeek multimodal upgrade nobody predicted. Practical breakdown of what the 1M context window and vision capabilities mean for builders switching from closed models."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "x-AYmE9Mhro",
+     "title": "Harvey Is Turning Open Models Into Proprietary Intelligence | EP 647",
+     "channel": "GAI Insights",
+     "views": "14K",
+     "published": "2026-08-21",
+     "why": "Harvey's Tenet system fine-tunes open-source models into proprietary legal AI that outperforms closed models on domain tasks. A case study in the open-to-proprietary pipeline every vertical AI company will run."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "OKBqK_sc4q0",
+     "title": "Day 218 – Vibe Coding an App Until I Make $1,000,000 | ARR: $194,904",
+     "channel": "BridgeMind",
+     "views": "31K",
+     "published": "2026-08-18",
+     "why": "Creator hit $195K ARR then deliberately cut $50K of it to focus on the core product. Real revenue numbers, real trade-offs, day 218 of a public build diary. The anti-hype vibe-coding series."
+    }
+   ]
+  },
+  {
    "date": "2026-08-24",
    "items": [
     {
