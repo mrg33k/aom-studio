@@ -639,8 +639,8 @@ body.reqopen .reqdrawer{transform:none}
 
 /* ==================== FOOTER 2.0 ==================== */
 .foot{background:#0C0E12;color:#F2F1EC;padding:0}
-.foot-cta{position:relative;overflow:hidden;min-height:320px;display:flex;align-items:center;
-  justify-content:center;text-align:center}
+.foot-cta{position:relative;overflow:hidden;min-height:280px;display:flex;align-items:center;
+  justify-content:center;text-align:center;border-radius:12px;margin-bottom:var(--s6);width:100%}
 .foot-cta img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35;
   transition:transform 1.2s var(--ease)}
 .foot-cta:hover img{transform:scale(1.04)}
@@ -658,7 +658,7 @@ body.reqopen .reqdrawer{transform:none}
 .foot-cta .fc-btn.primary:hover{background:var(--blue-dk)}
 .foot-cta .fc-btn.ghost{border:1px solid rgba(255,255,255,.4);color:#fff;background:none}
 .foot-cta .fc-btn.ghost:hover{border-color:#fff;background:rgba(255,255,255,.08)}
-.foot-bot{padding:var(--s7) 0;border-top:1px solid rgba(255,255,255,.08)}
+.foot-bot{padding:var(--s7) 0}
 .foot-bot .wrap{display:flex;flex-direction:column;gap:var(--s5)}
 .foot-bot .brand{display:flex;align-items:center;gap:var(--s3)}
 .foot-bot .brandmark{height:36px;width:auto;flex:none}
@@ -685,7 +685,7 @@ body.reqopen .reqdrawer{transform:none}
   letter-spacing:.08em;color:#4A4F58;padding-top:var(--s4);border-top:1px solid rgba(255,255,255,.06)}
 .foot-bot .legal span{margin-left:var(--s4)}
 @media(min-width:760px){
-  .foot-cta{min-height:400px}
+  .foot-cta{min-height:320px}
   .foot-cta h2{font-size:var(--t7)}
   .foot-cta .fc-btns{flex-direction:row;justify-content:center}
   .foot-cta .fc-btn{width:auto}
@@ -694,7 +694,7 @@ body.reqopen .reqdrawer{transform:none}
 }
 @media(min-width:1120px){
   .foot-cta h2{font-size:var(--t8)}
-  .foot-cta{min-height:480px}
+  .foot-cta{min-height:380px}
   .foot-bot .wrap{align-items:center}
   .foot-bot .brandmark{height:44px}
   .foot-bot .brandword{height:36px}
@@ -787,7 +787,8 @@ body.reqopen .reqdrawer{transform:none}
 </div></section>
 </main>
 <footer class="foot">
-  <div class="foot-cta">
+  <div class="foot-bot"><div class="wrap">
+    <div class="foot-cta">
     <img src="../assets/hero-jetting.jpg" alt="Wolfpack crew on a commercial job" loading="lazy">
     <div class="fc-content">
       <h2>Ready to talk<br>about your project?</h2>
@@ -798,7 +799,6 @@ body.reqopen .reqdrawer{transform:none}
       </div>
     </div>
   </div>
-  <div class="foot-bot"><div class="wrap">
     <div>
       <div class="brand">
         <img class="brandmark" src="../assets/wolfpack-icon-knockout.png" alt="">
