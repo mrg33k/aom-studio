@@ -639,38 +639,34 @@ body.reqopen .reqdrawer{transform:none}
 
 /* ==================== FOOTER 2.0 ==================== */
 .foot{background:#0C0E12;color:#F2F1EC;padding:0}
-.foot-cta{position:relative;overflow:hidden;min-height:280px;display:flex;align-items:center;
-  justify-content:center;text-align:center;border-radius:12px;margin-bottom:var(--s6);width:100%}
-.foot-cta img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35;
-  transition:transform 1.2s var(--ease)}
-.foot-cta:hover img{transform:scale(1.04)}
-.foot-cta .fc-content{position:relative;z-index:2;padding:var(--s8) var(--pad);max-width:640px}
+.foot-cta{position:relative;overflow:hidden;display:flex;align-items:center;
+  border-radius:10px;margin-left:auto}
+.foot-cta img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.25}
+.foot-cta .fc-content{position:relative;z-index:2;padding:var(--s5) var(--s6)}
 .foot-cta h2{font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 80,'wght' 800;
-  text-transform:uppercase;font-size:var(--t6);line-height:.96;letter-spacing:-.005em;color:#fff}
-.foot-cta p{margin-top:var(--s3);color:rgba(255,255,255,.8);font-size:var(--t3);font-weight:500;line-height:1.5}
-.foot-cta .fc-btns{display:flex;flex-direction:column;gap:var(--s3);margin-top:var(--s5)}
-.foot-cta .fc-btn{display:block;padding:var(--s4) var(--s6);
+  text-transform:uppercase;font-size:var(--t4);line-height:1.1;letter-spacing:-.005em;color:#fff;
+  margin-bottom:var(--s3)}
+.foot-cta .fc-btns{display:flex;gap:var(--s3)}
+.foot-cta .fc-btn{display:block;padding:var(--s3) var(--s5);
   font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
-  text-transform:uppercase;font-size:var(--t2);letter-spacing:.08em;text-align:center;
-  transition:background .25s,transform .25s var(--ease),border-color .25s;cursor:pointer;border:none}
-.foot-cta .fc-btn:hover{transform:translateY(-2px)}
+  text-transform:uppercase;font-size:var(--t1);letter-spacing:.08em;text-align:center;
+  transition:background .25s,transform .25s var(--ease),border-color .25s;cursor:pointer;border:none;
+  white-space:nowrap}
+.foot-cta .fc-btn:hover{transform:translateY(-1px)}
 .foot-cta .fc-btn.primary{background:var(--blue);color:#fff}
 .foot-cta .fc-btn.primary:hover{background:var(--blue-dk)}
-.foot-cta .fc-btn.ghost{border:1px solid rgba(255,255,255,.4);color:#fff;background:none}
+.foot-cta .fc-btn.ghost{border:1px solid rgba(255,255,255,.35);color:#fff;background:none}
 .foot-cta .fc-btn.ghost:hover{border-color:#fff;background:rgba(255,255,255,.08)}
+.foot-cta .fc-email{display:flex;align-items:center;gap:var(--s2);margin-top:var(--s3);
+  color:#A2A7B0;font-size:var(--t1);transition:color .2s}
+.foot-cta .fc-email:hover{color:var(--blue)}
+.foot-cta .fc-email svg{width:14px;height:14px;flex:none;fill:none;stroke:var(--blue);
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .foot-bot{padding:var(--s7) 0}
 .foot-bot .wrap{display:flex;flex-direction:column;gap:var(--s5)}
 .foot-bot .brand{display:flex;align-items:center;gap:var(--s3)}
 .foot-bot .brandmark{height:36px;width:auto;flex:none}
 .foot-bot .brandword{height:30px;width:auto;flex:none}
-.foot-bot .fr{display:flex;flex-direction:column;gap:var(--s4)}
-.foot-bot .fr a{display:flex;align-items:center;gap:var(--s3);color:#A2A7B0;font-size:var(--t3);
-  font-weight:500;transition:color .2s}
-.foot-bot .fr a:hover{color:var(--blue)}
-.foot-bot .fr svg{width:18px;height:18px;flex:none;fill:none;stroke:var(--blue);stroke-width:1.6;
-  stroke-linecap:round;stroke-linejoin:round}
-.foot-bot .fr b{color:#F2F1EC;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;
-  font-size:var(--t3)}
 .foot-bot .cities{font-family:'IBM Plex Mono',monospace;font-size:var(--t1);
   letter-spacing:.1em;text-transform:uppercase;color:#4A4F58;line-height:1.7;margin-top:var(--s4)}
 .foot-bot .fcols{display:flex;flex-wrap:wrap;gap:var(--s6) var(--s8);width:100%}
@@ -685,17 +681,11 @@ body.reqopen .reqdrawer{transform:none}
   letter-spacing:.08em;color:#4A4F58;padding-top:var(--s4);border-top:1px solid rgba(255,255,255,.06)}
 .foot-bot .legal span{margin-left:var(--s4)}
 @media(min-width:760px){
-  .foot-cta{min-height:320px}
-  .foot-cta h2{font-size:var(--t7)}
-  .foot-cta .fc-btns{flex-direction:row;justify-content:center}
-  .foot-cta .fc-btn{width:auto}
-  .foot-bot .wrap{flex-direction:row;align-items:flex-start;gap:var(--s7);flex-wrap:wrap}
-  .foot-bot .fr{margin-left:auto;align-items:flex-end;text-align:right;flex-direction:row;gap:var(--s7)}
+  .foot-bot .wrap{display:grid;grid-template-columns:1fr auto;gap:var(--s5) var(--s7);align-items:center}
+  .foot-bot .fcols{grid-column:1/-1}
+  .foot-bot .legal{grid-column:1/-1}
 }
 @media(min-width:1120px){
-  .foot-cta h2{font-size:var(--t8)}
-  .foot-cta{min-height:380px}
-  .foot-bot .wrap{align-items:center}
   .foot-bot .brandmark{height:44px}
   .foot-bot .brandword{height:36px}
 }
@@ -828,17 +818,6 @@ body.reqopen .reqdrawer{transform:none}
 </main>
 <footer class="foot">
   <div class="foot-bot"><div class="wrap">
-    <div class="foot-cta">
-    <img src="../assets/hero-jetting.jpg" alt="Wolfpack crew on a commercial job" loading="lazy">
-    <div class="fc-content">
-      <h2>Ready to talk<br>about your project?</h2>
-      <p>Licensed, bonded, insured. AZ ROC #326629. A person answers the phone, 24 hours a day.</p>
-      <div class="fc-btns">
-        <button class="fc-btn primary" type="button" data-req-open>Request a Walkthrough</button>
-        <a class="fc-btn ghost" href="tel:6025505452">602-550-5452 / Call Now</a>
-      </div>
-    </div>
-  </div>
     <div>
       <div class="brand">
         <img class="brandmark" src="../assets/wolfpack-icon-knockout.png" alt="">
@@ -846,9 +825,16 @@ body.reqopen .reqdrawer{transform:none}
       </div>
       <p class="cities">Phoenix &middot; Scottsdale &middot; Tempe &middot; Mesa &middot; Chandler &middot; Gilbert &middot; Glendale &middot; Peoria &middot; Surprise &middot; Goodyear &middot; Avondale &middot; Paradise Valley &middot; Apache Junction &middot; Litchfield Park &middot; San Tan Valley</p>
     </div>
-    <div class="fr">
-      <a href="tel:6025505452"><svg viewBox="0 0 24 24"><use href="#i-phone"/></svg><b>602-550-5452</b></a>
-      <a href="mailto:Service@wolfpackcompanies.com"><svg viewBox="0 0 24 24"><use href="#i-mail"/></svg><span>Service@wolfpackcompanies.com</span></a>
+    <div class="foot-cta">
+      <img src="../assets/hero-jetting.jpg" alt="Wolfpack crew on a commercial job" loading="lazy">
+      <div class="fc-content">
+        <h2>Ready to talk about your project?</h2>
+        <div class="fc-btns">
+          <button class="fc-btn primary" type="button" data-req-open>Request a Walkthrough</button>
+          <a class="fc-btn ghost" href="tel:6025505452">Call 602-550-5452</a>
+        </div>
+        <a class="fc-email" href="mailto:Service@wolfpackcompanies.com"><svg viewBox="0 0 24 24"><use href="#i-mail"/></svg>Service@wolfpackcompanies.com</a>
+      </div>
     </div>
     <div class="fcols">
       <div class="fcol"><h4>Services</h4><a href="/wolfpack-site/hydro-jetting/">Hydro Jetting</a><a href="/wolfpack-site/drain-cleaning/">Drain Cleaning &amp; Camera</a><a href="/wolfpack-site/air-compressor/">Air Compressor Install</a><a href="/wolfpack-site/property-managers/">Maintenance Contracts</a><a href="/wolfpack-site/backflow-testing/">Backflow Testing</a><a href="/wolfpack-site/water-heaters/">Water Heaters &amp; Boilers</a><a href="/wolfpack-site/leak-detection/">Under-Slab Leak Detection</a><a href="/wolfpack-site/emergency/">24/7 Emergency Response</a></div>
