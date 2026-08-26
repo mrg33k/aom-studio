@@ -1,6 +1,83 @@
 {
  "days": [
   {
+   "date": "2026-08-26",
+   "items": [
+    {
+     "lane": "ai-tools",
+     "youtube_id": "oAC-ABVe92o",
+     "title": "Apple's M6 Chip is HERE! New Mac Mini & Mac Studio Announced",
+     "channel": "MacRumors",
+     "views": "80K",
+     "published": "2026-08-25",
+     "why": "Official M6 launch coverage from Apple's top leak channel. First 2nm consumer chip — dual 16-core Neural Engine (32 total), 12-core CPU/GPU, 4x AI performance. Mac Mini starts $899, ships Sep 22."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "Fq5KQYk6TIw",
+     "title": "Apple's $699 Mac Mini M6 Monster: The Secret Upgrades Revealed!",
+     "channel": "Trendy Tech Reviews",
+     "views": "15K",
+     "published": "2026-08-23",
+     "why": "Leaked M6 Mini specs before the official announcement landed. 40% neural engine uplift over M5 at the same $699 entry — the local-inference price floor just dropped again."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "XU2qCP9ssRs",
+     "title": "Fable 5.1 Is Being Tested In Secret And GPT Astra Is Confirmed",
+     "channel": "Universe of AI",
+     "views": "20K",
+     "published": "2026-08-20",
+     "why": "Fable 5.1 actively in private testing — not leaked benchmarks, real developer access. Plus GPT Astra confirmed but gated for safety review. Two frontier moves in one week."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "mHqSBCHEZOY",
+     "title": "NEW ChatGPT Sites Just Changed Everything (Builds Anything)",
+     "channel": "Riley Brown",
+     "views": "19K",
+     "published": "2026-08-26",
+     "why": "OpenAI's built-in website builder got a major upgrade today. Riley shows a full build from prompt to deployed site — direct competitor to Bolt, Lovable, and v0. Published hours ago, already at 19K."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "ETa6ZYqoIXo",
+     "title": "Codex vs Claude vs Grokbot: What's The Best Super App?",
+     "channel": "Riley Brown",
+     "views": "23K",
+     "published": "2026-08-21",
+     "why": "Head-to-head comparison building the same app with all three coding agents. Real build, real timing, real output quality comparison — not benchmarks. The practical test every builder wants."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "Q-qUm7QPs2s",
+     "title": "Grok 4.6 vs Claude Code vs Codex Built The Same App: ONE Clear Winner",
+     "channel": "ByteGrad",
+     "views": "30K",
+     "published": "2026-08-19",
+     "why": "ByteGrad's fullstack Next.js + Supabase shootout. Grok finished in 14 min, Codex 15 min, Claude Code 21 min — but code quality tells a different story. The build-tool race has real data now."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "QfylrxtQSSs",
+     "title": "I Made a Viral AI Love Story (500M Views) — Steal My Prompts",
+     "channel": "Higgsfield AI",
+     "views": "69K",
+     "published": "2026-08-21",
+     "why": "Full prompt-to-viral breakdown of an AI short that hit 500M views. Exact prompts shared. Higgsfield's $1M AI film festival is open through Aug 31 — $500K first place."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "2z7Y6G84Iy4",
+     "title": "Red Flag | 90s Hong Kong AI Short Film | Higgsfield Originals (2026)",
+     "channel": "Higgsfield AI",
+     "views": "48K",
+     "published": "2026-08-19",
+     "why": "100% AI-generated short film in 90s Hong Kong noir style. Proof that AI filmmaking moved past the 'looks AI' phase — this passes as a real short. Festival submission template for builders."
+    }
+   ]
+  },
+  {
    "date": "2026-08-25",
    "items": [
     {
