@@ -7,3 +7,5 @@ Patrik asked to get Wolfpack live at `wolfpackcompanies.com`, using the supplied
 The current GoDaddy site's images must all be downloaded before the switch. Contact requests must be sent to both `Service@wolfpackcompanies.com` and `hello@aom-inhouse.com`; the current implementation only stores a lead in the visitor's browser and is not acceptable for launch.
 
 Patrik approved hosting Wolfpack as a separate Vercel project sourced from this repository. The project itself does not add a fixed monthly fee; normal pooled usage still applies. The release sequence is archive, rebuild, mobile and functional QA, separate-project preview, Patrik approval, GoDaddy DNS cutover, canonical-domain verification, and retention of the AOM path as rollback coverage.
+
+Patrik reviewed the written design and said to proceed. The implementation plan now lives at `docs/superpowers/plans/2026-08-27-wolfpack-redesign-launch.md`; it divides the work into nine testable tasks and preserves a hard approval gate between the Vercel preview and GoDaddy DNS changes.
