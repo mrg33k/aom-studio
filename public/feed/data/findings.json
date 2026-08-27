@@ -1,6 +1,56 @@
 {
  "days": [
   {
+   "date": "2026-08-27",
+   "items": [
+    {
+     "lane": "ai-tools",
+     "youtube_id": "F0lVPbqCXks",
+     "title": "Mac Mini M6 Review: Best Dev Machine for $899?",
+     "channel": "Webronaq",
+     "views": "10K",
+     "published": "2026-08-25",
+     "why": "Developer-focused M6 review — benchmarks the new 2nm chip specifically for coding and local AI workloads. The $899 dev-machine angle is unique vs yesterday's announcement coverage."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "Lojh1hlefS0",
+     "title": "M6 & M5 Pro Mac Mini — Who Should Actually Upgrade From M4?",
+     "channel": "MrHtech",
+     "views": "15K",
+     "published": "2026-08-25",
+     "why": "Practical upgrade guide for the M6 wave. Cuts through launch hype to answer the real question M4 owners are asking — skip-gen worth it or wait?"
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "eDFGhf-uVDU",
+     "title": "The State of AI in August 2026",
+     "channel": "AI with Arun Show",
+     "views": "8K",
+     "published": "2026-08-20",
+     "why": "Monthly state-of-AI analysis that looks past marketing hype. Covers what actually shipped, what matters, and what's noise — the 30,000ft view the daily feed usually misses."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "uZhfAk9kJMw",
+     "title": "Day 219 – Vibe Coding an App Until I Make $1,000,000 | ARR: $196,200",
+     "channel": "BridgeMind",
+     "views": "20K",
+     "published": "2026-08-20",
+     "why": "Real build-in-public at $196K ARR. Matthew Miller deliberately cut $50K in revenue (shut down Vibecademy and ViewCreator) to focus on the core product. The strategic pruning is the lesson."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "AuviLdG_PSc",
+     "title": "Seedance 2.5 Tutorial: How to Make AI Videos With Seedance in 2026",
+     "channel": "AI Master",
+     "views": "12K",
+     "published": "2026-08-20",
+     "why": "Fresh Seedance 2.5 walkthrough — the model that just topped the no-audio text-to-video leaderboard. Practical workflow, not a feature tour. Covers prompting, image-to-video, and the new long-video mode."
+    }
+   ]
+  },
+  {
    "date": "2026-08-26",
    "items": [
     {
