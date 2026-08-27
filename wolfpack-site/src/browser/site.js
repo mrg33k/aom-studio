@@ -2,7 +2,7 @@ document.documentElement.setAttribute('data-js', 'true')
 
 // Lead delivery endpoint. Interim: hosted on the aom-studio project, which holds the
 // Resend key; flip back to '/api/lead' once RESEND_API_KEY is set on wolfpack-companies.
-const LEAD_ENDPOINT = 'https://aheadofmarket.com/api/wolfpack-lead'
+const LEAD_ENDPOINT = 'https://www.aheadofmarket.com/api/wolfpack-lead'
 
 const themeKey = 'wp-v2-theme'
 const savedTheme = (() => {
@@ -18,10 +18,11 @@ if (savedTheme === 'dark' || savedTheme === 'light') {
 }
 
 function updateThemeControl() {
-  const button = document.querySelector?.('[data-theme-toggle]')
   const light = document.documentElement.getAttribute?.('data-theme') === 'light'
-  button?.setAttribute('aria-pressed', String(light))
-  button?.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme')
+  document.querySelectorAll?.('[data-theme-toggle]').forEach(button => {
+    button.setAttribute('aria-pressed', String(light))
+    button.setAttribute('aria-label', light ? 'Switch to dark theme' : 'Switch to light theme')
+  })
 }
 
 updateThemeControl()

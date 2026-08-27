@@ -79,7 +79,7 @@ export function renderHead(page, site = defaultSite) {
   <link rel="canonical" href="${canonical}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900&amp;family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="${asset('site.css')}">
   <script src="${asset('site.js')}" defer></script>`
 }
@@ -117,6 +117,11 @@ export function renderHeader(page) {
       <a class="mobile-primary-link" href="/property-managers/"${current(page, 'property-managers')}>Property Managers</a>
       <a class="mobile-primary-link" href="/general-contractors/"${current(page, 'general-contractors')}>General Contractors</a>
       <a class="mobile-primary-link" href="/contact/" data-lead-open${current(page, 'contact')}>Contact</a>
+      <button class="mobile-theme-toggle" type="button" data-theme-toggle aria-label="Switch to light theme" aria-pressed="false">
+        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/></svg>
+        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.2 5.2l1.9 1.9M16.9 16.9l1.9 1.9M18.8 5.2l-1.9 1.9M7.1 16.9l-1.9 1.9"/></svg>
+        <span>Light or dark mode</span>
+      </button>
       <a class="mobile-call" href="tel:6025505452">Call 602-550-5452</a>
     </nav>
     <nav class="service-rail" aria-label="Services">${railServices.map(service => (
