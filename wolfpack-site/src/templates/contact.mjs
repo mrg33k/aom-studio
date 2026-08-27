@@ -61,7 +61,7 @@ function hero() {
 function waysSection() {
   return `<section class="svc2-section">
     <div class="wrap">
-      <div class="section-head"><span class="section-num">01</span><h2 class="section-title">Two ways in.<br><span class="dim">Pick the fast one.</span></h2></div>
+      <div class="section-head"><h2 class="section-title">Two ways in.<br><span class="dim">Pick the fast one.</span></h2></div>
       <div class="cpage-ways">
         ${ways.map(([iconName, title, desc, href]) => `<a class="cpage-way" href="${href}">
           ${icon(iconName, 'cpage-way-icon')}
@@ -75,7 +75,7 @@ function waysSection() {
 function requestSection() {
   return `<section id="request" class="svc2-section svc2-band">
     <div class="wrap">
-      <div class="section-head"><span class="section-num">02</span><h2 class="section-title">What can we<br><span class="dim">do for you?</span></h2></div>
+      <div class="section-head"><h2 class="section-title">What can we<br><span class="dim">do for you?</span></h2></div>
       <p class="cpage-form-sub">Three fields. We come back same business day.</p>
       <form class="lead-form cpage-form" id="cpage-lead-form" method="post" action="/api/lead" data-lead-form>
         <input type="hidden" name="sourcePage" value="/contact/">
@@ -164,7 +164,7 @@ function formScript() {
 function areaSection() {
   return `<section id="area" class="svc2-section">
     <div class="wrap">
-      <div class="section-head"><span class="section-num">03</span><h2 class="section-title">Across Greater Phoenix.<br><span class="dim">Statewide on request.</span></h2></div>
+      <div class="section-head"><h2 class="section-title">Across Greater Phoenix.<br><span class="dim">Statewide on request.</span></h2></div>
       <div class="city-chips">
         ${cities.map(city => `<a class="city-chip" href="/${city.slug}/">${escapeHtml(city.name)}</a>`).join('')}
       </div>

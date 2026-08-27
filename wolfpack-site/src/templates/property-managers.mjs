@@ -17,7 +17,7 @@ function icon(name, className) {
 }
 
 function sectionHead(num, titleHtml) {
-  return `<div class="section-head"><span class="section-num">${num}</span><h2 class="section-title">${titleHtml}</h2></div>`
+  return `<div class="section-head"><h2 class="section-title">${titleHtml}</h2></div>`
 }
 
 const problems = [
@@ -108,7 +108,7 @@ function complianceSection() {
         <img src="${asset('work/13-backflow-b.jpg')}" alt="Wolfpack technician documenting a compliance test" loading="lazy">
       </div>
       <div>
-        <div class="section-head"><span class="section-num">03</span><h2 class="section-title pm-comp-title">The endorsement is the part everyone gets wrong.</h2></div>
+        <div class="section-head"><h2 class="section-title pm-comp-title">The endorsement is the part everyone gets wrong.</h2></div>
         <div class="pm-checks">
           ${checks.map(([name, when]) => `<div class="pm-check">
             ${icon('check', 'pm-check-icon')}

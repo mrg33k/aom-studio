@@ -39,7 +39,7 @@ function hero(city) {
 function whySection(city) {
   return `<section class="svc2-section">
     <div class="wrap">
-      <div class="section-head"><span class="section-num">01</span><h2 class="section-title">${escapeHtml(city.copy.whyHeading)}<br><span class="dim">${escapeHtml(city.copy.whyHeadingDim)}</span></h2></div>
+      <div class="section-head"><h2 class="section-title">${escapeHtml(city.copy.whyHeading)}<br><span class="dim">${escapeHtml(city.copy.whyHeadingDim)}</span></h2></div>
       <div class="city-grid">
         ${city.copy.whyCards.map(card => `<div class="city-card">
           ${icon(card.icon)}
@@ -55,7 +55,7 @@ function areaSection(city) {
   const others = cities.filter(other => other.slug !== city.slug)
   return `<section class="svc2-section svc2-band">
     <div class="wrap">
-      <div class="section-head"><span class="section-num">02</span><h2 class="section-title">${escapeHtml(city.copy.areaHeading)}<br><span class="dim">${escapeHtml(city.copy.areaHeadingDim)}</span></h2></div>
+      <div class="section-head"><h2 class="section-title">${escapeHtml(city.copy.areaHeading)}<br><span class="dim">${escapeHtml(city.copy.areaHeadingDim)}</span></h2></div>
       <p class="city-lead">${escapeHtml(city.copy.areaLead)}</p>
       <div class="city-chips">
         ${others.map(other => cityLink(other.slug, 'city-chip')).join('')}

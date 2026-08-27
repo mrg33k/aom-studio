@@ -121,7 +121,7 @@ function hero() {
 function projectsSection() {
   return `<section class="svc2-section">
     <div class="wrap">
-      <div class="section-head"><span class="section-num">01</span><h2 class="section-title">Hotels. Condos. Retail. Medical.<br><span class="dim">Done right.</span></h2></div>
+      <div class="section-head"><h2 class="section-title">Hotels. Condos. Retail. Medical.<br><span class="dim">Done right.</span></h2></div>
       <div class="gc-grid">
         ${projects.map(project => `<article class="gc-proj">
           <div class="gc-proj-media">

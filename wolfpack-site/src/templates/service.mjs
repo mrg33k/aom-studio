@@ -53,7 +53,7 @@ function hero(record) {
 }
 
 function sectionHead(num, titleHtml) {
-  return `<div class="section-head"><span class="section-num">${num}</span><h2 class="section-title">${titleHtml}</h2></div>`
+  return `<div class="section-head"><h2 class="section-title">${titleHtml}</h2></div>`
 }
 
 function shotClass(index, total) {
@@ -66,7 +66,7 @@ function shotClass(index, total) {
 function shotsSection(record, num) {
   const figures = record.photos.map((photo, index) => `<figure class="${shotClass(index, record.photos.length)}">
     <img src="${asset(photo.image)}" alt="${escapeHtml(photo.alt)}" loading="lazy">
-    <figcaption class="svc2-shot-caption"><span class="svc2-shot-num">${String(index + 1).padStart(3, '0')}</span><span class="svc2-shot-label">${escapeHtml(photo.label)}</span></figcaption>
+    <figcaption class="svc2-shot-caption"><span class="svc2-shot-label">${escapeHtml(photo.label)}</span></figcaption>
   </figure>`).join('')
 
   return `<section class="svc2-section">
@@ -127,7 +127,7 @@ function versusSection(record, num) {
 
   return `<section class="svc2-section">
     <div class="wrap">
-      <div class="section-head"><span class="section-num">${num}</span><h2 class="section-title svc2-vs-heading">${title}</h2></div>
+      <div class="section-head"><h2 class="section-title svc2-vs-heading">${title}</h2></div>
       <div class="svc2-vs-grid">
         ${versusCard(losing, false)}
         ${versusCard(winning, true)}

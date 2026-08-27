@@ -60,7 +60,6 @@ function hero() {
     <img class="home-hero-wm home-hero-wm-k" src="${asset('brand/wolfpack-icon-knockout.png')}" alt="" aria-hidden="true">
     <img class="home-hero-wm home-hero-wm-b" src="${asset('brand/wolfpack-icon-knockout.png')}" alt="" aria-hidden="true">
     <div class="home-hero-inner wrap">
-      <p class="home-hero-eyebrow">Commercial plumbing &amp; hydro jetting &mdash; Phoenix, Arizona</p>
       <h1 class="home-hero-title"><span>Hydro jetting</span><span>dominates clogs.</span><span><em class="stroke">Experience</em> <em class="fill">clears</em></span><span class="fill">the rest.</span></h1>
       <div class="home-hero-row">
         <p class="home-hero-sub">Drain and sewer jetting for property managers running more than one building. 24/7 emergency response.</p>
@@ -93,11 +92,10 @@ function servicesSection() {
   const first = homeServices[0]
   return `<section id="services" class="home-services-band">
     <div class="wrap">
-      <div class="section-head"><span class="section-num">01</span><h2 class="section-title">Every line. One contractor.<br><span class="dim">One invoice.</span></h2></div>
+      <div class="section-head"><h2 class="section-title">Every line. One contractor.<br><span class="dim">One invoice.</span></h2></div>
       <div class="home-services">
         <div class="svc-list">
-          ${homeServices.map(([slug, name, desc, img, iconName], index) => `<a class="svc-row" href="/${slug}/" data-svc-row data-svc-image="${asset(img)}" data-svc-name="${escapeHtml(name)}" data-svc-num="${String(index + 1).padStart(2, '0')}">
-            <span class="svc-num">${String(index + 1).padStart(2, '0')}</span>
+          ${homeServices.map(([slug, name, desc, img, iconName], index) => `<a class="svc-row" href="/${slug}/" data-svc-row data-svc-image="${asset(img)}" data-svc-name="${escapeHtml(name)}">
             ${icon(iconName)}
             <span class="svc-copy"><span class="svc-name">${escapeHtml(name)}</span><span class="svc-desc">${escapeHtml(desc)}</span></span>
           </a>`).join('')}
@@ -105,7 +103,7 @@ function servicesSection() {
         <div class="svc-peek">
           <div class="svc-peek-frame">
             <img data-svc-peek-image src="${asset(first[3])}" alt="" loading="lazy">
-            <div class="svc-peek-caption"><span class="svc-peek-num" data-svc-peek-num>01</span><span class="svc-peek-name" data-svc-peek-name>${escapeHtml(first[1])}</span></div>
+            <div class="svc-peek-caption"><span class="svc-peek-name" data-svc-peek-name>${escapeHtml(first[1])}</span></div>
           </div>
         </div>
       </div>
@@ -116,7 +114,7 @@ function servicesSection() {
 function quoteSection() {
   return `<section id="proof" class="home-proof">
     <div class="wrap">
-      <div class="section-head"><span class="section-num">02</span><span class="section-label">What clients say</span></div>
+      <div class="section-head"><span class="section-label">What clients say</span></div>
       <div class="quote-layout">
         <div class="quote-media">
           ${quotes.map((quote, index) => `<figure class="quote-photo${index === 0 ? ' is-active' : ''}" data-quote-photo><img src="${asset(quote.img)}" alt="${escapeHtml(quote.name)}" loading="lazy"><figcaption class="quote-where">${escapeHtml(quote.where)}</figcaption></figure>`).join('')}
@@ -130,7 +128,6 @@ function quoteSection() {
           <div class="quote-controls">
             <button class="quote-arrow quote-arrow-prev" type="button" data-quote-prev aria-label="Previous testimonial">${icon('arrow', 'quote-arrow-icon')}</button>
             <button class="quote-arrow" type="button" data-quote-next aria-label="Next testimonial">${icon('arrow', 'quote-arrow-icon')}</button>
-            <span class="quote-count" data-quote-count>01 / 03</span>
           </div>
         </div>
       </div>
@@ -147,13 +144,13 @@ function workSection() {
   return `<section id="work" class="home-work">
     <div class="wrap">
       <div class="section-head section-head-split">
-        <div class="section-head"><span class="section-num">03</span><h2 class="section-title">Real jobs.<br><span class="dim">Real results.</span></h2></div>
+        <div class="section-head"><h2 class="section-title">Real jobs.<br><span class="dim">Real results.</span></h2></div>
         <p class="section-side">Every job closes with camera verification and a documented report.</p>
       </div>
       <div class="work-grid">
         ${figures.map(([img, alt, num, label, place, extra]) => `<figure class="work-fig ${extra}">
           <img src="${asset(img)}" alt="${escapeHtml(alt)}" loading="lazy">
-          <figcaption class="work-caption"><span class="work-num">${num}</span><span class="work-label">${escapeHtml(label)}</span><span class="work-place">${escapeHtml(place)}</span></figcaption>
+          <figcaption class="work-caption"><span class="work-label">${escapeHtml(label)}</span><span class="work-place">${escapeHtml(place)}</span></figcaption>
         </figure>`).join('')}
       </div>
       <div class="before-after">
@@ -180,7 +177,7 @@ function processSection() {
   ]
   return `<section id="process" class="home-process">
     <div class="wrap">
-      <div class="section-head"><span class="section-num">04</span><h2 class="section-title">How we get it done</h2></div>
+      <div class="section-head"><h2 class="section-title">How we get it done</h2></div>
       <div class="process-grid">
         ${steps.map(([num, title, desc]) => `<div class="process-step"><span class="process-num">${num}</span><b class="process-title">${escapeHtml(title)}</b><p class="process-desc">${escapeHtml(desc)}</p></div>`).join('')}
       </div>
