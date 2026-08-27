@@ -1,5 +1,7 @@
 import { asset, escapeHtml } from '../lib/html.mjs'
 import { renderHome } from './home.mjs'
+import { renderService } from './service.mjs'
+import { renderServiceIndex } from './service-index.mjs'
 
 const defaultSite = {
   name: 'Wolfpack Companies',
@@ -227,6 +229,8 @@ export function renderLeadDialog(sourcePage) {
 
 const bodyRenderers = {
   home: renderHome,
+  service: renderService,
+  services: renderServiceIndex,
 }
 
 function renderBody(page) {

@@ -334,8 +334,8 @@ img { display: block; max-width: 100%; }
   .header-main { min-height: 64px; padding-right: 0; }
   .desktop-nav { display: none; }
   .service-rail { justify-content: flex-start; }
-  .menu-button { display: grid; order: 1; margin-left: auto; }
-  .theme-button { order: 2; }
+  .menu-button { display: grid; order: 1; width: 44px; height: 44px; margin-left: auto; }
+  .theme-button { order: 2; width: 44px; height: 44px; }
   .header-call { order: 3; align-self: stretch; min-height: 64px; }
   .footer-layout { display: grid; }
   .footer-brand { max-width: 620px; }
@@ -368,8 +368,7 @@ img { display: block; max-width: 100%; }
   .header-main { gap: 8px; padding-left: 12px; }
   .brand-icon { width: 28px; }
   .brand-icon img { width: 28px; height: 33px; }
-  .theme-button { width: 38px; height: 38px; }
-  .menu-button { width: 38px; height: 38px; }
+  .theme-button, .menu-button { width: 44px; height: 44px; }
   .header-call { min-height: 64px; padding-inline: 10px; }
   .header-call strong { font-size: 13px; }
   .header-call span { font-size: 8px; }
@@ -386,4 +385,108 @@ img { display: block; max-width: 100%; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
+}
+
+/* ==========================================================================
+   SERVICE FAMILY (svc2-) — service detail pages + services overview.
+   Values translated from the design comps "Hydro Jetting.dc.html" and
+   "Services.dc.html" (design-v2-2026-08-27). Prefixed svc2- to avoid
+   collisions with the .svc-* homepage classes. Reuses shared .btn-*,
+   .section-*, .wrap, .ba-tag-*, .process-* classes defined above.
+   ========================================================================== */
+
+.svc2-hero { position: relative; overflow: hidden; }
+.svc2-hero-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: var(--hero-op); animation: herofade 1.2s ease both; }
+.svc2-hero-shade { position: absolute; inset: 0; background: var(--hero-grad); }
+.svc2-hero-inner { position: relative; padding-top: clamp(56px, 9vw, 120px); padding-bottom: clamp(40px, 6vw, 72px); }
+.svc2-eyebrow { margin: 0; color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: .2em; text-shadow: 0 1px 12px var(--bg); text-transform: uppercase; animation: rise 800ms 50ms cubic-bezier(.22, .61, .36, 1) both; }
+.svc2-hero-title { margin: 24px 0 0; font-family: Archivo, sans-serif; font-size: clamp(44px, 7vw, 100px); font-variation-settings: "wdth" 65, "wght" 900; letter-spacing: -.02em; line-height: .88; text-transform: uppercase; animation: rise 800ms 150ms cubic-bezier(.22, .61, .36, 1) both; }
+.svc2-hero-title span { display: block; }
+.svc2-accent { color: var(--blue); font-style: normal; }
+.svc2-hero-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px 48px; margin-top: 36px; animation: rise 800ms 280ms cubic-bezier(.22, .61, .36, 1) both; }
+.svc2-hero-sub { max-width: 42ch; margin: 0; color: var(--text); font-size: 18px; font-weight: 500; line-height: 1.6; text-shadow: 0 1px 16px var(--bg); }
+.svc2-hero-ctas { display: flex; flex-wrap: wrap; gap: 14px; }
+
+.svc2-section { padding: clamp(64px, 10vw, 120px) 0; border-top: 1px solid var(--rule); }
+.svc2-band { border-bottom: 1px solid var(--rule); background: var(--bg-2); }
+.svc2-band .process-step { background: var(--bg-2); }
+.svc2-lead { max-width: 64ch; margin: 36px 0 0; color: var(--text); font-size: 19px; font-weight: 500; line-height: 1.65; }
+
+.svc2-shot-grid { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: clamp(130px, 20vw, 200px); gap: 20px; margin-top: 56px; }
+.svc2-shot { position: relative; overflow: hidden; grid-column: span 5; margin: 0; }
+.svc2-shot-main { grid-column: span 7; grid-row: span 2; }
+.svc2-shot-tall { grid-row: span 2; }
+.svc2-shot-full { grid-column: span 12; grid-row: span 3; }
+.svc2-shot img { width: 100%; height: 100%; object-fit: cover; transition: transform 800ms ease; }
+.svc2-shot:hover img { transform: scale(1.04); }
+.svc2-shot-caption { position: absolute; right: 0; bottom: 0; left: 0; display: flex; align-items: baseline; gap: 16px; padding: 48px 20px 16px; background: linear-gradient(180deg, transparent, rgb(10 12 16 / 88%)); color: #f2f1ec; }
+.svc2-shot-num { color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+.svc2-shot-label { font-family: Archivo, sans-serif; font-size: 19px; font-variation-settings: "wdth" 82, "wght" 750; letter-spacing: .02em; text-transform: uppercase; }
+
+.svc2-ba-group { margin-top: 64px; }
+.svc2-ba-kind { margin: 0; color: var(--blue); font-family: Archivo, sans-serif; font-size: 14px; font-variation-settings: "wdth" 88, "wght" 700; letter-spacing: .12em; text-transform: uppercase; }
+.svc2-ba-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 2px; margin-top: 20px; border: 1px solid var(--rule); background: var(--rule); }
+.svc2-ba-fig { position: relative; overflow: hidden; margin: 0; }
+.svc2-ba-fig img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.svc2-ba-cap { position: absolute; right: 0; bottom: 0; left: 0; padding: 40px 16px 12px; background: linear-gradient(180deg, transparent, rgb(10 12 16 / 85%)); color: #e4e6ea; font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+
+.svc2-why-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px; margin-top: 56px; }
+.svc2-why-card { padding: 40px 36px; border: 1px solid var(--rule); }
+.svc2-why-title { display: block; font-family: Archivo, sans-serif; font-size: clamp(20px, 1.8vw, 24px); font-variation-settings: "wdth" 76, "wght" 850; letter-spacing: .01em; line-height: 1.05; text-transform: uppercase; }
+.svc2-why-desc { margin: 16px 0 0; color: var(--text-2); font-size: 16px; line-height: 1.6; }
+
+.svc2-vs-heading { max-width: 18ch; }
+.svc2-vs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px; margin-top: 56px; }
+.svc2-vs-card { padding: 44px 40px; border: 1px solid var(--rule); }
+.svc2-vs-win { position: relative; border: 2px solid var(--blue); }
+.svc2-vs-badge { position: absolute; top: -13px; left: 40px; padding: 5px 12px; background: var(--blue); color: #fff; font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
+.svc2-vs-icon { width: 48px; height: 48px; fill: none; stroke: var(--text-3); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.svc2-vs-icon-win { stroke: var(--blue); }
+.svc2-vs-title { margin: 24px 0 0; font-family: Archivo, sans-serif; font-size: clamp(24px, 2.2vw, 30px); font-variation-settings: "wdth" 76, "wght" 850; text-transform: uppercase; }
+.svc2-vs-card:not(.svc2-vs-win) .svc2-vs-title { color: var(--text-3); }
+.svc2-vs-points { margin: 20px 0 0; padding-left: 20px; color: var(--text-2); font-size: 16px; line-height: 1.9; }
+.svc2-vs-win .svc2-vs-points { color: var(--text); font-weight: 500; }
+
+.svc2-steps-grid { margin-top: 64px; }
+
+.svc2-offer { position: relative; overflow: hidden; padding: clamp(72px, 11vw, 130px) 0; background: var(--blue); color: #fff; }
+.svc2-offer-wm { position: absolute; top: 50%; left: 50%; height: 560px; transform: translate(-50%, -50%); opacity: .1; pointer-events: none; }
+.svc2-offer-inner { position: relative; text-align: center; }
+.svc2-offer-title { margin: 0; font-family: Archivo, sans-serif; font-size: clamp(48px, 7vw, 116px); font-variation-settings: "wdth" 66, "wght" 900; letter-spacing: -.02em; line-height: .88; text-transform: uppercase; }
+.svc2-offer-ctas { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 56px; }
+
+.svc2-index-hero { padding: clamp(56px, 8vw, 100px) 0 clamp(40px, 6vw, 72px); }
+.svc2-index-sub { max-width: 58ch; margin: 32px 0 0; color: var(--text); font-size: 18px; font-weight: 500; line-height: 1.6; animation: rise 800ms 250ms cubic-bezier(.22, .61, .36, 1) both; }
+.svc2-index-grid-band { padding: 0 0 clamp(64px, 10vw, 120px); }
+.svc2-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 2px; border: 1px solid var(--rule); background: var(--rule); }
+.svc2-card { display: grid; grid-template-columns: minmax(120px, 220px) 1fr; min-height: 180px; background: var(--bg); transition: background 250ms ease; }
+.svc2-card:hover, .svc2-card:focus-visible { background: var(--bg-2); color: inherit; }
+.svc2-card-media { position: relative; display: block; overflow: hidden; }
+.svc2-card-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.svc2-card-body { display: flex; flex-direction: column; justify-content: center; padding: 32px 36px; }
+.svc2-card-head { display: flex; align-items: baseline; gap: 14px; }
+.svc2-card-num { color: var(--text-3); font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+.svc2-card-name { font-family: Archivo, sans-serif; font-size: clamp(20px, 1.8vw, 24px); font-variation-settings: "wdth" 76, "wght" 850; letter-spacing: .01em; line-height: 1.05; text-transform: uppercase; }
+.svc2-card-desc { display: block; margin-top: 12px; color: var(--text-2); font-size: 15px; line-height: 1.55; }
+.svc2-card-more { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; min-height: 24px; color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+.svc2-card-arrow { width: 14px; height: 14px; fill: none; stroke: var(--blue); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+@media (min-width: 768px) {
+  .svc2-hero-title span { white-space: nowrap; }
+}
+
+@media (max-width: 767px) {
+  .svc2-hero-title { font-size: clamp(2.55rem, 12.5vw, 3.6rem); overflow-wrap: anywhere; }
+  .svc2-shot-grid { grid-template-columns: 1fr; grid-auto-rows: clamp(220px, 62vw, 320px); margin-top: 40px; }
+  .svc2-shot, .svc2-shot-main, .svc2-shot-tall, .svc2-shot-full { grid-column: auto; grid-row: auto; }
+  .svc2-ba-group { margin-top: 48px; }
+  .svc2-why-card { padding: 28px 24px; }
+  .svc2-vs-card { padding: 36px 26px; }
+  .svc2-vs-badge { left: 26px; }
+  .svc2-offer-title { font-size: clamp(2.1rem, 10.5vw, 3.2rem); }
+  .svc2-offer-ctas { flex-direction: column; align-items: stretch; }
+  .svc2-offer-ctas a { justify-content: center; }
+  .svc2-card { grid-template-columns: 1fr; }
+  .svc2-card-media { min-height: 190px; }
+  .svc2-card-body { padding: 22px 20px 26px; }
 }
