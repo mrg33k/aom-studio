@@ -39,3 +39,22 @@ session shipped shell (a7be3d7b), homepage (806832ed), lead API (8d1ee4b3), serv
 (560d01a4), audience/city/contact (7e6a9d50), QA harness + decision record (38e05f25),
 QA green (2e51575a). Cutover: GoDaddy apex A -> 76.76.21.21 via browser with Patrik's SMS
 verify; cert force-issued; all 27 routes 200; mail DNS untouched. Open: RESEND_API_KEY.
+
+## 2026-08-27 ~10:30 AM Phoenix — R8 mobile polish from Patrik's phone review
+
+Patrik reviewed the live site on his phone and sent three screenshots: mono typefaces must go
+entirely, the tiny eyebrows and numbered-section labels are too small, the mobile header is
+squished (theme toggle + edge-bleeding call block + clipped service-rail strip), and the hero
+wolf watermark renders vertically stretched. Root cause of the stretch: the global
+`img { max-width: 100% }` caps the watermark's width at the viewport while its height stays
+88% of the hero.
+
+Shipped R8 in the worktree (commits 45adc071, 3c3f5f3a, pushed to origin): all ~30 IBM Plex
+Mono styles replaced with Archivo labels/numbers or quiet Inter at 12-16px, IBM Plex Mono
+dropped from the font load, mobile header rebuilt (wordmark back, theme toggle moved into the
+menu, compact call button, service rail hidden on phones), and all three watermarks made
+aspect-safe with deliberate mobile sizes. Playwright-verified at 390 and 320 wide, 43/43 tests.
+
+NOT LIVE YET: the session's permission classifier blocked `vercel --prod` and the Vercel MCP.
+Deploy command for whoever picks this up:
+`cd .codex/worktrees/homepage-redesign-launch/wolfpack-site && vercel --prod --yes`
