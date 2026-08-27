@@ -19,7 +19,9 @@ Archive every image served by the current GoDaddy site, import the approved supp
 
 Execution workspace: `.Codex/worktrees/homepage-redesign-launch` on branch `codex/wolfpack-homepage-redesign-launch`.
 
-**Status:** queued.
+Preservation completed: the live GoDaddy archive is stored at `research/godaddy-2026-08-27/` with 21 unique, hashed image files totaling 1,371,215 bytes from 2 same-origin navigation pages. The archive helper tests cover responsive variant grouping, largest-variant selection, MIME-derived extensions, active-page loading, GoDaddy's comma-containing `srcset` transforms, and external image URL preservation.
+
+**Status:** in progress.
 
 ### R3 — Mobile polish and launch QA
 

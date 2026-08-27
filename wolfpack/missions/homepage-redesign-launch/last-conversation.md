@@ -9,3 +9,7 @@ The current GoDaddy site's images must all be downloaded before the switch. Cont
 Patrik approved hosting Wolfpack as a separate Vercel project sourced from this repository. The project itself does not add a fixed monthly fee; normal pooled usage still applies. The release sequence is archive, rebuild, mobile and functional QA, separate-project preview, Patrik approval, GoDaddy DNS cutover, canonical-domain verification, and retention of the AOM path as rollback coverage.
 
 Patrik reviewed the written design and said to proceed. The implementation plan now lives at `docs/superpowers/plans/2026-08-27-wolfpack-redesign-launch.md`; it divides the work into nine testable tasks and preserves a hard approval gate between the Vercel preview and GoDaddy DNS changes.
+
+## 2026-08-27 — GoDaddy image archive preserved
+
+The live GoDaddy site was crawled with Playwright before DNS changes. The archive at `research/godaddy-2026-08-27/` contains 21 unique image files (1,371,215 bytes) from 2 same-origin pages; each manifest entry has a source URL, all discovered variants, MIME type, byte count, and SHA-256 hash. Focused archive tests pass, manifest hashes and MIME types were rechecked, and no archived file exceeds 90 MB.

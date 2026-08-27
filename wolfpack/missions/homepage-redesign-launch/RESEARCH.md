@@ -22,3 +22,10 @@
 
 - A project itself has no added fixed monthly charge on the existing Vercel team.
 - Pro permits unlimited projects and bills pooled infrastructure usage; the Wolfpack static site should remain within existing usage unless traffic or optional add-ons materially increase.
+
+## 2026-08-27 — GoDaddy image preservation archive
+
+- Archived the live GoDaddy site from `https://wolfpackcompanies.com/` before any DNS change.
+- Archive path: `wolfpack/missions/homepage-redesign-launch/research/godaddy-2026-08-27/`.
+- Captured 21 unique image files from 2 same-origin navigation pages, totaling 1,371,215 bytes.
+- `manifest.json` records source URLs, discovered responsive variants, MIME types, byte counts, and SHA-256 hashes for every archived file.
