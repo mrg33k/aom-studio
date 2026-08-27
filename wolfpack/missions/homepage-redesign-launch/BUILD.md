@@ -31,6 +31,12 @@ Focused route/build tests pass and `npm --prefix wolfpack-site run build` emits 
 
 **Status:** shipped.
 
+### R2.2 — Lock exact route and output paths
+
+Review found that count-and-uniqueness checks could permit a required route to be renamed or replaced. The focused test now asserts the literal 27-route list and exact built paths, with root at `index.html` and every other route at `<slug>/index.html`.
+
+**Status:** shipped.
+
 ### R3 — Mobile polish and launch QA
 
 Test every template across phone, tablet, laptop, and wide desktop sizes; verify navigation, forms, calls, email links, accessibility, reduced motion, metadata, redirects, and performance.

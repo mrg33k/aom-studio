@@ -21,3 +21,7 @@ Review found that a nonempty placeholder `srcset` suppressed GoDaddy's real `dat
 ## 2026-08-27 — Isolated static-site scaffold
 
 Added `wolfpack-site/` as the deployable Node ESM boundary without changing `public/wolfpack-site/`. It has 27 exact route records, a stable `buildSite({ outDir })` and `renderPage(page, site)` contract, shared CSS/JavaScript/assets output, and generated `404.html`, `robots.txt`, and `sitemap.xml`. Focused build tests pass and the production build emits all 27 `index.html` route files.
+
+## 2026-08-27 — Task 2 route contract fix
+
+The route test now uses the literal required 27-slug list and asserts the complete `buildSite` result paths. A mutation check confirmed a renamed route and a non-`index.html` inner output both fail the focused test; the valid implementation and all 27 expected paths pass.

@@ -6,6 +6,36 @@ import path from 'node:path'
 import { pages } from '../wolfpack-site/src/data/pages.mjs'
 import { asset, buildSite, escapeHtml } from '../wolfpack-site/src/build.mjs'
 
+const expectedSlugs = [
+  '',
+  'air-compressor',
+  'apache-junction',
+  'avondale',
+  'backflow-testing',
+  'chandler',
+  'contact',
+  'drain-cleaning',
+  'emergency',
+  'general-contractors',
+  'gilbert',
+  'glendale',
+  'goodyear',
+  'hydro-jetting',
+  'leak-detection',
+  'litchfield-park',
+  'mesa',
+  'paradise-valley',
+  'peoria',
+  'phoenix',
+  'property-managers',
+  'san-tan-valley',
+  'scottsdale',
+  'services',
+  'surprise',
+  'tempe',
+  'water-heaters',
+]
+
 let builtDir
 async function renderBuilt(slug) {
   if (!builtDir) {
@@ -19,10 +49,14 @@ async function renderBuilt(slug) {
 test('defines and emits all 27 Wolfpack routes', async () => {
   assert.equal(pages.length, 27)
   assert.equal(new Set(pages.map(page => page.slug)).size, 27)
+  assert.deepEqual(pages.map(page => page.slug), expectedSlugs)
   assert.equal(pages.find(page => page.slug === '').kind, 'home')
   const outDir = await mkdtemp(path.join(tmpdir(), 'wolfpack-build-'))
   const files = await buildSite({ outDir })
   assert.equal(files.filter(file => file.endsWith('index.html')).length, 27)
+  assert.deepEqual(files, expectedSlugs.map(slug => (
+    slug ? path.join(outDir, slug, 'index.html') : path.join(outDir, 'index.html')
+  )))
   const home = await readFile(path.join(outDir, 'index.html'), 'utf8')
   assert.match(home, /<html lang="en">/)
   assert.match(home, /https:\/\/wolfpackcompanies\.com\//)
