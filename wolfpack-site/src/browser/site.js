@@ -1,5 +1,9 @@
 document.documentElement.setAttribute('data-js', 'true')
 
+// Lead delivery endpoint. Interim: hosted on the aom-studio project, which holds the
+// Resend key; flip back to '/api/lead' once RESEND_API_KEY is set on wolfpack-companies.
+const LEAD_ENDPOINT = 'https://aheadofmarket.com/api/wolfpack-lead'
+
 const themeKey = 'wp-v2-theme'
 const savedTheme = (() => {
   try {
@@ -138,7 +142,7 @@ document.querySelector?.('[data-lead-form]')?.addEventListener('submit', async e
   if (status) { status.textContent = ''; status.removeAttribute('data-tone') }
   if (submit) submit.disabled = true
   try {
-    const response = await fetch('/api/lead', {
+    const response = await fetch(LEAD_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...fields, sourcePage: location.pathname, startedAt: Number(fields.startedAt) })

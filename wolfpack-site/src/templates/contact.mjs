@@ -138,7 +138,7 @@ function formScript() {
       if (status) { status.textContent = ''; status.removeAttribute('data-tone') }
       if (submit) submit.disabled = true
       try {
-        const response = await fetch('/api/lead', {
+        const response = await fetch('https://www.aheadofmarket.com/api/wolfpack-lead', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ...fields, sourcePage: location.pathname, startedAt: Number(fields.startedAt) })
