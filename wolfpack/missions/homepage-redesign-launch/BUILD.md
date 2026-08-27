@@ -37,6 +37,16 @@ Review found that count-and-uniqueness checks could permit a required route to b
 
 **Status:** shipped.
 
+### R2.3 — Port the approved shared site shell
+
+Build the reusable Wolfpack header, service navigation, mobile menu, theme control, footer, and accessible request dialog from the approved header and footer comps. Keep page bodies deliberately minimal so the later page-family rounds can own them.
+
+Task 3 also owns the tested site-wide phone, service email, and AZ ROC 326629 markup.
+
+2026-08-27 ~03:40 — Handoff: Codex hit its usage limit mid-Task-3; Claude Code (background session) took over the same worktree and branch. Shell markup, CSS, JS, and brand assets are drafted and all 5 focused build tests pass; remaining: apply the Claude Design session's updated mobile rules (burger + full-screen sheet below 860px, horizontal service rail on phones, wordmark drops below 1100px), visual verify, commit. A live claude.ai/design session ("Homepage redesign feedback", 12 pages) finished a mobile-first pass and wrote HANDOFF.md; its files supersede the 01:30 zip comps and are being pulled into research/ next.
+
+**Status:** in progress.
+
 ### R3 — Mobile polish and launch QA
 
 Test every template across phone, tablet, laptop, and wide desktop sizes; verify navigation, forms, calls, email links, accessibility, reduced motion, metadata, redirects, and performance.

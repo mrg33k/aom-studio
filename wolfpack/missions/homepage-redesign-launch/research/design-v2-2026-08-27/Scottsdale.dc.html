@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#489FD3;--blue-dk:#2F82B4;--blue-ink:#2A6E99}
+:root[data-theme="dark"],:root{--bg:#0A0C10;--bg2:#12151B;--tx:#F2F1EC;--tx2:#C6CAD1;--tx3:#9298A3;--rule:rgba(255,255,255,.14);--nav:rgba(10,12,16,.88);--heroGrad:linear-gradient(180deg,rgba(10,12,16,.38) 0%,rgba(10,12,16,.24) 45%,rgba(10,12,16,.96) 100%);--heroOp:.42;--btn2:#0A0C10}
+:root[data-theme="light"]{--bg:#F1EFE9;--bg2:#FFFFFF;--tx:#12140F;--tx2:#42453E;--tx3:#6E7168;--rule:rgba(18,20,15,.16);--nav:rgba(241,239,233,.92);--heroGrad:linear-gradient(180deg,rgba(241,239,233,.78) 0%,rgba(241,239,233,.84) 45%,rgba(241,239,233,.98) 100%);--heroOp:.55;--btn2:#12140F}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:'Inter',system-ui,sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+a:hover{color:var(--blue)}
+img{max-width:100%;display:block}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+@keyframes rise{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:none}}
+@keyframes herofade{from{opacity:0}to{opacity:var(--heroOp)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="p-arrow"><path d="M4 12h15M13 6l6 6-6 6"></path></g>
+<g id="p-truck"><path d="M2.5 16V7.5h11V16"></path><path d="M13.5 10h4l3 3.5V16"></path><circle cx="7" cy="17.5" r="1.8"></circle><circle cx="17" cy="17.5" r="1.8"></circle></g>
+<g id="p-clock"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7v5.2l3.2 2"></path></g>
+<g id="p-doc"><path d="M6 3.5h8l4 4v13H6Z"></path><path d="M14 3.5v4h4"></path><path d="M9 12h6M9 15.5h6"></path></g>
+</defs></svg>
+<dc-import name="Wolf Header" hint-size="100%,68px"></dc-import>
+<section data-screen-label="Hero" style="position:relative;overflow:hidden">
+  <img src="uploads/01-hydro-jetting-a.png" alt="Wolfpack crew on a commercial job in Scottsdale" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:var(--heroOp);animation:herofade 1.2s ease both">
+  <div style="position:absolute;inset:0;background:var(--heroGrad)"></div>
+  <div style="position:relative;max-width:1440px;margin:0 auto;padding:clamp(56px,9vw,120px) clamp(20px,4vw,48px) clamp(40px,6vw,72px);width:100%">
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--blue);animation:rise .8s .05s cubic-bezier(.22,.61,.36,1) both">Service Area — Scottsdale, Arizona</p>
+    <h1 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 65,'wght' 900;text-transform:uppercase;line-height:.88;letter-spacing:-.02em;font-size:clamp(52px,7vw,100px);margin-top:24px;animation:rise .8s .15s cubic-bezier(.22,.61,.36,1) both">Commercial plumbing<br>in <span style="color:var(--blue)">Scottsdale.</span></h1>
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:48px;margin-top:36px;flex-wrap:wrap;animation:rise .8s .28s cubic-bezier(.22,.61,.36,1) both">
+      <p style="font-size:18px;color:var(--tx);font-weight:500;max-width:48ch;line-height:1.6">Hydro jetting, drain cleaning, backflow testing, water heaters, and 24/7 emergency plumbing for commercial properties in Scottsdale, AZ.</p>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <a href="#contact" style="display:inline-flex;align-items:center;gap:12px;padding:18px 32px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:14px;letter-spacing:.06em;background:var(--blue);color:#fff;transition:background .25s,transform .25s" style-hover="background:var(--blue-dk);transform:translateY(-2px)">Request a walkthrough<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#p-arrow"></use></svg></a>
+        <a href="tel:6025505452" style="display:inline-flex;align-items:center;padding:18px 32px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:14px;letter-spacing:.06em;border:1px solid var(--rule);color:var(--tx);background:var(--nav)" style-hover="border-color:var(--tx)">602-550-5452 / Call now</a>
+      </div>
+    </div>
+  </div>
+</section>
+<section data-screen-label="Why Wolfpack" style="padding:clamp(64px,10vw,120px) 0;border-top:1px solid var(--rule)">
+  <div style="max-width:1440px;margin:0 auto;padding:0 clamp(20px,4vw,48px)">
+    <div style="display:flex;align-items:baseline;gap:24px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.2em;color:var(--blue)">01</span>
+      <h2 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 70,'wght' 900;text-transform:uppercase;letter-spacing:-.015em;font-size:clamp(44px,4.6vw,68px);line-height:.9">Phoenix-based crews.<br><span style="color:var(--tx3)">Scottsdale service.</span></h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:2px;background:var(--rule);border:1px solid var(--rule);margin-top:64px">
+      <div style="background:var(--bg);padding:36px 30px 44px"><svg viewBox="0 0 24 24" style="width:44px;height:44px;fill:none;stroke:var(--blue);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round"><use href="#p-truck"></use></svg><b style="display:block;margin-top:24px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:19px;letter-spacing:.02em">Local crews</b><p style="margin-top:12px;color:var(--tx2);font-size:16px;line-height:1.6">Our trucks and equipment are based in Phoenix. Scottsdale is in our daily service area, not a special trip.</p></div>
+      <div style="background:var(--bg);padding:36px 30px 44px"><svg viewBox="0 0 24 24" style="width:44px;height:44px;fill:none;stroke:var(--blue);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round"><use href="#p-clock"></use></svg><b style="display:block;margin-top:24px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:19px;letter-spacing:.02em">24/7 response</b><p style="margin-top:12px;color:var(--tx2);font-size:16px;line-height:1.6">Emergency line down in Scottsdale? A person answers. Crews dispatch. On-site within 3 hours for contracted properties.</p></div>
+      <div style="background:var(--bg);padding:36px 30px 44px"><svg viewBox="0 0 24 24" style="width:44px;height:44px;fill:none;stroke:var(--blue);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round"><use href="#p-doc"></use></svg><b style="display:block;margin-top:24px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:19px;letter-spacing:.02em">Licensed statewide</b><p style="margin-top:12px;color:var(--tx2);font-size:16px;line-height:1.6">AZ ROC #326629. Licensed, bonded and insured for commercial work anywhere in Arizona. Scottsdale is home territory.</p></div>
+    </div>
+  </div>
+</section>
+<section data-screen-label="Service area" style="padding:clamp(64px,10vw,120px) 0;background:var(--bg2);border-top:1px solid var(--rule)">
+  <div style="max-width:1440px;margin:0 auto;padding:0 clamp(20px,4vw,48px)">
+    <div style="display:flex;align-items:baseline;gap:24px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.2em;color:var(--blue)">02</span>
+      <h2 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 70,'wght' 900;text-transform:uppercase;letter-spacing:-.015em;font-size:clamp(44px,4.6vw,68px);line-height:.9">Across Greater Phoenix.<br><span style="color:var(--tx3)">Statewide on request.</span></h2>
+    </div>
+    <p style="margin-top:32px;font-size:17px;color:var(--tx2);font-weight:500;max-width:52ch;line-height:1.6">From Apache Junction to Litchfield Park, and most of Arizona on request.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:44px">
+      <sc-for list="{{ cities }}" as="ct" hint-placeholder-count="14">
+        <a href="#" style="padding:12px 22px;border:1px solid var(--rule);font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx2);transition:border-color .25s,color .25s" style-hover="border-color:var(--blue);color:var(--blue)">{{ ct.name }}</a>
+      </sc-for>
+    </div>
+  </div>
+</section>
+<section data-screen-label="Offer" style="background:var(--blue);color:#fff;padding:clamp(72px,11vw,130px) 0;position:relative;overflow:hidden">
+  <img src="assets/wolfpack-icon-knockout.png" alt="" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);height:560px;opacity:.1;pointer-events:none">
+  <div style="max-width:1440px;margin:0 auto;padding:0 clamp(20px,4vw,48px);position:relative;text-align:center">
+    <h2 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 66,'wght' 900;text-transform:uppercase;line-height:.88;letter-spacing:-.02em;font-size:clamp(56px,7vw,116px)">Commercial plumbing<br>in Scottsdale. Call direct.</h2>
+    <div style="display:flex;gap:16px;margin-top:56px;justify-content:center;flex-wrap:wrap">
+      <a href="#contact" style="display:inline-flex;align-items:center;gap:12px;padding:20px 40px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:14px;letter-spacing:.06em;background:var(--btn2);color:#fff;transition:transform .25s" style-hover="transform:translateY(-2px)">Request a walkthrough<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#p-arrow"></use></svg></a>
+      <a href="tel:6025505452" style="display:inline-flex;align-items:center;padding:20px 40px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:14px;letter-spacing:.06em;background:#fff;color:var(--blue-ink)" style-hover="background:#F1EFE9">602-550-5452</a>
+    </div>
+  </div>
+</section>
+<dc-import name="Wolf Footer" hint-size="100%,480px"></dc-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const names = ['Phoenix', 'Tempe', 'Mesa', 'Chandler', 'Gilbert', 'Glendale', 'Peoria', 'Surprise', 'Goodyear', 'Avondale', 'Paradise Valley', 'Apache Junction', 'Litchfield Park', 'San Tan Valley'];
+    return { cities: names.map((n) => ({ name: n })) };
+  }
+}
+</script>
+</body>
+</html>

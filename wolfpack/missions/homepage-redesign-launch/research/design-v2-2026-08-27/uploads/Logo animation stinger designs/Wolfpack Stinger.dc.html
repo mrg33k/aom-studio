@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>html,body{margin:0;height:100%;background:#0d1219}a{color:#4c9cd4}a:hover{color:#7db8e0}</style>
+<script>window.OM_SCENES = '[{"name":"Intro","dur":1.2,"desc":"Your footage plays"},{"name":"StingerIn","dur":0.55,"desc":"Blue then white circle bursts from center, wolf slams in"},{"name":"Hold","dur":0.6,"desc":"Logo holds full-screen with wordmark"},{"name":"StingerOut","dur":0.55,"desc":"Circle collapses to reveal the next shot"},{"name":"Outro","dur":1.0,"desc":"Footage continues"}]';</script>
+<script>window.OM_PLAYBACK = '{"mode":"loop"}';</script>
+<script>window.OM_CONFIG = { w: 1080, h: 1920 };</script>
+<script>window.TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "bg": "footage"
+}/*EDITMODE-END*/;</script>
+</helmet>
+<div style="position:fixed;inset:0">
+  <x-import component-from-global-scope="StingerApp" from="./animations-v3.jsx ./tweaks-panel.jsx ./wolfpack-pieces.jsx" hint-size="100%,100%"></x-import>
+</div>
+
+</x-dc>
+</body>
+</html>

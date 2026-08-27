@@ -82,6 +82,16 @@ test('browser baseline marks a loaded document as JavaScript-enabled', async () 
   assert.equal(dataAttribute, 'data-js=true')
 })
 
+test('every page shares accessible launch chrome', async () => {
+  const html = await renderBuilt('hydro-jetting')
+  assert.match(html, /<header[^>]+data-site-header/)
+  assert.match(html, /aria-controls="mobile-navigation"/)
+  assert.match(html, /<dialog[^>]+id="lead-dialog"/)
+  assert.match(html, /href="tel:6025505452"/)
+  assert.match(html, /Service@wolfpackcompanies\.com/i)
+  assert.match(html, /AZ ROC[^<]*326629/i)
+})
+
 test('escapes HTML and serves shared assets from the root', () => {
   assert.equal(escapeHtml('<Wolfpack & "Co">'), '&lt;Wolfpack &amp; &quot;Co&quot;&gt;')
   assert.equal(asset('site.css'), '/assets/site.css')

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#489FD3;--blue-dk:#2F82B4;--blue-ink:#2A6E99}
+:root[data-theme="light"],:root{--ground:#F1EFE9;--panel:#FFFFFF;--panel-2:#FAF9F6;--ink:#12140F;--ink-2:#5D6058;--ink-3:#8E9089;--line:#DCD8CE;--line-2:#EAE7DF;--nav:#FFFFFF;--tint:rgba(72,159,211,.07);--field:#F4F2ED}
+:root[data-theme="dark"]{--ground:#0C0E12;--panel:#14171D;--panel-2:#191D24;--ink:#F2F1EC;--ink-2:#A2A7B0;--ink-3:#71767F;--line:#272C35;--line-2:#1F242B;--nav:#0C0E12;--tint:rgba(72,159,211,.10);--field:#101318}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ground);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+a:hover{color:var(--blue)}
+img{max-width:100%;display:block}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+@keyframes rise{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:none}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="a-sun"><circle cx="12" cy="12" r="4.2"></circle><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.2 5.2l1.9 1.9M16.9 16.9l1.9 1.9M18.8 5.2l-1.9 1.9M7.1 16.9l-1.9 1.9"></path></g>
+<g id="a-moon"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"></path></g>
+<g id="a-arrow"><path d="M4 12h15M13 6l6 6-6 6"></path></g>
+<g id="a-phone"><path d="M6.5 3.5h3l1.5 4-2 1.5a11 11 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7 2 2 0 0 1 6.5 3.5Z"></path></g>
+<g id="a-mail"><rect x="3" y="5.5" width="18" height="13" rx="1.5"></rect><path d="m3.5 6.5 8.5 6.5 8.5-6.5"></path></g>
+</defs></svg>
+<div data-screen-label="Utility bar" style="background:#0C0E12;color:#71767F;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase">
+  <div style="max-width:1360px;margin:0 auto;padding:8px 48px;display:flex;gap:32px;align-items:center">
+    <span>AZ ROC #326629</span><span>Licensed · Bonded · Insured</span>
+    <span style="margin-left:auto">Phoenix Metro · 15+ cities</span>
+    <a href="tel:6025505452" style="color:#F2F1EC" style-hover="color:var(--blue)">602-550-5452</a>
+  </div>
+</div>
+<header data-screen-label="Header" style="position:sticky;top:0;z-index:60;background:var(--nav);border-bottom:1px solid var(--line)">
+  <div style="max-width:1360px;margin:0 auto;padding:0 48px;display:flex;align-items:center;gap:40px;height:76px">
+    <a href="#" style="display:flex;align-items:center;gap:12px;flex:none">
+      <sc-if value="{{ isLight }}" hint-placeholder-val="{{ true }}"><img src="assets/wolfpack-icon.png" alt="" style="height:42px;width:auto"><img src="assets/wolfpack-wordmark.png" alt="Wolfpack Companies" style="height:32px;width:auto"></sc-if>
+      <sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><img src="assets/wolfpack-icon-knockout.png" alt="" style="height:42px;width:auto"><img src="assets/wolfpack-wordmark-knockout.png" alt="Wolfpack Companies" style="height:32px;width:auto"></sc-if>
+    </a>
+    <nav style="display:flex;align-items:center;gap:36px;margin-left:auto;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 90,'wght' 600;text-transform:uppercase;font-size:13px;letter-spacing:.08em">
+      <a href="#svc" style-hover="color:var(--blue)">Services</a>
+      <a href="#proof" style-hover="color:var(--blue)">Clients</a>
+      <a href="#work" style-hover="color:var(--blue)">Work</a>
+      <a href="#process" style-hover="color:var(--blue)">Process</a>
+    </nav>
+    <button type="button" onClick="{{ toggleTheme }}" aria-label="Switch theme" style="width:38px;height:38px;border:1px solid var(--line);display:grid;place-items:center;flex:none" style-hover="border-color:var(--blue);background:var(--tint)">
+      <sc-if value="{{ isLight }}" hint-placeholder-val="{{ true }}"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round"><use href="#a-sun"></use></svg></sc-if>
+      <sc-if value="{{ isDark }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round"><use href="#a-moon"></use></svg></sc-if>
+    </button>
+    <a href="tel:6025505452" style="background:var(--ink);color:var(--ground);padding:13px 26px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:13px;letter-spacing:.06em;transition:background .25s" style-hover="background:var(--blue);color:#fff">Request walkthrough</a>
+  </div>
+</header>
+<section data-screen-label="Hero" style="background:var(--ground);border-bottom:1px solid var(--line)">
+  <div style="max-width:1360px;margin:0 auto;padding:0 48px;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:64px;align-items:stretch">
+    <div style="padding:88px 0 72px;display:flex;flex-direction:column;justify-content:center;animation:rise .8s cubic-bezier(.22,.61,.36,1) both">
+      <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--blue);display:flex;align-items:center;gap:12px"><span style="display:inline-block;width:32px;height:1px;background:var(--blue)"></span>Commercial Plumbing &amp; Hydro Jetting · Phoenix AZ</p>
+      <h1 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 70,'wght' 900;text-transform:uppercase;line-height:.92;letter-spacing:-.02em;font-size:clamp(64px,7.4vw,108px);margin-top:28px">Hydro jetting dominates clogs.<br><span style="color:var(--blue)">Experience clears the rest.</span></h1>
+      <div style="display:flex;gap:48px;margin-top:44px;align-items:flex-start">
+        <p style="font-size:17px;color:var(--ink-2);font-weight:500;max-width:42ch;line-height:1.6;border-left:2px solid var(--blue);padding-left:20px">Drain and sewer jetting for property managers running more than one building. 24/7 emergency response, one contractor, one invoice.</p>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:44px;align-items:center">
+        <button type="button" onClick="{{ openReq }}" style="display:inline-flex;align-items:center;gap:12px;padding:18px 32px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:14px;letter-spacing:.06em;background:var(--blue);color:#fff;transition:background .25s,transform .25s" style-hover="background:var(--blue-dk);transform:translateY(-2px)">Request a walkthrough<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#a-arrow"></use></svg></button>
+        <a href="tel:6025505452" style="display:inline-flex;align-items:center;gap:10px;padding:18px 8px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:14px;letter-spacing:.06em;color:var(--ink);border-bottom:2px solid var(--ink)" style-hover="color:var(--blue);border-color:var(--blue)"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><use href="#a-phone"></use></svg>602-550-5452 · 24/7</a>
+      </div>
+    </div>
+    <div style="position:relative;margin:48px 0 -1px;min-height:520px;animation:fadein 1.2s ease both">
+      <img src="assets/hero-jetting.jpg" alt="Wolfpack crew jetting a commercial line" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+      <div style="position:absolute;left:0;bottom:0;background:#0C0E12;color:#F2F1EC;padding:14px 20px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase">4,000 PSI · Commercial jetter · Phoenix</div>
+      <div style="position:absolute;top:0;right:0;background:var(--blue);color:#fff;padding:18px 22px;text-align:right">
+        <div style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 78,'wght' 800;font-size:34px;line-height:.9">24/7</div>
+        <div style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 88,'wght' 700;font-size:10px;letter-spacing:.16em;text-transform:uppercase;margin-top:6px">Emergency response</div>
+      </div>
+    </div>
+  </div>
+  <div style="border-top:1px solid var(--line);background:var(--panel)">
+    <div style="max-width:1360px;margin:0 auto;padding:20px 48px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-right:20px">Trusted by</span>
+      <span style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 82,'wght' 800;text-transform:uppercase;font-size:22px;letter-spacing:.01em">Target</span><span style="color:var(--line);font-size:22px">·</span>
+      <span style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 82,'wght' 800;text-transform:uppercase;font-size:22px;letter-spacing:.01em">The Ritz Carlton</span><span style="color:var(--line);font-size:22px">·</span>
+      <span style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 82,'wght' 800;text-transform:uppercase;font-size:22px;letter-spacing:.01em">Edison Midtown</span><span style="color:var(--line);font-size:22px">·</span>
+      <span style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 82,'wght' 800;text-transform:uppercase;font-size:22px;letter-spacing:.01em">Westin Kierland</span><span style="color:var(--line);font-size:22px">·</span>
+      <span style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 82,'wght' 800;text-transform:uppercase;font-size:22px;letter-spacing:.01em">Chromalloy</span>
+    </div>
+  </div>
+</section>
+<section data-screen-label="Stats" style="padding:104px 0 96px;border-bottom:1px solid var(--line)">
+  <div style="max-width:1360px;margin:0 auto;padding:0 48px;display:grid;grid-template-columns:repeat(4,1fr);gap:48px">
+    <div style="border-top:2px solid var(--ink);padding-top:24px;animation:rise .7s .05s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 60%"><div style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 74,'wght' 850;font-size:clamp(56px,5.5vw,84px);line-height:.9;letter-spacing:-.01em">{{ statContracts }}</div><div style="margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)">Completed contracts</div></div>
+    <div style="border-top:2px solid var(--ink);padding-top:24px;animation:rise .7s .12s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 60%"><div style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 74,'wght' 850;font-size:clamp(56px,5.5vw,84px);line-height:.9;letter-spacing:-.01em;color:var(--blue)">24/7</div><div style="margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)">Emergency response</div></div>
+    <div style="border-top:2px solid var(--ink);padding-top:24px;animation:rise .7s .19s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 60%"><div style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 74,'wght' 850;font-size:clamp(56px,5.5vw,84px);line-height:.9;letter-spacing:-.01em">{{ statCities }}</div><div style="margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)">Cities served</div></div>
+    <div style="border-top:2px solid var(--ink);padding-top:24px;animation:rise .7s .26s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 60%"><div style="font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:clamp(36px,3.4vw,52px);line-height:1.2;letter-spacing:-.01em">326629</div><div style="margin-top:16px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)">AZ ROC License</div></div>
+  </div>
+</section>
+<section id="proof" data-screen-label="Clients" style="padding:112px 0;background:var(--panel);border-bottom:1px solid var(--line)">
+  <div style="max-width:1360px;margin:0 auto;padding:0 48px">
+    <div style="display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:64px;align-items:start">
+      <div style="position:sticky;top:120px">
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--blue)">01 — Proof</p>
+        <h2 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 74,'wght' 850;text-transform:uppercase;letter-spacing:-.01em;font-size:clamp(40px,3.8vw,56px);line-height:.94;margin-top:20px">The commercial leaders of Phoenix</h2>
+      </div>
+      <div>
+        <div style="border-top:1px solid var(--line);padding:40px 0;display:grid;grid-template-columns:220px 1fr;gap:32px;animation:rise .7s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 50%">
+          <div><h3 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 78,'wght' 850;text-transform:uppercase;line-height:.94;font-size:34px">Target</h3><p style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue)">Multiple remodels</p></div>
+          <div><blockquote style="color:var(--ink);font-size:19px;line-height:1.6;font-weight:450">&ldquo;Wolfpack has successfully completed multiple Target remodels. We appreciate the quality of their work as well as the timeliness, attention to safety, and professionalism they bring to our projects.&rdquo;</blockquote><cite style="display:block;margin-top:18px;font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">Jennifer Goode, ESI</cite></div>
+        </div>
+        <div style="border-top:1px solid var(--line);padding:40px 0;display:grid;grid-template-columns:220px 1fr;gap:32px;animation:rise .7s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 50%">
+          <div><h3 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 78,'wght' 850;text-transform:uppercase;line-height:.94;font-size:34px">The Ritz Carlton</h3><p style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue)">Paradise Valley</p></div>
+          <div><blockquote style="color:var(--ink);font-size:19px;line-height:1.6;font-weight:450">&ldquo;They are always punctual, offer on-demand service, and have boundless knowledge of the plumbing trade.&rdquo;</blockquote><cite style="display:block;margin-top:18px;font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">Larry Cota, VKW</cite></div>
+        </div>
+        <div style="border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:40px 0;display:grid;grid-template-columns:220px 1fr;gap:32px;animation:rise .7s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 50%">
+          <div><h3 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 78,'wght' 850;text-transform:uppercase;line-height:.94;font-size:34px">Edison Midtown</h3><p style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--blue)">Seven floors</p></div>
+          <div><blockquote style="color:var(--ink);font-size:19px;line-height:1.6;font-weight:450">&ldquo;Wolfpack has become an integral part of our team, managing the plumbing needs across all seven floors of Edison Midtown.&rdquo;</blockquote><cite style="display:block;margin-top:18px;font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)">J.R. Reeter, Ameris Inc.</cite></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="svc" data-screen-label="Services" style="padding:112px 0;border-bottom:1px solid var(--line)">
+  <div style="max-width:1360px;margin:0 auto;padding:0 48px">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:32px;flex-wrap:wrap">
+      <div>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--blue)">02 — Services</p>
+        <h2 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 74,'wght' 850;text-transform:uppercase;letter-spacing:-.01em;font-size:clamp(40px,3.8vw,56px);line-height:.94;margin-top:20px">Every commercial line.<br>One contractor. One invoice.</h2>
+      </div>
+      <p style="max-width:36ch;color:var(--ink-2);font-size:15px;line-height:1.6">Eight trades under one AZ ROC license. Hover a line for detail.</p>
+    </div>
+    <div style="margin-top:56px">
+      <sc-for list="{{ services }}" as="sv" hint-placeholder-count="8">
+        <a href="#" onMouseEnter="{{ sv.on }}" style="display:grid;grid-template-columns:80px minmax(0,5fr) minmax(0,5fr) 48px;gap:24px;align-items:center;border-top:1px solid var(--line);padding:26px 0;transition:background .25s,padding-left .3s" style-hover="background:var(--tint);padding-left:16px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-3)">{{ sv.num }}</span>
+          <span style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 76,'wght' 800;text-transform:uppercase;font-size:clamp(24px,2.4vw,36px);line-height:1;letter-spacing:-.005em">{{ sv.name }}</span>
+          <span style="color:var(--ink-2);font-size:15px;line-height:1.5">{{ sv.desc }}</span>
+          <svg viewBox="0 0 24 24" style="width:22px;height:22px;fill:none;stroke:var(--blue);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;justify-self:end"><use href="#a-arrow"></use></svg>
+        </a>
+      </sc-for>
+      <div style="border-top:1px solid var(--line)"></div>
+    </div>
+  </div>
+</section>
+<section id="work" data-screen-label="Work" style="padding:112px 0;background:var(--panel);border-bottom:1px solid var(--line)">
+  <div style="max-width:1360px;margin:0 auto;padding:0 48px">
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--blue)">03 — Field work</p>
+    <h2 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 74,'wght' 850;text-transform:uppercase;letter-spacing:-.01em;font-size:clamp(40px,3.8vw,56px);line-height:.94;margin-top:20px">Real jobs. Real results.</h2>
+    <div style="display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:200px;gap:20px;margin-top:56px">
+      <figure style="grid-column:span 7;grid-row:span 2;position:relative;overflow:hidden;animation:rise .7s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 40%"><img src="assets/work-1.jpg" alt="Crew jetting a commercial cleanout" style="width:100%;height:100%;object-fit:cover;transition:transform .8s" style-hover="transform:scale(1.04)"><figcaption style="position:absolute;left:0;bottom:0;padding:10px 16px;background:#0C0E12;color:#F2F1EC;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase">Commercial cleanout · Phoenix</figcaption></figure>
+      <figure style="grid-column:span 5;position:relative;overflow:hidden;animation:rise .7s .08s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 40%"><img src="assets/work-2.jpg" alt="Jetter unit on site" style="width:100%;height:100%;object-fit:cover;transition:transform .8s" style-hover="transform:scale(1.04)"><figcaption style="position:absolute;left:0;bottom:0;padding:10px 16px;background:#0C0E12;color:#F2F1EC;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase">Jetter unit · Phoenix</figcaption></figure>
+      <figure style="grid-column:span 5;position:relative;overflow:hidden;animation:rise .7s .16s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 40%"><img src="assets/work-3.jpg" alt="Nozzle scouring the line" style="width:100%;height:100%;object-fit:cover;transition:transform .8s" style-hover="transform:scale(1.04)"><figcaption style="position:absolute;left:0;bottom:0;padding:10px 16px;background:#0C0E12;color:#F2F1EC;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase">Nozzle at work · in the line</figcaption></figure>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px">
+      <figure style="position:relative;overflow:hidden"><span style="position:absolute;top:14px;left:14px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 88,'wght' 700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:8px 12px;z-index:2;background:#0C0E12;color:#F2F1EC">Before</span><img src="assets/pipe-castiron-before.jpg" alt="Cast iron pipe before hydro jetting" style="width:100%;aspect-ratio:16/9;object-fit:cover"></figure>
+      <figure style="position:relative;overflow:hidden"><span style="position:absolute;top:14px;right:14px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 88,'wght' 700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;padding:8px 12px;z-index:2;background:var(--blue);color:#fff">After</span><img src="assets/pipe-castiron-after.jpg" alt="Cast iron pipe after hydro jetting" style="width:100%;aspect-ratio:16/9;object-fit:cover"></figure>
+    </div>
+  </div>
+</section>
+<section id="process" data-screen-label="Process" style="padding:112px 0;background:#0C0E12;color:#F2F1EC">
+  <div style="max-width:1360px;margin:0 auto;padding:0 48px">
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--blue)">04 — Process</p>
+    <h2 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 74,'wght' 850;text-transform:uppercase;letter-spacing:-.01em;font-size:clamp(40px,3.8vw,56px);line-height:.94;margin-top:20px;color:#F2F1EC">How we get it done</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-top:64px">
+      <div style="border-top:1px solid rgba(255,255,255,.18);padding-top:24px;animation:rise .7s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 50%"><div style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 74,'wght' 850;font-size:64px;line-height:.9;color:var(--blue)">01</div><b style="display:block;margin-top:20px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:19px;letter-spacing:.02em;color:#F2F1EC">You call</b><p style="margin-top:10px;color:#A2A7B0;font-size:15px;line-height:1.6">We answer 24/7. Emergency or scheduled, we book the walkthrough.</p></div>
+      <div style="border-top:1px solid rgba(255,255,255,.18);padding-top:24px;animation:rise .7s .08s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 50%"><div style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 74,'wght' 850;font-size:64px;line-height:.9;color:var(--blue)">02</div><b style="display:block;margin-top:20px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:19px;letter-spacing:.02em;color:#F2F1EC">We camera</b><p style="margin-top:10px;color:#A2A7B0;font-size:15px;line-height:1.6">HD video inspection identifies the real problem before any work starts.</p></div>
+      <div style="border-top:1px solid rgba(255,255,255,.18);padding-top:24px;animation:rise .7s .16s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 50%"><div style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 74,'wght' 850;font-size:64px;line-height:.9;color:var(--blue)">03</div><b style="display:block;margin-top:20px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:19px;letter-spacing:.02em;color:#F2F1EC">We clear</b><p style="margin-top:10px;color:#A2A7B0;font-size:15px;line-height:1.6">High-pressure hydro jetting restores full flow. No guesswork.</p></div>
+      <div style="border-top:1px solid rgba(255,255,255,.18);padding-top:24px;animation:rise .7s .24s cubic-bezier(.22,.61,.36,1) both;animation-timeline:view();animation-range:entry 0% entry 50%"><div style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 74,'wght' 850;font-size:64px;line-height:.9;color:var(--blue)">04</div><b style="display:block;margin-top:20px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:19px;letter-spacing:.02em;color:#F2F1EC">We report</b><p style="margin-top:10px;color:#A2A7B0;font-size:15px;line-height:1.6">Camera verification plus a documented report for your records.</p></div>
+    </div>
+  </div>
+</section>
+<section data-screen-label="Offer" style="background:var(--blue);color:#fff;padding:120px 0;position:relative;overflow:hidden">
+  <img src="assets/wolfpack-icon-knockout.png" alt="" style="position:absolute;right:-80px;top:50%;transform:translateY(-50%);height:420px;opacity:.12;pointer-events:none">
+  <div style="max-width:1360px;margin:0 auto;padding:0 48px;position:relative">
+    <h2 style="font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 68,'wght' 900;text-transform:uppercase;line-height:.92;letter-spacing:-.02em;font-size:clamp(56px,6.4vw,96px);max-width:14ch">One contact for every address you manage.</h2>
+    <div style="display:flex;gap:16px;margin-top:52px;flex-wrap:wrap">
+      <button type="button" onClick="{{ openReq }}" style="display:inline-flex;align-items:center;gap:12px;padding:18px 32px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:14px;letter-spacing:.06em;background:#0C0E12;color:#fff;transition:background .25s" style-hover="background:#12140F">Request a site walkthrough<svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><use href="#a-arrow"></use></svg></button>
+      <a href="tel:6025505452" style="display:inline-flex;align-items:center;gap:10px;padding:18px 32px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 85,'wght' 700;text-transform:uppercase;font-size:14px;letter-spacing:.06em;border:1px solid rgba(255,255,255,.5);color:#fff" style-hover="background:rgba(255,255,255,.12);border-color:#fff">602-550-5452</a>
+    </div>
+  </div>
+</section>
+<footer data-screen-label="Footer" style="background:#0C0E12;color:#F2F1EC;padding:64px 0 40px">
+  <div style="max-width:1360px;margin:0 auto;padding:0 48px">
+    <div style="display:flex;justify-content:space-between;gap:48px;flex-wrap:wrap;align-items:flex-start">
+      <div style="max-width:420px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <img src="assets/wolfpack-icon-knockout.png" alt="" style="height:44px;width:auto">
+          <img src="assets/wolfpack-wordmark-knockout.png" alt="Wolfpack Companies LLC" style="height:34px;width:auto">
+        </div>
+        <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#4A4F58;line-height:1.8;margin-top:20px">Phoenix · Scottsdale · Tempe · Mesa · Chandler · Gilbert · Glendale · Peoria · Surprise · Goodyear · Avondale · Paradise Valley · Apache Junction · Litchfield Park · San Tan Valley</p>
+      </div>
+      <div style="display:flex;gap:80px;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <h4 style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--blue);margin-bottom:14px">Services</h4>
+          <a href="#" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">Hydro Jetting</a>
+          <a href="#" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">Drain Cleaning &amp; Camera</a>
+          <a href="#" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">Air Compressor Install</a>
+          <a href="#" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">Maintenance Contracts</a>
+          <a href="#" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">Backflow Testing</a>
+          <a href="#" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">Water Heaters &amp; Boilers</a>
+          <a href="#" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">Under-Slab Leak Detection</a>
+          <a href="#" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">24/7 Emergency Response</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <h4 style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--blue);margin-bottom:14px">Company</h4>
+          <a href="#" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">Home</a>
+          <a href="#" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">Property &amp; Facility Managers</a>
+          <a href="#" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">General Contractors</a>
+          <a href="#" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">Contact</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <h4 style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--blue);margin-bottom:14px">Contact</h4>
+          <a href="tel:6025505452" style="color:#F2F1EC;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 80,'wght' 800;font-size:26px;padding:4px 0" style-hover="color:var(--blue)">602-550-5452</a>
+          <a href="mailto:Service@wolfpackcompanies.com" style="color:#71767F;font-size:14px;padding:5px 0" style-hover="color:var(--blue)">Service@wolfpackcompanies.com</a>
+        </div>
+      </div>
+    </div>
+    <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.08em;color:#4A4F58;padding-top:24px;margin-top:48px;border-top:1px solid rgba(255,255,255,.08)">&copy; 2026 Wolfpack Companies LLC<span style="margin-left:20px">AZ ROC #326629</span><span style="margin-left:20px">Licensed · Bonded · Insured</span></p>
+  </div>
+</footer>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;light&quot;, &quot;dark&quot;], &quot;default&quot;: &quot;light&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Appearance&quot;}}">
+class Component extends DCLogic {
+  state = { theme: 'light', contracts: 5.5, cities: 15 };
+  componentDidMount() {
+    const t = this.props.theme ?? 'light';
+    document.documentElement.setAttribute('data-theme', t);
+    this.setState({ theme: t });
+    // count-up on first view of the stats band
+    const start = performance.now(), dur = 1400;
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - p, 3);
+      this.setState({ contracts: 5.5 * e, cities: Math.round(15 * e) });
+      if (p < 1) this._raf = requestAnimationFrame(tick);
+    };
+    this._raf = requestAnimationFrame(tick);
+  }
+  componentWillUnmount() { cancelAnimationFrame(this._raf); }
+  renderVals() {
+    const s = this.state;
+    const svc = [
+      ['Hydro jetting', 'High-pressure jetting clears grease, roots, scale and debris from any commercial line.'],
+      ['Drain cleaning & camera', 'Clear blockages and inspect every inch with high-definition video.'],
+      ['Air compressor installation', 'Commercial and industrial compressor systems, sized and installed.'],
+      ['Maintenance contracts', 'Prevent problems. Protect your buildings.'],
+      ['Backflow testing', 'Certified testing and repair to keep you compliant.'],
+      ['Water heaters & boilers', 'Installation, repair and routine maintenance.'],
+      ['Under-slab leak detection', 'Non-invasive leak location to protect your assets.'],
+      ['24/7 emergency', 'Day or night, we are ready when you need us.']
+    ];
+    return {
+      isLight: s.theme === 'light',
+      isDark: s.theme === 'dark',
+      iconSrc: s.theme === 'dark' ? 'assets/wolfpack-icon-knockout.png' : 'assets/wolfpack-icon.png',
+      wordSrc: s.theme === 'dark' ? 'assets/wolfpack-wordmark-knockout.png' : 'assets/wolfpack-wordmark.png',
+      toggleTheme: () => {
+        const n = s.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', n);
+        this.setState({ theme: n });
+      },
+      openReq: () => { location.href = 'tel:6025505452'; },
+      statContracts: '$' + s.contracts.toFixed(1) + 'M',
+      statCities: s.cities + '+',
+      services: svc.map((x, i) => ({ num: String(i + 1).padStart(2, '0'), name: x[0], desc: x[1], on: () => {} }))
+    };
+  }
+}
+</script>
+</body>
+</html>
