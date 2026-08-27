@@ -77,4 +77,4 @@ Background Claude session in this worktree. Built the last 4 page kinds: 'proper
 
 QA green (61/61 responsive across 7 route families x 8 widths, 43/43 unit, 2,414 links resolve, zero banned images) — record at research/qa-2026-08-27.md, signed decision record at wolfpack-site/wolfpack-site.decision.md. Production deployed to Vercel project `wolfpack-companies` (final build incl. contact 320px fix). Deployment URLs are SSO-gated (Vercel Standard Protection; the security-settings change to disable it is user-gated) — custom domain will be public. Domains wolfpackcompanies.com + www attached to the project; Vercel requires apex A 76.76.21.21. Patrik asked to make the two A-record edits in his open GoDaddy tab (extension has no godaddy.com site permission) and to paste RESEND_API_KEY. Monitors armed for DNS flip and key arrival; production acceptance runs automatically after the flip.
 
-**Status:** in progress (awaiting DNS flip).
+**Status:** shipped — LIVE at https://wolfpackcompanies.com (cutover verified 2026-08-27 ~08:25 Phoenix). Sole open item: RESEND_API_KEY paste, then live form test.

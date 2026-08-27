@@ -25,3 +25,17 @@ Added `wolfpack-site/` as the deployable Node ESM boundary without changing `pub
 ## 2026-08-27 — Task 2 route contract fix
 
 The route test now uses the literal required 27-slug list and asserts the complete `buildSite` result paths. A mutation check confirmed a renamed route and a non-`index.html` inner output both fail the focused test; the valid implementation and all 27 expected paths pass.
+
+---
+
+2026-08-27 ~04:10 — Background Claude session (service page family, R5). Built the 7 service detail pages (hydro-jetting, drain-cleaning, air-compressor, backflow-testing, water-heaters, leak-detection, emergency) plus the services overview from the Hydro Jetting / Services comps. New files: src/templates/service.mjs, src/templates/service-index.mjs, src/data/services.mjs; svc2- CSS appended; 8 routes got kind + unique titles/descriptions in pages.mjs; 6 tests appended (12/12 pass). All copy verbatim from public/wolfpack-site sources; only the new numbered work photos + pipe before/afters used. Air-compressor's live benefit cards/steps were drain-cleaning duplicates, so that page omits them (flagged for real copy later). Overview grid adds an Air Compressor card (missing from the live grid) so all 7 services + property-managers + general-contractors are linked. Verified via Playwright screenshots desktop+mobile, no overflow/console errors. Commit 560d01a4 (also carries a concurrent agent's 44px tap-target fix in site.css header buttons). Not committed: mission-file updates, other agents' unrelated worktree changes.
+
+---
+2026-08-27 — R6 background session (Claude): shipped the final 18 routes — property-managers, general-contractors, 15 city pages (Scottsdale comp template + src/data/cities.mjs), and the contact page (no comp; inline lead form reusing the drawer structure, posting to /api/lead with honeypot; page script hands data-lead-form back to the drawer so both forms work). 43/43 tests pass, new `npm run check:links` verifies 2,414 internal refs, Playwright-verified 1440+390 on 4 routes (screenshots /tmp/wolfpack-r6/). Substitution: comp's 13-backflow-a image does not exist, used work/13-backflow-b.jpg. GC grid min 260→300px to avoid orphan cells at 1440. Commits 7e6a9d50 (+ docs hash commit). All 27 routes now render real bodies; next queued rounds: R3 mobile polish QA, R4 launch.
+
+## 2026-08-27 — Launch session (Claude Code background, taking over from Codex)
+Wolfpack redesign is LIVE at https://wolfpackcompanies.com. Codex Tasks 1-2 inherited; this
+session shipped shell (a7be3d7b), homepage (806832ed), lead API (8d1ee4b3), service family
+(560d01a4), audience/city/contact (7e6a9d50), QA harness + decision record (38e05f25),
+QA green (2e51575a). Cutover: GoDaddy apex A -> 76.76.21.21 via browser with Patrik's SMS
+verify; cert force-issued; all 27 routes 200; mail DNS untouched. Open: RESEND_API_KEY.
