@@ -137,6 +137,9 @@ a{color:inherit}
 .rail svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;stroke-width:1.6}
 .rail .on{color:var(--gold);border-color:var(--gold)}
 .rail .on svg{fill:var(--gold);stroke:var(--gold)}
+.rail .disabled{opacity:.2;pointer-events:none}
+.rail .prompt-ready{border-color:var(--gold);color:var(--gold);animation:pulse-prompt 2s ease-in-out infinite}
+@keyframes pulse-prompt{0%,100%{box-shadow:0 0 0 0 rgba(181,138,56,.3)}50%{box-shadow:0 0 0 6px rgba(181,138,56,0)}}
 
 /* ---- YouTube full-screen overlay ---- */
 .yt-overlay{position:fixed;inset:0;z-index:50;background:rgba(11,11,11,.97);
@@ -242,6 +245,9 @@ a{color:inherit}
   </button>
   <button id="shareBtn" aria-label="Share">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M5 13v6h14v-6"/></svg>
+  </button>
+  <button id="promptBtn" aria-label="Copy agent prompt" class="disabled">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
   </button>
 </nav>
 
@@ -370,7 +376,7 @@ function buildVideoFeed(items){
       if(s.active>=0 && s.els[s.active]) s.els[s.active].classList.remove('active');
       s.active = best;
       s.els[best].classList.add('active');
-      if(state.tab==='videos') updateCounter();
+      if(state.tab==='videos'){ updateCounter(); likeUI(); promptUI(); }
     }
   },{root:feedVideos,threshold:[0,.25,.5,.75,1]});
   s.els.forEach(el=>s.observer.observe(el));
@@ -401,11 +407,12 @@ function switchTab(key){
   feedAgents.classList.toggle('hidden', key!=='agents');
   updateCounter();
   likeUI();
+  promptUI();
 }
 tabBtns.forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
 
 /* ---- rail ---- */
-const likeBtn=document.getElementById('likeBtn'), shareBtn=document.getElementById('shareBtn');
+const likeBtn=document.getElementById('likeBtn'), shareBtn=document.getElementById('shareBtn'), promptBtn=document.getElementById('promptBtn');
 function likeUI(){
   const s=cur();
   const on = s.active>=0 && s.items[s.active] && likes.has(s.items[s.active].id);
@@ -419,6 +426,21 @@ likeBtn.addEventListener('click',()=>{
   localStorage.setItem('aom-feed-likes',JSON.stringify([...likes]));
   likeUI();
 });
+/* ---- prompt button ---- */
+function promptUI(){
+  const s=cur();
+  const hasPrompt = s.active>=0 && s.items[s.active] && s.items[s.active].action_prompt;
+  promptBtn.classList.toggle('disabled',!hasPrompt);
+  promptBtn.classList.toggle('prompt-ready',!!hasPrompt);
+}
+promptBtn.addEventListener('click',async()=>{
+  const s=cur(); if(s.active<0||!s.items[s.active]||!s.items[s.active].action_prompt) return;
+  try{
+    await navigator.clipboard.writeText(s.items[s.active].action_prompt);
+    showToast('Prompt copied — paste to an agent');
+  }catch(_){ showToast('Could not copy'); }
+});
+
 shareBtn.addEventListener('click',async()=>{
   const s=cur();
   if(s.active>=0 && s.items[s.active] && s.items[s.active].youtube_id){

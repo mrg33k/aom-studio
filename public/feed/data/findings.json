@@ -10,7 +10,8 @@
      "channel": "Webronaq",
      "views": "10K",
      "published": "2026-08-25",
-     "why": "Developer-focused M6 review — benchmarks the new 2nm chip specifically for coding and local AI workloads. The $899 dev-machine angle is unique vs yesterday's announcement coverage."
+     "why": "Our studio Mac runs AI inference all day. The M6 doubles neural engine throughput at $899. If the benchmarks hold for our workloads, this is a hardware upgrade worth pricing out.",
+     "action_prompt": "Look up the M6 Mac Mini specs from Apple's Aug 25 announcement. Compare the neural engine and GPU benchmarks against our current Mac Mini (check System Profiler for model). Calculate: how much faster would local AI inference run (image gen, LLM, video processing)? What would it cost to upgrade our studio machines? Give me a buy/wait recommendation with reasoning."
     },
     {
      "lane": "ai-tools",
@@ -19,7 +20,8 @@
      "channel": "MrHtech",
      "views": "15K",
      "published": "2026-08-25",
-     "why": "Practical upgrade guide for the M6 wave. Cuts through launch hype to answer the real question M4 owners are asking — skip-gen worth it or wait?"
+     "why": "Upgrade guide for M4 owners. We're running M4s — this answers whether the M6 jump is worth it now or if we should wait for M6 Pro for the heavier workloads.",
+     "action_prompt": "We currently run M4 Mac Minis for dev and AI work. Watch this M6 vs M4 comparison and tell me: (1) what's the real-world performance gain for coding, video rendering, and local AI inference, (2) is the base M6 enough or do we need the M5 Pro tier for our workloads, (3) should we upgrade now or wait for M6 Pro? Keep it to a clear recommendation."
     },
     {
      "lane": "ai-tools",
@@ -28,7 +30,8 @@
      "channel": "AI with Arun Show",
      "views": "8K",
      "published": "2026-08-20",
-     "why": "Monthly state-of-AI analysis that looks past marketing hype. Covers what actually shipped, what matters, and what's noise — the 30,000ft view the daily feed usually misses."
+     "why": "Monthly AI roundup. Scan this for anything that shipped in August that we could plug into AOM's pipeline — client delivery, content creation, or agency ops.",
+     "action_prompt": "Watch this August 2026 AI state-of-the-industry video. For each tool or model mentioned, answer: (1) does it do something we already do at AOM but faster/cheaper? (2) does it open a new capability we could sell to clients? (3) should we test it this week? Skip anything that's just hype with no shipping date. Give me a short list of only the things worth trying, with what to test first."
     },
     {
      "lane": "ai-builds",
@@ -37,7 +40,8 @@
      "channel": "BridgeMind",
      "views": "20K",
      "published": "2026-08-20",
-     "why": "Real build-in-public at $196K ARR. Matthew Miller deliberately cut $50K in revenue (shut down Vibecademy and ViewCreator) to focus on the core product. The strategic pruning is the lesson."
+     "why": "This guy cut $50K in revenue to focus on one product. AOM runs multiple projects and services. The question is whether we're spreading too thin the same way he was before the cut.",
+     "action_prompt": "Matthew Miller (BridgeMind) was at $196K ARR and deliberately killed two revenue streams ($50K combined) to focus on his core product. Look at AOM's current active projects and services. Which ones are generating the most value vs taking the most time? Are any of them distracting from our core offering the way his side projects were? Give me a honest assessment of what we could cut or pause to focus better."
     },
     {
      "lane": "creative-workflows",
@@ -46,7 +50,8 @@
      "channel": "AI Master",
      "views": "12K",
      "published": "2026-08-20",
-     "why": "Fresh Seedance 2.5 walkthrough — the model that just topped the no-audio text-to-video leaderboard. Practical workflow, not a feature tour. Covers prompting, image-to-video, and the new long-video mode."
+     "why": "Seedance 2.5 just topped the text-to-video leaderboard. If it can generate usable b-roll or social clips, that speeds up our video delivery pipeline for clients like Wolfpack.",
+     "action_prompt": "Seedance 2.5 is the current top text-to-video model. Test if it can generate usable content for our client work: (1) try generating a 5-second b-roll clip of a plumber working on a pipe — does it look real enough for Wolfpack's social? (2) try a construction site establishing shot. (3) Compare the quality against what we get from Runway and Kling. Report back with samples and whether this should replace or supplement our current video gen tools."
     }
    ]
   },
