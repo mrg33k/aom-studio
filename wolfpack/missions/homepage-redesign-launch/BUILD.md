@@ -120,3 +120,18 @@ loads, computed hero text-align center, zero number elements, zero overflow at 3
 Commits: R9 templates/CSS, cache-bust fix + test update.
 
 **Status:** shipped — LIVE.
+
+### R10 — OG share image (2026-08-27 ~1:45 PM Phoenix)
+
+Patrik asked for a "super dope" OG share image, generated and wired in. Followed the
+approved brand-image recipe: Nano Banana multi-ref generation (approved hydro-jetting
+anchor + Aug 6 shoot truck/crew + door-logo closeup; letter-perfect livery, bright
+Phoenix daylight, left third reserved as negative space), then composited the REAL
+knockout logo + wordmark with an Archivo headline "Commercial plumbing. Handled." and
+Phoenix/24-7/phone sub-line, rendered at 2x and downscaled to 1200x630 JPEG (200KB).
+renderHead now emits full og:* + twitter summary_large_image tags on all 27 routes;
+og.jpg is content-hash versioned like site.css/site.js. Deployed; live checks: og:image
+meta present, https://wolfpackcompanies.com/assets/og.jpg?v=0d6bb414b6 returns 200
+image/jpeg and renders the full composite.
+
+**Status:** shipped — LIVE.

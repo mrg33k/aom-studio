@@ -66,3 +66,7 @@ watermark aspect-true, clean mobile header, zero overflow. R8 is live.
 Update ~10:50 AM: R9 shipped live — index numbers removed site-wide (process steps kept),
 home hero eyebrow gone, hero fully centered including stats. Plus a real fix: immutable-cached
 site.css/site.js now get content-hash URLs, so redeploys actually reach returning visitors.
+
+Update ~1:45 PM: OG share image live — brand-recipe generation (real refs, letter-perfect
+livery) + real logo/wordmark composite, 1200x630, og:*/twitter tags on all 27 routes,
+content-hash versioned. Verified serving live.
