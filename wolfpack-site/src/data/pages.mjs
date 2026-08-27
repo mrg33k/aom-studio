@@ -5,7 +5,12 @@ const page = (slug, title) => ({
 })
 
 export const pages = [
-  { ...page('', 'Wolfpack Companies'), kind: 'home' },
+  {
+    slug: '',
+    title: 'Commercial Hydro Jetting & Plumbing, Phoenix AZ',
+    description: 'Commercial plumbing and hydro jetting for property managers and general contractors across Greater Phoenix. 24/7 emergency response. AZ ROC 326629.',
+    kind: 'home',
+  },
   page('air-compressor', 'Air Compressor Services'),
   page('apache-junction', 'Apache Junction Plumbing'),
   page('avondale', 'Avondale Plumbing'),

@@ -172,3 +172,70 @@ leadDialog()?.addEventListener('close', () => {
   leadReturnFocus?.focus?.()
   leadReturnFocus = undefined
 })
+
+const reducedMotion = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+const loaderSeen = (() => {
+  try {
+    return typeof window !== 'undefined' && window.sessionStorage?.getItem('wp-loader-seen')
+  } catch {
+    return false
+  }
+})()
+
+const loader = document.querySelector?.('[data-loader]')
+if (loader) {
+  if (reducedMotion || loaderSeen) {
+    loader.remove()
+  } else {
+    loader.hidden = false
+    try { window.sessionStorage.setItem('wp-loader-seen', '1') } catch {}
+    setTimeout(() => loader.remove(), 2600)
+  }
+}
+
+document.querySelectorAll?.('[data-count-to]').forEach(el => {
+  if (reducedMotion) return
+  const target = Number(el.getAttribute('data-count-to'))
+  const format = el.getAttribute('data-count-format')
+  const render = value => {
+    el.textContent = format === 'money' ? `$${value.toFixed(1)}M` : `${Math.round(value)}+`
+  }
+  const start = performance.now()
+  const duration = 1400
+  const tick = now => {
+    const p = Math.min(1, (now - start) / duration)
+    render(target * (1 - Math.pow(1 - p, 3)))
+    if (p < 1) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+})
+
+const peekImage = document.querySelector?.('[data-svc-peek-image]')
+if (peekImage) {
+  const peekNum = document.querySelector('[data-svc-peek-num]')
+  const peekName = document.querySelector('[data-svc-peek-name]')
+  document.querySelectorAll('[data-svc-row]').forEach(row => {
+    row.addEventListener('mouseenter', () => {
+      peekImage.src = row.getAttribute('data-svc-image')
+      peekImage.alt = row.getAttribute('data-svc-name')
+      if (peekNum) peekNum.textContent = row.getAttribute('data-svc-num')
+      if (peekName) peekName.textContent = row.getAttribute('data-svc-name')
+    })
+  })
+}
+
+const quoteSlides = [...(document.querySelectorAll?.('[data-quote-slide]') || [])]
+if (quoteSlides.length) {
+  const quotePhotos = [...document.querySelectorAll('[data-quote-photo]')]
+  const quoteCount = document.querySelector('[data-quote-count]')
+  let quoteIndex = 0
+  const pad = value => String(value + 1).padStart(2, '0')
+  const showQuote = index => {
+    quoteIndex = (index + quoteSlides.length) % quoteSlides.length
+    quoteSlides.forEach((slide, i) => slide.classList.toggle('is-active', i === quoteIndex))
+    quotePhotos.forEach((photo, i) => photo.classList.toggle('is-active', i === quoteIndex))
+    if (quoteCount) quoteCount.textContent = `${pad(quoteIndex)} / ${String(quoteSlides.length).padStart(2, '0')}`
+  }
+  document.querySelector('[data-quote-prev]')?.addEventListener('click', () => showQuote(quoteIndex - 1))
+  document.querySelector('[data-quote-next]')?.addEventListener('click', () => showQuote(quoteIndex + 1))
+}

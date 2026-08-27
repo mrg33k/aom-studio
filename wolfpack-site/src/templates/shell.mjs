@@ -1,4 +1,5 @@
 import { asset, escapeHtml } from '../lib/html.mjs'
+import { renderHome } from './home.mjs'
 
 const defaultSite = {
   name: 'Wolfpack Companies',
@@ -224,8 +225,22 @@ export function renderLeadDialog(sourcePage) {
   </dialog>`
 }
 
+const bodyRenderers = {
+  home: renderHome,
+}
+
+function renderBody(page) {
+  const renderer = bodyRenderers[page.kind]
+  if (renderer) return renderer(page)
+  return `<div class="page-placeholder">
+    <div class="wrap">
+      <p class="eyebrow">Wolfpack Companies</p>
+      <h1>${escapeHtml(page.title)}</h1>
+    </div>
+  </div>`
+}
+
 export function renderPage(page, site = defaultSite) {
-  const title = escapeHtml(page.title)
   const sourcePage = page.slug ? `/${page.slug}/` : '/'
 
   return `<!doctype html>
@@ -235,11 +250,8 @@ export function renderPage(page, site = defaultSite) {
 </head>
 <body>
   ${renderHeader(page)}
-  <main id="main" class="page-placeholder">
-    <div class="wrap">
-      <p class="eyebrow">Wolfpack Companies</p>
-      <h1>${title}</h1>
-    </div>
+  <main id="main">
+    ${renderBody(page)}
   </main>
   ${renderFooter()}
   ${renderLeadDialog(sourcePage)}

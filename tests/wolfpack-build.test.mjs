@@ -96,3 +96,27 @@ test('escapes HTML and serves shared assets from the root', () => {
   assert.equal(escapeHtml('<Wolfpack & "Co">'), '&lt;Wolfpack &amp; &quot;Co&quot;&gt;')
   assert.equal(asset('site.css'), '/assets/site.css')
 })
+
+test('homepage carries the approved Evolution B v2 structure', async () => {
+  const html = await renderBuilt('')
+  for (const text of [
+    'dominates clogs.',
+    'Every line. One contractor.',
+    'One invoice.',
+    'Real jobs.',
+    'Real results.',
+    'How we get it done',
+    'for every address',
+    'Completed contracts',
+    'Arizona licensed contractor',
+    'The Ritz Carlton',
+    'Edison Midtown',
+    'What clients say',
+  ]) {
+    assert.ok(html.includes(text), text)
+  }
+  assert.match(html, /Before<\/span>[\s\S]+After<\/span>/)
+  assert.match(html, /data-loader/)
+  assert.match(html, /work\/01-hydro-jetting-v2-brand\.jpg/)
+  assert.ok(!html.includes('page-placeholder'), 'homepage must not render the placeholder body')
+})
