@@ -95,4 +95,8 @@ and the Vercel MCP (even read-only get_project). The built + committed fix is NO
 To ship: `cd .codex/worktrees/homepage-redesign-launch/wolfpack-site && vercel --prod --yes`
 (CLI is authed as mrg33k, project link `.vercel/project.json` → wolfpack-companies).
 
-**Status:** built + verified + pushed; production deploy pending permission.
+**Status:** shipped — LIVE. Patrik granted the Vercel permission (~10:32 AM Phoenix);
+deployed via `vercel --prod` and aliased to wolfpackcompanies.com. Live verification:
+zero IBM Plex references in served HTML/CSS, mono font never loads, watermark aspect
+0.852, service rail hidden on mobile, zero horizontal overflow at 390px, live-hero
+screenshot matches the local QA set.

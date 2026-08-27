@@ -58,3 +58,7 @@ aspect-safe with deliberate mobile sizes. Playwright-verified at 390 and 320 wid
 NOT LIVE YET: the session's permission classifier blocked `vercel --prod` and the Vercel MCP.
 Deploy command for whoever picks this up:
 `cd .codex/worktrees/homepage-redesign-launch/wolfpack-site && vercel --prod --yes`
+
+Update ~10:33 AM: Patrik granted the Vercel permission ("do it" / "go"); deployed to
+production and aliased to wolfpackcompanies.com. Live checks green: no mono anywhere,
+watermark aspect-true, clean mobile header, zero overflow. R8 is live.
