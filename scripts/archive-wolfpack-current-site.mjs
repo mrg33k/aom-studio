@@ -52,6 +52,10 @@ export function srcsetUrls(srcset) {
     .filter(Boolean)
 }
 
+export function srcsetAttributeUrls({ srcset = '', dataSrcsetlazy = '' }) {
+  return [...new Set([...srcsetUrls(srcset), ...srcsetUrls(dataSrcsetlazy)])]
+}
+
 async function scrollPage(page) {
   let previousHeight = 0
   for (let attempt = 0; attempt < 80; attempt += 1) {
@@ -86,7 +90,8 @@ async function inspectPage(page) {
       addSrcset(image.srcset || '')
     }
     for (const element of document.querySelectorAll('[srcset], [data-srcsetlazy]')) {
-      addSrcset(element.getAttribute('srcset') || element.getAttribute('data-srcsetlazy') || '')
+      addSrcset(element.getAttribute('srcset') || '')
+      addSrcset(element.getAttribute('data-srcsetlazy') || '')
     }
     for (const element of document.querySelectorAll('*')) {
       for (const match of getComputedStyle(element).backgroundImage.matchAll(/url\((['"]?)(.*?)\1\)/g)) add(match[2])

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { assetGroupKey, canonicalAssetKey, pickLargestVariant, extensionFor, loadPage, srcsetUrls } from '../scripts/archive-wolfpack-current-site.mjs'
+import { assetGroupKey, canonicalAssetKey, pickLargestVariant, extensionFor, loadPage, srcsetAttributeUrls, srcsetUrls } from '../scripts/archive-wolfpack-current-site.mjs'
 
 test('groups GoDaddy width variants as one source asset', () => {
   const a = new URL('https://img1.wsimg.com/isteam/ip/id/photo.jpg/:/rs=w:450,m')
@@ -34,6 +34,18 @@ test('keeps GoDaddy transform commas inside each srcset URL', () => {
   assert.deepEqual(urls, [
     'https://img1.wsimg.com/a/:/rs=w:365,h:365,cg:true,m',
     'https://img1.wsimg.com/a/:/rs=w:1536,h:1536,cg:true,m',
+  ])
+})
+
+test('collects placeholder and lazy srcset candidates before grouping', () => {
+  const urls = srcsetAttributeUrls({
+    srcset: 'https://img1.wsimg.com/isteam/ip/static/transparent_placeholder.png/:/rs=w:365,m',
+    dataSrcsetlazy: 'https://img1.wsimg.com/isteam/ip/id/real-photo.jpg/:/rs=w:365,m, https://img1.wsimg.com/isteam/ip/id/real-photo.jpg/:/rs=w:1920,m',
+  })
+  assert.deepEqual(urls, [
+    'https://img1.wsimg.com/isteam/ip/static/transparent_placeholder.png/:/rs=w:365,m',
+    'https://img1.wsimg.com/isteam/ip/id/real-photo.jpg/:/rs=w:365,m',
+    'https://img1.wsimg.com/isteam/ip/id/real-photo.jpg/:/rs=w:1920,m',
   ])
 })
 

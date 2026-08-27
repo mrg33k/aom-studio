@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-08-27T09:28:09.444Z",
+  "capturedAt": "2026-08-27T09:34:40.905Z",
   "source": "https://wolfpackcompanies.com/",
   "pageUrls": [
     "https://wolfpackcompanies.com/",
@@ -7,7 +7,93 @@
   ],
   "images": [
     {
-      "file": "images/001.png",
+      "file": "images/001.jpg",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/0315Ferguson-logo-9001.jpg/:/rs=w:491,h:300,cg:true,m/cr=w:491,h:300",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/0315Ferguson-logo-9001.jpg/:/rs=w:164,h:100,cg:true,m/cr=w:164,h:100",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/0315Ferguson-logo-9001.jpg/:/rs=w:327,h:200,cg:true,m/cr=w:327,h:200",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/0315Ferguson-logo-9001.jpg/:/rs=w:491,h:300,cg:true,m/cr=w:491,h:300"
+      ],
+      "bytes": 18878,
+      "sha256": "a1fdc64c6cc451e2a97830e53aad469deb2c649d2847eb57068cebb143c457d6",
+      "contentType": "image/jpeg"
+    },
+    {
+      "file": "images/002.jpg",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/20240509_074711.jpg/:/cr=t:0%25,l:11.74%25,w:75%25,h:100%25/rs=w:1095,h:1095,cg:true",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/20240509_074711.jpg/:/cr=t:0%25,l:11.74%25,w:75%25,h:100%25/rs=w:1095,h:1095,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/20240509_074711.jpg/:/cr=t:0%25,l:11.74%25,w:75%25,h:100%25/rs=w:365,h:365,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/20240509_074711.jpg/:/cr=t:0%25,l:11.74%25,w:75%25,h:100%25/rs=w:730,h:730,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/20240509_074711.jpg/:/cr=t:0%25,l:12.5%25,w:75%25,h:100%25/rs=w:1095,h:1095,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/20240509_074711.jpg/:/cr=t:0%25,l:12.5%25,w:75%25,h:100%25/rs=w:365,h:365,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/20240509_074711.jpg/:/cr=t:0%25,l:12.5%25,w:75%25,h:100%25/rs=w:730,h:730,cg:true"
+      ],
+      "bytes": 293361,
+      "sha256": "32550feb3598a4933d7eeb418fbf7e887feb56685f7dec1d10458c04d53f1b27",
+      "contentType": "image/jpeg"
+    },
+    {
+      "file": "images/003.jpg",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/5463_vendor_logo.webp/:/rs=w:300,h:121,cg:true,m/cr=w:300,h:121",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/5463_vendor_logo.webp/:/rs=w:248,h:100,cg:true,m/cr=w:248,h:100",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/5463_vendor_logo.webp/:/rs=w:300,h:121,cg:true,m/cr=w:300,h:121"
+      ],
+      "bytes": 9233,
+      "sha256": "649a40792fc4ef1edf1bb0dd7eec54a4cdb6f4c1e57e47a6920df8571e9652d4",
+      "contentType": "image/jpeg"
+    },
+    {
+      "file": "images/004.jpg",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/A92FF400-2767-4C8D-88D0-FDBB63490396.png/:/rs=w:217,h:232,cg:true,m/cr=w:217,h:232",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/A92FF400-2767-4C8D-88D0-FDBB63490396.png/:/rs=w:187,h:200,cg:true,m/cr=w:187,h:200",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/A92FF400-2767-4C8D-88D0-FDBB63490396.png/:/rs=w:217,h:232,cg:true,m/cr=w:217,h:232",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/A92FF400-2767-4C8D-88D0-FDBB63490396.png/:/rs=w:94,h:100,cg:true,m/cr=w:94,h:100"
+      ],
+      "bytes": 14102,
+      "sha256": "3617e9209ab543f6add3ff670997d5d612a4edcd8cb886c193b6786a81a4cf90",
+      "contentType": "image/jpeg"
+    },
+    {
+      "file": "images/005.jpg",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/ao-smith1868.logowik.com.webp/:/rs=w:400,h:300,cg:true,m/cr=w:400,h:300",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/ao-smith1868.logowik.com.webp/:/rs=w:133,h:100,cg:true,m/cr=w:133,h:100",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/ao-smith1868.logowik.com.webp/:/rs=w:266,h:200,cg:true,m/cr=w:266,h:200",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/ao-smith1868.logowik.com.webp/:/rs=w:400,h:300,cg:true,m/cr=w:400,h:300"
+      ],
+      "bytes": 8304,
+      "sha256": "0ab4364940a73f20945a812d13fde0a89aa6c404a8cd1a92ef6608ea6f1b023f",
+      "contentType": "image/jpeg"
+    },
+    {
+      "file": "images/006.png",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/blob-599e422.png/:/cr=t:10.32%25,l:2.42%25,w:94.34%25,h:81.49%25/rs=w:1095,h:1095,cg:true,m",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/blob-599e422.png/:/cr=t:10.32%25,l:2.42%25,w:94.34%25,h:81.49%25/rs=w:1095,h:1095,cg:true,m",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/blob-599e422.png/:/cr=t:10.32%25,l:2.42%25,w:94.34%25,h:81.49%25/rs=w:365,h:365,cg:true,m",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/blob-599e422.png/:/cr=t:10.32%25,l:2.42%25,w:94.34%25,h:81.49%25/rs=w:730,h:730,cg:true,m"
+      ],
+      "bytes": 237994,
+      "sha256": "b9e222970aec62cd430652053cf8f47e73ee93cda0f85b71a32f50a2d3fa95e6",
+      "contentType": "image/png"
+    },
+    {
+      "file": "images/007.png",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/blob-ab5c444.png/:/cr=t:0%25,l:12.5%25,w:75%25,h:100%25/rs=w:1095,h:1095,cg:true",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/blob-ab5c444.png/:/cr=t:0%25,l:12.5%25,w:75%25,h:100%25/rs=w:1095,h:1095,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/blob-ab5c444.png/:/cr=t:0%25,l:12.5%25,w:75%25,h:100%25/rs=w:365,h:365,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/blob-ab5c444.png/:/cr=t:0%25,l:12.5%25,w:75%25,h:100%25/rs=w:730,h:730,cg:true"
+      ],
+      "bytes": 2168859,
+      "sha256": "9adecb7443a91c781179fda992293840de74de0dc4fe499baabf89bf36b1a996",
+      "contentType": "image/png"
+    },
+    {
+      "file": "images/008.png",
       "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/blob-b9ecff0.png/:/cr=t:28.56%25,l:0%25,w:100%25,h:45.45%25/rs=w:515,h:234,cg:true",
       "discoveredUrls": [
         "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/blob-b9ecff0.png/:/cr=t:28.56%25,l:0%25,w:100%25,h:45.45%25/rs=w:515,h:234,cg:true"
@@ -17,7 +103,53 @@
       "contentType": "image/png"
     },
     {
-      "file": "images/002.jpg",
+      "file": "images/009.jpg",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/bradford-white-logo.webp/:/rs=w:600,h:187,cg:true,m/cr=w:600,h:187",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/bradford-white-logo.webp/:/rs=w:321,h:100,cg:true,m/cr=w:321,h:100",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/bradford-white-logo.webp/:/rs=w:600,h:187,cg:true,m/cr=w:600,h:187"
+      ],
+      "bytes": 16862,
+      "sha256": "909b5555e8b35fffe247c0442f33a47db3c5afa60aefac97a7abc7f5617f26aa",
+      "contentType": "image/jpeg"
+    },
+    {
+      "file": "images/010.jpg",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/charlotte-logo.webp/:/rs=w:600,h:116,cg:true,m/cr=w:600,h:116",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/charlotte-logo.webp/:/rs=w:517,h:100,cg:true,m/cr=w:517,h:100",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/charlotte-logo.webp/:/rs=w:600,h:116,cg:true,m/cr=w:600,h:116"
+      ],
+      "bytes": 16303,
+      "sha256": "b9969976cce750bd7e41dc2ff24fa94f0bca2e14fac90d9e9dacd227fcf5dbc2",
+      "contentType": "image/jpeg"
+    },
+    {
+      "file": "images/011.png",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/cropped-HORIZONTAL-LOGO-768x298.png/:/rs=w:768,h:298,cg:true,m/cr=w:768,h:298",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/cropped-HORIZONTAL-LOGO-768x298.png/:/rs=w:258,h:100,cg:true,m/cr=w:258,h:100",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/cropped-HORIZONTAL-LOGO-768x298.png/:/rs=w:515,h:200,cg:true,m/cr=w:515,h:200",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/cropped-HORIZONTAL-LOGO-768x298.png/:/rs=w:768,h:298,cg:true,m/cr=w:768,h:298"
+      ],
+      "bytes": 206315,
+      "sha256": "bb070f8aae9c328706d8d484fb324329eedcb12392ccdece0f546af53bef53b0",
+      "contentType": "image/png"
+    },
+    {
+      "file": "images/012.png",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/Hilti-Logo-1024x640.png/:/rs=w:480,h:300,cg:true,m/cr=w:480,h:300",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/Hilti-Logo-1024x640.png/:/rs=w:160,h:100,cg:true,m/cr=w:160,h:100",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/Hilti-Logo-1024x640.png/:/rs=w:320,h:200,cg:true,m/cr=w:320,h:200",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/Hilti-Logo-1024x640.png/:/rs=w:480,h:300,cg:true,m/cr=w:480,h:300"
+      ],
+      "bytes": 12844,
+      "sha256": "66bd414c63edc21c74859a207d6faaf4b3e4cf1d38997ae28f60103c3d101897",
+      "contentType": "image/png"
+    },
+    {
+      "file": "images/013.jpg",
       "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_1290.jpeg/:/rs=w:2560,h:1920",
       "discoveredUrls": [
         "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_1290.jpeg/:/",
@@ -41,7 +173,51 @@
       "contentType": "image/jpeg"
     },
     {
-      "file": "images/003.png",
+      "file": "images/014.jpg",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_2999.jpeg/:/cr=t:12.5%25,l:0%25,w:100%25,h:75%25/rs=w:1095,h:1095,cg:true",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_2999.jpeg/:/cr=t:12.5%25,l:0%25,w:100%25,h:75%25/rs=w:1095,h:1095,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_2999.jpeg/:/cr=t:12.5%25,l:0%25,w:100%25,h:75%25/rs=w:365,h:365,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_2999.jpeg/:/cr=t:12.5%25,l:0%25,w:100%25,h:75%25/rs=w:730,h:730,cg:true"
+      ],
+      "bytes": 141352,
+      "sha256": "3ffaa4c9e0438b574eedf4ad6fbd001914d181777e57124a0bb9a7253c0c6266",
+      "contentType": "image/jpeg"
+    },
+    {
+      "file": "images/015.jpg",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_3065.jpeg/:/cr=t:5.87%25,l:0.7%25,w:89.29%25,h:89.29%25/rs=w:1023,cg:true,m",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_3065.jpeg/:/cr=t:5.87%25,l:0.7%25,w:89.29%25,h:89.29%25/rs=w:1023,cg:true,m",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_3065.jpeg/:/cr=t:5.87%25,l:0.7%25,w:89.29%25,h:89.29%25/rs=w:1209,cg:true,m",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_3065.jpeg/:/cr=t:5.87%25,l:0.7%25,w:89.29%25,h:89.29%25/rs=w:1240,cg:true,m",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_3065.jpeg/:/cr=t:5.87%25,l:0.7%25,w:89.29%25,h:89.29%25/rs=w:1438,cg:true,m",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_3065.jpeg/:/cr=t:5.87%25,l:0.7%25,w:89.29%25,h:89.29%25/rs=w:2046,cg:true,m",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_3065.jpeg/:/cr=t:5.87%25,l:0.7%25,w:89.29%25,h:89.29%25/rs=w:2157,cg:true,m",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_3065.jpeg/:/cr=t:5.87%25,l:0.7%25,w:89.29%25,h:89.29%25/rs=w:2480,cg:true,m",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_3065.jpeg/:/cr=t:5.87%25,l:0.7%25,w:89.29%25,h:89.29%25/rs=w:2560,cg:true,m",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_3065.jpeg/:/cr=t:5.87%25,l:0.7%25,w:89.29%25,h:89.29%25/rs=w:403,cg:true,m",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_3065.jpeg/:/cr=t:5.87%25,l:0.7%25,w:89.29%25,h:89.29%25/rs=w:719,cg:true,m",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_3065.jpeg/:/cr=t:5.87%25,l:0.7%25,w:89.29%25,h:89.29%25/rs=w:806,cg:true,m"
+      ],
+      "bytes": 194942,
+      "sha256": "6d66ece3d085b8997d59e7f664aab22123853013899cbba847a633652b6ead54",
+      "contentType": "image/jpeg"
+    },
+    {
+      "file": "images/016.jpg",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_4326.jpeg/:/cr=t:12.5%25,l:0%25,w:100%25,h:75%25/rs=w:1095,h:1095,cg:true",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_4326.jpeg/:/cr=t:12.5%25,l:0%25,w:100%25,h:75%25/rs=w:1095,h:1095,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_4326.jpeg/:/cr=t:12.5%25,l:0%25,w:100%25,h:75%25/rs=w:365,h:365,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/IMG_4326.jpeg/:/cr=t:12.5%25,l:0%25,w:100%25,h:75%25/rs=w:730,h:730,cg:true"
+      ],
+      "bytes": 251094,
+      "sha256": "8b14c60433eb29acb52d224a93dfa0ecf702398536254bdc87e3f70c6a3691a7",
+      "contentType": "image/jpeg"
+    },
+    {
+      "file": "images/017.png",
       "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/logo-01-2.png/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=h:500,cg:true",
       "discoveredUrls": [
         "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/logo-01-2.png/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=h:500,cg:true",
@@ -54,7 +230,19 @@
       "contentType": "image/png"
     },
     {
-      "file": "images/004.png",
+      "file": "images/018.png",
+      "sourceUrl": "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/Wolfpack-Companies.png/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1095,h:1095,cg:true",
+      "discoveredUrls": [
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/Wolfpack-Companies.png/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1095,h:1095,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/Wolfpack-Companies.png/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:365,h:365,cg:true",
+        "https://img1.wsimg.com/isteam/ip/7b4412fa-b6ff-4ce4-bd1e-9b3f39be03ed/Wolfpack-Companies.png/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:730,h:730,cg:true"
+      ],
+      "bytes": 175156,
+      "sha256": "7d7b48f2128f2df5f283f92e235a29118c4f429240dbe3d17ae77241a6a72f51",
+      "contentType": "image/png"
+    },
+    {
+      "file": "images/019.png",
       "sourceUrl": "https://img1.wsimg.com/isteam/ip/static/transparent_placeholder.png/:/rs=w:1240,h:930,cg:true,m,i:true/qt=q:1/ll=n:true",
       "discoveredUrls": [
         "https://img1.wsimg.com/isteam/ip/static/transparent_placeholder.png/:/rs=w:1024,h:768,cg:true,m,i:true/qt=q:1/ll=n:true",
@@ -80,7 +268,7 @@
       "contentType": "image/png"
     },
     {
-      "file": "images/005.jpg",
+      "file": "images/020.jpg",
       "sourceUrl": "https://img1.wsimg.com/isteam/stock/3278/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1535,m",
       "discoveredUrls": [
         "https://img1.wsimg.com/isteam/stock/3278/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1535,m"
@@ -90,7 +278,7 @@
       "contentType": "image/jpeg"
     },
     {
-      "file": "images/006.jpg",
+      "file": "images/021.jpg",
       "sourceUrl": "https://img1.wsimg.com/isteam/stock/95241/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1535,m",
       "discoveredUrls": [
         "https://img1.wsimg.com/isteam/stock/95241/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1535,m"
@@ -100,7 +288,7 @@
       "contentType": "image/jpeg"
     },
     {
-      "file": "images/007.jpg",
+      "file": "images/022.jpg",
       "sourceUrl": "https://img1.wsimg.com/isteam/stock/Y8kNaq7/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1535,m",
       "discoveredUrls": [
         "https://img1.wsimg.com/isteam/stock/Y8kNaq7/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1535,m"
@@ -110,7 +298,7 @@
       "contentType": "image/jpeg"
     },
     {
-      "file": "images/008.webp",
+      "file": "images/023.webp",
       "sourceUrl": "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3090!3i6566!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=46602",
       "discoveredUrls": [
         "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3090!3i6566!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=46602"
@@ -120,7 +308,7 @@
       "contentType": "image/webp"
     },
     {
-      "file": "images/009.webp",
+      "file": "images/024.webp",
       "sourceUrl": "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3090!3i6567!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=4374",
       "discoveredUrls": [
         "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3090!3i6567!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=4374"
@@ -130,7 +318,7 @@
       "contentType": "image/webp"
     },
     {
-      "file": "images/010.webp",
+      "file": "images/025.webp",
       "sourceUrl": "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3091!3i6566!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=97036",
       "discoveredUrls": [
         "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3091!3i6566!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=97036"
@@ -140,7 +328,7 @@
       "contentType": "image/webp"
     },
     {
-      "file": "images/011.webp",
+      "file": "images/026.webp",
       "sourceUrl": "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3091!3i6567!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=54808",
       "discoveredUrls": [
         "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3091!3i6567!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=54808"
@@ -150,7 +338,7 @@
       "contentType": "image/webp"
     },
     {
-      "file": "images/012.webp",
+      "file": "images/027.webp",
       "sourceUrl": "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3092!3i6566!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=16399",
       "discoveredUrls": [
         "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3092!3i6566!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=16399"
@@ -160,7 +348,7 @@
       "contentType": "image/webp"
     },
     {
-      "file": "images/013.webp",
+      "file": "images/028.webp",
       "sourceUrl": "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3092!3i6567!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=105242",
       "discoveredUrls": [
         "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3092!3i6567!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=105242"
@@ -170,7 +358,7 @@
       "contentType": "image/webp"
     },
     {
-      "file": "images/014.webp",
+      "file": "images/029.webp",
       "sourceUrl": "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3093!3i6566!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=66833",
       "discoveredUrls": [
         "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3093!3i6566!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=66833"
@@ -180,7 +368,7 @@
       "contentType": "image/webp"
     },
     {
-      "file": "images/015.webp",
+      "file": "images/030.webp",
       "sourceUrl": "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3093!3i6567!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=24605",
       "discoveredUrls": [
         "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3093!3i6567!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=24605"
@@ -190,7 +378,7 @@
       "contentType": "image/webp"
     },
     {
-      "file": "images/016.webp",
+      "file": "images/031.webp",
       "sourceUrl": "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3094!3i6566!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=117267",
       "discoveredUrls": [
         "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3094!3i6566!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=117267"
@@ -200,7 +388,7 @@
       "contentType": "image/webp"
     },
     {
-      "file": "images/017.webp",
+      "file": "images/032.webp",
       "sourceUrl": "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3094!3i6567!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=75039",
       "discoveredUrls": [
         "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3094!3i6567!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=75039"
@@ -210,7 +398,7 @@
       "contentType": "image/webp"
     },
     {
-      "file": "images/018.webp",
+      "file": "images/033.webp",
       "sourceUrl": "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3095!3i6566!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=36630",
       "discoveredUrls": [
         "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3095!3i6566!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=36630"
@@ -220,7 +408,7 @@
       "contentType": "image/webp"
     },
     {
-      "file": "images/019.webp",
+      "file": "images/034.webp",
       "sourceUrl": "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3095!3i6567!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=125473",
       "discoveredUrls": [
         "https://maps.googleapis.com/maps/vt?pb=!1m5!1m4!1i14!2i3095!3i6567!4i256!2m3!1e0!2sm!3i792558326!3m18!2sen-US!3sUS!5e18!12m5!1e68!2m2!1sset!2sRoadmap!4e2!12m3!1e37!2m1!1ssmartmaps!12m4!1e26!2m2!1sstyles!2zcy50OjMzfHMuZTpsfHAudjpvZmY!4e0!5m1!1e3!23i46991212!23i47054750!23i47083502&client=gme-godaddycom&channel=gc-widget-contact&token=125473"
@@ -230,7 +418,7 @@
       "contentType": "image/webp"
     },
     {
-      "file": "images/020.png",
+      "file": "images/035.png",
       "sourceUrl": "https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi3.png",
       "discoveredUrls": [
         "https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi3.png"
@@ -240,7 +428,7 @@
       "contentType": "image/png"
     },
     {
-      "file": "images/021.png",
+      "file": "images/036.png",
       "sourceUrl": "https://maps.gstatic.com/mapfiles/transparent.png",
       "discoveredUrls": [
         "https://maps.gstatic.com/mapfiles/transparent.png"

@@ -13,3 +13,7 @@ Patrik reviewed the written design and said to proceed. The implementation plan 
 ## 2026-08-27 — GoDaddy image archive preserved
 
 The live GoDaddy site was crawled with Playwright before DNS changes. The archive at `research/godaddy-2026-08-27/` contains 21 unique image files (1,371,215 bytes) from 2 same-origin pages; each manifest entry has a source URL, all discovered variants, MIME type, byte count, and SHA-256 hash. Focused archive tests pass, manifest hashes and MIME types were rechecked, and no archived file exceeds 90 MB.
+
+## 2026-08-27 — Archive Fix Round 1
+
+Review found that a nonempty placeholder `srcset` suppressed GoDaddy's real `data-srcsetlazy` URLs. Discovery now collects both attributes independently, and the archive was rebuilt from scratch. The corrected manifest contains 36 unique image files (5,136,814 bytes); a live read-only comparison confirmed all 15 distinct lazy GoDaddy asset keys are represented, with no missing lazy asset. Hash, MIME type, byte-size, and 90 MB cap checks pass.

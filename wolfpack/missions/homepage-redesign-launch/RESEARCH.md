@@ -27,5 +27,6 @@
 
 - Archived the live GoDaddy site from `https://wolfpackcompanies.com/` before any DNS change.
 - Archive path: `wolfpack/missions/homepage-redesign-launch/research/godaddy-2026-08-27/`.
-- Captured 21 unique image files from 2 same-origin navigation pages, totaling 1,371,215 bytes.
+- Captured 36 unique image files from 2 same-origin navigation pages, totaling 5,136,814 bytes.
 - `manifest.json` records source URLs, discovered responsive variants, MIME types, byte counts, and SHA-256 hashes for every archived file.
+- Fix Round 1 verified all 15 distinct live `data-srcsetlazy` GoDaddy asset keys are represented in the regenerated manifest; no lazy asset is missing.
