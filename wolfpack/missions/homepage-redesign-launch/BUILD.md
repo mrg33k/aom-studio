@@ -17,6 +17,8 @@ Design approved and saved in `docs/superpowers/specs/2026-08-27-wolfpack-redesig
 
 Archive every image served by the current GoDaddy site, import the approved supplied assets, and rebuild the 27-page static site from shared homepage, city, service, audience, and utility templates without losing page-specific copy or search intent.
 
+Execution workspace: `.Codex/worktrees/homepage-redesign-launch` on branch `codex/wolfpack-homepage-redesign-launch`.
+
 **Status:** queued.
 
 ### R3 — Mobile polish and launch QA
