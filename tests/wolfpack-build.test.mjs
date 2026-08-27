@@ -94,7 +94,8 @@ test('every page shares accessible launch chrome', async () => {
 
 test('escapes HTML and serves shared assets from the root', () => {
   assert.equal(escapeHtml('<Wolfpack & "Co">'), '&lt;Wolfpack &amp; &quot;Co&quot;&gt;')
-  assert.equal(asset('site.css'), '/assets/site.css')
+  assert.equal(asset('brand/wolfpack-icon.png'), '/assets/brand/wolfpack-icon.png')
+  assert.match(asset('site.css'), /^\/assets\/site\.css(\?v=[0-9a-f]{10})?$/)
 })
 
 test('homepage carries the approved Evolution B v2 structure', async () => {

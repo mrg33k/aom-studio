@@ -1,8 +1,9 @@
 import path from 'node:path'
-import { cp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { cp, mkdir, rm, writeFile, readFile } from 'node:fs/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { pages } from './data/pages.mjs'
-import { asset } from './lib/html.mjs'
+import { asset, setAssetVersion } from './lib/html.mjs'
 import { renderPage } from './templates/shell.mjs'
 
 export { asset, escapeHtml } from './lib/html.mjs'
@@ -36,8 +37,18 @@ async function copySharedAssets(outDir) {
   await cp(path.join(sourceDir, 'assets'), assetDir, { recursive: true })
 }
 
+// site.css and site.js are served with a one-year immutable Cache-Control header,
+// so their URLs must change whenever their content does.
+async function registerAssetVersions() {
+  for (const [name, file] of [['site.css', ['styles', 'site.css']], ['site.js', ['browser', 'site.js']]]) {
+    const content = await readFile(path.join(sourceDir, ...file))
+    setAssetVersion(name, createHash('sha1').update(content).digest('hex').slice(0, 10))
+  }
+}
+
 export async function buildSite({ outDir = defaultOutDir } = {}) {
   await rm(outDir, { recursive: true, force: true })
+  await registerAssetVersions()
   const files = []
 
   for (const page of pages) {
