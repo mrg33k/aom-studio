@@ -2,6 +2,10 @@ import { asset, escapeHtml } from '../lib/html.mjs'
 import { renderHome } from './home.mjs'
 import { renderService } from './service.mjs'
 import { renderServiceIndex } from './service-index.mjs'
+import { renderPropertyManagers } from './property-managers.mjs'
+import { renderGeneralContractors } from './general-contractors.mjs'
+import { renderCity } from './city.mjs'
+import { renderContact } from './contact.mjs'
 
 const defaultSite = {
   name: 'Wolfpack Companies',
@@ -231,6 +235,10 @@ const bodyRenderers = {
   home: renderHome,
   service: renderService,
   services: renderServiceIndex,
+  'property-managers': renderPropertyManagers,
+  'general-contractors': renderGeneralContractors,
+  city: renderCity,
+  contact: renderContact,
 }
 
 function renderBody(page) {

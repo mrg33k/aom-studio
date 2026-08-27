@@ -195,3 +195,81 @@ test('services overview links every service page plus property managers', async 
     assert.ok(cardSection.includes(`href="${href}"`), `services grid must link ${href}`)
   }
 })
+
+// --- Audience, city, and contact families (R6) -------------------------------
+
+const citySlugNames = {
+  phoenix: 'Phoenix', scottsdale: 'Scottsdale', tempe: 'Tempe', mesa: 'Mesa',
+  chandler: 'Chandler', gilbert: 'Gilbert', glendale: 'Glendale',
+  peoria: 'Peoria', surprise: 'Surprise', goodyear: 'Goodyear',
+  avondale: 'Avondale', 'paradise-valley': 'Paradise Valley',
+  'apache-junction': 'Apache Junction', 'litchfield-park': 'Litchfield Park',
+  'san-tan-valley': 'San Tan Valley',
+}
+
+const r6Routes = ['property-managers', 'general-contractors', 'contact', ...Object.keys(citySlugNames)]
+
+test('each audience, city, and contact route renders exactly one h1', async () => {
+  for (const slug of r6Routes) {
+    const html = await renderBuilt(slug)
+    const headings = html.match(/<h1[\s\S]*?<\/h1>/g) ?? []
+    assert.equal(headings.length, 1, `${slug} must render exactly one h1`)
+  }
+})
+
+test('city pages carry the city in title, h1, and body at least 3 times', async () => {
+  for (const slug of ['scottsdale', 'phoenix', 'san-tan-valley']) {
+    const name = citySlugNames[slug]
+    const html = await renderBuilt(slug)
+    assert.match(html, new RegExp(`<title>Commercial Plumbing in ${name}, AZ`), `${slug} title must name ${name}`)
+    const h1 = html.match(/<h1[\s\S]*?<\/h1>/)?.[0] ?? ''
+    assert.ok(h1.includes(`${name}.`), `${slug} h1 must name ${name}`)
+    const main = html.slice(html.indexOf('<main'), html.indexOf('</main>'))
+    const mentions = main.split(name).length - 1
+    assert.ok(mentions >= 3, `${slug} body must name ${name} at least 3 times (found ${mentions})`)
+  }
+})
+
+test('rendered titles are unique across all 27 routes', async () => {
+  const titles = []
+  for (const page of pages) {
+    const html = await renderBuilt(page.slug)
+    titles.push(html.match(/<title>([\s\S]*?)<\/title>/)[1])
+  }
+  assert.equal(new Set(titles).size, pages.length)
+  const descriptions = pages.map(page => page.description)
+  assert.equal(new Set(descriptions).size, pages.length, 'descriptions must be unique per route')
+})
+
+test('audience, city, and contact routes never reference the banned legacy AI images', async () => {
+  const banned = ['work-', 'hero-jetting', 'jet-hero', 'fog-hero', 'pm-hero', 'pm-compliance']
+  for (const slug of r6Routes) {
+    const html = await renderBuilt(slug)
+    const sources = html.match(/\/assets\/[^"']+\.(?:jpg|jpeg|png|webp)/g) ?? []
+    for (const src of sources) {
+      for (const fragment of banned) {
+        assert.ok(!src.includes(fragment), `${slug} references banned image ${src}`)
+      }
+    }
+  }
+})
+
+test('contact page carries an inline lead form posting to /api/lead with the spam honeypot', async () => {
+  const html = await renderBuilt('contact')
+  assert.match(html, /<form[^>]+class="[^"]*cpage-form[^"]*"[^>]+action="\/api\/lead"[^>]*data-lead-form/)
+  const form = html.slice(html.indexOf('id="cpage-lead-form"'), html.indexOf('</form>'))
+  assert.match(form, /name="website"/, 'honeypot field')
+  assert.match(form, /name="startedAt"/, 'timing field')
+  assert.match(form, /name="sourcePage" value="\/contact\/"/, 'source page field')
+  assert.match(form, /name="need"/, 'need options')
+  for (const field of ['name="name"', 'name="company"', 'name="phone"']) assert.ok(form.includes(field), field)
+  assert.match(html, /data-cpage-success/)
+  assert.ok(html.includes("form.removeAttribute('data-lead-form')"), 'inline form must yield the shared handler to the drawer before site.js binds')
+})
+
+test('no placeholder body remains on any of the 27 routes', async () => {
+  for (const page of pages) {
+    const html = await renderBuilt(page.slug)
+    assert.ok(!html.includes('page-placeholder'), `${page.slug || 'home'} must not render the placeholder body`)
+  }
+})

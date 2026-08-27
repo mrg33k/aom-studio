@@ -490,3 +490,110 @@ img { display: block; max-width: 100%; }
   .svc2-card-media { min-height: 190px; }
   .svc2-card-body { padding: 22px 20px 26px; }
 }
+
+/* ==========================================================================
+   AUDIENCE + CITY + CONTACT FAMILIES (pm-, gc-, city-, cpage-).
+   Values translated from the design comps "Property Managers.dc.html",
+   "General Contractors.dc.html", and "Scottsdale.dc.html"
+   (design-v2-2026-08-27); the contact page has no comp and reuses the site
+   design language plus the shared lead-form classes. Reuses shared .wrap,
+   .btn-*, .section-*, .svc2-*, .process-*, .need-*, .contact-fields,
+   .lead-submit, .form-status classes defined above.
+   ========================================================================== */
+
+/* --- Property managers (pm-) --- */
+.pm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 2px; margin-top: 64px; border: 1px solid var(--rule); background: var(--rule); }
+.pm-card { padding: 36px 30px 44px; background: var(--bg); }
+.pm-icon { width: 40px; height: 40px; fill: none; stroke: var(--blue); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.pm-card-title { display: block; margin-top: 22px; font-family: Archivo, sans-serif; font-size: 18px; font-variation-settings: "wdth" 85, "wght" 700; letter-spacing: .02em; line-height: 1.3; text-transform: uppercase; }
+.pm-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: clamp(32px, 4vw, 48px); margin-top: 64px; }
+.pm-stat { padding-top: 24px; border-top: 2px solid var(--text); }
+.pm-stat-value { font-family: Archivo, sans-serif; font-size: clamp(56px, 5.4vw, 84px); font-variation-settings: "wdth" 68, "wght" 900; line-height: .9; }
+.pm-stat-blue { color: var(--blue); }
+.pm-stat-label { display: block; margin-top: 16px; font-family: Archivo, sans-serif; font-size: 14px; font-variation-settings: "wdth" 88, "wght" 700; letter-spacing: .12em; text-transform: uppercase; }
+.pm-stat-desc { margin: 8px 0 0; color: var(--text-2); font-size: 16px; line-height: 1.6; }
+.pm-comp { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); align-items: center; gap: clamp(32px, 5vw, 72px); }
+.pm-comp-media { position: relative; overflow: hidden; min-height: 440px; border: 1px solid var(--rule); }
+.pm-comp-media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pm-comp-title { font-size: clamp(36px, 3.6vw, 56px); line-height: .92; }
+.pm-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 14px; margin-top: 44px; }
+.pm-check { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border: 1px solid var(--rule); }
+.pm-check-icon { width: 20px; height: 20px; flex: none; fill: none; stroke: var(--blue); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pm-check-name { display: block; font-family: Archivo, sans-serif; font-size: 15px; font-variation-settings: "wdth" 88, "wght" 700; letter-spacing: .02em; }
+.pm-check-when { display: block; margin-top: 2px; color: var(--text-3); font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+
+/* --- General contractors (gc-) --- */
+.gc-hero { padding: clamp(56px, 8vw, 100px) 0 clamp(48px, 6vw, 64px); }
+.gc-hero-sub { max-width: 48ch; text-shadow: none; }
+.gc-stats { display: flex; flex-wrap: wrap; margin-top: clamp(32px, 5vw, 64px); border-top: 1px solid var(--rule); animation: rise 800ms 400ms cubic-bezier(.22, .61, .36, 1) both; }
+.gc-stat { flex: 1 1 160px; padding: 24px 32px 28px; border-left: 1px solid var(--rule); }
+.gc-stat:first-child { padding-left: 0; border-left: 0; }
+.gc-stat-value { font-family: Archivo, sans-serif; font-size: clamp(40px, 3.8vw, 60px); font-variation-settings: "wdth" 68, "wght" 900; line-height: .9; }
+.gc-stat-blue { color: var(--blue); }
+.gc-stat-label { margin-top: 12px; font-family: Archivo, sans-serif; font-size: 13px; font-variation-settings: "wdth" 88, "wght" 700; letter-spacing: .12em; text-transform: uppercase; }
+/* 300px minimum keeps the auto-fit grid at 1-4 columns, all of which divide the
+   12 project cards evenly — no orphan cells showing the rule background. */
+.gc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 2px; margin-top: 64px; border: 1px solid var(--rule); background: var(--rule); }
+.gc-proj { background: var(--bg); }
+.gc-proj-media { position: relative; overflow: hidden; aspect-ratio: 16 / 9; }
+.gc-proj-media img { width: 100%; height: 100%; object-fit: cover; transition: transform 800ms ease; }
+.gc-proj:hover .gc-proj-media img { transform: scale(1.04); }
+.gc-proj-tag { position: absolute; top: 14px; left: 14px; padding: 6px 12px; background: #0a0c10; color: #f2f1ec; font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; }
+.gc-proj-body { padding: 28px 28px 36px; }
+.gc-proj-name { margin: 0; font-family: Archivo, sans-serif; font-size: 23px; font-variation-settings: "wdth" 78, "wght" 850; line-height: 1.05; text-transform: uppercase; }
+.gc-proj-addr { margin: 8px 0 0; color: var(--text-3); font-family: "IBM Plex Mono", monospace; font-size: 12px; letter-spacing: .08em; }
+.gc-proj-rows { display: flex; flex-direction: column; gap: 6px; margin-top: 16px; }
+.gc-proj-meta { color: var(--text-2); font-size: 14px; }
+.gc-proj-meta b { margin-right: 8px; color: var(--text); font-family: Archivo, sans-serif; font-size: 11px; font-variation-settings: "wdth" 88, "wght" 700; letter-spacing: .1em; text-transform: uppercase; }
+.gc-proj-scope { margin: 14px 0 0; color: var(--text-2); font-size: 15px; line-height: 1.55; }
+.gc-offer-sub { max-width: 48ch; margin: 28px auto 0; font-size: 17px; font-weight: 500; line-height: 1.6; opacity: .92; }
+
+/* --- City service-area pages (city-) --- */
+.city-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 2px; margin-top: 64px; border: 1px solid var(--rule); background: var(--rule); }
+.city-card { padding: 36px 30px 44px; background: var(--bg); }
+.city-icon { width: 44px; height: 44px; fill: none; stroke: var(--blue); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.city-card-title { display: block; margin-top: 24px; font-family: Archivo, sans-serif; font-size: 19px; font-variation-settings: "wdth" 85, "wght" 700; letter-spacing: .02em; text-transform: uppercase; }
+.city-card-desc { margin: 12px 0 0; color: var(--text-2); font-size: 16px; line-height: 1.6; }
+.city-lead { max-width: 52ch; margin: 32px 0 0; color: var(--text-2); font-size: 17px; font-weight: 500; line-height: 1.6; }
+.city-chips { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 44px; }
+.city-chip { display: inline-flex; align-items: center; min-height: 44px; padding: 11px 22px; border: 1px solid var(--rule); color: var(--text-2); font-family: "IBM Plex Mono", monospace; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; transition: border-color 250ms ease, color 250ms ease; }
+.city-chip:hover { border-color: var(--blue); color: var(--blue); }
+.city-nearby { margin: 28px 0 0; color: var(--text-3); font-family: "IBM Plex Mono", monospace; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; }
+.city-nearby-label { margin-right: 14px; color: var(--blue); }
+.city-nearby a { display: inline-block; padding: 13px 4px; color: var(--text-2); }
+.city-nearby a:hover { color: var(--blue); }
+
+/* --- Contact page (cpage-) --- */
+.cpage-hero { padding: clamp(56px, 8vw, 100px) 0 clamp(40px, 6vw, 72px); }
+.cpage-hero .svc2-hero-sub { text-shadow: none; }
+.cpage-ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 2px; margin-top: 64px; border: 1px solid var(--rule); background: var(--rule); }
+.cpage-way { display: flex; align-items: flex-start; gap: 18px; padding: 32px 28px 38px; background: var(--bg); color: inherit; transition: background 250ms ease; }
+.cpage-way:hover, .cpage-way:focus-visible { background: var(--bg-2); color: inherit; }
+.cpage-way-icon { width: 32px; height: 32px; flex: none; fill: none; stroke: var(--blue); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.cpage-way-title { display: block; font-family: Archivo, sans-serif; font-size: 18px; font-variation-settings: "wdth" 85, "wght" 700; letter-spacing: .02em; line-height: 1.2; text-transform: uppercase; }
+.cpage-way-desc { display: block; margin-top: 8px; color: var(--text-2); font-size: 15px; line-height: 1.55; }
+.cpage-form-sub { margin: 32px 0 0; color: var(--text-2); font-size: 17px; font-weight: 500; }
+.cpage-form { margin-top: 44px; }
+.cpage-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); align-items: start; gap: clamp(32px, 5vw, 72px); }
+.cpage-need-grid { margin: 0; }
+.cpage-form .need-option { background: var(--bg); }
+.cpage-form .need-option:has(input:checked) { background: rgb(72 159 211 / 10%); }
+.cpage-fields .contact-fields { margin-top: 0; }
+.cpage-fields .contact-fields input { background: var(--bg); }
+.cpage-submit { margin-top: 28px; }
+.cpage-success { max-width: 52ch; margin-top: 44px; }
+.cpage-success:focus { outline: none; }
+.cpage-success-title { margin: 24px 0 0; font-family: Archivo, sans-serif; font-size: clamp(26px, 3vw, 34px); font-variation-settings: "wdth" 72, "wght" 900; line-height: .96; text-transform: uppercase; }
+.cpage-success-sub { margin: 12px 0 0; color: var(--text-2); font-size: 16px; font-weight: 500; line-height: 1.55; }
+.cpage-success-sub a { color: var(--blue); }
+.cpage-success .lead-success-mark { margin: 0 0 4px; }
+
+@media (max-width: 767px) {
+  .pm-comp-media { min-height: 280px; }
+  .pm-stats { gap: 24px; margin-top: 48px; }
+  .pm-grid, .gc-grid, .city-grid, .cpage-ways { margin-top: 48px; }
+  .gc-stat { flex: 1 1 100%; padding: 20px 0 22px; border-top: 1px solid var(--rule); border-left: 0; }
+  .gc-stats { border-top: 0; }
+  .gc-proj-body { padding: 22px 20px 28px; }
+  .cpage-way { padding: 24px 20px 30px; }
+}

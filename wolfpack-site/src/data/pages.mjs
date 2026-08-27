@@ -1,8 +1,4 @@
-const page = (slug, title) => ({
-  slug,
-  title,
-  description: `${title} from Wolfpack Companies.`,
-})
+import { cityPage } from './cities.mjs'
 
 export const pages = [
   {
@@ -17,16 +13,21 @@ export const pages = [
     description: 'Commercial and industrial air compressor systems for Phoenix businesses: sizing, piping, electrical coordination, and commissioning by a licensed contractor.',
     kind: 'service',
   },
-  page('apache-junction', 'Apache Junction Plumbing'),
-  page('avondale', 'Avondale Plumbing'),
+  cityPage('apache-junction'),
+  cityPage('avondale'),
   {
     slug: 'backflow-testing',
     title: 'Certified Backflow Testing & Repair Phoenix',
     description: 'Certified backflow testing and repair for commercial properties across Greater Phoenix. Reports filed with the municipality and annual test dates tracked for you.',
     kind: 'service',
   },
-  page('chandler', 'Chandler Plumbing'),
-  page('contact', 'Contact Wolfpack Companies'),
+  cityPage('chandler'),
+  {
+    slug: 'contact',
+    title: 'Contact Wolfpack Companies',
+    description: 'Call 602-550-5452 any hour and a person answers, or send three fields and we come back the same business day. Commercial plumbing across Greater Phoenix, statewide on request.',
+    kind: 'contact',
+  },
   {
     slug: 'drain-cleaning',
     title: 'Commercial Drain Cleaning & Camera Inspection Phoenix',
@@ -39,10 +40,15 @@ export const pages = [
     description: 'A person answers day or night at 602-550-5452. Crews dispatch from Phoenix and are on site within 3 hours for contracted properties.',
     kind: 'service',
   },
-  page('general-contractors', 'Plumbing for General Contractors'),
-  page('gilbert', 'Gilbert Plumbing'),
-  page('glendale', 'Glendale Plumbing'),
-  page('goodyear', 'Goodyear Plumbing'),
+  {
+    slug: 'general-contractors',
+    title: 'Plumbing for General Contractors',
+    description: 'Commercial plumbing sub with completed projects over $100,000: hotels, luxury condos, retail remodels, and medical facilities across Greater Phoenix. AZ ROC 326629.',
+    kind: 'general-contractors',
+  },
+  cityPage('gilbert'),
+  cityPage('glendale'),
+  cityPage('goodyear'),
   {
     slug: 'hydro-jetting',
     title: 'Commercial Hydro Jetting Phoenix',
@@ -55,22 +61,27 @@ export const pages = [
     description: 'Non-invasive electronic and acoustic leak location for commercial properties. Pinpoint under-slab leaks without unnecessary demolition, documented before repair.',
     kind: 'service',
   },
-  page('litchfield-park', 'Litchfield Park Plumbing'),
-  page('mesa', 'Mesa Plumbing'),
-  page('paradise-valley', 'Paradise Valley Plumbing'),
-  page('peoria', 'Peoria Plumbing'),
-  page('phoenix', 'Phoenix Plumbing'),
-  page('property-managers', 'Plumbing for Property Managers'),
-  page('san-tan-valley', 'San Tan Valley Plumbing'),
-  page('scottsdale', 'Scottsdale Plumbing'),
+  cityPage('litchfield-park'),
+  cityPage('mesa'),
+  cityPage('paradise-valley'),
+  cityPage('peoria'),
+  cityPage('phoenix'),
+  {
+    slug: 'property-managers',
+    title: 'Plumbing for Property Managers',
+    description: 'One plumbing contractor for the whole portfolio: 24/7 live answer, on site within 3 hours for contracted properties, and compliance paperwork the same day. Greater Phoenix.',
+    kind: 'property-managers',
+  },
+  cityPage('san-tan-valley'),
+  cityPage('scottsdale'),
   {
     slug: 'services',
     title: 'Commercial Plumbing Services Phoenix',
     description: 'Hydro jetting, drain cleaning and camera inspection, backflow testing, water heaters and boilers, leak detection, and 24/7 emergency response. AZ ROC 326629.',
     kind: 'services',
   },
-  page('surprise', 'Surprise Plumbing'),
-  page('tempe', 'Tempe Plumbing'),
+  cityPage('surprise'),
+  cityPage('tempe'),
   {
     slug: 'water-heaters',
     title: 'Commercial Water Heaters & Boilers Phoenix',
