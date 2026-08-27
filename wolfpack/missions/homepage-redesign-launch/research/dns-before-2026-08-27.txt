@@ -1,0 +1,41 @@
+# wolfpackcompanies.com DNS snapshot — captured 2026-08-27T11:01:25Z (before any cutover)
+
+## dig wolfpackcompanies.com A
+wolfpackcompanies.com.	3600	IN	A	76.223.105.230
+wolfpackcompanies.com.	3600	IN	A	13.248.243.5
+
+## dig wolfpackcompanies.com AAAA
+
+## dig wolfpackcompanies.com CNAME
+
+## dig www.wolfpackcompanies.com A
+www.wolfpackcompanies.com. 3600	IN	CNAME	wolfpackcompanies.com.
+wolfpackcompanies.com.	3600	IN	A	76.223.105.230
+wolfpackcompanies.com.	3600	IN	A	13.248.243.5
+
+## dig www.wolfpackcompanies.com CNAME
+www.wolfpackcompanies.com. 3600	IN	CNAME	wolfpackcompanies.com.
+
+## dig wolfpackcompanies.com MX
+wolfpackcompanies.com.	3600	IN	MX	20 mx2-us1.ppe-hosted.com.
+wolfpackcompanies.com.	3600	IN	MX	10 mx1-us1.ppe-hosted.com.
+
+## dig wolfpackcompanies.com TXT
+wolfpackcompanies.com.	3600	IN	TXT	"NETORGFT12294131.onmicrosoft.com"
+wolfpackcompanies.com.	3600	IN	TXT	"v=spf1 a:dispatch-us.ppe-hosted.com include:secureserver.net -all"
+wolfpackcompanies.com.	3600	IN	TXT	"apple-domain=nqQtWT0ajgxMDkU5"
+wolfpackcompanies.com.	3600	IN	TXT	"v=spf1 include:icloud.com ~all"
+
+## dig wolfpackcompanies.com CAA
+
+## dig wolfpackcompanies.com NS
+wolfpackcompanies.com.	3600	IN	NS	ns23.domaincontrol.com.
+wolfpackcompanies.com.	3600	IN	NS	ns24.domaincontrol.com.
+
+## dig _dmarc.wolfpackcompanies.com TXT
+
+## dig default._domainkey.wolfpackcompanies.com TXT
+
+## dig selector1._domainkey.wolfpackcompanies.com TXT
+
+## dig selector2._domainkey.wolfpackcompanies.com TXT
