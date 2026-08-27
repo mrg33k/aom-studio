@@ -40,7 +40,7 @@ async function copySharedAssets(outDir) {
 // site.css and site.js are served with a one-year immutable Cache-Control header,
 // so their URLs must change whenever their content does.
 async function registerAssetVersions() {
-  for (const [name, file] of [['site.css', ['styles', 'site.css']], ['site.js', ['browser', 'site.js']]]) {
+  for (const [name, file] of [['site.css', ['styles', 'site.css']], ['site.js', ['browser', 'site.js']], ['og.jpg', ['assets', 'og.jpg']]]) {
     const content = await readFile(path.join(sourceDir, ...file))
     setAssetVersion(name, createHash('sha1').update(content).digest('hex').slice(0, 10))
   }

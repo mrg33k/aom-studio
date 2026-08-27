@@ -70,6 +70,7 @@ export function renderHead(page, site = defaultSite) {
   const title = escapeHtml(page.title)
   const description = escapeHtml(page.description || page.title)
   const canonical = canonicalUrl(page, site)
+  const ogImage = `${site.url.replace(/\/$/, '')}${asset('og.jpg')}`
 
   return `<meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -77,6 +78,19 @@ export function renderHead(page, site = defaultSite) {
   <title>${title} | ${escapeHtml(site.name)}</title>
   <meta name="description" content="${description}">
   <link rel="canonical" href="${canonical}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="${escapeHtml(site.name)}">
+  <meta property="og:title" content="${title} | ${escapeHtml(site.name)}">
+  <meta property="og:description" content="${description}">
+  <meta property="og:url" content="${canonical}">
+  <meta property="og:image" content="${ogImage}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Wolfpack Companies — commercial plumbing, Phoenix AZ, 24/7, 602-550-5452">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${title} | ${escapeHtml(site.name)}">
+  <meta name="twitter:description" content="${description}">
+  <meta name="twitter:image" content="${ogImage}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
