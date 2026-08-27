@@ -62,3 +62,7 @@ Deploy command for whoever picks this up:
 Update ~10:33 AM: Patrik granted the Vercel permission ("do it" / "go"); deployed to
 production and aliased to wolfpackcompanies.com. Live checks green: no mono anywhere,
 watermark aspect-true, clean mobile header, zero overflow. R8 is live.
+
+Update ~10:50 AM: R9 shipped live — index numbers removed site-wide (process steps kept),
+home hero eyebrow gone, hero fully centered including stats. Plus a real fix: immutable-cached
+site.css/site.js now get content-hash URLs, so redeploys actually reach returning visitors.

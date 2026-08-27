@@ -100,3 +100,23 @@ deployed via `vercel --prod` and aliased to wolfpackcompanies.com. Live verifica
 zero IBM Plex references in served HTML/CSS, mono font never loads, watermark aspect
 0.852, service rail hidden on mobile, zero horizontal overflow at 390px, live-hero
 screenshot matches the local QA set.
+
+### R9 — Numbers purge, hero eyebrow removed, centered hero + cache-bust fix (2026-08-27 ~10:50 AM Phoenix)
+
+Patrik's second phone review of the live site: decorative index numbers everywhere are
+not needed, the homepage hero eyebrow goes, and the hero content including the stats
+should be center-aligned. Removed section-num (14 across all templates), svc-num,
+svc-peek-num, work-num, svc2-shot-num, svc2-card-num, and the testimonial counter;
+kept the big outlined process-step numbers (real 1-2-3 sequence) and the real stats.
+Hero now fully centered at all widths (title, sub, CTAs, stats row).
+
+Also caught and fixed a real launch bug during live verification: site.css/site.js are
+served with a one-year immutable Cache-Control header but had unversioned URLs, so
+returning visitors kept the old design after every redeploy. asset() now appends a
+content-hash query (?v=sha1[:10]) for the two mutable files.
+
+Deployed to production twice (R9, then cache fix); live checks green: versioned CSS
+loads, computed hero text-align center, zero number elements, zero overflow at 390px.
+Commits: R9 templates/CSS, cache-bust fix + test update.
+
+**Status:** shipped — LIVE.
