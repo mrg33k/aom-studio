@@ -1,0 +1,9 @@
+{
+  "name": "wolfpack-companies-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node src/build.mjs",
+    "test": "node --test ../tests/wolfpack-archive.test.mjs ../tests/wolfpack-build.test.mjs ../tests/wolfpack-lead.test.mjs"
+  }
+}

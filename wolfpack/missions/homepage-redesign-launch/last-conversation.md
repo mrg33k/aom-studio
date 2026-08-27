@@ -17,3 +17,7 @@ The live GoDaddy site was crawled with Playwright before DNS changes. The archiv
 ## 2026-08-27 — Archive Fix Round 1
 
 Review found that a nonempty placeholder `srcset` suppressed GoDaddy's real `data-srcsetlazy` URLs. Discovery now collects both attributes independently, and the archive was rebuilt from scratch. The corrected manifest contains 36 unique image files (5,136,814 bytes); a live read-only comparison confirmed all 15 distinct lazy GoDaddy asset keys are represented, with no missing lazy asset. Hash, MIME type, byte-size, and 90 MB cap checks pass.
+
+## 2026-08-27 — Isolated static-site scaffold
+
+Added `wolfpack-site/` as the deployable Node ESM boundary without changing `public/wolfpack-site/`. It has 27 exact route records, a stable `buildSite({ outDir })` and `renderPage(page, site)` contract, shared CSS/JavaScript/assets output, and generated `404.html`, `robots.txt`, and `sitemap.xml`. Focused build tests pass and the production build emits all 27 `index.html` route files.

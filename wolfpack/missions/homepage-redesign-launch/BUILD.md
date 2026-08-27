@@ -23,6 +23,14 @@ Preservation completed: the live GoDaddy archive is stored at `research/godaddy-
 
 **Status:** in progress.
 
+### R2.1 — Scaffold isolated static-site boundary
+
+Shipped the standalone Node static-site project contract: exact 27-route data, a stable `buildSite` / `renderPage` boundary, copied shared assets, sitemap, robots, and 404 artifacts, plus reduced-motion and JavaScript baseline behavior. The existing `public/wolfpack-site/` rollback tree remains untouched.
+
+Focused route/build tests pass and `npm --prefix wolfpack-site run build` emits all 27 route files and required static artifacts.
+
+**Status:** shipped.
+
 ### R3 — Mobile polish and launch QA
 
 Test every template across phone, tablet, laptop, and wide desktop sizes; verify navigation, forms, calls, email links, accessibility, reduced motion, metadata, redirects, and performance.

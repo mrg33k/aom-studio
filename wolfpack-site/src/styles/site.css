@@ -1,0 +1,17 @@
+:root {
+  --ink: #0a0c10;
+  --panel: #12151b;
+  --paper: #f2f1ec;
+  --muted: #aeb3bc;
+  --blue: #489fd3;
+  --blue-dark: #2f82b4;
+  --rule: rgb(255 255 255 / 14%);
+  --max: 1440px;
+  --gutter: clamp(20px, 4vw, 48px);
+}
+
+* { box-sizing: border-box; }
+html { color-scheme: dark; scroll-behavior: smooth; }
+body { margin: 0; overflow-x: clip; background: var(--ink); color: var(--paper); font-family: Inter, system-ui, sans-serif; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
