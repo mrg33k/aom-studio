@@ -1,6 +1,51 @@
 {
  "days": [
   {
+   "date": "2026-08-28",
+   "items": [
+    {
+     "lane": "ai-tools",
+     "youtube_id": "1ppiXvhp4eg",
+     "title": "How To Use Cursor Origin For Beginners",
+     "channel": "Corbin Brown",
+     "views": "50K",
+     "published": "2026-08-21",
+     "why": "Cursor Origin launched Aug 17 — agent-native git hosting with pull requests designed for AI-scale code review. AOM pushes code through Claude Code and git every day. If Origin's agent workflow is faster than GitHub for our use case, it changes how we ship.",
+     "action_prompt": "Set up Cursor Origin on one of our smaller repos (pick a non-critical one). Push the codebase, open a PR through Origin, and try running Claude Code against it. Compare the experience to our current GitHub workflow: is PR review faster? Does the agent integration reduce friction? Report back with a keep-or-skip verdict and any gotchas."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "DSw6kLv54wI",
+     "title": "The August 2026 AI Coding Championship — 4 Agents, 3 Tasks, 1 Winner (Real Receipts)",
+     "channel": "IndyDevDan",
+     "views": "85K",
+     "published": "2026-08-22",
+     "why": "Codex vs Claude Code vs Qwen3.8-Max vs Kimi K3 on identical tasks, auto-graded with receipts. AOM runs exclusively on Claude Code. If another agent wins specific task types, we should know which tasks to route differently — or confirm we're on the right stack.",
+     "action_prompt": "Watch this head-to-head and extract the task-by-task scores for all 4 agents. Build a comparison matrix: which agent won which task type (front-end, back-end, debugging, refactoring)? Flag any category where Claude Code lost — those are candidates for a secondary agent. If Claude Code swept, note what it was best at so we lean into those tasks harder."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "uERpN_ay4KA",
+     "title": "The Old Way vs The Right Way to Build AI Agents in 2026",
+     "channel": "Dave Ebbelaar",
+     "views": "180K",
+     "published": "2026-08-14",
+     "why": "Agent architecture patterns for production systems. Corner IS an agent system with 11 agents — this video covers what separates fragile prompt chains from robust agent stacks. Direct competitive intelligence for our platform.",
+     "action_prompt": "Watch this video and extract every architecture pattern recommended for production agent systems. Compare against Corner's current agent setup (see corner/users/aom/agents/ for the 11 agent definitions). List: (1) which patterns we already use, (2) which we're missing, (3) which would be highest-impact to add. Focus on reliability and error recovery patterns — that's where our agents break most."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "h_qQ0aKyXEA",
+     "title": "The Cully Hill Boys | N3on, Israel Adesanya and MK | AI Action Film",
+     "channel": "Higgsfield",
+     "views": "150K",
+     "published": "2026-08-05",
+     "why": "First AI feature film with licensed celebrity likenesses — 110 minutes, $2M budget, prompts open-sourced. This is not a demo reel, it is a shipped production. AOM does client video work and the workflow behind this film is a reference library for AI video production at scale.",
+     "action_prompt": "Find Higgsfield's open-sourced prompts for The Cully Hill Boys (check their site and GitHub). Catalog the production workflow: which AI models generated what, how many iterations per scene, what was the human-to-AI work ratio. Extract 3-5 specific techniques AOM could adapt for client video projects — especially anything that would speed up social content for clients like Wolfpack or Ambition."
+    }
+   ]
+  },
+  {
    "date": "2026-08-27",
    "items": [
     {
