@@ -7,3 +7,7 @@ Patrik asked to turn the Claude website handoff into a live, polished, mobile-re
 ## 2026-08-28 — Corrected to endless-loop handoff
 
 Patrik clarified that R1 used the wrong layout. The exact target is the handoff’s “Marketing site — endless loop”: one warm-white viewport, horizontal obsidian card loop, auto-drift, wheel/drag inertia, museum label, ticks, and teleport dock navigation. R2 replaces the R1 editorial scroll surface with that interaction model and passes focused tests, build, and 390px/1440px browser checks. The corrected release is live at `https://aheadofmarket.com/` and the deployed lazy homepage chunk contains the loop-stage and loop-dock implementation.
+
+## 2026-08-28 — Visual alignment pass
+
+Patrik supplied a seven-point correction list and named the extracted loop handoff as the source of truth. Updated the React port to use white graph-paper story/ask cards, fixed corner tags, exact highlight wipe behavior, four staggered option rows, the centered 1fr rail, crossfading ambient layers, an obsidian CTA, and the `05 —— 05` step bar; also corrected drag inertia origin capture. Focused homepage tests, production build, and browser checks at 390px and 1440px pass. Production publish is pending.

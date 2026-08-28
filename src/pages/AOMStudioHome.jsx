@@ -13,7 +13,7 @@ function DisplayText({ value }) {
 }
 
 function CardContent({ card, onOpen }) {
-  if (card.kind === 'story' || card.kind === 'ask') return <><div className="loop-tags">{card.tags?.map((tag) => <span key={tag}>{tag}</span>)}</div><p className="loop-display"><DisplayText value={card.display} /></p>{card.kind === 'ask' && <div className="loop-options">{card.options.map((option) => <span key={option}>{option}</span>)}</div>}</>
+  if (card.kind === 'story' || card.kind === 'ask') return <><div className="loop-tags">{card.tags?.map((tag, index) => <span key={tag.t} className={`loop-tag loop-tag--${tag.s}${index === 0 ? ' loop-tag--fill' : ''}`}>{tag.t}</span>)}</div><p className="loop-display"><DisplayText value={card.display} /></p>{card.kind === 'ask' && <div className="loop-options">{card.options.map((option, index) => <button type="button" className="loop-opt" style={{ '--i': index }} key={option.t} onClick={(event) => { event.stopPropagation(); onOpen(4) }}><b>{option.t}</b><i>{option.p}</i></button>)}</div>}</>
   if (card.kind === 'work' || card.kind === 'team') return <>{card.image && <img className="loop-shot" src={card.image} alt="" loading="lazy" />}<div className="loop-veil" /><div className="loop-foot"><span className="loop-metric">{card.metric || 'Small on purpose'}</span><strong>{card.title}</strong><small>{card.meta || 'Ahead of Market · Phoenix'}</small></div></>
   if (card.kind === 'quote') return <><span className="loop-quote-mark">”</span><p className="loop-quote">{card.quote}</p><div className="loop-rule" /><small>{card.who}</small></>
   if (card.kind === 'service') return <><span className="loop-vertical">{card.service}</span><div className="loop-foot"><strong className="loop-wordmark">{card.service}</strong><h3>{card.headline}</h3><ul>{card.points.map((point) => <li key={point}>{point}</li>)}</ul></div></>
@@ -21,13 +21,13 @@ function CardContent({ card, onOpen }) {
   return <><div className="loop-foot loop-cta"><h3>{card.headline}</h3><p>{card.body}</p><span>Start here <ArrowRight size={15} /></span></div></>
 }
 
-function Card({ card, index, onOpen }) {
-  return <article className={`loop-card loop-card--${card.kind}`} data-index={index} style={{ '--card-tint': card.tint || '#e4e1d7' }}>
-    <button type="button" className="loop-card-button" onClick={() => onOpen(index)} aria-label={`Open ${card.title}`}>
+function Card({ card, index, active, onOpen }) {
+  return <article className={`loop-card loop-card--${card.kind}`} data-index={index} data-live={active ? '' : undefined} style={{ '--card-tint': card.tint || '#e4e1d7', '--hi-bg': card.hi || '#0c0c0c', '--hi-fg': card.hion || '#f5f4f0' }}>
+    <div className="loop-card-button" role="button" tabIndex={0} onClick={() => onOpen(index)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen(index) } }} aria-label={`Open ${card.title}`}>
       {card.step && <div className="loop-step"><b>{String(card.step).padStart(2, '0')}</b><span>{Array.from({ length: 5 }, (_, i) => <i key={i} className={i < card.step ? 'on' : ''} />)}</span><b>05</b></div>}
       <CardContent card={card} onOpen={onOpen} />
       <span className="loop-edge" /><span className="loop-open">Open</span>
-    </button>
+    </div>
   </article>
 }
 
@@ -52,6 +52,7 @@ function ProjectOverlay({ card, onClose, onBrief }) {
 export default function AOMStudioHome() {
   const railRef = useRef(null)
   const cardRefs = useRef([])
+  const ambientRefs = useRef([])
   const motion = useRef({ x: 0, velocity: DRIFT, target: null, drag: null, active: -1, total: 0, positions: [], widths: [], gap: 30 })
   const [active, setActive] = useState(0)
   const [selected, setSelected] = useState(null)
@@ -93,8 +94,8 @@ export default function AOMStudioHome() {
     }
     const onWheel = (event) => { if (selected) return; event.preventDefault(); state.target = null; const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY; state.velocity = Math.max(-70, Math.min(70, state.velocity + delta * .09)) }
     const rail = railRef.current
-    const onDown = (event) => { if (event.button !== 0) return; rail.setPointerCapture(event.pointerId); state.target = null; state.drag = { start: event.clientX, lastX: state.x, moved: 0 } }
-    const onMove = (event) => { if (!state.drag) return; const delta = event.clientX - state.drag.start; state.drag.moved = Math.max(state.drag.moved, Math.abs(delta)); state.x = state.drag.start ? state.x : state.x; state.x = (state.drag.origin ?? (state.drag.origin = state.x)) - delta }
+    const onDown = (event) => { if (event.button !== 0) return; rail.setPointerCapture(event.pointerId); state.target = null; state.drag = { start: event.clientX, origin: state.x, lastX: state.x, moved: 0 } }
+    const onMove = (event) => { if (!state.drag) return; const delta = event.clientX - state.drag.start; state.drag.moved = Math.max(state.drag.moved, Math.abs(delta)); state.x = state.drag.origin - delta }
     const onUp = (event) => { if (!state.drag) return; const wasClick = state.drag.moved < 6; const card = event.target.closest?.('.loop-card'); const index = card ? Number(card.dataset.index) : -1; state.drag = null; if (wasClick && index >= 0) { if (index === state.active) setSelected(loopCards[index]); else state.target = state.x + wrap(state.positions[index] - state.x) } }
     measure(); render(); state.raf = requestAnimationFrame(frame); window.addEventListener('resize', measure); window.addEventListener('wheel', onWheel, { passive: false }); rail.addEventListener('pointerdown', onDown); rail.addEventListener('pointermove', onMove); rail.addEventListener('pointerup', onUp); rail.addEventListener('pointercancel', onUp)
     const onKey = (event) => { if (selected) return; if (event.key === 'ArrowRight') state.target = state.x + wrap(state.positions[(state.active + 1) % loopCards.length] - state.x); if (event.key === 'ArrowLeft') state.target = state.x + wrap(state.positions[(state.active - 1 + loopCards.length) % loopCards.length] - state.x); if (event.key === 'Enter') setSelected(loopCards[state.active]) }
@@ -103,12 +104,21 @@ export default function AOMStudioHome() {
   }, [selected])
 
   useEffect(() => { document.title = 'Ahead of Market — We make companies impossible to ignore' }, [])
+  useEffect(() => {
+    const next = ambientRefs.current[active % 2]
+    const previous = ambientRefs.current[(active + 1) % 2]
+    const card = loopCards[active]
+    if (!next || !card) return
+    next.style.backgroundImage = `radial-gradient(120% 90% at 50% 42%, ${card.tint || '#edeae2'}66 0%, ${card.tint || '#edeae2'}1c 44%, transparent 74%), linear-gradient(180deg, rgba(245,244,240,.42), rgba(245,244,240,.9))`
+    next.dataset.on = ''
+    previous?.removeAttribute('data-on')
+  }, [active])
   const travelToKind = (kind) => { const target = loopCards.findIndex((card) => kind.includes(card.kind)); if (target >= 0) { const state = motion.current; state.target = state.x + (((state.positions[target] || 0) - state.x + state.total / 2) % state.total - state.total / 2) } }
   const openBrief = () => { setSelected(null); setBriefOpen(true) }
-  return <div className="aom-loop-site"><div className="loop-ambient" /><div className="loop-stage" ref={railRef}>
+  return <div className="aom-loop-site"><div className="loop-ambient"><div className="loop-ambient-layer" ref={(element) => { ambientRefs.current[0] = element }} /><div className="loop-ambient-layer" ref={(element) => { ambientRefs.current[1] = element }} /></div><div className="loop-stage" ref={railRef}>
     <header className="loop-bar"><a href="/" className="loop-brand"><BrandMark kind="mono" color="currentColor" style={{ width: 20, height: 20 }} /> Ahead of Market</a><span className="loop-place">Phoenix, AZ · Studio</span><span className="loop-label">Marketing site · endless loop</span></header>
     <p className="loop-claim">We make companies impossible to ignore</p>
-    <div className="loop-rail">{loopCards.map((card, index) => <div key={`${card.title}-${index}`} ref={(element) => { cardRefs.current[index] = element }} className="loop-card-shell"><Card card={card} index={index} onOpen={(cardIndex) => { if (cardIndex === active) setSelected(loopCards[cardIndex]); else motion.current.target = motion.current.x + (((motion.current.positions[cardIndex] || 0) - motion.current.x + motion.current.total / 2) % motion.current.total - motion.current.total / 2) }} /></div>)}</div>
+    <div className="loop-rail">{loopCards.map((card, index) => <div key={`${card.title}-${index}`} ref={(element) => { cardRefs.current[index] = element }} className="loop-card-shell"><Card card={card} index={index} active={index === active} onOpen={(cardIndex) => { if (cardIndex === active) setSelected(loopCards[cardIndex]); else motion.current.target = motion.current.x + (((motion.current.positions[cardIndex] || 0) - motion.current.x + motion.current.total / 2) % motion.current.total - motion.current.total / 2) }} /></div>)}</div>
     <footer className="loop-footbar"><span className="loop-museum-label"><i>{loopCards[active]?.label} · </i><b>{loopCards[active]?.title}</b></span><span className="loop-hint">Drag or scroll</span><span className="loop-ticks">{loopCards.map((card, index) => <button key={card.title} type="button" className={index === active ? 'on' : ''} onClick={() => { motion.current.target = motion.current.x + (((motion.current.positions[index] || 0) - motion.current.x + motion.current.total / 2) % motion.current.total - motion.current.total / 2) }} aria-label={`Go to ${card.title}`} />)}</span></footer>
   </div><nav className="loop-dock"><button className="loop-dock-mark" type="button" onClick={() => travelToKind(['story'])} aria-label="Ahead of Market home"><BrandMark kind="mono" color="white" style={{ width: 18, height: 18 }} /></button><button type="button" onClick={() => travelToKind(['work'])}>Our Work</button><button type="button" onClick={() => travelToKind(['story', 'service', 'team'])}>Our Studio</button><button type="button" className="solid" onClick={() => { travelToKind(['cta']); setTimeout(openBrief, 450) }}>Work with us</button></nav><ProjectOverlay card={selected} onClose={() => setSelected(null)} onBrief={openBrief} /><BriefModal isOpen={briefOpen} onClose={() => setBriefOpen(false)} /></div>
 }
