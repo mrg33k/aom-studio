@@ -46,6 +46,6 @@ Moved the mobile card 05 headline above its four option rows so the question rem
 
 ### R6 — Isolate the slider preview
 
-**Status:** implementation verified locally; production publish pending
+**Status:** shipped and verified on canonical production
 
-Restored the previous `HomeR6Baby` experience at `/` and moved the endless-loop build to `/slider` while it continues through polish. The slider’s own brand link stays on `/slider`; focused tests and production build pass.
+Restored the previous `HomeR6Baby` experience at `/` and moved the endless-loop build to `/slider` while it continues through polish. The slider’s own brand link stays on `/slider`; focused tests, production build, and canonical browser checks for both `/` and `/slider` pass.

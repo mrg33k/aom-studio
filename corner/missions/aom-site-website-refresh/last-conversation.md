@@ -22,4 +22,4 @@ Live inspection showed the “How can we help you?” headline was being covered
 
 ## 2026-08-28 — Slider preview isolation
 
-Patrik asked to keep the prior site live until the endless-loop build is ready. Restored `HomeR6Baby` at `/`, moved the loop to `/slider`, and kept the slider brand link within the preview route. Focused tests and production build pass. Production publish is pending.
+Patrik asked to keep the prior site live until the endless-loop build is ready. Restored `HomeR6Baby` at `/`, moved the loop to `/slider`, and kept the slider brand link within the preview route. Focused tests, production build, and canonical browser checks for both routes pass.
