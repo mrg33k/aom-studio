@@ -18,4 +18,4 @@ Patrik flagged that story titles sat too low and were being crossed by tags. Cha
 
 ## 2026-08-28 — Card 05 mobile readability pass
 
-Live inspection showed the “How can we help you?” headline was being covered by the first option row on mobile. Added a dedicated mobile position above the four-option stack, rechecked card 05 and the story labels at 390px, and reran focused tests/build. Production publish is pending.
+Live inspection showed the “How can we help you?” headline was being covered by the first option row on mobile. Added a dedicated mobile position above the four-option stack, rechecked card 05 and the story labels at 390px, and reran focused tests/build. Published the exact commit to production and confirmed the canonical domain returns 200.

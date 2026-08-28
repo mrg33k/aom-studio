@@ -40,6 +40,6 @@ Restored the handoff’s centered headline flow for story cards and kept the ask
 
 ### R5 — Keep mobile ask card readable
 
-**Status:** implementation verified locally; production publish pending
+**Status:** shipped and verified on canonical production
 
-Moved the mobile card 05 headline above its four option rows so the question remains fully visible. Verified card 05 and the “How it works” story card in live browser checks at 390px, then reran the focused homepage tests and production build.
+Moved the mobile card 05 headline above its four option rows so the question remains fully visible. Verified card 05 and the “How it works” story card in live browser checks at 390px, then reran the focused homepage tests and production build. Published the exact commit to production and confirmed the canonical domain returns 200.
