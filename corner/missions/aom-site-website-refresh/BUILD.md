@@ -22,6 +22,6 @@ Implemented:
 
 ### R2 — Correct the homepage to the endless-loop handoff
 
-**Status:** implementation complete; production publish in progress
+**Status:** shipped and verified on canonical production
 
-Patrik clarified that the intended handoff is the “Marketing site — endless loop” concept, not a conventional editorial homepage. Replaced the R1 surface with the handoff model: warm-white one-viewport stage, obsidian monochrome cards, automatic drift, wheel and pointer-drag inertia, wraparound positioning, museum label/ticks, teleport dock navigation, and card detail overlays. Focused tests, production build, and browser checks at 390px and 1440px pass.
+Patrik clarified that the intended handoff is the “Marketing site — endless loop” concept, not a conventional editorial homepage. Replaced the R1 surface with the handoff model: warm-white one-viewport stage, obsidian monochrome cards, automatic drift, wheel and pointer-drag inertia, wraparound positioning, museum label/ticks, teleport dock navigation, and card detail overlays. Focused tests, production build, and browser checks at 390px and 1440px pass. Published the corrected release and confirmed its lazy homepage chunk is served at `https://aheadofmarket.com/`.
