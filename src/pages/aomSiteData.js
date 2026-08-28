@@ -1,0 +1,62 @@
+export const navigationItems = [
+  { label: 'Our Work', target: 'work' },
+  { label: 'Our Studio', target: 'studio' },
+  { label: 'Work with us', target: 'contact', solid: true },
+]
+
+export const portfolioCards = [
+  {
+    id: 'ambition',
+    eyebrow: 'Brand system · 2025',
+    title: 'Ambition Mechanical',
+    category: 'Positioning, identity, and a digital home for the next generation of trades.',
+    image: '/home2026/evidence-01.jpg',
+    href: '/work/ambition-mechanical',
+    tone: 'light',
+  },
+  {
+    id: 'space-rising',
+    eyebrow: 'Campaign · 2025',
+    title: 'Space Rising',
+    category: 'A launch campaign for people building what comes next.',
+    image: '/space-congress/img/hero-launch.jpg',
+    href: '/work/space-rising',
+    tone: 'dark',
+  },
+  {
+    id: 'included-health',
+    eyebrow: 'Story · 2024',
+    title: 'Included Health',
+    category: 'A human story, built to move at the speed of trust.',
+    image: '/home2026/evidence-03.jpg',
+    href: '/work/included-health',
+    tone: 'dark',
+  },
+  {
+    id: 'isa-energy',
+    eyebrow: 'Identity · 2024',
+    title: 'ISA Energy',
+    category: 'Making an essential service feel impossible to ignore.',
+    image: '/home2026/evidence-02.jpg',
+    href: '/work/isa-energy',
+    tone: 'light',
+  },
+  {
+    id: 'virtu',
+    eyebrow: 'Hospitality · 2024',
+    title: 'Virtu Hospitality',
+    category: 'A point of view for places people remember.',
+    image: '/caliente/assets/proj-phx-museum.jpg',
+    href: '/work/virtu-hospitality',
+    tone: 'dark',
+  },
+  {
+    id: 'wolfpack',
+    eyebrow: 'Growth · 2026',
+    title: 'Wolfpack Plumbing',
+    category: 'The marketing department for a company that did not have one.',
+    image: '/wolfpack-site/assets/work-1.jpg',
+    href: '/work/construction',
+    tone: 'light',
+  },
+]
