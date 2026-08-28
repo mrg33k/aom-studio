@@ -31,7 +31,7 @@ function Card({ card, index, active, onOpen }) {
   </article>
 }
 
-function ProjectOverlay({ card, onClose, onBrief }) {
+function ProjectOverlay({ card, onClose, onBrief, onNext }) {
   useEffect(() => {
     if (!card) return undefined
     const onKey = (event) => event.key === 'Escape' && onClose()
@@ -41,10 +41,12 @@ function ProjectOverlay({ card, onClose, onBrief }) {
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = previous }
   }, [card, onClose])
   if (!card) return null
+  const index = loopCards.indexOf(card)
+  const next = loopCards[(index + 1) % loopCards.length]
   return <div className="loop-overlay" role="dialog" aria-modal="true" aria-labelledby="loop-overlay-title">
     <button type="button" className="loop-back" onClick={onClose}><ArrowRight size={15} /> Back</button>
     <div className="loop-overlay-hero">{card.image && <img src={card.image} alt="" />}<div className="loop-overlay-wash" /><div><small>{card.label} · Ahead of Market</small><h2 id="loop-overlay-title">{card.kind === 'quote' ? `“${card.quote}”` : card.headline || card.title}</h2></div></div>
-    <div className="loop-overlay-body"><p className="loop-overlay-lede">{card.body}</p>{card.metric && <div className="loop-facts"><span>Result <b>{card.metric}</b></span><span>Format <b>{card.meta}</b></span></div>}<p>We make the thing people notice first, then build the system that keeps it moving.</p>{card.kind === 'cta' ? <button type="button" className="loop-overlay-cta" onClick={onBrief}>Start a brief</button> : <button type="button" className="loop-overlay-next" onClick={() => onClose()}>Back to the loop <ArrowRight size={15} /></button>}</div>
+    <div className="loop-overlay-body"><p className="loop-overlay-lede">{card.body}</p>{card.metric && <div className="loop-facts"><span>Result <b>{card.metric}</b></span><span>Format <b>{card.meta}</b></span></div>}{card.points && <ul className="loop-overlay-points">{card.points.map((point) => <li key={point}>{point}</li>)}</ul>}<p>We make the thing people notice first, then build the system that keeps it moving.</p>{card.kind === 'cta' ? <button type="button" className="loop-overlay-cta" onClick={onBrief}>Start a brief</button> : <button type="button" className="loop-overlay-next" onClick={() => onNext(next)}>Next · {next.title} <ArrowRight size={15} /></button>}<button type="button" className="loop-overlay-back-link" onClick={onClose}>Back to the loop</button></div>
     <button type="button" className="loop-overlay-x" onClick={onClose} aria-label="Close project details"><X size={18} /></button>
   </div>
 }
@@ -116,9 +118,9 @@ export default function AOMStudioHome() {
   const travelToKind = (kind) => { const target = loopCards.findIndex((card) => kind.includes(card.kind)); if (target >= 0) { const state = motion.current; state.target = state.x + (((state.positions[target] || 0) - state.x + state.total / 2) % state.total - state.total / 2) } }
   const openBrief = () => { setSelected(null); setBriefOpen(true) }
   return <div className="aom-loop-site"><div className="loop-ambient"><div className="loop-ambient-layer" ref={(element) => { ambientRefs.current[0] = element }} /><div className="loop-ambient-layer" ref={(element) => { ambientRefs.current[1] = element }} /></div><div className="loop-stage" ref={railRef}>
-    <header className="loop-bar"><a href="/" className="loop-brand"><BrandMark kind="mono" color="currentColor" style={{ width: 20, height: 20 }} /> Ahead of Market</a><span className="loop-place">Phoenix, AZ · Studio</span><span className="loop-label">Marketing site · endless loop</span></header>
+    <header className="loop-bar"><a href="/slider" className="loop-brand"><BrandMark kind="mono" color="currentColor" style={{ width: 20, height: 20 }} /> Ahead of Market</a><span className="loop-place">Phoenix, AZ · Studio</span><span className="loop-label">Marketing site · endless loop</span></header>
     <p className="loop-claim">We make companies impossible to ignore</p>
     <div className="loop-rail">{loopCards.map((card, index) => <div key={`${card.title}-${index}`} ref={(element) => { cardRefs.current[index] = element }} className="loop-card-shell"><Card card={card} index={index} active={index === active} onOpen={(cardIndex) => { if (cardIndex === active) setSelected(loopCards[cardIndex]); else motion.current.target = motion.current.x + (((motion.current.positions[cardIndex] || 0) - motion.current.x + motion.current.total / 2) % motion.current.total - motion.current.total / 2) }} /></div>)}</div>
     <footer className="loop-footbar"><span className="loop-museum-label"><i>{loopCards[active]?.label} · </i><b>{loopCards[active]?.title}</b></span><span className="loop-hint">Drag or scroll</span><span className="loop-ticks">{loopCards.map((card, index) => <button key={card.title} type="button" className={index === active ? 'on' : ''} onClick={() => { motion.current.target = motion.current.x + (((motion.current.positions[index] || 0) - motion.current.x + motion.current.total / 2) % motion.current.total - motion.current.total / 2) }} aria-label={`Go to ${card.title}`} />)}</span></footer>
-  </div><nav className="loop-dock"><button className="loop-dock-mark" type="button" onClick={() => travelToKind(['story'])} aria-label="Ahead of Market home"><BrandMark kind="mono" color="white" style={{ width: 18, height: 18 }} /></button><button type="button" onClick={() => travelToKind(['work'])}>Our Work</button><button type="button" onClick={() => travelToKind(['story', 'service', 'team'])}>Our Studio</button><button type="button" className="solid" onClick={() => { travelToKind(['cta']); setTimeout(openBrief, 450) }}>Work with us</button></nav><ProjectOverlay card={selected} onClose={() => setSelected(null)} onBrief={openBrief} /><BriefModal isOpen={briefOpen} onClose={() => setBriefOpen(false)} /></div>
+  </div><nav className="loop-dock"><button className="loop-dock-mark" type="button" onClick={() => travelToKind(['story'])} aria-label="Ahead of Market home"><BrandMark kind="mono" color="white" style={{ width: 28, height: 28 }} /></button><button type="button" onClick={() => travelToKind(['work'])}>Our Work</button><button type="button" onClick={() => travelToKind(['story', 'service', 'team'])}>Our Studio</button><button type="button" className="solid" onClick={() => { const target = loopCards.findIndex((card) => card.kind === 'cta'); travelToKind(['cta']); setTimeout(() => setSelected(loopCards[target]), 450) }}>Work with us</button></nav><ProjectOverlay card={selected} onClose={() => setSelected(null)} onBrief={openBrief} onNext={(next) => setSelected(next)} /><BriefModal isOpen={briefOpen} onClose={() => setBriefOpen(false)} /></div>
 }

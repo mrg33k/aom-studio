@@ -43,3 +43,9 @@ Restored the handoff’s centered headline flow for story cards and kept the ask
 **Status:** shipped and verified on canonical production
 
 Moved the mobile card 05 headline above its four option rows so the question remains fully visible. Verified card 05 and the “How it works” story card in live browser checks at 390px, then reran the focused homepage tests and production build. Published the exact commit to production and confirmed the canonical domain returns 200.
+
+### R6 — Isolate the slider preview
+
+**Status:** implementation verified locally; production publish pending
+
+Restored the previous `HomeR6Baby` experience at `/` and moved the endless-loop build to `/slider` while it continues through polish. The slider’s own brand link stays on `/slider`; focused tests and production build pass.

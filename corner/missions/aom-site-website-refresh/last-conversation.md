@@ -19,3 +19,7 @@ Patrik flagged that story titles sat too low and were being crossed by tags. Cha
 ## 2026-08-28 — Card 05 mobile readability pass
 
 Live inspection showed the “How can we help you?” headline was being covered by the first option row on mobile. Added a dedicated mobile position above the four-option stack, rechecked card 05 and the story labels at 390px, and reran focused tests/build. Published the exact commit to production and confirmed the canonical domain returns 200.
+
+## 2026-08-28 — Slider preview isolation
+
+Patrik asked to keep the prior site live until the endless-loop build is ready. Restored `HomeR6Baby` at `/`, moved the loop to `/slider`, and kept the slider brand link within the preview route. Focused tests and production build pass. Production publish is pending.
