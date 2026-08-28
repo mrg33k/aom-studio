@@ -1,155 +1,114 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, ArrowUpRight, Menu, X } from 'lucide-react'
+import { ArrowRight, X } from 'lucide-react'
 import BrandMark from '../components/home/BrandMark'
 import BriefModal from '../components/BriefModal'
-import { navigationItems, portfolioCards } from './aomSiteData'
+import { loopCards } from './aomSiteData'
 import './aomStudioHome.css'
 
-function useBodyLock(active) {
-  useEffect(() => {
-    if (!active) return undefined
-    const previous = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = previous }
-  }, [active])
+const DRIFT = 0.38
+const esc = (value) => String(value).replace(/[&<>]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[character]))
+function DisplayText({ value }) {
+  const parts = String(value).split(/(\[\[.*?\]\]|\{\{.*?\}\})/g).filter(Boolean)
+  return <>{parts.map((part, index) => part.startsWith('[[') ? <mark key={index}>{part.slice(2, -2)}</mark> : part.startsWith('{{') ? <u key={index}>{part.slice(2, -2)}</u> : part)}</>
 }
 
-function SiteHeader({ onBrief }) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  return (
-    <header className="aom-studio-header">
-      <a className="aom-studio-brand" href="/" aria-label="Ahead of Market home">
-        <BrandMark kind="mono" color="currentColor" style={{ width: 24, height: 24 }} />
-        <span>Ahead of Market</span>
-      </a>
-      <span className="aom-studio-location">Phoenix, AZ · Studio</span>
-      <button className="aom-studio-menu-button" type="button" onClick={() => setMenuOpen(true)} aria-label="Open site menu">
-        <Menu size={18} /> <span>Menu</span>
-      </button>
-      {menuOpen && (
-        <div className="aom-studio-menu" role="dialog" aria-modal="true" aria-label="Site menu">
-          <div className="aom-studio-menu-top">
-            <span className="aom-studio-menu-kicker">Ahead of Market</span>
-            <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close site menu"><X size={22} /></button>
-          </div>
-          <nav>
-            <a href="#work" onClick={() => setMenuOpen(false)}>Our work <ArrowRight size={18} /></a>
-            <a href="#studio" onClick={() => setMenuOpen(false)}>Our studio <ArrowRight size={18} /></a>
-            <button type="button" onClick={() => { setMenuOpen(false); onBrief() }}>Work with us <ArrowUpRight size={18} /></button>
-          </nav>
-          <p>Brand, web, and film for companies ready to be seen differently.</p>
-        </div>
-      )}
-    </header>
-  )
+function CardContent({ card, onOpen }) {
+  if (card.kind === 'story' || card.kind === 'ask') return <><div className="loop-tags">{card.tags?.map((tag) => <span key={tag}>{tag}</span>)}</div><p className="loop-display"><DisplayText value={card.display} /></p>{card.kind === 'ask' && <div className="loop-options">{card.options.map((option) => <span key={option}>{option}</span>)}</div>}</>
+  if (card.kind === 'work' || card.kind === 'team') return <>{card.image && <img className="loop-shot" src={card.image} alt="" loading="lazy" />}<div className="loop-veil" /><div className="loop-foot"><span className="loop-metric">{card.metric || 'Small on purpose'}</span><strong>{card.title}</strong><small>{card.meta || 'Ahead of Market · Phoenix'}</small></div></>
+  if (card.kind === 'quote') return <><span className="loop-quote-mark">”</span><p className="loop-quote">{card.quote}</p><div className="loop-rule" /><small>{card.who}</small></>
+  if (card.kind === 'service') return <><span className="loop-vertical">{card.service}</span><div className="loop-foot"><strong className="loop-wordmark">{card.service}</strong><h3>{card.headline}</h3><ul>{card.points.map((point) => <li key={point}>{point}</li>)}</ul></div></>
+  if (card.kind === 'post') return <><div className="loop-foot loop-post"><small>{card.meta}</small><h3>{card.headline}</h3></div></>
+  return <><div className="loop-foot loop-cta"><h3>{card.headline}</h3><p>{card.body}</p><span>Start here <ArrowRight size={15} /></span></div></>
 }
 
-function WorkRail({ onOpen }) {
-  const railRef = useRef(null)
-  const [active, setActive] = useState(0)
-
-  const move = (direction) => {
-    const next = Math.max(0, Math.min(portfolioCards.length - 1, active + direction))
-    setActive(next)
-    railRef.current?.children[next]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-  }
-
-  return (
-    <section id="work" className="aom-studio-work" aria-labelledby="work-heading">
-      <div className="aom-studio-section-head">
-        <div>
-          <p className="aom-studio-kicker">Selected work · 01—06</p>
-          <h2 id="work-heading">The work<br /><em>speaks first.</em></h2>
-        </div>
-        <div className="aom-studio-rail-controls">
-          <button type="button" onClick={() => move(-1)} disabled={active === 0} aria-label="Previous project"><ArrowLeft size={18} /></button>
-          <span>{String(active + 1).padStart(2, '0')} / {String(portfolioCards.length).padStart(2, '0')}</span>
-          <button type="button" onClick={() => move(1)} disabled={active === portfolioCards.length - 1} aria-label="Next project"><ArrowRight size={18} /></button>
-        </div>
-      </div>
-      <div className="aom-studio-rail" ref={railRef} onScroll={(event) => {
-        const cardWidth = event.currentTarget.firstElementChild?.offsetWidth || 1
-        setActive(Math.min(portfolioCards.length - 1, Math.round(event.currentTarget.scrollLeft / cardWidth)))
-      }}>
-        {portfolioCards.map((card, index) => (
-          <article className={`aom-studio-card aom-studio-card--${card.tone}`} key={card.id}>
-            <button type="button" className="aom-studio-card-hit" onClick={() => onOpen(card)} aria-label={`Open ${card.title} project details`}>
-              <span className="aom-studio-card-image"><img src={card.image} alt="" loading={index > 1 ? 'lazy' : 'eager'} /></span>
-              <span className="aom-studio-card-copy">
-                <span className="aom-studio-kicker">{card.eyebrow}</span>
-                <strong>{card.title}</strong>
-                <span>{card.category}</span>
-                <span className="aom-studio-card-arrow"><ArrowUpRight size={18} /></span>
-              </span>
-            </button>
-          </article>
-        ))}
-      </div>
-      <p className="aom-studio-scroll-hint">Swipe or use the arrows to explore</p>
-    </section>
-  )
+function Card({ card, index, onOpen }) {
+  return <article className={`loop-card loop-card--${card.kind}`} data-index={index} style={{ '--card-tint': card.tint || '#e4e1d7' }}>
+    <button type="button" className="loop-card-button" onClick={() => onOpen(index)} aria-label={`Open ${card.title}`}>
+      {card.step && <div className="loop-step"><b>{String(card.step).padStart(2, '0')}</b><span>{Array.from({ length: 5 }, (_, i) => <i key={i} className={i < card.step ? 'on' : ''} />)}</span><b>05</b></div>}
+      <CardContent card={card} onOpen={onOpen} />
+      <span className="loop-edge" /><span className="loop-open">Open</span>
+    </button>
+  </article>
 }
 
 function ProjectOverlay({ card, onClose, onBrief }) {
-  useBodyLock(Boolean(card))
   useEffect(() => {
     if (!card) return undefined
-    const closeOnEscape = (event) => event.key === 'Escape' && onClose()
-    window.addEventListener('keydown', closeOnEscape)
-    return () => window.removeEventListener('keydown', closeOnEscape)
+    const onKey = (event) => event.key === 'Escape' && onClose()
+    window.addEventListener('keydown', onKey)
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = previous }
   }, [card, onClose])
   if (!card) return null
-  return (
-    <div className="aom-studio-overlay" role="dialog" aria-modal="true" aria-labelledby="project-title">
-      <button className="aom-studio-overlay-close" type="button" onClick={onClose}><ArrowLeft size={17} /> Back to work</button>
-      <div className="aom-studio-overlay-hero">
-        <img src={card.image} alt="" />
-        <div />
-        <div className="aom-studio-overlay-title"><span className="aom-studio-kicker">{card.eyebrow}</span><h2 id="project-title">{card.title}</h2></div>
-      </div>
-      <div className="aom-studio-overlay-body">
-        <p className="aom-studio-overlay-lede">{card.category}</p>
-        <div className="aom-studio-overlay-facts"><span><small>Scope</small>Brand + digital</span><span><small>Based in</small>Phoenix, Arizona</span></div>
-        <p>We make the thing people notice first. Then we build the system that makes noticing you inevitable.</p>
-        <a className="aom-studio-button" href={card.href}>View project <ArrowUpRight size={17} /></a>
-        <button className="aom-studio-text-button" type="button" onClick={onBrief}>Start a conversation <ArrowRight size={17} /></button>
-      </div>
-    </div>
-  )
+  return <div className="loop-overlay" role="dialog" aria-modal="true" aria-labelledby="loop-overlay-title">
+    <button type="button" className="loop-back" onClick={onClose}><ArrowRight size={15} /> Back</button>
+    <div className="loop-overlay-hero">{card.image && <img src={card.image} alt="" />}<div className="loop-overlay-wash" /><div><small>{card.label} · Ahead of Market</small><h2 id="loop-overlay-title">{card.kind === 'quote' ? `“${card.quote}”` : card.headline || card.title}</h2></div></div>
+    <div className="loop-overlay-body"><p className="loop-overlay-lede">{card.body}</p>{card.metric && <div className="loop-facts"><span>Result <b>{card.metric}</b></span><span>Format <b>{card.meta}</b></span></div>}<p>We make the thing people notice first, then build the system that keeps it moving.</p>{card.kind === 'cta' ? <button type="button" className="loop-overlay-cta" onClick={onBrief}>Start a brief</button> : <button type="button" className="loop-overlay-next" onClick={() => onClose()}>Back to the loop <ArrowRight size={15} /></button>}</div>
+    <button type="button" className="loop-overlay-x" onClick={onClose} aria-label="Close project details"><X size={18} /></button>
+  </div>
 }
 
 export default function AOMStudioHome() {
-  const [selectedCard, setSelectedCard] = useState(null)
+  const railRef = useRef(null)
+  const cardRefs = useRef([])
+  const motion = useRef({ x: 0, velocity: DRIFT, target: null, drag: null, active: -1, total: 0, positions: [], widths: [], gap: 30 })
+  const [active, setActive] = useState(0)
+  const [selected, setSelected] = useState(null)
   const [briefOpen, setBriefOpen] = useState(false)
-  const openBrief = () => { setSelectedCard(null); setBriefOpen(true) }
 
   useEffect(() => {
-    document.title = 'Ahead of Market — We make companies impossible to ignore'
-    return () => { document.title = 'Ahead of Market' }
-  }, [])
+    const state = motion.current
+    const measure = () => {
+      const height = Math.max(250, Math.min(460, (railRef.current?.clientHeight || 480) - 30))
+      const base = Math.round(height * .72)
+      state.gap = window.innerWidth < 760 ? 18 : Math.round(30 * height / 428)
+      state.widths = loopCards.map((card) => Math.round(base * ({ story: 1.18, ask: 1.24, work: 1.34, quote: 1.12, service: .84, team: 1, post: 1.06, cta: .9 }[card.kind] || 1)))
+      let total = 0
+      state.positions = state.widths.map((width) => { const position = total + width / 2; total += width + state.gap; return position })
+      state.total = total
+      cardRefs.current.forEach((element, index) => { if (!element) return; element.style.width = `${state.widths[index]}px`; element.style.height = `${height}px`; element.style.marginTop = `${-height / 2}px`; element.style.marginLeft = `${-state.widths[index] / 2}px` })
+    }
+    const wrap = (distance) => { if (!state.total) return distance; const normalized = ((distance % state.total) + state.total) % state.total; return normalized > state.total / 2 ? normalized - state.total : normalized }
+    const setCurrent = (index) => { if (state.active === index) return; state.active = index; setActive(index) }
+    const render = () => {
+      const half = window.innerWidth / 2 + (state.widths[0] || 300)
+      let closest = 0; let best = Infinity
+      cardRefs.current.forEach((element, index) => {
+        if (!element) return
+        const distance = wrap(state.positions[index] - state.x); const amount = Math.abs(distance)
+        if (amount < best) { best = amount; closest = index }
+        if (amount > half) { element.style.visibility = 'hidden'; return }
+        const normalized = distance / ((state.widths[0] || 300) + state.gap)
+        const fade = Math.min(1, Math.max(0, (amount - ((state.widths[0] || 300) + state.gap) * .34) / (((state.widths[0] || 300) + state.gap) * 2)))
+        element.style.visibility = 'visible'; element.style.opacity = String(1 - fade * .7); element.style.zIndex = String(100 - Math.round(amount)); element.style.transform = `translate3d(${distance}px,${fade * 14}px,${-fade * 90}px) rotateY(${-normalized * 4.2}deg) scale(${1 - fade * .07})`
+      })
+      setCurrent(closest)
+    }
+    const frame = () => {
+      if (state.drag) { state.velocity = state.velocity * .6 + (state.x - state.drag.lastX) * .4; state.drag.lastX = state.x }
+      else if (state.target !== null) { const distance = wrap(state.target - state.x); if (Math.abs(distance) < .4) { state.x = state.target; state.target = null; state.velocity = DRIFT } else { state.x += distance * .085; state.velocity = distance * .085 } }
+      else { state.x += state.velocity; state.velocity += (DRIFT - state.velocity) * .033 }
+      render(); state.raf = requestAnimationFrame(frame)
+    }
+    const onWheel = (event) => { if (selected) return; event.preventDefault(); state.target = null; const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY; state.velocity = Math.max(-70, Math.min(70, state.velocity + delta * .09)) }
+    const rail = railRef.current
+    const onDown = (event) => { if (event.button !== 0) return; rail.setPointerCapture(event.pointerId); state.target = null; state.drag = { start: event.clientX, lastX: state.x, moved: 0 } }
+    const onMove = (event) => { if (!state.drag) return; const delta = event.clientX - state.drag.start; state.drag.moved = Math.max(state.drag.moved, Math.abs(delta)); state.x = state.drag.start ? state.x : state.x; state.x = (state.drag.origin ?? (state.drag.origin = state.x)) - delta }
+    const onUp = (event) => { if (!state.drag) return; const wasClick = state.drag.moved < 6; const card = event.target.closest?.('.loop-card'); const index = card ? Number(card.dataset.index) : -1; state.drag = null; if (wasClick && index >= 0) { if (index === state.active) setSelected(loopCards[index]); else state.target = state.x + wrap(state.positions[index] - state.x) } }
+    measure(); render(); state.raf = requestAnimationFrame(frame); window.addEventListener('resize', measure); window.addEventListener('wheel', onWheel, { passive: false }); rail.addEventListener('pointerdown', onDown); rail.addEventListener('pointermove', onMove); rail.addEventListener('pointerup', onUp); rail.addEventListener('pointercancel', onUp)
+    const onKey = (event) => { if (selected) return; if (event.key === 'ArrowRight') state.target = state.x + wrap(state.positions[(state.active + 1) % loopCards.length] - state.x); if (event.key === 'ArrowLeft') state.target = state.x + wrap(state.positions[(state.active - 1 + loopCards.length) % loopCards.length] - state.x); if (event.key === 'Enter') setSelected(loopCards[state.active]) }
+    window.addEventListener('keydown', onKey)
+    return () => { cancelAnimationFrame(state.raf); window.removeEventListener('resize', measure); window.removeEventListener('wheel', onWheel); window.removeEventListener('keydown', onKey); rail.removeEventListener('pointerdown', onDown); rail.removeEventListener('pointermove', onMove); rail.removeEventListener('pointerup', onUp); rail.removeEventListener('pointercancel', onUp) }
+  }, [selected])
 
-  return (
-    <div className="aom-studio-site">
-      <SiteHeader onBrief={openBrief} />
-      <main>
-        <section className="aom-studio-hero" aria-labelledby="hero-heading">
-          <p className="aom-studio-kicker">Independent creative studio · Phoenix, AZ</p>
-          <h1 id="hero-heading">We make companies <em>impossible to ignore.</em></h1>
-          <div className="aom-studio-hero-bottom"><p>Brand, web, and film for companies with somewhere to go.</p><a href="#work">See the work <ArrowDown /></a></div>
-        </section>
-        <WorkRail onOpen={setSelectedCard} />
-        <section id="studio" className="aom-studio-studio" aria-labelledby="studio-heading">
-          <p className="aom-studio-kicker">Our studio · 02</p>
-          <h2 id="studio-heading">You bring the ambition.<br /><em>We make it visible.</em></h2>
-          <div className="aom-studio-studio-grid"><p>Most companies do not need another vendor. They need a point of view, a sharper story, and someone who can carry it all the way through.</p><p>That is what Ahead of Market is built for. One senior team across the ideas, the images, and the places your audience meets you.</p></div>
-        </section>
-        <section className="aom-studio-cta"><p className="aom-studio-kicker">Have something worth seeing?</p><h2>Let’s make<br /><em>some noise.</em></h2><button className="aom-studio-button" type="button" onClick={openBrief}>Work with us <ArrowUpRight size={17} /></button></section>
-      </main>
-      <footer className="aom-studio-footer"><span>© Ahead of Market</span><span>Phoenix, Arizona</span><a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a></footer>
-      <ProjectOverlay card={selectedCard} onClose={() => setSelectedCard(null)} onBrief={openBrief} />
-      <BriefModal isOpen={briefOpen} onClose={() => setBriefOpen(false)} />
-    </div>
-  )
+  useEffect(() => { document.title = 'Ahead of Market — We make companies impossible to ignore' }, [])
+  const travelToKind = (kind) => { const target = loopCards.findIndex((card) => kind.includes(card.kind)); if (target >= 0) { const state = motion.current; state.target = state.x + (((state.positions[target] || 0) - state.x + state.total / 2) % state.total - state.total / 2) } }
+  const openBrief = () => { setSelected(null); setBriefOpen(true) }
+  return <div className="aom-loop-site"><div className="loop-ambient" /><div className="loop-stage" ref={railRef}>
+    <header className="loop-bar"><a href="/" className="loop-brand"><BrandMark kind="mono" color="currentColor" style={{ width: 20, height: 20 }} /> Ahead of Market</a><span className="loop-place">Phoenix, AZ · Studio</span><span className="loop-label">Marketing site · endless loop</span></header>
+    <p className="loop-claim">We make companies impossible to ignore</p>
+    <div className="loop-rail">{loopCards.map((card, index) => <div key={`${card.title}-${index}`} ref={(element) => { cardRefs.current[index] = element }} className="loop-card-shell"><Card card={card} index={index} onOpen={(cardIndex) => { if (cardIndex === active) setSelected(loopCards[cardIndex]); else motion.current.target = motion.current.x + (((motion.current.positions[cardIndex] || 0) - motion.current.x + motion.current.total / 2) % motion.current.total - motion.current.total / 2) }} /></div>)}</div>
+    <footer className="loop-footbar"><span className="loop-museum-label"><i>{loopCards[active]?.label} · </i><b>{loopCards[active]?.title}</b></span><span className="loop-hint">Drag or scroll</span><span className="loop-ticks">{loopCards.map((card, index) => <button key={card.title} type="button" className={index === active ? 'on' : ''} onClick={() => { motion.current.target = motion.current.x + (((motion.current.positions[index] || 0) - motion.current.x + motion.current.total / 2) % motion.current.total - motion.current.total / 2) }} aria-label={`Go to ${card.title}`} />)}</span></footer>
+  </div><nav className="loop-dock"><button className="loop-dock-mark" type="button" onClick={() => travelToKind(['story'])} aria-label="Ahead of Market home"><BrandMark kind="mono" color="white" style={{ width: 18, height: 18 }} /></button><button type="button" onClick={() => travelToKind(['work'])}>Our Work</button><button type="button" onClick={() => travelToKind(['story', 'service', 'team'])}>Our Studio</button><button type="button" className="solid" onClick={() => { travelToKind(['cta']); setTimeout(openBrief, 450) }}>Work with us</button></nav><ProjectOverlay card={selected} onClose={() => setSelected(null)} onBrief={openBrief} /><BriefModal isOpen={briefOpen} onClose={() => setBriefOpen(false)} /></div>
 }
-
-function ArrowDown() { return <ArrowRight size={17} className="aom-studio-arrow-down" /> }

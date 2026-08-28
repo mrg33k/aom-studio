@@ -19,3 +19,9 @@ Implemented:
 - Reused the existing `BriefModal` for all work-with-us CTAs.
 - Verified focused homepage test, production build, local asset resolution, zero horizontal overflow at 390px and 1440px, and mobile overlay dismissal.
 - Published the validated release to the configured `aom-studio` Vercel project and confirmed the new main bundle is served at `https://aheadofmarket.com/` and `https://www.aheadofmarket.com/`.
+
+### R2 — Correct the homepage to the endless-loop handoff
+
+**Status:** implementation complete; production publish in progress
+
+Patrik clarified that the intended handoff is the “Marketing site — endless loop” concept, not a conventional editorial homepage. Replaced the R1 surface with the handoff model: warm-white one-viewport stage, obsidian monochrome cards, automatic drift, wheel and pointer-drag inertia, wraparound positioning, museum label/ticks, teleport dock navigation, and card detail overlays. Focused tests, production build, and browser checks at 390px and 1440px pass.
