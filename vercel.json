@@ -19,6 +19,10 @@
   ],
   "rewrites": [
     {
+      "source": "/slider",
+      "destination": "/index.html"
+    },
+    {
       "source": "/embed",
       "destination": "/embed.html"
     },
