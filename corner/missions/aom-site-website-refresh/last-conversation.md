@@ -14,4 +14,4 @@ Patrik supplied a seven-point correction list and named the extracted loop hando
 
 ## 2026-08-28 — Headline positioning pass
 
-Patrik flagged that story titles sat too low and were being crossed by tags. Changed the story headline from a bottom offset to centered card flow, kept the ask title above its four-row option stack, and verified desktop/mobile screenshots plus focused tests and build. Production publish is pending.
+Patrik flagged that story titles sat too low and were being crossed by tags. Changed the story headline from a bottom offset to centered card flow, kept the ask title above its four-row option stack, and verified desktop/mobile screenshots plus focused tests and build. Published the exact commit to production and confirmed the canonical CSS contains the centered headline rule.

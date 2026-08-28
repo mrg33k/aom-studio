@@ -34,6 +34,6 @@ Ported the handoff’s exact visual rules into the React loop: white graph-paper
 
 ### R4 — Center loop headlines
 
-**Status:** implementation verified locally; production publish pending
+**Status:** shipped and verified on canonical production
 
-Restored the handoff’s centered headline flow for story cards and kept the ask-card headline independently positioned above its option stack. Verified the result at 390px and 2048px, with story headlines no longer pinned to the lower edge or crossed by corner tags.
+Restored the handoff’s centered headline flow for story cards and kept the ask-card headline independently positioned above its option stack. Verified the result at 390px and 2048px, with story headlines no longer pinned to the lower edge or crossed by corner tags. Published the exact commit to production and confirmed the canonical CSS contains the centered headline rule.
