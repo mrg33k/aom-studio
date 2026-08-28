@@ -37,3 +37,9 @@ Ported the handoff’s exact visual rules into the React loop: white graph-paper
 **Status:** shipped and verified on canonical production
 
 Restored the handoff’s centered headline flow for story cards and kept the ask-card headline independently positioned above its option stack. Verified the result at 390px and 2048px, with story headlines no longer pinned to the lower edge or crossed by corner tags. Published the exact commit to production and confirmed the canonical CSS contains the centered headline rule.
+
+### R5 — Keep mobile ask card readable
+
+**Status:** implementation verified locally; production publish pending
+
+Moved the mobile card 05 headline above its four option rows so the question remains fully visible. Verified card 05 and the “How it works” story card in live browser checks at 390px, then reran the focused homepage tests and production build.
