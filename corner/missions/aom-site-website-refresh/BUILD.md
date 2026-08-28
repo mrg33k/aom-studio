@@ -31,3 +31,9 @@ Patrik clarified that the intended handoff is the “Marketing site — endless 
 **Status:** shipped and verified on canonical production
 
 Ported the handoff’s exact visual rules into the React loop: white graph-paper story/ask grounds, fixed corner tag slots with one filled tag, background-size highlight wipe, staggered bordered option buttons, centered 1fr rail spacing, two-layer active-card ambience, obsidian CTA, and the `05 —— 05` step bar. Fixed pointer drag origin capture and verified the focused homepage tests, production build, and browser behavior at 390px and 1440px. Published the exact commit to the production Vercel project and verified the canonical `www.aheadofmarket.com` assets contain the new loop implementation.
+
+### R4 — Center loop headlines
+
+**Status:** implementation verified locally; production publish pending
+
+Restored the handoff’s centered headline flow for story cards and kept the ask-card headline independently positioned above its option stack. Verified the result at 390px and 2048px, with story headlines no longer pinned to the lower edge or crossed by corner tags.

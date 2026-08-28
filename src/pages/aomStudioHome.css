@@ -25,3 +25,8 @@
 .loop-card--cta{background:var(--ink);color:var(--paper)}
 .loop-card-button{outline:0}.loop-card-button:focus-visible{outline:3px solid #3d5bff;outline-offset:-5px}
 @media(max-width:760px){.loop-rail{margin-top:44px}.loop-card--story .loop-display{font-size:32px;left:24px;right:24px;bottom:150px}.loop-card--story .loop-tag--bl,.loop-card--story .loop-tag--br{bottom:8px}.loop-options{left:24px;right:24px}}
+
+/* Headlines belong to the card's center, not to a guessed bottom coordinate. */
+.loop-card--story .loop-display{top:50%;bottom:auto;transform:translateY(-50%);}
+.loop-card--ask .loop-display{top:31%;bottom:auto;transform:translateY(-50%);}
+@media(max-width:760px){.loop-card--story .loop-display{top:50%;bottom:auto;transform:translateY(-50%);}}
