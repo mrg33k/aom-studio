@@ -1,6 +1,71 @@
 {
  "days": [
   {
+   "date": "2026-08-29",
+   "items": [
+    {
+     "lane": "ai-tools",
+     "youtube_id": "t_rFyDjTKG8",
+     "title": "Mysterious Ox Alpha Model Goes Viral — Outperforms Fable and GPT-5.6 in Early Tests",
+     "channel": "AI Revolution",
+     "views": "200K",
+     "published": "2026-08-22",
+     "why": "A free anonymous model appeared on OpenRouter Aug 20 and hit 80% on DeepSWE, beating Claude (65%) and GPT-5.6 (52%). 221K users processed 26 trillion tokens in 4 days before it was revealed as Zhipu's GLM-5.3-Flash. AOM runs exclusively on Claude Code. Knowing what a free competitor does well helps us route non-critical work smarter.",
+     "action_prompt": "Sign up for OpenRouter and test GLM-5.3-Flash (formerly Ox Alpha) on one real client task. Try a front-end component build. Time it, grade the output quality, compare against Claude Code's output on the same task. Report: which model was better, by how much, and does the free pricing justify adding it as a secondary option for specific tasks?"
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "Tb17MweqhP0",
+     "title": "Ox Alpha Hands-On: Design, Code, and Writing",
+     "channel": "AI Foundations",
+     "views": "100K",
+     "published": "2026-08-23",
+     "why": "Practical multi-task test across design, code, and writing in one session. Shows where the model actually shines vs where it falls short. AOM touches all three daily, so this is the 'can we actually use this' test rather than just benchmark scores.",
+     "action_prompt": "Watch the design, code, and writing test results. Map each against AOM's daily tasks: front-end builds (Bobby), copy drafts (Tony), and design direction (Steffen). Where did Ox Alpha beat expectations? Where did it fall short? Build a simple task-routing table: task type, best model, reasoning."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "vSt0c-vzWp4",
+     "title": "GLM-5.3-Flash: The Ox Alpha Mystery, Finally Tested",
+     "channel": "AI Explained",
+     "views": "90K",
+     "published": "2026-08-27",
+     "why": "Post-reveal test with the real model identity known. Now that Ox Alpha is confirmed as GLM-5.3-Flash, this gives a grounded assessment without the mystery hype. The 1M token context window at zero cost is the real story for agencies doing long-context work like AOM.",
+     "action_prompt": "Research GLM-5.3-Flash pricing: is the free tier permanent or a launch preview? Check Zhipu/Z.ai's data residency policy for client work. Draft a one-paragraph model-stack recommendation: stay Claude-only, or add GLM-5.3-Flash for specific tasks? Factor in the 1M context window advantage."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "7b0lByfiyRs",
+     "title": "Ox Alpha Was GLM-5.3-Flash And Nvidia Wasn't Paying For It",
+     "channel": "AI News Daily",
+     "views": "150K",
+     "published": "2026-08-27",
+     "why": "The business angle: who paid for the compute behind 26 trillion free tokens? If Zhipu self-funded this as a market-entry play, that signals aggressive pricing ahead for frontier coding models. AOM's model costs could drop if competition drives rates down across the board.",
+     "action_prompt": "Dig into the compute economics discussed in this video. How much would 26 trillion tokens of inference cost at current market rates? If Zhipu is willing to eat that cost for market share, what does it mean for Claude/GPT pricing in Q4? Build a brief forecast: AOM's current model spend vs what it could be with competitive pricing pressure."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "fswrsxfLMpk",
+     "title": "Day 216 — Vibe Coding an App Until I Make $1,000,000 | ARR: $253,524",
+     "channel": "BridgeMind",
+     "views": "20K",
+     "published": "2026-08-26",
+     "why": "Peak ARR in the series at $253K. Building a horror game in Unity using Opus 5. The most documented AI-first solo SaaS journey on YouTube. The revenue curve from $0 to $253K in 216 days is a direct playbook for what scaling Corner could look like.",
+     "action_prompt": "Watch this episode and extract: what Unity game mechanics did Opus 5 handle vs what needed manual work? Does BridgeMind's prompting strategy for game dev differ from web app dev? Note any workflow optimizations from Day 216 that AOM could apply to our Claude Code workflow, especially around project structure and context management."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "C8VvUlm1BRQ",
+     "title": "Day 215 — Vibe Coding an App Until I Make $1,000,000 | ARR: $242,698",
+     "channel": "BridgeMind",
+     "views": "25K",
+     "published": "2026-08-25",
+     "why": "The Vibeathon launch and BridgeMind 1.0 announcement. This is the transition from solo builder to platform, exactly what AOM is doing with Corner. Community-building tactics from someone 215 days deep in the same journey.",
+     "action_prompt": "Watch the Vibeathon launch and BridgeMind 1.0 announcement. Extract: how did they structure the community event? What platform features launched with 1.0? Map the community-building playbook against Corner's upcoming launch. What tactics should we steal for our own community activation?"
+    }
+   ]
+  },
+  {
    "date": "2026-08-28",
    "items": [
     {
