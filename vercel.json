@@ -15,9 +15,37 @@
     {
       "path": "/api/cron/room-steward",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/send-reports",
+      "schedule": "0 19 * * 5"
     }
   ],
   "rewrites": [
+    {
+      "source": "/reports",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/reports/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:reportClient(wolfpack|ambition|kohrs|ella)",
+      "destination": "/api/report-page?client=:reportClient"
+    },
+    {
+      "source": "/:reportClient(wolfpack|ambition|kohrs|ella)/",
+      "destination": "/api/report-page?client=:reportClient"
+    },
+    {
+      "source": "/:reportClient(wolfpack|ambition|kohrs|ella)/week-:reportWeek(\\d+)",
+      "destination": "/api/report-page?client=:reportClient&week=:reportWeek"
+    },
+    {
+      "source": "/:reportClient(wolfpack|ambition|kohrs|ella)/week-:reportWeek(\\d+)/",
+      "destination": "/api/report-page?client=:reportClient&week=:reportWeek"
+    },
     {
       "source": "/slider",
       "destination": "/index.html"
