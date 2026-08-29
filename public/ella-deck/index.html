@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Ahead of Market for Ella on the Park · Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Schibsted+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --disp:'Bricolage Grotesque', system-ui, Helvetica, Arial, sans-serif;
+    --text:'Schibsted Grotesk', system-ui, Helvetica, Arial, sans-serif;
+  }
+  *{ margin:0; padding:0; box-sizing:border-box; }
+  html,body{ background:#0A0908; }
+  body{ font-family:var(--text); -webkit-font-smoothing:antialiased; }
+
+  .slide{
+    --ink:#14120E; --body:#3A362E; --mute:#6E6A60; --mute-2:#8A867C;
+    --gold:#A8884C; --gold-deep:#836327; --line:#2A2620;
+    --hair:rgba(131,99,39,.26); --panel:rgba(168,136,76,.06); --orbit:#A8884C;
+    --bg1:#FBFAF6; --bg2:#F7F5EF; --bg3:#F3F1E9; --glow:rgba(168,136,76,.10);
+    position:relative; width:13.333in; height:7.5in; margin:24px auto; overflow:hidden;
+    color:var(--ink); padding:.66in .9in .5in; display:flex; flex-direction:column;
+    background:
+      radial-gradient(60% 60% at 50% 30%, var(--glow) 0%, rgba(0,0,0,0) 62%),
+      linear-gradient(180deg,var(--bg1) 0%,var(--bg2) 54%,var(--bg3) 100%);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  .slide.dark{
+    --ink:#F4F1E6; --body:#CAC5B7; --mute:#A7A296; --mute-2:#8F8A7C;
+    --gold:#C4A46A; --gold-deep:#CBAA6E; --line:#D6D1C4;
+    --hair:rgba(196,164,106,.30); --panel:rgba(196,164,106,.09); --orbit:#C4A46A;
+    --bg1:#191510; --bg2:#131009; --bg3:#0D0B07; --glow:rgba(196,164,106,.14);
+  }
+  .slide::after{ content:""; position:absolute; inset:.3in; border:1px solid var(--hair);
+    border-radius:3px; pointer-events:none; z-index:3; }
+  .slide > *{ position:relative; z-index:2; }
+
+  .orbit{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:9in; height:9in; pointer-events:none; z-index:0; }
+  .orbit svg{ width:100%; height:100%; display:block; }
+
+  /* shared header */
+  .shead{ display:flex; align-items:center; justify-content:space-between; }
+  .idx{ display:flex; align-items:baseline; gap:12px; }
+  .idx b{ font-family:var(--disp); font-weight:800; font-size:15px; letter-spacing:.02em;
+    color:var(--gold-deep); }
+  .idx span{ font-family:var(--text); font-size:11px; font-weight:700; letter-spacing:.24em;
+    text-transform:uppercase; color:var(--mute-2); }
+  .brand{ display:flex; align-items:center; gap:9px; font-family:var(--disp); font-weight:800;
+    font-size:12px; letter-spacing:.02em; text-transform:uppercase; color:var(--ink); }
+  .brand .mono{ width:.3in; height:.3in; color:var(--gold-deep); }
+  .brand .mono svg{ width:100%; height:100%; display:block; }
+
+  /* content body */
+  .body{ margin-top:auto; margin-bottom:auto; max-width:10in; }
+  .rule{ width:.6in; height:2px; background:var(--gold); margin-bottom:.28in; }
+  h2{ font-family:var(--disp); font-weight:800; font-size:52px; line-height:1.0;
+    letter-spacing:-.02em; text-transform:none; }
+  .lead{ font-family:var(--text); font-size:20px; font-weight:500; line-height:1.55;
+    color:var(--body); max-width:8.2in; margin-top:.26in; }
+  .lead .em{ color:var(--ink); font-weight:600; }
+
+  .pull{ margin-top:.3in; border-left:3px solid var(--gold); padding:.06in 0 .06in .24in; }
+  .pull p{ font-family:var(--disp); font-weight:700; font-size:22px; letter-spacing:-.01em;
+    line-height:1.12; color:var(--ink); max-width:7in; }
+
+  /* shared footer */
+  .sfoot{ display:flex; align-items:center; justify-content:space-between;
+    font-family:var(--text); font-size:10px; font-weight:600; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--mute-2); }
+  .sfoot .pg{ color:var(--gold-deep); }
+
+  /* cover */
+  .cover .kick{ font-family:var(--text); font-size:12px; font-weight:700; letter-spacing:.3em;
+    text-transform:uppercase; color:var(--gold); }
+  .cover .prizeno{ display:flex; align-items:center; gap:14px; margin-top:.02in; }
+  .cover .prizeno .ln{ width:.6in; height:1px; background:linear-gradient(90deg,var(--gold),rgba(196,164,106,0)); }
+  .cover h1{ font-family:var(--disp); font-weight:800; font-size:104px; line-height:.92;
+    letter-spacing:-.025em; margin-top:.22in; }
+  .cover h1 .hl{ background:var(--gold); color:#14120E; padding:0 .09em; }
+  .cover .sub{ font-family:var(--text); font-size:21px; font-weight:500; line-height:1.5;
+    color:var(--body); max-width:8in; margin-top:.32in; }
+
+  /* deliverables grid */
+  .dgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:.2in; margin-top:.34in; }
+  .dcard{ border:1px solid var(--hair); border-radius:4px; background:var(--panel);
+    padding:.2in .22in; }
+  .dcard .dh{ font-family:var(--disp); font-weight:800; font-size:17px; letter-spacing:-.01em;
+    text-transform:uppercase; }
+  .dcard p{ font-family:var(--text); font-size:12.5px; font-weight:500; line-height:1.4;
+    color:var(--body); margin-top:6px; }
+
+  /* phases */
+  .phases{ margin-top:.34in; border:1px solid var(--hair); border-radius:4px; overflow:hidden; }
+  .phase{ display:grid; grid-template-columns:2.7in 1fr; gap:.34in; padding:.2in .26in;
+    border-bottom:1px solid var(--hair); }
+  .phase:last-child{ border-bottom:0; }
+  .phase .ph{ font-family:var(--disp); font-weight:800; font-size:17px; text-transform:uppercase;
+    letter-spacing:-.01em; }
+  .phase .tag{ display:inline-block; margin-top:8px; font-family:var(--text); font-weight:700;
+    font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:#14120E;
+    background:var(--gold); padding:3px 9px; border-radius:2px; }
+  .phase p{ font-family:var(--text); font-size:13.5px; font-weight:500; line-height:1.46;
+    color:var(--body); align-self:center; }
+
+  /* closing investment */
+  .invest{ display:flex; gap:0; border:1px solid var(--hair); border-radius:4px;
+    background:var(--panel); overflow:hidden; margin-top:.34in; max-width:8.2in; }
+  .invest .cell{ flex:1; padding:.22in .28in; }
+  .invest .cell + .cell{ border-left:1px solid var(--hair); }
+  .invest .lbl{ font-family:var(--text); font-size:9.5px; font-weight:700; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--gold-deep); }
+  .invest .amt{ font-family:var(--disp); font-weight:800; font-size:40px; letter-spacing:-.02em;
+    line-height:1; margin-top:10px; }
+  .invest .amt small{ font-family:var(--text); font-size:15px; font-weight:600; color:var(--mute); }
+  .invest .note{ font-family:var(--text); font-size:12.5px; font-weight:500; line-height:1.42;
+    color:var(--body); margin-top:9px; }
+  .close .contact{ margin-top:.3in; font-family:var(--text); font-size:14px; font-weight:600;
+    color:var(--mute); }
+  .close .contact b{ font-family:var(--disp); font-weight:700; color:var(--ink); }
+  .close .contact .site{ color:var(--gold-deep); }
+
+  @media print{
+    html,body{ background:#fff; }
+    .slide{ margin:0; break-after:page; }
+    .slide:last-child{ break-after:auto; }
+    @page{ size:13.333in 7.5in; margin:0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 1 · COVER -->
+<section class="slide dark cover">
+  <div class="orbit"><svg viewBox="0 0 660 660" fill="none" preserveAspectRatio="xMidYMid meet"><g stroke="var(--orbit)" fill="none">
+    <circle cx="330" cy="330" r="314" opacity=".22"/>
+    <circle cx="330" cy="330" r="314" opacity=".3" stroke-dasharray="2 15" transform="rotate(16 330 330)"/>
+    <circle cx="330" cy="330" r="248" opacity=".17"/>
+    <circle cx="330" cy="330" r="248" opacity=".26" stroke-dasharray="2 18" transform="rotate(-22 330 330)"/>
+    <circle cx="330" cy="330" r="182" opacity=".13"/></g></svg></div>
+  <div class="shead"><span class="brand"><span class="mono"></span>Ahead of Market</span><span class="sfoot" style="border:0"><span class="pg">Prepared for Ella on the Park</span></span></div>
+  <div class="body" style="max-width:11in">
+    <div class="prizeno"><span class="ln"></span><span class="kick">Old Town Scottsdale &middot; 2026</span></div>
+    <h1>We get Ella<br><span class="hl">recommended.</span></h1>
+    <p class="sub">A marketing department for Ella on the Park. The plan to get you discovered, get you booked, and turn first visits into regulars.</p>
+  </div>
+  <div class="sfoot"><span>Ahead of Market</span><span class="pg">01 / 10</span></div>
+</section>
+
+<!-- 2 · THE SHIFT -->
+<section class="slide">
+  <div class="shead"><span class="idx"><b>01</b><span>The shift</span></span><span class="brand"><span class="mono"></span>Ahead of Market</span></div>
+  <div class="body">
+    <div class="rule"></div>
+    <h2>Nobody picks a restaurant<br>from an ad anymore.</h2>
+    <p class="lead">They pick what their feed serves them, what Maps surfaces, what a friend saves and sends. Every platform is a recommendation engine that decides who gets seen, based on signals we can read and work. A brand-new room can out-reach an institution the moment the algorithm decides to push it. <span class="em">That is the whole game, and it has rules.</span> We learn them, then play them for you.</p>
+  </div>
+  <div class="sfoot"><span>For Ella on the Park</span><span class="pg">02 / 10</span></div>
+</section>
+
+<!-- 3 · FOUNDATION -->
+<section class="slide">
+  <div class="shead"><span class="idx"><b>02</b><span>Foundation</span></span><span class="brand"><span class="mono"></span>Ahead of Market</span></div>
+  <div class="body">
+    <div class="rule"></div>
+    <h2>First, a front door<br>that is yours.</h2>
+    <p class="lead">Right now Ella&rsquo;s web presence lands on an OpenTable page. It books the table, but it is their brand, their buttons, and every other restaurant one tap away. We build Ella&rsquo;s own landing page: the room over the park, the chef, the dishes, with reservations still flowing through OpenTable underneath. <span class="em">Every post and every ad finally has a home that belongs to you.</span> It is the fast, visible win, and the ground the rest stands on.</p>
+  </div>
+  <div class="sfoot"><span>For Ella on the Park</span><span class="pg">03 / 10</span></div>
+</section>
+
+<!-- 4 · YOUR PLATFORM -->
+<section class="slide">
+  <div class="shead"><span class="idx"><b>03</b><span>Your platform</span></span><span class="brand"><span class="mono"></span>Ahead of Market</span></div>
+  <div class="body">
+    <div class="rule"></div>
+    <h2>Faces build regulars.<br>We film yours.</h2>
+    <p class="lead">Instagram and TikTok push restaurants to locals who have never heard of them, and nothing travels like a person and a plate. We run your feed as a content engine: chef stories with Chef Brian Paskvan &mdash; the craft, the smokehouse, the heritage hams &mdash; dish features shot in service, behind-the-line on a Friday night. <span class="em">People do not become regulars of a logo. They become regulars of people.</span></p>
+  </div>
+  <div class="sfoot"><span>For Ella on the Park</span><span class="pg">04 / 10</span></div>
+</section>
+
+<!-- 5 · DISCOVERY -->
+<section class="slide">
+  <div class="shead"><span class="idx"><b>04</b><span>Discovery</span></span><span class="brand"><span class="mono"></span>Ahead of Market</span></div>
+  <div class="body">
+    <div class="rule"></div>
+    <h2>Be the answer to<br>&ldquo;where should we eat?&rdquo;</h2>
+    <p class="lead">That question gets asked steps from your patio every night: on Maps, on Yelp, and now to AI assistants. We make Ella the name those tools surface for Old Town Scottsdale &mdash; dinner by the park, the hotel guest upstairs, the show crowd at the Civic Center. <span class="em">This is what SEO became: being the recommended answer, not ranking a keyword.</span></p>
+  </div>
+  <div class="sfoot"><span>For Ella on the Park</span><span class="pg">05 / 10</span></div>
+</section>
+
+<!-- 6 · THE TARGET -->
+<section class="slide">
+  <div class="shead"><span class="idx"><b>05</b><span>The unfair advantage</span></span><span class="brand"><span class="mono"></span>Ahead of Market</span></div>
+  <div class="body">
+    <div class="rule"></div>
+    <h2>Nobody else can<br>serve your menu.</h2>
+    <p class="lead">The only Bill-E&rsquo;s Bacon in Arizona. Heritage hams from Tennessee, Virginia, and the Carolinas. Hog Heaven. The Steen&rsquo;s braised pork belly. These are not menu items, they are marketing assets. We build dish-level campaigns around them &mdash; including dedicated pages and promotions on GrubHub and Uber Eats &mdash; so people browsing dinner apps meet dishes they cannot get anywhere else, and app orders become first visits.</p>
+    <div class="pull"><p>One dish nobody else can serve is a campaign. You have a menu of them.</p></div>
+  </div>
+  <div class="sfoot"><span>For Ella on the Park</span><span class="pg">06 / 10</span></div>
+</section>
+
+<!-- 7 · THE WORK -->
+<section class="slide">
+  <div class="shead"><span class="idx"><b>06</b><span>The work</span></span><span class="brand"><span class="mono"></span>Ahead of Market</span></div>
+  <div class="body">
+    <div class="rule"></div>
+    <h2>Content built to be<br>pushed, not posted.</h2>
+    <p class="lead">We do not post filler or chase likes. We build content the algorithm wants to distribute &mdash; the ham carved tableside, the smoke, the pour, the chef telling you why &mdash; so one piece can reach thousands of nearby diners no matter your follower count. <span class="em">Every piece earns its reach,</span> and every piece points somewhere that books a table.</p>
+  </div>
+  <div class="sfoot"><span>For Ella on the Park</span><span class="pg">07 / 10</span></div>
+</section>
+
+<!-- 8 · WE ARE YOUR MARKETING DEPARTMENT (dark) -->
+<section class="slide dark">
+  <div class="shead"><span class="idx"><b>07</b><span>Why us</span></span><span class="brand"><span class="mono"></span>Ahead of Market</span></div>
+  <div class="body" style="max-width:11.5in">
+    <div class="rule"></div>
+    <h2>We are your marketing department.</h2>
+    <p class="lead" style="margin-top:.2in">Not a freelancer and not a one-off. Every piece you do not have in house, run by one team on a regular cadence and measured on booked tables.</p>
+    <div class="dgrid">
+      <div class="dcard"><div class="dh">Video</div><p>Chef stories and dish films shot in your room, built to be pushed.</p></div>
+      <div class="dcard"><div class="dh">Social &amp; organic</div><p>Instagram and TikTok run on a real cadence, engineered for local reach.</p></div>
+      <div class="dcard"><div class="dh">Landing page &amp; web</div><p>A front door of your own that every post, ad, and search lands on.</p></div>
+      <div class="dcard"><div class="dh">Delivery platforms</div><p>GrubHub and Uber Eats pages and promos built around signature dishes.</p></div>
+      <div class="dcard"><div class="dh">Reputation</div><p>Reviews and presence on Google, Yelp, and OpenTable, worked weekly.</p></div>
+      <div class="dcard"><div class="dh">Strategy</div><p>One plan tying all of it to covers and regulars, not posts.</p></div>
+    </div>
+  </div>
+  <div class="sfoot"><span>For Ella on the Park</span><span class="pg">08 / 10</span></div>
+</section>
+
+<!-- 9 · HOW WE WORK -->
+<section class="slide">
+  <div class="shead"><span class="idx"><b>08</b><span>How we work together</span></span><span class="brand"><span class="mono"></span>Ahead of Market</span></div>
+  <div class="body" style="max-width:11.5in">
+    <div class="rule"></div>
+    <h2>A partnership, built to compound.</h2>
+    <p class="lead" style="margin-top:.18in">Recommendation is not a switch you flip. It builds. So we start with a fast, real win and let the engine ramp on an honest timeline, with a weekly report so you watch it move.</p>
+    <div class="phases">
+      <div class="phase"><div><div class="ph">Phase 01 &middot; Foundation</div><span class="tag">Fast, visible win</span></div><p>Your landing page goes live, your profiles get tuned, and we bank the first content library: the first chef story and your signature dishes on film. Tangible, yours, and the base everything else feeds.</p></div>
+      <div class="phase"><div><div class="ph">Phase 02 &middot; The engine ramps</div><span class="tag">Compounds over months</span></div><p>Weekly social cadence, dish campaigns on GrubHub and Uber Eats, the review engine, and the Maps and AI-search answer work. Momentum builds while you run the restaurant.</p></div>
+      <div class="phase"><div><div class="ph">Ongoing &middot; Your marketing dept.</div><span class="tag">Month over month</span></div><p>We run it all as your department, not a trial. The longer we work, the more the recommendation flywheel spins in your favor.</p></div>
+    </div>
+  </div>
+  <div class="sfoot"><span>For Ella on the Park</span><span class="pg">09 / 10</span></div>
+</section>
+
+<!-- 10 · INVESTMENT + NEXT STEP (dark close) -->
+<section class="slide dark close">
+  <div class="orbit"><svg viewBox="0 0 660 660" fill="none" preserveAspectRatio="xMidYMid meet"><g stroke="var(--orbit)" fill="none">
+    <circle cx="330" cy="330" r="314" opacity=".18"/>
+    <circle cx="330" cy="330" r="248" opacity=".14" stroke-dasharray="2 18" transform="rotate(-22 330 330)"/>
+    <circle cx="330" cy="330" r="182" opacity=".1"/></g></svg></div>
+  <div class="shead"><span class="idx"><b>09</b><span>Next step</span></span><span class="brand"><span class="mono"></span>Ahead of Market</span></div>
+  <div class="body">
+    <div class="rule"></div>
+    <h2>Let&rsquo;s map your first 90 days.</h2>
+    <p class="lead" style="max-width:7.6in">A short working session to lock the landing page plan, the first shoot, and the dishes we campaign first. You get your marketing department. We go fill the room.</p>
+    <div class="invest">
+      <div class="cell"><div class="lbl">Your investment</div><div class="amt">$3,000<small> / month</small></div><div class="note">The whole marketing department you do not have in house. Strategy, landing page, video, social, delivery platforms, and ads under one roof.</div></div>
+      <div class="cell"><div class="lbl">Recommended ad budget</div><div class="amt">TBD<small> / month</small></div><div class="note">Scoped together once we see the calendar and the dishes we push first. Every dollar aimed at diners near the park.</div></div>
+    </div>
+    <div class="contact"><b>hello@aheadofmarket.com</b> &nbsp; <span class="site">aheadofmarket.com</span></div>
+  </div>
+  <div class="sfoot"><span>Ahead of Market</span><span class="pg">10 / 10</span></div>
+</section>
+
+<script>
+  var MONO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Ahead of Market monogram" fill="currentColor"><mask id="m_aom_monogram_svg" maskUnits="userSpaceOnUse" x="0" y="0" width="1448" height="1328"><rect x="5.8" y="5.8" width="1436.4" height="1316.4" fill="#fff"></rect><g transform="translate(0,1328) scale(0.1,-0.1)" fill="#000" stroke="none"><path d="M0 6640 l0 -6640 7240 0 7240 0 0 6640 0 6640 -7240 0 -7240 0 0 -6640z m7005 3107 c14 -22 91 -215 120 -302 8 -22 26 -71 40 -110 14 -38 30 -82 34 -96 5 -14 34 -90 65 -170 31 -79 68 -175 82 -214 15 -38 41 -108 59 -155 18 -47 45 -116 60 -155 14 -38 31 -81 36 -95 6 -14 44 -115 84 -225 41 -110 104 -274 140 -365 37 -91 92 -232 122 -315 131 -353 166 -446 218 -575 47 -116 85 -215 175 -455 26 -71 67 -177 90 -235 41 -104 110 -282 135 -350 39 -107 128 -338 201 -524 31 -76 84 -215 119 -310 123 -333 177 -434 295 -555 86 -87 257 -168 415 -196 63 -12 75 -22 75 -60 0 -24 -6 -37 -20 -45 -13 -7 -351 -9 -1070 -8 -1137 3 -1069 0 -1070 54 0 34 25 47 140 75 260 64 357 156 368 351 5 106 9 94 -145 528 -24 69 -50 143 -58 165 -30 91 -95 265 -124 335 -17 41 -31 81 -31 88 0 6 -9 21 -20 32 -20 20 -33 20 -1168 20 -1294 0 -1161 9 -1196 -80 -10 -25 -23 -56 -28 -70 -6 -14 -25 -68 -44 -120 -19 -52 -41 -108 -48 -125 -8 -16 -36 -91 -61 -165 -26 -74 -60 -171 -77 -215 -59 -161 -108 -339 -108 -393 0 -93 43 -192 105 -244 56 -47 196 -107 290 -123 66 -12 77 -22 73 -63 -3 -33 -6 -37 -42 -44 -65 -14 -1353 -5 -1367 9 -14 14 -15 61 -3 73 5 5 54 21 109 35 310 80 439 209 574 575 27 74 66 178 86 230 20 52 52 136 72 185 19 50 56 151 83 225 49 137 115 315 150 405 11 28 39 106 64 175 25 69 83 226 131 350 47 124 106 279 129 345 24 66 69 188 101 270 72 186 199 520 229 600 13 33 35 90 50 128 15 37 31 80 36 95 5 15 20 56 33 92 57 153 98 260 127 335 17 44 69 184 116 310 46 127 93 250 103 275 146 343 151 462 26 585 -48 48 -77 67 -142 93 -45 17 -91 32 -102 32 -45 0 -79 68 -49 98 9 9 157 12 605 12 593 0 593 0 608 -23z m1243 -82 c287 -35 532 -108 790 -235 563 -278 1008 -744 1238 -1297 52 -124 108 -292 133 -398 12 -49 26 -106 31 -125 39 -148 49 -647 17 -840 -70 -411 -253 -836 -497 -1151 -184 -238 -464 -500 -645 -605 -27 -15 -66 -39 -85 -52 -55 -37 -80 -27 -114 43 -16 33 -31 81 -34 106 -4 45 -4 45 169 177 202 152 312 254 307 283 -4 24 -104 71 -278 130 -127 43 -151 47 -171 23 -8 -9 -37 -82 -64 -163 -54 -158 -67 -173 -97 -111 -29 60 -99 269 -107 318 -4 27 -17 61 -29 78 -28 37 -74 159 -76 199 -1 30 -1 30 54 28 30 -2 68 -7 83 -13 22 -7 31 -6 46 9 47 47 143 532 166 837 9 123 39 114 -380 114 -281 0 -356 3 -367 13 -7 8 -29 59 -48 115 -28 83 -32 104 -22 114 10 10 105 14 410 18 l397 5 3 90 c2 50 -4 130 -12 180 -8 50 -18 121 -22 160 -3 38 -10 80 -15 93 -5 13 -14 56 -19 96 -13 91 -57 281 -76 325 -14 32 -17 33 -52 27 -20 -4 -75 -11 -122 -16 -47 -5 -139 -16 -205 -24 -66 -8 -191 -17 -277 -21 -125 -6 -158 -11 -163 -23 -3 -8 -6 -101 -6 -206 -1 -219 -3 -238 -31 -234 -20 3 -29 21 -78 153 -10 28 -28 75 -40 105 -51 128 -89 232 -130 349 -30 85 -30 85 -10 119 19 32 20 52 20 481 0 457 -1 471 -38 471 -23 0 -154 -61 -221 -103 -49 -31 -67 -38 -80 -30 -9 5 -38 66 -64 134 -62 158 -62 156 -48 173 20 24 197 70 346 89 82 11 398 6 513 -8z"></path><path d="M6352 8902 c-12 -12 -22 -27 -22 -33 0 -10 -38 -111 -66 -174 -25 -57 -46 -111 -100 -255 -61 -161 -96 -251 -160 -415 -54 -139 -113 -298 -129 -350 -7 -22 -31 -85 -53 -140 -22 -55 -62 -156 -90 -225 -27 -69 -64 -165 -81 -215 -68 -198 -111 -315 -151 -410 -54 -127 -83 -205 -124 -330 -19 -55 -39 -112 -46 -127 -29 -62 -91 -58 1044 -56 1031 3 1031 3 1030 33 -1 17 -15 66 -32 110 -16 44 -39 105 -50 135 -11 30 -24 66 -30 80 -6 14 -32 79 -57 145 -26 66 -66 170 -90 230 -24 61 -80 211 -125 335 -44 124 -114 311 -155 415 -40 105 -90 235 -110 290 -20 55 -74 197 -120 315 -46 118 -109 280 -140 360 -30 80 -64 168 -75 195 -11 28 -20 55 -20 61 0 5 -6 18 -13 29 -13 17 -15 17 -35 -3z"></path><path d="M8107 9393 c-4 -3 -7 -209 -7 -458 0 -363 3 -455 14 -470 12 -17 25 -18 182 -12 93 3 201 10 239 16 39 5 115 15 170 22 102 11 135 21 135 40 0 6 -16 45 -36 87 -180 389 -360 615 -592 746 -62 35 -92 43 -105 29z"></path><path d="M8720 9266 c0 -8 26 -50 59 -93 89 -118 248 -404 280 -503 6 -19 20 -50 31 -69 23 -36 31 -37 130 -11 171 46 334 110 338 135 14 68 -417 379 -715 516 -90 41 -123 48 -123 25z"></path><path d="M9695 8502 c-81 -48 -373 -164 -448 -178 -55 -10 -58 -24 -30 -149 22 -101 31 -147 62 -305 33 -177 52 -311 61 -429 5 -73 15 -140 21 -147 10 -12 84 -14 428 -12 l416 3 -2 92 c-5 270 -151 679 -356 1003 -95 149 -100 153 -152 122z"></path><path d="M9358 7003 c-14 -15 -18 -37 -18 -89 -1 -148 -30 -380 -66 -524 -8 -30 -29 -120 -48 -200 -19 -80 -37 -152 -41 -161 -9 -25 29 -55 83 -67 73 -15 258 -85 366 -136 54 -26 105 -46 114 -44 40 8 224 331 315 553 49 119 102 292 112 365 4 25 13 77 21 117 16 83 19 179 4 188 -5 3 -193 8 -417 12 -396 5 -408 5 -425 -14z"></path></g></mask><rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect></svg>`;
+  document.querySelectorAll('.mono').forEach(function(el){ el.innerHTML = MONO; });
+</script>
+</body>
+</html>
