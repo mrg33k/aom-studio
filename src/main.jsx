@@ -23,6 +23,7 @@ installNativeBootstrap()
 injectThemeVars()
 // Everything else lazy-loaded so non-home routes don't bloat the main bundle.
 const Login = lazy(() => import('./pages/Login.jsx'))
+const ReportsEditor = lazy(() => import('./pages/ReportsEditor.jsx'))
 const ChangePassword = lazy(() => import('./pages/ChangePassword.jsx'))
 const BrandsHub = lazy(() => import('./pages/BrandsHub.jsx'))
 const S3CBrand = lazy(() => import('./pages/S3CBrand.jsx'))
@@ -682,6 +683,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               so links & worker phonebooks that still point at /cv4 keep
               working through the transition. /dashboard/cv3 also keeps
               CornerV3 mounted as a sub-route escape hatch. */}
+          <Route path="/reports" element={<AuthGuard><ReportsEditor /></AuthGuard>} />
+          <Route path="/reports/:client" element={<AuthGuard><ReportsEditor /></AuthGuard>} />
           <Route path="/dashboard" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
           <Route path="/dashboard/welcome" element={<AuthGuard><DashboardWelcome /></AuthGuard>} />
           <Route path="/dashboard/settings/invites" element={<AuthGuard><DashboardSettingsInvites /></AuthGuard>} />
