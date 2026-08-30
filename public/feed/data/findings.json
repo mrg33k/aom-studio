@@ -1,6 +1,51 @@
 {
  "days": [
   {
+   "date": "2026-08-30",
+   "items": [
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "nA7LTAYXmlg",
+     "title": "Wan 3.0 AI Test: Unbelievable Micro-Expressions for UGC",
+     "channel": "AI Film Academy",
+     "views": "85K",
+     "published": "2026-08-25",
+     "why": "Side-by-side test of Wan 3.0 vs MiniMax H3 running locally in ComfyUI on an RTX 5090. Wan 3.0 nails realistic micro-expressions -- subtle eye movement, lip sync, skin texture -- that make UGC clips feel real instead of AI-generated. AOM produces social video for Wolfpack and Ambition. If Wan 3.0 can generate 15-30 second UGC-style spokesperson clips that pass the scroll test, it replaces hours of shoot coordination for social content.",
+     "action_prompt": "Download ComfyUI and load the Wan 3.0 workflow shown in this video. Generate a 15-second UGC-style clip using a reference photo as input -- test with a construction worker (Wolfpack persona) and a home services tech (Ambition persona). Grade each clip: does the face move naturally? Would it pass as a real person on Instagram? Compare result quality against the MiniMax H3 outputs shown. Report which model AOM should default to for UGC social clips."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "AantK_KR8dk",
+     "title": "Wan 3.0 in OpenArt AI is CRAZY! (Full 30s Car Commercial Tutorial)",
+     "channel": "Polygon Runway",
+     "views": "120K",
+     "published": "2026-08-27",
+     "why": "Full tutorial: one timestamped prompt generates a complete 30-second car commercial with scene transitions, camera movements, and audio. AOM builds video ads for clients. If a single structured prompt can produce a broadcast-quality 30-second spot, the production cost for client ad concepts drops from hours of editing to minutes of prompting. The timestamped prompt format shown here is a reusable template.",
+     "action_prompt": "Follow the exact tutorial in this video using OpenArt AI. Replace the car with a plumbing van (Wolfpack) and write a 30-second timestamped prompt for a Wolfpack brand video: opening hero shot, service montage, team shot, logo resolve. Generate it. Then adapt the same prompt template for an Ambition HVAC brand video. Save both prompt templates -- if the output is usable, this becomes AOM's standard AI ad-concept workflow."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "5Hb429VYNUU",
+     "title": "I Tested WAN 3.0 With 5 INSANE AI Video Challenges",
+     "channel": "Nolan Talks Tech",
+     "views": "95K",
+     "published": "2026-08-23",
+     "why": "Five stress tests showing where Wan 3.0 breaks and where it holds: object permanence across scenes, character consistency, text rendering in video, complex physics, and multi-subject interaction. Knowing the failure modes is as important as knowing the strengths. AOM needs to know which client video concepts Wan 3.0 can handle and which still need traditional production.",
+     "action_prompt": "Watch all 5 challenge tests. Build a capability matrix: for each test (object permanence, character consistency, text, physics, multi-subject), rate Wan 3.0 pass/fail and note the failure pattern. Map each capability to an AOM client use case: can Wan 3.0 generate a Wolfpack before/after renovation sequence with consistent house? Can it hold a logo in frame? Use this matrix to decide which types of client video concepts to route to Wan 3.0 vs traditional editing."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "Y-bxRDMLdmI",
+     "title": "I Tested Wan 3.0 in WonderClip -- It Made a Full 30-Second AI Movie From One Prompt",
+     "channel": "AI Creative Lab",
+     "views": "60K",
+     "published": "2026-08-23",
+     "why": "WonderClip is Alibaba's hosted interface for Wan 3.0 -- no local GPU needed. One prompt produces a complete 30-second video with transitions and audio, zero setup. For AOM, this is the fastest path to testing: no ComfyUI install, no GPU requirements, just a browser. If the quality holds, any team member can generate video concepts without touching editing software.",
+     "action_prompt": "Open WonderClip (wonderclip.alibaba.com or equivalent hosted Wan 3.0 interface). Write a one-paragraph prompt for a 30-second Wolfpack brand overview video: crew arriving at job site, work montage, finished result, logo. Generate it and compare quality against the ComfyUI local results from the other Wan 3.0 videos. If WonderClip output is close enough, recommend it as AOM's default quick-concept tool -- zero setup means any team member can use it."
+    }
+   ]
+  },
+  {
    "date": "2026-08-29",
    "items": [
     {
