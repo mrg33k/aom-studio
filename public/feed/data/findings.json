@@ -1,6 +1,71 @@
 {
  "days": [
   {
+   "date": "2026-08-31",
+   "items": [
+    {
+     "lane": "ai-tools",
+     "youtube_id": "ryosCa6_eCE",
+     "title": "FABLE-5.1 Is WAY More Powerful Than We Thought",
+     "channel": "Pursuing AI",
+     "views": "180K",
+     "published": "2026-08-28",
+     "why": "Deep walkthrough of Fable 5.1 capabilities that go beyond the headline benchmarks: improved agentic coding, longer context reliability, and multi-file refactoring accuracy. AOM runs Claude Code as its primary build tool. Fable 5.1 is the model behind Claude Code's latest updates -- understanding exactly where it improved (and where it still struggles) tells us which tasks to trust it with autonomously vs which still need human review.",
+     "action_prompt": "Watch the full breakdown and list the 3-5 capabilities where Fable 5.1 improved most over Fable 5. For each, write a concrete AOM test: e.g. if multi-file refactoring improved, test it on the next Wolfpack site component change. Run the tests this week and report which improvements actually land in our daily work vs which are benchmark-only gains."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "RZMj7C41AuQ",
+     "title": "The #1 AI meets the #1 CRM. Welcome to Claudeforce.",
+     "channel": "Salesforce",
+     "views": "350K",
+     "published": "2026-08-26",
+     "why": "Salesforce embedded Claude directly into Sales Cloud, Slack, and Agentforce with 37 prebuilt sales skills. This is the biggest enterprise AI integration this year. AOM manages client relationships and sales outreach -- if Claude can now draft follow-ups, score leads, and prep meeting briefs inside a CRM, it could replace manual pipeline work. Even if AOM doesn't use Salesforce, the 37 skill templates are a blueprint for what our own agents should do.",
+     "action_prompt": "Watch the Claudeforce demo and extract the list of 37 prebuilt sales skills. Map each skill to AOM's current sales workflow: which ones match what Jacob (outreach agent) already does? Which ones cover gaps we haven't automated yet? Pick the top 3 gaps and write agent prompts that replicate those Salesforce skills using our existing Claude Code setup. Test one this week on a real prospect follow-up."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "vA06XNECOEk",
+     "title": "GPT-5.6 Luna Is Way More Powerful Than I Expected",
+     "channel": "Eric Tech",
+     "views": "95K",
+     "published": "2026-08-26",
+     "why": "Real build session: the creator used GPT-5.6 Luna to build a working data pipeline end-to-end, not just a toy demo. Luna's input tokens dropped 80% to $0.20/M this week. AOM builds client tools and internal systems daily. Seeing a real pipeline built with a competitor model shows where Luna beats Claude on cost-per-task and where Claude's agentic coding still wins. The price drop means Luna is now viable as a secondary model for high-volume, low-complexity tasks.",
+     "action_prompt": "Watch the full build and note every step where Luna succeeded or struggled. Pick one comparable task from AOM's recent work -- a data pipeline, an API integration, or a CRUD app. Build the same thing twice: once with Claude Code, once with Luna via API. Compare: time to working code, number of corrections needed, final code quality. Report whether Luna at $0.20/M input is worth adding as a secondary model for specific task types."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "GSYkE1r1JUQ",
+     "title": "I Tried Every AI Video Generator - Seedance 2.5 vs Minimax H3 vs Flux 3",
+     "channel": "Dan Kieft",
+     "views": "110K",
+     "published": "2026-08-24",
+     "why": "Head-to-head comparison of the three AI video models AOM is evaluating: Seedance 2.5, MiniMax H3, and Flux 3. Tests identical prompts across all three, showing exactly where each model excels (motion quality, text rendering, character consistency, resolution). AOM produces social video for clients and needs to pick a default model. This comparison does the A/B testing we'd otherwise spend hours running ourselves.",
+     "action_prompt": "Watch the full comparison and build a decision matrix: for each test category (motion, text, faces, consistency, speed, cost), rank the three models 1-2-3. Then map to AOM's video needs: Wolfpack job-site clips (motion + realism), Ambition brand spots (character consistency), social reels (speed + cost). Assign a default model per use case. Update the video production workflow doc with the recommendation."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "PBOMfxjAkGw",
+     "title": "How to use MiniMax H3 All-In-One Workflow in ComfyUI",
+     "channel": "FutuTek",
+     "views": "45K",
+     "published": "2026-08-26",
+     "why": "All-in-one ComfyUI workflow covering Text-to-Video, Reference-to-Video, and Lip-Sync in a single setup. AOM already uses ComfyUI for image generation. Adding a unified MiniMax H3 video workflow means any team member can generate client video concepts from text prompts, reference images, or voiceover audio without switching tools. The lip-sync capability is especially relevant for UGC-style social clips.",
+     "action_prompt": "Download the All-In-One ComfyUI workflow from the video description. Install it alongside our existing ComfyUI setup. Test all three modes: (1) Text-to-Video with a Wolfpack job-site prompt, (2) Reference-to-Video using a Wolfpack brand photo as input, (3) Lip-Sync with a 10-second voiceover clip. Grade each output. If any mode produces usable client-quality video, document the workflow steps and add it to AOM's video production toolkit."
+    },
+    {
+     "lane": "creative-workflows",
+     "youtube_id": "8ZE9t3uWZ5o",
+     "title": "Seedance 2.5 vs Wan 3.0 — The Difference Is Insane",
+     "channel": "Aivoxy",
+     "views": "75K",
+     "published": "2026-08-26",
+     "why": "Direct quality comparison between Seedance 2.5 and Wan 3.0 using identical prompts. Last week's feed covered Wan 3.0 extensively -- this video shows exactly how it stacks up against Seedance 2.5, which we've been tracking since M6. Knowing the quality gap (or lack of one) between the paid option (Seedance) and the free option (Wan 3.0 local) directly affects AOM's video production costs.",
+     "action_prompt": "Watch the side-by-side comparisons and note which model wins each category. Cross-reference with last week's Wan 3.0 findings from the feed. Update AOM's model comparison matrix: if Wan 3.0 (free, local) matches Seedance 2.5 (paid) in the categories that matter for client work (realism, consistency, motion), recommend switching default video generation to Wan 3.0 to cut costs. If Seedance still wins on quality, document exactly where and keep it as the premium option."
+    }
+   ]
+  },
+  {
    "date": "2026-08-30",
    "items": [
     {
