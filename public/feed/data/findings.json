@@ -1,6 +1,41 @@
 {
  "days": [
   {
+   "date": "2026-09-01",
+   "items": [
+    {
+     "lane": "ai-tools",
+     "youtube_id": "UxJZrCFzTHY",
+     "title": "Model Hardware Standard: AI operating physical equipment",
+     "channel": "Anthropic",
+     "views": "120K",
+     "published": "2026-08-27",
+     "why": "Anthropic released the Model Hardware Standard (MHS) — a protocol that lets AI agents control physical equipment like robots, microscopes, and factory machines through a unified API. This is the first major AI company publishing an open standard for hardware control. AOM builds agent systems for clients; MHS means agents can now reach beyond screens into physical operations. For construction clients like Wolfpack, this is the bridge between office automation and job-site equipment.",
+     "action_prompt": "Read the MHS spec at anthropic.com and list every equipment category it covers. Map each to AOM's client base: which Wolfpack or Ambition operations involve physical equipment that MHS could standardize? Write a one-page brief showing a construction company how an AI agent could use MHS to read sensor data from job-site equipment, generate daily reports, and flag maintenance issues — that's a retainer add-on pitch."
+    },
+    {
+     "lane": "ai-tools",
+     "youtube_id": "8_FjjgbQpKs",
+     "title": "The Real Reason NVIDIA Is Buying Hugging Face",
+     "channel": "Devsplainers",
+     "views": "85K",
+     "published": "2026-08-27",
+     "why": "Nvidia is acquiring Hugging Face for roughly $12.9B, bringing the largest open-source model hub under a hardware company's roof. AOM uses open-source models (Wan 3.0, ComfyUI workflows, local inference) as cost-free alternatives to paid APIs. If Nvidia controls HuggingFace, model licensing, availability, and GPU-optimization priorities could all shift. This directly affects which free models AOM can rely on for client video generation and local AI tools.",
+     "action_prompt": "Watch the full breakdown and list the 3 biggest risks to AOM's current open-source model stack if Nvidia controls HuggingFace: model licensing changes, GPU-lock-in for optimized inference, or reduced community contributions. For each risk, identify AOM's current dependency (which models we pull from HF today) and write a contingency — an alternative source or a local cache strategy. Deliver as a one-page risk brief."
+    },
+    {
+     "lane": "ai-builds",
+     "youtube_id": "u19GXjIVuGk",
+     "title": "Day 220 – Vibe Coding an App Until I Make $1,000,000 | ARR: $199,344",
+     "channel": "BridgeMind",
+     "views": "60K",
+     "published": "2026-08-25",
+     "why": "Solo developer hit $200K ARR building entirely with AI-assisted coding (vibe coding), just shipped BridgeMind One Beta. No team, no funding, just one person and Claude Code. This is the clearest proof that the agency model AOM runs — small team, AI-multiplied output — scales to product revenue, not just client work. The specific patterns he uses for shipping fast (daily public builds, beta-to-paid conversion, feature prioritization) are directly applicable to Corner's product development.",
+     "action_prompt": "Watch the full Day 220 update and extract BridgeMind's shipping patterns: how does he prioritize features, convert beta users to paid, and maintain velocity as a solo builder? Compare each pattern to how AOM builds Corner: where are we slower, where do we skip steps he doesn't? Pick the top 2 patterns AOM should adopt this week and write a concrete test plan — e.g. if his beta-feedback loop is tighter, set up the same flow for Corner's next feature."
+    }
+   ]
+  },
+  {
    "date": "2026-08-31",
    "items": [
     {
