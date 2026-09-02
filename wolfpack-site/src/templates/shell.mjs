@@ -3,6 +3,34 @@ import { asset, escapeHtml } from '../lib/html.mjs'
 // ── Google Analytics (GA4) ──────────────────────────────────────────
 // Property "Wolfpack Companies" / stream "Wolfpack Companies Web" (15630868620)
 const GA_MEASUREMENT_ID = 'G-GTYRFZHJ4B'
+
+// Scroll depth (25/50/75/100) + per-element click events (button_text carries
+// the label). Engagement/page time is native GA4. Shared shape with the
+// Ambition site — keep event names and params in sync across both.
+function aomTrackingSnippet() {
+  return `(function(){
+  var marks=[25,50,75,100],fired={};
+  function onScroll(){
+    var h=document.documentElement,s=h.scrollHeight-window.innerHeight;
+    if(s<=0)return;
+    var pct=Math.round(window.scrollY/s*100);
+    for(var i=0;i<marks.length;i++){var m=marks[i];
+      if(pct>=m&&!fired[m]){fired[m]=true;gtag('event','scroll_depth',{percent_scrolled:m,page_path:location.pathname});}}
+    if(fired[100])window.removeEventListener('scroll',onScroll);
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  document.addEventListener('click',function(e){
+    var el=e.target.closest?e.target.closest('a,button,[role=button],input[type=submit]'):null;
+    if(!el)return;
+    var text=(el.innerText||el.value||el.getAttribute('aria-label')||'').trim().slice(0,80)||'(no text)';
+    var href=el.href||'';
+    var p={button_text:text,link_url:href,page_path:location.pathname};
+    if(href.indexOf('tel:')===0)gtag('event','phone_click',p);
+    else if(href.indexOf('mailto:')===0)gtag('event','email_click',p);
+    else gtag('event','button_click',p);
+  },true);
+})();`
+}
 import { renderHome } from './home.mjs'
 import { renderService } from './service.mjs'
 import { renderServiceIndex } from './service-index.mjs'
@@ -101,7 +129,8 @@ export function renderHead(page, site = defaultSite) {
   <link rel="stylesheet" href="${asset('site.css')}">
   <script src="${asset('site.js')}" defer></script>
   <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"></script>
-  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}');</script>`
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}');</script>
+  <script>${aomTrackingSnippet()}</script>`
 }
 
 export function renderHeader(page) {
