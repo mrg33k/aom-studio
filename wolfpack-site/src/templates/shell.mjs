@@ -1,4 +1,9 @@
 import { asset, escapeHtml } from '../lib/html.mjs'
+
+// ── Google Analytics (GA4) ──────────────────────────────────────────
+// SWAP THIS with the real Wolfpack GA4 measurement ID once the property
+// is created in analytics.google.com under the AOM Google account.
+const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX'
 import { renderHome } from './home.mjs'
 import { renderService } from './service.mjs'
 import { renderServiceIndex } from './service-index.mjs'
@@ -95,7 +100,9 @@ export function renderHead(page, site = defaultSite) {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="${asset('site.css')}">
-  <script src="${asset('site.js')}" defer></script>`
+  <script src="${asset('site.js')}" defer></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}');</script>`
 }
 
 export function renderHeader(page) {
