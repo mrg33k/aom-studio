@@ -1,9 +1,8 @@
 import { asset, escapeHtml } from '../lib/html.mjs'
 
 // ── Google Analytics (GA4) ──────────────────────────────────────────
-// SWAP THIS with the real Wolfpack GA4 measurement ID once the property
-// is created in analytics.google.com under the AOM Google account.
-const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX'
+// Property "Wolfpack Companies" / stream "Wolfpack Companies Web" (15630868620)
+const GA_MEASUREMENT_ID = 'G-GTYRFZHJ4B'
 import { renderHome } from './home.mjs'
 import { renderService } from './service.mjs'
 import { renderServiceIndex } from './service-index.mjs'
