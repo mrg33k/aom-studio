@@ -22,13 +22,11 @@
 // that a process is provably burning CPU. The two are returned as separate arrays and the
 // card labels them differently — never merge them into one "working" claim.
 //
-// Caller passes Authorization: Bearer <jwt>; verifyTenant gates by tenant. Same auth +
-// supabaseGet idiom as supabase-status.js.
+// Caller passes Authorization: Bearer <jwt>; verifyTenant gates by tenant. Task rows
+// come from the Convex queue (corner:retire-supabase R1, 2026-09-03).
 
+import { convexQuery } from '../_lib/reportsStore.js';
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
 // The world this request is scoped to. An explicit value wins; otherwise the world is
 // resolved from the VERIFIED JWT — never a hardcoded default.
@@ -51,26 +49,11 @@ async function scopeWorld(explicit, req) {
   return who.world;
 }
 
-async function supabaseGet(table, params = '') {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${params}`, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-    },
-  });
-  if (!res.ok) return [];
-  return res.json();
-}
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   res.setHeader('Cache-Control', 'no-store');
-
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' });
-  }
 
   let clientId;
   try {
@@ -92,10 +75,14 @@ export default async function handler(req, res) {
   const projectFilter = optProject ? `&project=eq.${encodeURIComponent(optProject)}` : '';
   const select = 'select=id,title,text,description,agent,agent_identity,builder,project,created_at,started_at,status,metadata';
   // started_at first (set by task-runner on claim) so the freshest job leads; nulls last.
-  const rows = await supabaseGet(
-    'tasks',
-    `status=in.(building,running)${projectFilter}&order=started_at.desc.nullslast,created_at.desc&limit=25${clientFilter}&${select}`,
-  );
+  // corner:retire-supabase R1 (2026-09-03): the task queue is on Convex.
+  const rows = await convexQuery('tasks:find', {
+    client_id: clientId,
+    status_in: ['building', 'running'],
+    ...(optProject ? { project: optProject } : {}),
+    order: 'started_at.desc.nullslast,created_at.desc',
+    limit: 25,
+  });
 
   const tasks = (Array.isArray(rows) ? rows : [])
     .map((t) => {
@@ -116,10 +103,10 @@ export default async function handler(req, res) {
   // sentence the agent actually said, so the card can show the commitment verbatim
   // rather than a generic "working" line.
   const followupSelect = 'select=id,agent,project,mission,promise_context,trigger_ref,created_at,status';
-  const followupRows = await supabaseGet(
-    'followups',
-    `status=eq.pending${projectFilter}&order=created_at.desc&limit=25${clientFilter}&${followupSelect}`,
-  );
+  // Follow-ups still live in the Supabase `followups` table. Not read here any
+  // more (no Supabase reads from this endpoint); they come back on Convex in
+  // corner:retire-supabase R2.
+  const followupRows = [];
 
   const promises = (Array.isArray(followupRows) ? followupRows : [])
     .map((f) => ({
