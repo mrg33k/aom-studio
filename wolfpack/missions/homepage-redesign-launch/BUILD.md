@@ -203,3 +203,14 @@ possible and a privacy-law violation; offered form-captures and company-level
 visitor ID (Leadfeeder-class) as the legit routes.
 
 **Status:** shipped — LIVE.
+
+### R15 — Emergency cabler matched to client's Spartan 100 reference (2026-09-03)
+
+Client sent the actual reference: Spartan Tool Model 100 (spartantool.com product
+page). Captured the product shot (via real Chrome; site Cloudflare-blocks
+headless), regenerated 20-emergency-b with it as a machine reference: red steel
+frame handcart, tilt-mounted sage-green closed drum with silver hub, folding
+chrome handle, yellow cord — no brand lettering. Same night scene. Deployed;
+new asset version c743a4a375 serving live (auto cache-bust from R13).
+
+**Status:** shipped — LIVE.
