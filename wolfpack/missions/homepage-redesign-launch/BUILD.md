@@ -153,3 +153,37 @@ at 390/1000/1440. Deployed via `vercel --prod` and live-verified on
 wolfpackcompanies.com (pill at desktop, strip at 390px, versioned CSS served).
 
 **Status:** shipped — LIVE.
+
+### R12 — Hero photo rotation with real team shots (2026-09-03)
+
+Feedback: hero image invisible on the white theme; Patrik wants 4-5 good group
+photos shuffling randomly. Culled the 140-shot 2026-08-22 fleet/team shoot
+(RW2 raws on SS8TB) via contact sheets, picked 5: two hi-vis crew shots, the
+full 10-man team, the widest fleet lineup, and the four owners. Decoded from
+RAW to 2400px q72 web JPEGs. Inline picker script chooses one per load
+(no-JS fallback = first shot). Light theme: photo to full opacity under a much
+lighter wash (was 55% opacity under 78-98% cream — invisible); dark lifted to
+.62. Mobile bottom-anchors the photo at 125% so the crew fills the frame, not
+the mesquite tree. Patrik approved live ("much better with the full crew").
+
+**Status:** shipped — LIVE.
+
+### R13 — Centered crews, pro cable machine, full asset versioning (2026-09-03)
+
+Patrik: "some of the images are off center. we need them all to be centered."
+Measured each hero asset with gridlines: four sat at 57.5-58.8% (first crop
+pass overshot). Recropped from RAW in one measured pass; all five groups now
+straddle 50%. Client (via Patrik): the /emergency/ cabling machine "should be
+more like a Stryker, not that POS" — no Stryker drain brand exists (verified),
+read as heavy-duty-pro-rig. Regenerated 20-emergency-b per the brand recipe
+(Nano Banana multi-ref: old composition + livery + logo refs): large steel-cage
+drum machine, thick coiled cable, no brand lettering, same night scene. Livery
+sub-line text slightly mushy at pixel-zoom, invisible at page size. Also found
+and fixed a launch-class cache bug: only site.css/js/og.jpg were content-hash
+versioned while ALL /assets get a one-year immutable header — replacing any
+image under the same filename never reached returning visitors. Now every
+asset file is hashed. Test updated (asset URLs may carry ?v=). 43/43.
+
+**Status:** shipped — LIVE. Hero centering awaiting Patrik's live eyeball;
+19-emergency-a (page hero, Spartan cart) left as-is — flag if client wants
+that one beefed up too.

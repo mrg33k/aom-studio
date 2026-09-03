@@ -84,3 +84,15 @@ full-width white strip under the header (non-sticky by design), mobile-menu entr
 Built, 43/43 tests, deployed `vercel --prod`, live-verified desktop + 390px on
 wolfpackcompanies.com. GA tracks clicks via the existing handler (button_click with
 link_url = writereview URL).
+
+---
+
+## 2026-09-03 (later) — R12+R13: hero rotation, centering, emergency machine (rex)
+
+Hero: 5 real Aug-22 shoot photos rotate randomly; light-theme wash fixed (photo
+was invisible on white). Patrik approved, then flagged off-center crops — measured
+and recropped all to 50%, deployed. Emergency page: client called the AI cable
+machine a POS wanting "a Stryker" — regenerated with a heavy-duty steel drum rig
+per brand recipe, deployed. Structural fix: ALL assets now content-hash versioned
+(immutable-cache bug meant image swaps never reached returning visitors).
+Commits f67685e9, 7b69db02.
