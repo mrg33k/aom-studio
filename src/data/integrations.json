@@ -4,7 +4,7 @@
   "integrations": [
     { "slug": "gmail", "name": "Gmail", "category": "Communication", "description": "Read and send email on your behalf.", "auth_type": "oauth" },
     { "slug": "google-calendar", "name": "Google Calendar", "category": "Communication", "description": "Read and create calendar events.", "auth_type": "oauth" },
-    { "slug": "outlook", "name": "Outlook", "category": "Communication", "description": "Microsoft email + calendar.", "auth_type": "oauth", "oauth_status": "coming_soon" },
+    { "slug": "outlook", "name": "Outlook", "category": "Communication", "description": "Microsoft email + calendar.", "auth_type": "oauth" },
     { "slug": "slack", "name": "Slack", "category": "Communication", "description": "Post messages and read channels.", "auth_type": "oauth" },
     { "slug": "discord", "name": "Discord", "category": "Communication", "description": "Post to channels and read messages.", "auth_type": "oauth", "oauth_status": "coming_soon" },
     { "slug": "zoom", "name": "Zoom", "category": "Communication", "description": "Schedule and join meetings.", "auth_type": "oauth", "oauth_status": "coming_soon" },
