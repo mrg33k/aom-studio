@@ -488,17 +488,225 @@ main{padding:30px 40px 80px;max-width:900px}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion: reduce){.toast{transition:none}}
 
-@media (max-width:820px){
+/* Mobile chrome that is inert on desktop: the bottom tab bar, the sticky header wrapper, the sheet handle and shade. */
+.tabbar{display:none}
+.hd{display:block}
+#dock .grab,#dock .shade{display:none}
+@media (max-width:820px) and (orientation:landscape){
   .app{grid-template-columns:1fr}
   nav{border-right:0;border-bottom:1px solid var(--hair);padding:14px 0}
   nav .clients{display:flex;overflow-x:auto;gap:4px;padding:0 12px}
   nav .cl{width:auto;white-space:nowrap;border-radius:6px}
   nav .cl.on{box-shadow:inset 0 -3px 0 var(--gold)}
   nav .add{display:none}
-  main{padding:22px 18px 60px}
+  main{padding:22px 18px 60px;min-width:0}
+  .topbar{flex-wrap:wrap}
   .head h1{font-size:44px}
   .task{grid-template-columns:1fr;padding-left:20px}
   .report{grid-template-columns:1fr}
+}
+/* ---- Mobile first (portrait phones, under 820px). Desktop at 1000px+ is untouched. ---- */
+@media (max-width:819px) and (orientation:portrait){
+  html{-webkit-text-size-adjust:100%}
+  body{font-size:16px;line-height:1.5}
+  .app{grid-template-columns:1fr}
+  .app>*{min-width:0}
+  main{padding:0 16px calc(56px + env(safe-area-inset-bottom,0px) + 84px);max-width:none}
+  html[data-view="report"] main{padding-bottom:calc(56px + env(safe-area-inset-bottom,0px))}
+  /* 2. Client switcher: a chip strip under the page title, snap-scrolling, the count as a red number. */
+  nav{border-right:0;border-bottom:1px solid var(--hair);padding:14px 0 0}
+  nav .brand{padding:0 16px 10px;border-bottom:0;margin-bottom:0}
+  nav .brand .druk{font-size:28px}
+  nav .brand small{font-size:14px}
+  nav .lbl{display:none}
+  nav .strip{display:flex;gap:8px;overflow-x:auto;padding:2px 16px 14px;scroll-snap-type:x proximity;scroll-padding-left:16px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  nav .strip::-webkit-scrollbar{display:none}
+  nav .clients{display:contents}
+  nav .cl{flex:none;width:auto;min-height:44px;padding:0 14px;border:1px solid var(--hair);border-radius:999px;background:var(--card);gap:8px;font-size:15px;font-weight:600;white-space:nowrap;scroll-snap-align:start}
+  nav .cl.on{background:var(--gold-tint);border-color:var(--gold);box-shadow:none;color:var(--ink)}
+  nav .cl .n{font-size:0;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--alt);color:var(--ink-3);display:grid;place-items:center}
+  nav .cl .n::after{content:attr(data-n);font-size:12px;font-weight:700;line-height:1}
+  nav .cl .n.bad{background:var(--bad);color:#fff}
+  nav .cl .n[data-n=""]{display:none}
+  nav .add{flex:none;display:inline-flex;align-items:center;width:auto;margin:0;min-height:44px;padding:0 14px;border-radius:999px;font-size:15px;white-space:nowrap;scroll-snap-align:start}
+  /* 1. The segmented control goes; the bottom tab bar takes over. */
+  .topbar{margin:12px 0 8px;gap:8px;flex-wrap:wrap}
+  .views{display:none}
+  .topbar .st{font-size:14px;line-height:1.4}
+  .tabbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;height:calc(56px + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);background:var(--paper);border-top:1px solid var(--hair);z-index:39}
+  .tabbar button{position:relative;border:0;background:transparent;font-size:14px;font-weight:600;color:var(--ink-3);display:flex;align-items:center;justify-content:center;min-height:56px;padding:0;-webkit-tap-highlight-color:transparent}
+  .tabbar button.on{color:var(--gold);font-weight:700}
+  .tabbar button.on::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;background:var(--gold);border-radius:0 0 3px 3px}
+  /* 3. Sticky compact header: client name plus the dated Latest line. Shrinks once you scroll. */
+  .hd{position:sticky;top:0;z-index:30;background:var(--paper);margin:0 -16px;padding:6px 16px 8px;border-bottom:1px solid transparent}
+  .hd.shrink{border-bottom-color:var(--hair);padding:6px 16px}
+  .head{display:block;margin-bottom:4px}
+  .head h1{font-size:40px;line-height:.92;transition:font-size .15s}
+  .head .r{text-align:left;font-size:14px;margin-top:6px}
+  .head .r b{display:inline;font-size:15px;margin-left:6px}
+  .head .r small{display:block;margin:2px 0 0;font-size:13px}
+  .latest{font-size:14px;margin:2px 0 0}
+  .hd.shrink .head h1{font-size:26px}
+  .hd.shrink .head .r{display:none}
+  .hd.shrink .latest{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+  .hd.shrink .latest a{display:none}
+  /* 4. Tap targets: 44px on every control, no hover-only affordances, an edit hint on editable text until the first edit. */
+  .btn{min-height:44px;padding:10px 16px;font-size:16px;display:inline-flex;align-items:center;justify-content:center}
+  .btn.small{min-height:44px}
+  .seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;margin:14px 0 2px}
+  .seg button{min-height:44px;padding:0 8px;font-size:15px}
+  .bar{margin:12px 0 6px}
+  .barlbl{font-size:14px;margin-bottom:20px;flex-wrap:wrap;gap:4px 12px}
+  .notice button{min-width:44px;min-height:44px}
+  .latest a{display:inline-block;padding:6px 0}
+  .rp .rowx,.strat .mv .x,.tile.hz .mv .x,.ck .x,.ideas .idea .acts .x,.line .x,.sheet .sec .ed{opacity:1;color:var(--ink-4)}
+  .ideas .idea .acts{opacity:1}
+  .rp .rowx,.ck .x,.ideas .idea .acts .x{min-width:44px;min-height:44px;display:inline-grid;place-items:center;font-size:20px;padding:0;margin:-8px 0}
+  .ck .box,.ideas .idea .st,.strat .mv i,.tile.hz .mv i,.rp .tag.clk,.rp .pri.clk,.ideas .idea .k,.play-h .chev{position:relative}
+  .ck .box::before,.ideas .idea .st::after,.strat .mv i::after,.tile.hz .mv i::after{content:"";position:absolute;inset:-15px}
+  .rp .tag.clk::after,.rp .pri.clk::after,.ideas .idea .k::after{content:"";position:absolute;inset:-8px -6px}
+  html:not(.edited) main [contenteditable]{text-decoration:underline dotted var(--ink-4);text-decoration-thickness:1px;text-underline-offset:4px}
+  html:not(.edited) .rp [contenteditable]{text-decoration-color:var(--rule)}
+  html:not(.edited) .head h1[contenteditable]{text-decoration-color:var(--hair);text-underline-offset:6px}
+  input,textarea,select{font-size:16px}
+  /* 6. Engine steps: one-tap header, tasks stack, primary button full width, Not now as text under it. */
+  .step{margin-bottom:12px}
+  .step-h{grid-template-columns:32px minmax(0,1fr);gap:12px;padding:16px;min-height:44px}
+  .step-h h2{font-size:18px}
+  .step-h p{font-size:16px;margin-top:4px}
+  .step-h .st{grid-column:2;justify-self:start;font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-top:2px}
+  .step-h .touch{font-size:13px}
+  .task{grid-template-columns:1fr;gap:12px;padding:16px}
+  .task h3{font-size:17px;line-height:1.3}
+  .task p{font-size:16px;max-width:none}
+  .task .who{font-size:14px}
+  .task>div:last-child{display:flex;flex-direction:column;align-items:stretch;gap:2px}
+  .task .btn{width:100%;min-height:48px}
+  .task .btn.quiet{border:0;background:transparent;color:var(--ink-3);text-decoration:underline;text-decoration-color:var(--hair);text-underline-offset:4px;min-height:44px}
+  .task .did{white-space:normal;font-size:15px}
+  .target,.ms{padding:14px 16px}
+  .ms{grid-template-columns:auto minmax(0,1fr);gap:4px 12px;font-size:16px}
+  .ms .k{grid-column:2}
+  .report{grid-template-columns:1fr;padding:20px 16px;margin-top:24px}
+  .report .btn{width:100%}
+  .report p{font-size:15px}
+  /* 7. Strategy: the north star band full-bleed, chart rows stack, play bodies stack with a full-width progress track. */
+  .north1{margin:14px -16px 16px;border-radius:0;padding:24px 16px;grid-template-columns:1fr;gap:20px}
+  .north1 .big{font-size:34px}
+  .north1 .why{font-size:16px}
+  .north1 .tot{text-align:left}
+  .ovw{padding:18px 16px 14px;margin-bottom:16px}
+  .ovw h3{flex-direction:column;gap:2px}
+  .ovw .row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"name st" "track track";gap:8px 12px;padding:14px 0;min-height:44px}
+  .ovw .row b{grid-area:name;font-size:16px}
+  .ovw .row .track{grid-area:track;height:14px}
+  .ovw .row .tick{top:-3px;height:20px}
+  .ovw .row .st{grid-area:st;align-self:start;padding-top:2px}
+  .ovw .axis{grid-template-columns:1fr;margin-top:8px}
+  .ovw .axis>div:first-child,.ovw .axis>div:last-child{display:none}
+  .play{margin-bottom:12px}
+  .play-h{grid-template-columns:32px minmax(0,1fr) 18px;gap:12px;padding:16px}
+  .play-h h2{font-size:18px}
+  .play-h p{font-size:16px}
+  .play-h .nx{font-size:15px;flex-wrap:wrap}
+  .play-h .pbw,.play-h .st{display:none}
+  .play-b{grid-template-columns:1fr}
+  .play-b .lft{padding:20px 16px;border-right:0;border-bottom:1px solid var(--hair-2)}
+  .play-b .rgt{padding:20px 16px 8px}
+  .play-b .ov{font-size:16px;max-width:none}
+  .ck li{grid-template-columns:24px minmax(0,1fr) 44px;gap:4px 12px;font-size:16px;padding:12px 0;align-items:start}
+  .ck .box{width:22px;height:22px;margin-top:1px}
+  .ck .x{grid-area:1/3;margin:-10px 0 -10px}
+  .ck .when{grid-area:2/2;padding-top:0}
+  .addck,.addmv,.addidea,.rp .addin{min-height:44px;font-size:16px}
+  .prog .track{margin:32px 28px 36px}
+  .measure{font-size:15px}
+  /* Ideas: dot, kind, text, then the actions as 44px buttons. */
+  .ideas{padding:16px;margin-top:14px}
+  .ideas h3{font-size:14px}
+  .ideas small{font-size:14px}
+  .ideas .idea{grid-template-columns:26px auto minmax(0,1fr);gap:10px 10px;font-size:16px;padding:14px 0;align-items:center}
+  .ideas .idea .st{grid-area:1/1;width:14px;height:14px;margin:0}
+  .ideas .idea .t{grid-area:1/2/2/4;line-height:1.45}
+  .ideas .idea .k{grid-area:2/2;justify-self:start;padding:6px 10px;font-size:11px;margin-top:0}
+  .ideas .idea .acts{grid-area:3/1/4/4;display:flex;gap:8px;white-space:normal;margin-top:0}
+  .ideas .idea .acts button{flex:1 1 0;min-height:44px;padding:0 8px;font-size:14px}
+  .ideas .idea .acts .x{flex:0 0 44px}
+  .ideas .legend{font-size:13px;line-height:1.5}
+  /* 5 + 10. Report: tables become stacked cards; week chips snap-scroll; the send bar sticks above the tab bar. */
+  .rp{padding:20px 16px 24px;font-size:16px;line-height:1.5;max-width:none}
+  .rp .hdr{flex-direction:column;gap:12px;padding-bottom:14px;margin-bottom:20px}
+  .rp .hdr h1{font-size:36px}
+  .rp .hdr-left p,.rp .recips{font-size:14px}
+  .rp .hdr-right{text-align:left;font-size:14px;line-height:1.6}
+  .rp .hdr-right strong{font-size:15px}
+  .rp .hdr-right a{margin:0 14px 0 0;display:inline-block;padding:4px 0}
+  .rp .hdr-right .addin{width:100% !important;text-align:left !important;font-size:16px !important}
+  .rp .logo{height:36px;margin-right:10px}
+  .rp .weeks{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 -16px 20px;padding:2px 16px;gap:8px;font-size:12px}
+  .rp .weeks::-webkit-scrollbar{display:none}
+  .rp .weeks span{flex:none;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;scroll-snap-align:start}
+  .rp .weeks .btn{flex:none;min-height:44px !important;padding:0 14px !important;font-size:12px !important;scroll-snap-align:start}
+  .rp .hint,.rp .banner{font-size:14px;margin:-8px 0 18px;line-height:1.45}
+  .rp .banner{flex-direction:column;align-items:flex-start}
+  .rp .sec{margin-bottom:26px}
+  .rp .sec-title{font-size:12px;flex-wrap:wrap;gap:2px 10px}
+  .rp .sec-title small{font-size:13px}
+  .rp table,.rp tbody{display:block;width:100%}
+  .rp tr.th{display:none}
+  .rp tr{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:12px 0;border-bottom:1px solid var(--soft)}
+  .rp td{display:block;padding:0;border:0;width:auto}
+  .rp td.num{flex:none;width:auto;font-size:13px;text-align:left}
+  .rp .name,.rp table.ttk td:nth-child(2){flex:1 1 60%;min-width:0;font-size:16px;line-height:1.4}
+  .rp .rowx{flex:none;margin-left:auto;order:3}
+  .rp table.tms .barc{flex:1 1 170px;width:auto;padding:0;order:4}
+  .rp table.tms td:nth-child(4){order:5}
+  .rp .ms-bar{height:10px}
+  .rp .ms-bar.clk::after{content:"";position:absolute;left:0;right:0;top:-17px;bottom:-17px}
+  .rp .ms-bar{position:relative}
+  .rp table.ttk td:nth-child(3){order:4}
+  .rp table.ttk td:nth-child(4){order:5}
+  .rp table.ttk td:nth-child(5){order:6}
+  .rp table.ttk td:nth-child(6){order:7}
+  .rp .pri{padding:7px 0;font-size:11px}
+  .rp .chk{width:auto;font-size:16px}
+  .rp .chk:empty{display:none}
+  .rp .src{display:none}
+  .rp .tag{font-size:11px;padding:7px 10px}
+  .rp tr.addrow{display:block;padding:4px 0 0;border-bottom:0}
+  .rp tr.addrow td{display:block}
+  .rp tr.addrow td:first-child{display:none}
+  .rp .ask-row{flex-wrap:wrap;gap:2px 10px;align-items:center;padding:12px 0;margin:0;border-bottom:1px solid var(--soft);font-size:16px}
+  .rp .ask-label{min-width:0;flex:1 1 60%}
+  .rp .ask-detail{flex:1 1 100%;order:5;font-size:15px}
+  .rp .notes{padding:12px 14px;font-size:16px}
+  .rp .notes textarea{font-size:16px;min-height:64px}
+  .rp .ftr{flex-wrap:wrap;gap:4px 12px;font-size:11px}
+  .rp .x{min-width:44px;min-height:44px}
+  .sendbar{position:sticky;bottom:calc(56px + env(safe-area-inset-bottom,0px));z-index:31;margin:20px -16px 0;border-radius:0;padding:12px 16px;grid-template-columns:minmax(0,1fr) auto;gap:12px;box-shadow:0 -8px 24px -16px rgba(0,0,0,.4)}
+  .sendbar h2{font-size:15px;line-height:1.3}
+  .sendbar p{display:none}
+  .sendbar>div:last-child{display:flex;gap:8px;flex:none}
+  .sendbar .btn{padding:10px 14px;font-size:15px}
+  /* 8. Conversation: pill above the tab bar, panel as a bottom sheet with a handle and a keyboard-safe composer. */
+  #dock .pill-btn{right:16px;bottom:calc(56px + env(safe-area-inset-bottom,0px) + 12px);min-height:48px;padding:12px 18px;font-size:15px;max-width:calc(100vw - 32px)}
+  html[data-view="report"] #dock .pill-btn{bottom:calc(56px + env(safe-area-inset-bottom,0px) + 68px + 12px)}
+  #dock .shade{display:block;position:fixed;inset:0;background:rgba(11,11,11,.38);z-index:41}
+  #dock .panel{left:0;right:0;top:auto;bottom:0;width:auto;height:90dvh;max-height:none;border-radius:16px 16px 0 0;border-bottom:0;z-index:42;transition:transform .2s ease-out}
+  #dock .panel .th{position:relative;padding:18px 16px 12px;align-items:flex-start;touch-action:pan-y}
+  #dock .grab{display:block;position:absolute;left:50%;top:6px;width:40px;height:4px;margin-left:-20px;border-radius:2px;background:var(--hair)}
+  #dock .panel .th h3{font-size:13px}
+  #dock .panel .th button{min-width:44px;min-height:44px;margin:-10px -8px -10px 0;font-size:24px}
+  #dock .panel .msgs{padding:12px 16px;max-height:none;-webkit-overflow-scrolling:touch}
+  .talk .m{max-width:88%;font-size:16px;line-height:1.5}
+  .talk .m .acts button{min-height:40px;padding:0 12px;font-size:14px}
+  #dock .panel .sugg{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:8px 16px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #dock .panel .sugg::-webkit-scrollbar{display:none}
+  #dock .panel .sugg button{flex:none;min-height:40px;padding:0 14px;font-size:14px}
+  #dock .panel .comp{padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+  #dock .panel .comp input{min-height:46px;font-size:16px}
+  #dock .panel .comp .btn{min-height:46px}
+  .toast{bottom:calc(56px + env(safe-area-inset-bottom,0px) + 16px);max-width:calc(100vw - 32px);text-align:center;z-index:45}
 }
 /* Real-data additions: the ledger strip, step freshness, notices, live thread. */
 .latest{display:flex;gap:12px;align-items:baseline;justify-content:space-between;font-size:14px;color:var(--ink-3);margin:2px 0 6px;flex-wrap:wrap;line-height:1.4}
@@ -537,13 +745,14 @@ main{padding:30px 40px 80px;max-width:900px}
   <nav>
     <div class="brand"><div class="druk">Client Engine</div><small id="brandsub">This week</small></div>
     <div class="lbl">Clients</div>
-    <div class="clients" id="clients"></div>
-    <button class="add" id="add">+ Add a client</button>
+    <div class="strip"><div class="clients" id="clients"></div>
+    <button class="add" id="add">+ Add a client</button></div>
   </nav>
   <main id="main"><div class="loading">Loading the engine…</div></main>
 </div>
 <div class="toast" id="toast"></div>
 <div id="dock"></div>
+<nav class="tabbar" id="tabbar" aria-label="Sections"><button data-v="engine" class="on">Engine</button><button data-v="strategy">Strategy</button><button data-v="ideas">Ideas</button><button data-v="report">Report</button></nav>
 
 <script>
 // ---- Seed data (from the ratified sketch). Used only the first time a client is opened; after that the engine document on Convex is the source. ----
@@ -990,8 +1199,8 @@ function chatHtml(){
     if(m.who==="me") return `<div class="m me">${m.name&&m.name!=="You"?`<div class="who">${esc(m.name)}</div>`:""}${esc(m.t)}<div class="when">${m.pending?"sending…":rel(m.at)}</div></div>`;
     return `<div class="m ag"><div class="who">${esc(m.name||doc.agent)}</div>${m.server?esc(m.t).replace(/\n/g,"<br>"):m.t}${m.acts&&m.acts.length?`<div class="acts">${m.acts.map(a=>`<button data-chatact="${esc(a)}" data-src="${encodeURIComponent(m.q||"")}">${esc(a)}</button>`).join("")}</div>`:""}${m.server?`<div class="when">${rel(m.at)}</div>`:""}</div>`;
   }).join(""):`<div class="m sys">${live?"No messages in this room yet.":"Nothing here yet. Ask a question; the answer comes from the ledger."}</div>`;
-  return `<section class="talk panel">
-    <div class="th"><div><h3>${esc(doc.agent)} · ${esc(META[k].name)}</h3><small>${sub}</small></div><button data-act="chatclose" title="Close">×</button></div>
+  return `<div class="shade" data-act="chatclose"></div><section class="talk panel">
+    <div class="th"><div class="grab"></div><div><h3>${esc(doc.agent)} · ${esc(META[k].name)}</h3><small>${sub}</small></div><button data-act="chatclose" title="Close">×</button></div>
     <div class="msgs" id="msgs">${body}${C.waiting?`<div class="m wait"><i></i>${esc(doc.agent)} is answering…</div>`:""}</div>
     <div class="sugg">${["What's happening this week?","What are we doing in the next 30 days?","Where are we in 90 days?","Why are we behind?"].map(x=>`<button data-sugg="${esc(x)}">${esc(x)}</button>`).join("")}</div>
     <div class="comp"><input id="chatin" placeholder="Ask about ${esc(META[k].name)}, or tell me something to remember"><button class="btn" data-act="chatsend">Send</button></div>
@@ -1007,9 +1216,28 @@ async function sendChat(text){
   if(liveChat(k)){ await sendToRoom(k,text,true); return; }
   const at=Date.now(); C.local.push({who:"me",t:text,at,name:S.me&&S.me.first||"You"}); const a=answerFromLedger(k,text); C.local.push({who:"ag",t:a.t,acts:a.acts,q:text,at:at+1}); renderDock();
 }
+// Mobile (portrait, under 820px): the panel is a bottom sheet. It is sized to the
+// visual viewport so the composer stays above the keyboard, and drags down to close.
+const isMobile=()=>window.matchMedia("(max-width:819px) and (orientation:portrait)").matches;
+function fitSheet(){
+  const p=document.querySelector("#dock .panel"); if(!p) return;
+  if(!isMobile()){ p.style.height=p.style.top=p.style.bottom=""; return; }
+  const vv=window.visualViewport; if(!vv) return;
+  if(vv.height>=window.innerHeight-80){ p.style.height=p.style.top=p.style.bottom=""; return; } // no keyboard: the CSS sheet (90dvh, bottom 0) is right
+  const h=Math.round(vv.height*0.9); p.style.height=h+"px"; p.style.top=Math.round(vv.offsetTop+vv.height-h)+"px"; p.style.bottom="auto";
+  const box=document.getElementById("msgs"); if(box) box.scrollTop=box.scrollHeight;
+}
+let focusNext=false;
 function wireChat(){
   const inp=document.getElementById("chatin"); if(!inp) return;
-  inp.focus();
+  fitSheet();
+  if(!isMobile()||focusNext) inp.focus(); focusNext=false;
+  const th=document.querySelector("#dock .panel .th"), panel=document.querySelector("#dock .panel");
+  if(th&&panel){ let y0=null, dy=0;
+    th.addEventListener("touchstart",e=>{ y0=e.touches[0].clientY; dy=0; panel.style.transition="none"; },{passive:true});
+    th.addEventListener("touchmove",e=>{ if(y0===null) return; dy=Math.max(0,e.touches[0].clientY-y0); panel.style.transform=`translateY(${dy}px)`; },{passive:true});
+    th.addEventListener("touchend",()=>{ if(y0===null) return; y0=null; panel.style.transition=""; if(dy>110){ chatOpen=false; renderDock(); } else panel.style.transform=""; });
+  }
   inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ sendChat(inp.value); } });
   document.querySelectorAll("[data-sugg]").forEach(b=>b.addEventListener("click",()=>sendChat(b.dataset.sugg)));
   document.querySelectorAll("[data-chatact]").forEach(b=>b.addEventListener("click",()=>{
@@ -1110,12 +1338,14 @@ function stepState(st){
 }
 function renderNav(){
   document.getElementById("brandsub").textContent=mondayLabel();
+  const strip=document.querySelector("nav .strip"), sl=strip?strip.scrollLeft:0;
   document.getElementById("clients").innerHTML=ORDER.map(k=>{
-    const c=S.docs[k]; if(!c) return `<button class="cl ${k===S.cur?"on":""}" data-c="${k}"><span>${esc(META[k].name)}</span><span class="n">loading</span></button>`;
+    const c=S.docs[k]; if(!c) return `<button class="cl ${k===S.cur?"on":""}" data-c="${k}"><span>${esc(META[k].name)}</span><span class="n" data-n="…">loading</span></button>`;
     const all=c.steps.flatMap(s=>s.tasks).filter(t=>!isSnoozed(t));
     const open=all.filter(t=>!t.done&&!t.busy&&t.btn).length, you=all.filter(t=>!t.done&&t.you).length;
-    return `<button class="cl ${k===S.cur?"on":""}" data-c="${k}"><span>${esc(META[k].name)}</span><span class="n ${you?"bad":""}">${you?you+" for you":open?open+" to do":"clear"}</span></button>`;
+    return `<button class="cl ${k===S.cur?"on":""}" data-c="${k}"><span>${esc(META[k].name)}</span><span class="n ${you?"bad":""}" data-n="${you||open||""}">${you?you+" for you":open?open+" to do":"clear"}</span></button>`;
   }).join("");
+  if(strip) strip.scrollLeft=sl;
   document.querySelectorAll(".cl").forEach(b=>b.addEventListener("click",()=>{ S.cur=b.dataset.c; if(S.docs[S.cur]){ openSteps[S.cur]=openSteps[S.cur]??firstOpen(); } render(); ensureLoaded(S.cur); }));
 }
 function firstOpen(){const c=D();const i=c.steps.findIndex(s=>stepState(s)!=="done");return i<0?0:i;}
@@ -1131,7 +1361,7 @@ function topbar(){
     <div class="st">${st}</div>
   </div><div id="notice">${noticeHtml()}</div>`;
 }
-function headHtml(){ const k=S.cur, doc=D(k), m=S.meta[k]||{}; return `<div class="head"><h1 class="druk" contenteditable data-docname>${esc(doc.name||META[k].name)}</h1><div class="r">Next touch<b contenteditable data-docwho>${esc(doc.who||"")}</b>${m.updatedAt?`<small>engine saved ${rel(m.updatedAt)}${m.updatedBy&&m.updatedBy!=="page"?" by "+esc(m.updatedBy):""}</small>`:""}</div></div>${latestStrip(k)}`; }
+function headHtml(){ const k=S.cur, doc=D(k), m=S.meta[k]||{}; return `<div class="hd ${window.scrollY>60?"shrink":""}"><div class="head"><h1 class="druk" contenteditable data-docname>${esc(doc.name||META[k].name)}</h1><div class="r">Next touch<b contenteditable data-docwho>${esc(doc.who||"")}</b>${m.updatedAt?`<small>saved ${rel(m.updatedAt)}${m.updatedBy&&m.updatedBy!=="page"?" by "+esc(m.updatedBy):""}</small>`:""}</div></div>${latestStrip(k)}</div>`; }
 function wireHead(){ const k=S.cur, doc=D(k); const n=document.querySelector("[data-docname]"); if(n) n.addEventListener("blur",()=>{ doc.name=n.textContent.trim()||META[k].name; save(k); toast("Saved."); }); const w=document.querySelector("[data-docwho]"); if(w) w.addEventListener("blur",()=>{ doc.who=w.textContent.trim(); save(k); toast("Saved."); }); }
 
 // ---- Report tab = the live client page on the real reports store ----
@@ -1158,7 +1388,7 @@ function renderReport(){
 
       <div class="sec">
         <div class="sec-title"><span>Project milestones</span><small>${rows.milestones.length} milestones</small></div>
-        ${rows.milestones.length||live?`<table><tr><th class="num">#</th><th>Milestone</th><th>Progress</th><th>Status</th><th></th></tr>
+        ${rows.milestones.length||live?`<table class="tms"><tr class="th"><th class="num">#</th><th>Milestone</th><th>Progress</th><th>Status</th><th></th></tr>
         ${rows.milestones.map((x,xi)=>`<tr data-row="milestones:${x.i}"><td class="num">${xi+1}</td><td class="name" ${ce("name")}>${esc(x.name)}</td><td class="barc"><div class="ms-bar ${live?"clk":""}" data-field="progress" title="${live?"Click to set progress":""}"><div class="ms-fill ${esc(x.status)}" style="width:${Number(x.progress)||0}%"></div></div></td><td><span class="tag ${esc(x.status)} ${live?"clk":""}" data-field="status" title="${live?"Click to change":""}">${esc(x.statusLabel)}</span></td><td>${live?`<button class="rowx" data-act="droprow" title="Remove">×</button>`:""}</td></tr>`).join("")}
         ${live?`<tr class="addrow"><td></td><td colspan="4"><input class="addin" data-addin="milestones" placeholder="Add a milestone and press Enter"></td></tr>`:""}
         </table>`:`<p class="empty">No milestones this week.</p>`}
@@ -1166,7 +1396,7 @@ function renderReport(){
 
       <div class="sec">
         <div class="sec-title"><span>This week&rsquo;s tasks</span><small>${live?autoT+" from the engine and the ledger"+(youT?", "+youT+" added by you":""):rows.tasks.length+" tasks"}</small></div>
-        ${rows.tasks.length||live?`<table><tr><th class="num">#</th><th>Task</th><th>Status</th><th>Pri</th><th></th><th></th><th></th></tr>
+        ${rows.tasks.length||live?`<table class="ttk"><tr class="th"><th class="num">#</th><th>Task</th><th>Status</th><th>Pri</th><th></th><th></th><th></th></tr>
         ${rows.tasks.map((t,ti)=>`<tr data-row="tasks:${t.i}"><td class="num">${ti+1}</td><td ${ce("text")}>${esc(t.text)}</td><td><span class="tag ${esc(t.status)} ${live?"clk":""}" data-field="status" title="${live?"Click to change":""}">${esc(t.statusLabel)}</span></td><td class="pri ${live?"clk":""}" data-field="priority" title="${live?"Click to change":""}">${esc(t.priority)}</td><td class="chk">${t.status==="done"?"✓":""}</td><td class="src ${t.src==="you"?"you":""}">${t.src}</td><td>${live?`<button class="rowx" data-act="droprow" title="Remove">×</button>`:""}</td></tr>`).join("")}
         ${live?`<tr class="addrow"><td></td><td colspan="6"><input class="addin" data-addin="tasks" placeholder="Add a task for this week and press Enter"></td></tr>`:""}
         </table>`:`<p class="empty">No tasks this week.</p>`}
@@ -1286,6 +1516,8 @@ function wire(){
 function render(){
   if(!S.ready) return;
   renderNav();
+  document.documentElement.dataset.view=S.view;
+  document.querySelectorAll("#tabbar [data-v]").forEach(b=>b.classList.toggle("on",b.dataset.v===S.view));
   setTimeout(renderDock,0);
   if(!D()){ document.getElementById("main").innerHTML=`<div class="loading">Loading ${esc(META[S.cur].name)}…</div>`; return; }
   if(S.view==="report"){renderReport();return;}
@@ -1321,7 +1553,7 @@ function onAct(e){
   if(act==="newweek"){ S.newweekArmed=k; render(); return; }
   if(act==="newweek2"){ S.newweekArmed=null; newWeek(k); return; }
   if(act==="golive"){ wk.idx[k]=(R?R.weeks.length:0); render(); return; }
-  if(act==="chatopen"){ chatOpen=true; renderDock(); if(!chatState(k).loaded) loadRoom(k).then(renderDock); return; }
+  if(act==="chatopen"){ chatOpen=true; focusNext=true; renderDock(); if(!chatState(k).loaded) loadRoom(k).then(renderDock); return; }
   if(act==="chatclose"){ chatOpen=false; renderDock(); return; }
   if(act==="chatsend"){ const inp=document.getElementById("chatin"); if(inp) sendChat(inp.value); return; }
   const sec=e.currentTarget.closest(".step"), row=e.currentTarget.closest(".task"); if(!sec||!row) return;
@@ -1363,6 +1595,12 @@ async function boot(){
   window.addEventListener("storage",e=>{ if(e.key===SESSION_KEY) loadMe().then(()=>{ if(!editing()) render(); }); });
 }
 document.getElementById("add").addEventListener("click",()=>toast("New client gets the same four steps and a Friday report. Add it to META and the reports store."));
+// Mobile chrome: bottom tab bar, the compact sticky header, the edit hint, the keyboard-aware sheet.
+document.querySelectorAll("#tabbar [data-v]").forEach(b=>b.addEventListener("click",()=>{ S.view=b.dataset.v; S.newweekArmed=null; render(); window.scrollTo({top:0}); }));
+window.addEventListener("scroll",()=>{ const h=document.querySelector(".hd"); if(h) h.classList.toggle("shrink",window.scrollY>60); },{passive:true});
+try{ if(sessionStorage.getItem("ce.edited")) document.documentElement.classList.add("edited"); }catch(e){}
+document.addEventListener("input",e=>{ if(e.target&&e.target.isContentEditable){ document.documentElement.classList.add("edited"); try{ sessionStorage.setItem("ce.edited","1"); }catch(x){} } },true);
+if(window.visualViewport){ visualViewport.addEventListener("resize",fitSheet); visualViewport.addEventListener("scroll",fitSheet); }
 boot();
 
 </script>
