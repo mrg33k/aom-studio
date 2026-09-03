@@ -16,6 +16,7 @@ const ALLOWED_ORIGINS = new Set([
 const CTA_LABELS = {
   call: 'Call phone number',
   review: 'Google review button',
+  walkthrough: 'Request a walkthrough (form opened)',
 };
 
 // `${ip}|${cta}` -> epoch-ms of last accepted notification
