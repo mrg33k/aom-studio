@@ -1,59 +1,77 @@
 // GET  /api/dashboard/support-autoreply?world=aom                      (user JWT)
-// POST /api/dashboard/support-autoreply { action: 'off'|'restore'|'clear' }  (user JWT)
-// GET  /api/dashboard/support-autoreply?sync=1                         (service key)
-// POST /api/dashboard/support-autoreply?sync=1 { file_state, consumed_token? } (service key)
+// POST /api/dashboard/support-autoreply { action: 'off'|'restore'|'clear'|'save' }  (user JWT)
+// GET  /api/dashboard/support-autoreply?sync=1                         (internal key)
+// POST /api/dashboard/support-autoreply?sync=1 { file_state, consumed_token? } (internal key)
 //
-// The Email screen's honest auto-reply switch (corner:one-corner drop 3, Patrik
-// 2026-07-20: "if email has an auto reply on, we need to be able to know that /
-// control it"). The support pipeline's auto-send lanes are gated by
-// corner/state/support-soft-ack.json ON DISK, which this serverless function
-// cannot touch — so the control plane is a pair of cm_state rows, one per writer,
-// so the two lanes can never clobber each other (xhigh review finding 13):
+// The Email screen's honest auto-reply switch (Patrik 2026-07-20: "if email
+// has an auto reply on, we need to be able to know that / control it"). The
+// support pipeline's auto-send lanes are gated by
+// corner/state/support-soft-ack.json on disk, which this serverless function
+// cannot touch, so the control plane is a pair of keyed state rows, one per
+// writer, so the two lanes can never clobber each other:
 //   CONTROL row (user lane only):   { control: {mode?, answer_mode?, requested_at},
 //                                     last_on: {mode, answer_mode} | null }
 //   FILESTATE row (watcher only):   { file_state: {mode, answer_mode, threshold_min, synced_at} }
-// The watcher (support-email-watch.py, fresh process every 60s) pulls `control`,
-// rewrites the JSON gate, and pushes disk truth back with a consumed_token so the
-// control clears only when it was actually applied (compare-and-clear).
+// The watcher (support-email-watch.py, fresh process every 60s) pulls
+// `control`, rewrites the JSON gate, and pushes disk truth back with a
+// consumed_token so the control clears only when it was actually applied.
 //
-// Escalation safety (finding 1): the user lane never invents a configuration.
-// 'off' remembers what was on (last_on) and requests mode:'off' ONLY; 'restore'
-// re-requests exactly what was on before. If nothing was remembered, restore is
-// refused rather than inventing a live policy. answer_mode can therefore never
-// be escalated from this screen — only restored.
-// Staleness safety (finding 2): the watcher refuses controls older than 15
-// minutes (it consumes them unapplied), and the user lane can 'clear' a pending
-// control at any time.
+// Escalation safety: the user lane never invents a configuration. 'off'
+// remembers what was on (last_on) and requests mode:'off' only; 'restore'
+// re-requests exactly what was on before, and is refused when nothing was
+// remembered. Staleness safety: the watcher refuses controls older than 15
+// minutes, and the user lane can 'clear' a pending control at any time.
+//
+// Backend: Convex state:get / state:put (corner:retire-supabase R2,
+// 2026-09-03). The watcher lane authenticates with CORNER_INTERNAL_KEY, sent
+// as `X-Internal-Key: <key>` or `Authorization: Bearer <key>`.
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
-import { stateGet, stateSet } from '../_lib/stateStore.js';
+import { convexQuery, convexMutation } from '../_lib/reportsStore.js';
 
 const CONTROL_KIND = 'support_autoreply_control';
 const STATE_KIND = 'support_autoreply_filestate';
+const SCOPE_ID = 'all';
 const WORLD = 'aom'; // the support desk is AOM's; the UI gates the strip to this world
 
 const ON_MODES = new Set(['test', 'live']);
 
 function serviceAuthorized(req) {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  const key = process.env.CORNER_INTERNAL_KEY || '';
+  if (!key) return false;
+  const header = String(req.headers['x-internal-key'] || '');
   const auth = String(req.headers.authorization || '');
-  return key && auth === `Bearer ${key}`;
+  return header === key || auth === `Bearer ${key}`;
 }
 
 const loadRow = async (kind) => {
-  const payload = await stateGet(kind, 'all', WORLD);
-  return (payload && typeof payload === 'object') ? payload : {};
+  try {
+    const row = await convexQuery('state:get', { kind, scopeId: SCOPE_ID, worldSlug: WORLD });
+    const payload = row && typeof row === 'object' ? row.value : null;
+    return (payload && typeof payload === 'object') ? payload : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveRow = async (kind, value, updatedBy) => {
+  try {
+    const r = await convexMutation('state:put', { kind, scopeId: SCOPE_ID, worldSlug: WORLD, value, updatedBy });
+    return !!(r && r.ok);
+  } catch {
+    return false;
+  }
 };
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Internal-Key');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const syncLane = req.query.sync === '1' || req.query.sync === 'true';
   if (syncLane) {
-    if (!serviceAuthorized(req)) return res.status(401).json({ error: 'service key required' });
+    if (!serviceAuthorized(req)) return res.status(401).json({ error: 'internal key required' });
   } else {
     try {
       await verifyTenant(WORLD, req);
@@ -77,10 +95,10 @@ export default async function handler(req, res) {
     const body = req.body || {};
 
     if (syncLane) {
-      // Watcher lane: write disk truth to ITS OWN row, and compare-and-clear the
-      // control only when the watcher proves it consumed this exact request.
+      // Watcher lane: write disk truth to its own row, and compare-and-clear
+      // the control only when the watcher proves it consumed this request.
       const fs = body.file_state || {};
-      const ok = await stateSet(STATE_KIND, 'all', WORLD, {
+      const ok = await saveRow(STATE_KIND, {
         file_state: {
           mode: String(fs.mode || ''),
           answer_mode: String(fs.answer_mode || ''),
@@ -90,12 +108,12 @@ export default async function handler(req, res) {
           sign_off: String(fs.sign_off || ''),
           synced_at: new Date().toISOString(),
         },
-      });
+      }, 'support-email-watch');
       if (!ok) return res.status(502).json({ error: 'state store write failed' });
       if (body.consumed_token) {
         const ctl = await loadRow(CONTROL_KIND);
         if (ctl.control && ctl.control.requested_at === body.consumed_token) {
-          await stateSet(CONTROL_KIND, 'all', WORLD, { ...ctl, control: null });
+          await saveRow(CONTROL_KIND, { ...ctl, control: null }, 'support-email-watch');
         }
       }
       return res.status(200).json({ ok: true });
@@ -141,7 +159,7 @@ export default async function handler(req, res) {
         requested_at: new Date().toISOString(),
       };
     }
-    const ok = await stateSet(CONTROL_KIND, 'all', WORLD, ctl);
+    const ok = await saveRow(CONTROL_KIND, ctl, 'dashboard');
     if (!ok) return res.status(502).json({ error: 'state store write failed' });
     const st = await loadRow(STATE_KIND);
     const canRestore = !!(ctl.last_on && ON_MODES.has(ctl.last_on.mode));

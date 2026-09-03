@@ -1,23 +1,23 @@
 // PATCH /api/dashboard/v2-task-update
-// Updates a v2 task in Supabase via REST API with state-machine enforcement.
+// Updates a task in the Convex queue with state-machine enforcement
+// (corner:retire-supabase R2, 2026-09-03; was Supabase REST).
 //
-// AUTH (r7:open-agent-surface, 2026-07-27). Unauthenticated with
-// `Access-Control-Allow-Origin: *`. Task UUIDs are not secret — they surface on
-// several read paths — so anyone holding one could drive another world's task
-// through the state machine: flip a `queued` row to `running` so the runner
-// never claims it, mark live work `failed`, or write `result`/`error`/`qa_notes`
-// that a human then reads as the agent's own report. The state machine bounded
-// WHICH transitions were legal, never WHO could make them.
+// Auth: gated on the task's own client_id, resolved from the row before any
+// write. A member of the owning world passes without being an admin; every
+// other world is refused.
 //
-// Gated on the TASK'S OWN client_id, resolved from the row before any write —
-// the same shape retry-task.js and foreman-pause.js use. A member of the owning
-// world passes without being an admin; every other world is refused.
+// Writes go through tasks:update with require_status set to the status we
+// read, so a concurrent transition (the runner claiming the row) makes this
+// patch a no-op instead of a silent overwrite. Fields the queue row does not
+// carry as columns (qa_notes, attempt_count) live under metadata.
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
 import { applyCors, sendAuthError } from '../_lib/originAllowlist.js';
+import { convexQuery, convexMutation } from '../_lib/reportsStore.js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+// Optional write key for the gated queue mutations (tasks:update,
+// tasks:logEvent). Unset on dev today; JSON drops an undefined field.
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || undefined;
 
 const TRANSITIONS = {
   queued: ['classifying', 'running'],
@@ -29,10 +29,14 @@ const TRANSITIONS = {
   failed: ['queued', 'superseded'],
 };
 
-// ── Auto-supersede failed duplicates ────────────────────────────────────────
-// When a task completes successfully, find failed tasks with similar titles
-// (≥50% keyword overlap) and mark them as superseded. Fully non-fatal.
+// Statuses the queue stores. The old dashboard names map onto them; the
+// original name is kept under metadata.stage so nothing is lost.
+const QUEUE_STATUSES = new Set(['queued', 'running', 'building', 'done', 'failed', 'needs_input', 'blocked', 'cancelled']);
+const STAGE_MAP = { classifying: 'running', planning: 'running', qa: 'building', superseded: 'cancelled' };
 
+// Auto-supersede failed duplicates: when a task completes, failed tasks in the
+// same world with similar titles (50% keyword overlap or more) are cancelled
+// and marked superseded. Fully non-fatal.
 const STOP_WORDS = new Set([
   'the','and','for','with','from','that','this','not','are','was','has','have',
   'been','will','task','fix','feat','add','all','show','must','code','change',
@@ -44,110 +48,45 @@ function extractKeywords(title) {
     .filter(w => w.length >= 3 && !STOP_WORDS.has(w));
 }
 
-async function supersedeFailedDuplicates(taskId, taskTitle) {
+async function supersedeFailedDuplicates(taskId, taskTitle, clientId) {
   try {
     const keywords = extractKeywords(taskTitle);
     if (keywords.length === 0) return;
-
-    const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/tasks?status=eq.failed&order=created_at.desc&limit=30&select=id,title`,
-      {
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-        },
-      }
-    );
-    if (!resp.ok) return;
-    const failedTasks = await resp.json();
-
+    const failedTasks = await convexQuery('tasks:find', { client_id: clientId, status: 'failed', order: 'created_at.desc', limit: 30 });
     let count = 0;
-    for (const ft of failedTasks) {
+    for (const ft of Array.isArray(failedTasks) ? failedTasks : []) {
       if (ft.id === taskId) continue;
       const ftTitle = (ft.title || '').toLowerCase();
       const matches = keywords.filter(w => ftTitle.includes(w)).length;
-      const ratio = matches / keywords.length;
-      if (ratio >= 0.5) {
-        await fetch(
-          `${SUPABASE_URL}/rest/v1/tasks?id=eq.${encodeURIComponent(ft.id)}`,
-          {
-            method: 'PATCH',
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status: 'superseded' }),
-          }
-        );
+      if (matches / keywords.length >= 0.5) {
+        await convexMutation('tasks:update', {
+          key: CONVEX_KEY, id: ft.id, require_status: 'failed',
+          patch: { status: 'cancelled', metadata: { stage: 'superseded', superseded_by: taskId } },
+        });
         count++;
       }
     }
-    if (count > 0) {
-      console.log(`[v2-task-update] Superseded ${count} failed task(s) matching "${taskTitle}"`);
-    }
+    if (count > 0) console.log(`[v2-task-update] Superseded ${count} failed task(s) matching "${taskTitle}"`);
   } catch (err) {
     console.error('[v2-task-update] Supersede check failed (non-fatal):', err.message);
   }
 }
 
-async function supabaseGetTask(taskId) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${encodeURIComponent(taskId)}&limit=1`, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-    },
-  });
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`Supabase GET failed (${resp.status}): ${errText}`);
-  }
-  const rows = await resp.json();
-  return rows.length > 0 ? rows[0] : null;
-}
-
-async function supabasePatchTask(taskId, body) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${encodeURIComponent(taskId)}`, {
-    method: 'PATCH',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-    },
-    body: JSON.stringify(body),
-  });
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`Supabase PATCH failed (${resp.status}): ${errText}`);
-  }
-  return resp.json();
-}
-
 async function postInvestigationTrigger(taskId, taskRow) {
   if (!taskId) return;
   try {
-    const crypto = await import('crypto');
     const logSourceUrl = `/api/dashboard/v2-task-list?taskId=${encodeURIComponent(taskId)}&include=thread`;
-    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({
-        id: crypto.randomUUID(),
+    await convexMutation('tasks:logEvent', {
+      key: CONVEX_KEY,
+      event: {
         agent: (taskRow && taskRow.agent_identity) || 'system',
-        client_id: (taskRow && taskRow.client_id) || '',
         event_type: 'investigation_trigger',
         payload: {
           task_id: String(taskId),
+          client_id: (taskRow && taskRow.client_id) || '',
           log_source_url: logSourceUrl,
         },
-        timestamp: new Date().toISOString(),
-      }),
+      },
     });
   } catch (err) {
     console.error('[v2-task-update] Failed to emit investigation_trigger (non-fatal):', err.message);
@@ -174,10 +113,6 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'PATCH') return res.status(405).json({ error: 'PATCH only' });
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' });
-  }
-
   let body = req.body || {};
   if (typeof body === 'string') {
     try {
@@ -195,7 +130,7 @@ export default async function handler(req, res) {
 
   let current;
   try {
-    current = await supabaseGetTask(taskId);
+    current = await convexQuery('tasks:get', { id: taskId });
   } catch (err) {
     return res.status(502).json({ error: `task lookup failed: ${err.message}` });
   }
@@ -215,6 +150,7 @@ export default async function handler(req, res) {
 
   try {
     const updateBody = {};
+    const metaPatch = {};
 
     if (hasField(body, 'priority')) updateBody.priority = toNumberIfFinite(body.priority);
     if (hasField(body, 'sort_order')) updateBody.sort_order = toNumberIfFinite(body.sort_order);
@@ -222,65 +158,80 @@ export default async function handler(req, res) {
     if (hasField(body, 'result')) updateBody.result = body.result;
     if (hasField(body, 'error')) updateBody.error = body.error;
     if (hasField(body, 'qa_score')) updateBody.qa_score = toNumberIfFinite(body.qa_score);
-    if (hasField(body, 'qa_notes')) updateBody.qa_notes = body.qa_notes;
+    if (hasField(body, 'qa_notes')) metaPatch.qa_notes = body.qa_notes;
     if (hasField(body, 'token_cost')) updateBody.token_cost = toNumberIfFinite(body.token_cost);
 
+    const currentMeta = (current.metadata && typeof current.metadata === 'object') ? current.metadata : {};
+    // The stage a caller sees: the finer old name when one was recorded, else
+    // the queue status.
+    const currentStage = currentMeta.stage || current.status || null;
     const statusProvided = hasField(body, 'status');
     if (statusProvided) {
       if (typeof body.status !== 'string' || !body.status.trim()) {
         return res.status(400).json({ error: 'status must be a non-empty string' });
       }
 
-      const nextStatus = body.status.trim();
-      const currentStatus = current.status || null;
-      const allowedTransitions = new Set([...(TRANSITIONS[currentStatus] || []), 'failed']);
-      const isSameStatus = nextStatus === currentStatus;
+      const nextStage = body.status.trim();
+      const allowedTransitions = new Set([...(TRANSITIONS[currentStage] || []), 'failed']);
+      const isSameStatus = nextStage === currentStage;
 
-      if (!isSameStatus && !allowedTransitions.has(nextStatus)) {
+      if (!isSameStatus && !allowedTransitions.has(nextStage)) {
         return res.status(400).json({
           error: 'Invalid status transition',
-          currentStatus,
+          currentStatus: currentStage,
           allowedTransitions: Array.from(allowedTransitions),
         });
       }
 
-      updateBody.status = nextStatus;
+      const queueStatus = QUEUE_STATUSES.has(nextStage) ? nextStage : (STAGE_MAP[nextStage] || nextStage);
+      if (!QUEUE_STATUSES.has(queueStatus)) {
+        return res.status(400).json({ error: `status "${nextStage}" has no queue status` });
+      }
+      updateBody.status = queueStatus;
+      metaPatch.stage = nextStage;
 
       if (!isSameStatus) {
         const now = new Date().toISOString();
 
-        if (nextStatus === 'building' || nextStatus === 'running') {
+        if (nextStage === 'building' || nextStage === 'running') {
           if (!current.started_at) updateBody.started_at = now;
-          const prevAttempt = Number.isFinite(current.attempt_count)
-            ? current.attempt_count
-            : Number(current.attempt_count) || 0;
-          updateBody.attempt_count = prevAttempt + 1;
+          const prevAttempt = Number(currentMeta.attempt_count) || 0;
+          metaPatch.attempt_count = prevAttempt + 1;
         }
 
-        if (nextStatus === 'done') {
+        if (nextStage === 'done') {
           updateBody.completed_at = now;
         }
 
-        if (nextStatus === 'failed') {
+        if (nextStage === 'failed') {
           updateBody.error = hasField(body, 'error') ? body.error : null;
         }
       }
     }
 
+    if (Object.keys(metaPatch).length) updateBody.metadata = metaPatch;
     if (Object.keys(updateBody).length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
 
-    const result = await supabasePatchTask(taskId, updateBody);
+    const result = await convexMutation('tasks:update', {
+      key: CONVEX_KEY,
+      id: taskId,
+      require_status: current.status,
+      patch: updateBody,
+    });
     const updated = Array.isArray(result) ? result[0] : result;
+    if (!updated) {
+      return res.status(409).json({ error: 'task changed underneath this update; reload and try again', currentStatus: current.status });
+    }
 
     if (updateBody.status === 'failed' && current.status !== 'failed') {
       postInvestigationTrigger(taskId, updated || current).catch(() => {});
     }
 
-    // Fire-and-forget: supersede failed duplicates when a task completes
+    // Fire-and-forget: supersede failed duplicates when a task completes.
     if (updateBody.status === 'done') {
-      supersedeFailedDuplicates(taskId, current.title).catch(() => {});
+      supersedeFailedDuplicates(taskId, current.title, taskWorld).catch(() => {});
     }
 
     return res.status(200).json(updated || null);

@@ -1,42 +1,33 @@
 // WorkersBoard — the status-board data + inline answer for WorkersShell
 // (R-SMOOTHNESS Round H). Its own module ON PURPOSE: a new module changes the
 // chunk graph and mints fresh asset URLs (the Round D stale-CDN-chunk lesson).
-import { useEffect, useState } from 'react';
-import { authFetch } from '../lib/authFetch.js';
+import { useMemo, useState } from 'react';
+import { convexWorldId, useConvexLive } from './data/convexClient.js';
 
-import { roomPayload, btnRow, startBtn } from './WorkersShell.jsx';
+import { roomTarget, sendRoomMessage, btnRow, startBtn } from './WorkersShell.jsx';
 
 // ── The status board (R-SMOOTHNESS Round H) ─────────────────────────────────
 // The whole queue in TaskQueueFAB's proven order, not just running work:
 // waiting-on-you (with the actual question + an inline answer), queued, and
-// the recent finished/failed tail. Polls v2-task-list every 5s while the
-// window is open — same cadence the orphaned FAB used.
+// the recent finished/failed tail. corner:retire-supabase (2026-09-03): a live
+// tasks:find subscription on the Convex socket replaces the 5s v2-task-list
+// poll, so a status flip shows the moment it lands.
+const EMPTY_BOARD = { needs_input: [], queued: [], done: [], failed: [] };
+const BOARD_ORDER = 'priority.desc,sort_order.asc,created_at.asc';
+
 export function useTaskBoard(worldId) {
-  const [board, setBoard] = useState({ needs_input: [], queued: [], done: [], failed: [] });
-  useEffect(() => {
-    if (!worldId) return undefined;
-    let alive = true;
-    const load = async () => {
-      try {
-        const r = await authFetch(`/api/dashboard/v2-task-list?client_id=${encodeURIComponent(worldId)}&limit=50`);
-        if (!r.ok) return;
-        const d = await r.json();
-        if (!alive) return;
-        const rows = Array.isArray(d.tasks) ? d.tasks : [];
-        const pick = (st) => rows.filter((t) => t.status === st);
-        setBoard({
-          needs_input: pick('needs_input'),
-          queued: [...pick('queued'), ...pick('waiting')],
-          done: pick('done').slice(0, 5),
-          failed: pick('failed').slice(0, 5),
-        });
-      } catch { /* poll again */ }
+  const live = useConvexLive('tasks:find', worldId ? { client_id: convexWorldId(worldId), order: BOARD_ORDER, limit: 50 } : null);
+  return useMemo(() => {
+    const rows = Array.isArray(live.value) ? live.value : [];
+    if (!rows.length) return EMPTY_BOARD;
+    const pick = (st) => rows.filter((t) => t.status === st);
+    return {
+      needs_input: pick('needs_input'),
+      queued: [...pick('queued'), ...pick('waiting')],
+      done: pick('done').slice(0, 5),
+      failed: pick('failed').slice(0, 5),
     };
-    load();
-    const t = setInterval(load, 5000);
-    return () => { alive = false; clearInterval(t); };
-  }, [worldId]);
-  return board;
+  }, [live.value]);
 }
 
 // Inline answer for a waiting task: the typed reply posts into the task's room
@@ -52,12 +43,13 @@ export function AnswerBox({ task, worldId }) {
     if (!body) return;
     setFailed(false);
     try {
-      const r = await authFetch('/api/dashboard/supabase-messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(roomPayload({ project: task.project, mission: task.metadata?.mission_slug, who: task.agent }, worldId,
-          q ? `Answering your question ("${q.slice(0, 120)}"): ${body}` : body)),
+      const id = await sendRoomMessage({
+        worldId,
+        ...roomTarget({ project: task.project, mission: task.metadata?.mission_slug, who: task.agent }),
+        text: q ? `Answering your question ("${q.slice(0, 120)}"): ${body}` : body,
+        metadata: { interaction_mode: 'work' },
       });
-      if (r && r.ok) setSent(true); else setFailed(true);
+      if (id) setSent(true); else setFailed(true);
     } catch { setFailed(true); }
   };
   return (
@@ -76,4 +68,3 @@ export function AnswerBox({ task, worldId }) {
     </div>
   );
 }
-

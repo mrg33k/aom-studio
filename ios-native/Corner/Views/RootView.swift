@@ -25,7 +25,9 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if api.session != nil {
+            if api.session != nil, api.mustChangePassword {
+                SetPasswordView()
+            } else if api.session != nil {
                 NavigationStack(path: $router.path) {
                     RoomListView()
                         .navigationDestination(for: Route.self) { route in

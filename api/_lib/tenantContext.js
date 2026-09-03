@@ -1,7 +1,12 @@
-import { verifyTenant } from './verifyTenant.js'
+// Tenant alias resolution for the campaign and support endpoints. A caller may
+// name a world by slug, by its old client id or by its Convex document id;
+// this turns any of them into the canonical slug, then runs verifyTenant.
+//
+// corner:retire-supabase R3: the alias lookup used to read the Supabase worlds
+// table. It now asks Convex (worlds:getBySlug, then worlds:resolveForSession
+// for a document id).
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+import { verifyTenant, convexQuery } from './verifyTenant.js'
 
 export class TenantContextError extends Error {
   constructor(message, status = 400) {
@@ -47,28 +52,24 @@ export function tenantCompatFields(tenantContext) {
   }
 }
 
-function dbHeaders() {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-  }
-}
-
+// Find the world the caller named. Returns { id, slug } or null.
 async function fetchWorldAlias(requested) {
-  if (!SUPABASE_URL || !SUPABASE_KEY || !requested || requested.startsWith('shared:')) return null
+  if (!requested || requested.startsWith('shared:')) return null
   try {
-    const eq = encodeURIComponent(requested)
-    const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/worlds?or=(slug.eq.${eq},client_id.eq.${eq},id.eq.${eq})&select=id,slug,client_id&limit=1`,
-      { headers: dbHeaders() },
-    )
-    if (!response.ok) return null
-    const rows = await response.json()
-    return Array.isArray(rows) && rows.length ? rows[0] : null
+    const bySlug = await convexQuery('worlds:getBySlug', { slug: requested })
+    if (bySlug && bySlug.slug) return { id: String(bySlug._id), slug: String(bySlug.slug) }
   } catch {
-    return null
+    // fall through to the id path
   }
+  try {
+    // resolveForSession heals unknown ids into a default world; only a result
+    // that was NOT healed means the id itself exists here.
+    const byId = await convexQuery('worlds:resolveForSession', { worldId: requested })
+    if (byId && byId.healed === false && byId.slug) return { id: String(byId.worldId), slug: String(byId.slug) }
+  } catch {
+    // unknown id
+  }
+  return null
 }
 
 export async function resolveTenantAlias(requestedTenant) {
@@ -82,11 +83,11 @@ export async function resolveTenantAlias(requestedTenant) {
       aliases: [requested],
     }
   }
-  const canonicalSlug = normalizeTenantSlug(world.slug || world.client_id || requested)
+  const canonicalSlug = normalizeTenantSlug(world.slug || requested)
   return {
     tenantId: canonicalSlug,
     canonicalSlug,
-    aliases: uniqueAliases([requested, world.slug, world.client_id, world.id]),
+    aliases: uniqueAliases([requested, world.slug, world.id]),
   }
 }
 

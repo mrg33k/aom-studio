@@ -1,17 +1,19 @@
 // cv6next — real conversation for one room, shaped to the agent-chat kit Turn element
-// (data-each="messages" -> message.agentName/text/time/...). Wiring from the existing
-// /api/dashboard/supabase-messages endpoint (the same one the dashboard uses). No fake
-// data: messages are the room's real thread, oldest -> newest.
+// (data-each="messages" -> message.agentName/text/time/...). The thread is a live
+// Convex subscription on messages:list (corner:retire-supabase R2): the websocket
+// pushes every new row, nothing polls. No fake data: messages are the room's real
+// thread, oldest -> newest.
 
-import { useState, useEffect, useCallback, useRef, useMemo, useSyncExternalStore } from 'react';
+import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { authFetch } from '../../lib/authFetch';
-import { supabase } from '../../lib/supabase.js';
 import { demoFixtureActive } from '../../lib/fixtureClient.js';
 import { titleForAgent } from './agentTitles.js';
 import { extractLinkCards, stripTrailingCardUrl } from './resultLinks.js';
 import { useDataContext } from '../providers/DataContext.jsx';
-import { deriveRoomStatus, deriveTurnState } from './roomStatus.js';
-import { convexPlaneActive, convexQuery, convexMutation, convexWorldId } from './convexClient.js';
+import { deriveTurnState } from './roomStatus.js';
+import {
+  hasSession, ensureFreshToken, subscribeConvexQuery, convexQuery, convexMutation, convexWorldId,
+} from '../../lib/convex.js';
 import { refreshConvexRooms, convexUnreadSupported } from './convexRooms.js';
 import { convexViewerIdentity, convexReadIdentity } from './convexIdentity.js';
 
@@ -164,37 +166,33 @@ const threadCacheKey = (worldId, room) => (room?.id ? `${worldId}|${room.isMissi
 
 
 // ── One engine per ROOM, not per mount (corner:bridge engine-lane, 2026-08-10) ─
-// Ported from the native app's ChatViewModel/RoomStore: ONE realtime subscription,
-// ONE reconcile timer, ONE step poll and ONE set of wake listeners per room — no
-// matter how many components render that room. CV6's One Page renders the same
+// Ported from the native app's ChatViewModel/RoomStore: ONE live subscription,
+// ONE turn subscription and ONE set of wake listeners per room — no matter how
+// many components render that room. CV6's One Page renders the same
 // thread in up to four places at once (the col3 quick reply, the Catch Up modal,
 // mobile Chat, ChatDesktop), and the hook used to build all of that machinery per
 // MOUNT: four sockets, four 10s polls, four 1.5s step polls and four
 // focus/visibilitychange listeners racing on one room (frontend audit D12). Every
 // extra copy was also an extra chance for one of them to wipe the thread.
 //
-// The second half of the port is the DELTA fetch. The reconcile used to re-read the
-// whole visible window every 10 seconds and rebuild the entire thread from it. It
-// now asks only for rows NEWER than the newest row it already holds and merges them
-// in, deduped by row id. A full refetch survives for exactly the moments the native
-// app uses one — first load, realtime re-subscribe, and coming back to the
-// foreground — plus a once-a-minute safety net so an edited row cannot stick.
+// The thread itself is a Convex subscription: the server pushes the whole window
+// (messages:list, 100 rows) every time it changes, so there is no delta cursor
+// and no reconcile timer. A one-off refetch survives for the moments a person
+// asks for one (Retry, coming back to the foreground).
 //
 // Everything about how this thing FAILS is unchanged, and must stay that way:
-//   • a failed poll never wipes the thread (it marks the feed stale and keeps the
+//   • a failed read never wipes the thread (it marks the feed stale and keeps the
 //     last good load; 'error' only when there was nothing on screen to protect),
 //   • a dead turn says it is dead and offers Retry / Nudge,
 //   • a failed send keeps its bubble, marked "Not sent", with a one-tap retry,
-//   • the socket reconnects on exponential backoff and catches up on SUBSCRIBED.
+//   • the websocket reconnects on its own and the next push catches the thread up.
 // Those four are the shipped contract of this file. Read them before you edit it.
 
-const DELTA_WINDOW = 40;              // rows per request — the old full-window size
+const THREAD_WINDOW = 100;            // rows the subscription carries for one room
 const RAW_CAP = 240;                  // most merged rows we hold for one room
-const RECONCILE_MS = 10000;           // reconcile cadence (unchanged)
-const FULL_EVERY_N_RECONCILES = 6;    // one full refetch a minute, behind the deltas
-const DELTA_OVERLAP_MS = 1000;        // two rows can share a millisecond; ask back a beat
 const ENGINE_GRACE_MS = 20000;        // keep a room warm this long after its last mount
-const DEAD_TURN_MS = 90000;           // dead-bridge backstop — R-A5: 180s → 90s, plain-language recovery
+const DEAD_TURN_MS = 90000;           // dead-agent backstop — R-A5: 180s → 90s, plain-language recovery
+const BACKSTOP_TICK_MS = 5000;        // how often an open turn is checked against DEAD_TURN_MS
 
 const rowKey = (row) => (row && row.id
   ? String(row.id)
@@ -203,21 +201,6 @@ const rowTime = (row) => {
   const t = row?.timestamp ? new Date(row.timestamp).getTime() : 0;
   return Number.isFinite(t) ? t : 0;
 };
-
-// Merge a delta window into the rows we already hold. Dedupe is by ROW ID — the same
-// key the reconnect catch-up uses — so the deliberate one-second overlap on the
-// request can never double-render a message. Returns the ORIGINAL array when nothing
-// is actually new, so a quiet room does no downstream work at all.
-function mergeRows(prev, incoming) {
-  if (!Array.isArray(incoming) || !incoming.length) return prev;
-  const seen = new Set(prev.map(rowKey));
-  if (incoming.every((row) => seen.has(rowKey(row)))) return prev;
-  const byKey = new Map();
-  for (const row of prev) byKey.set(rowKey(row), row);
-  for (const row of incoming) byKey.set(rowKey(row), row);
-  const merged = [...byKey.values()].sort((a, b) => rowTime(a) - rowTime(b));
-  return merged.length > RAW_CAP ? merged.slice(merged.length - RAW_CAP) : merged;
-}
 
 function sameList(a, b) {
   if (a === b) return true;
@@ -236,14 +219,13 @@ function roomFingerprint(worldId, room) {
     worldId, room.id,
     room.isMission ? 'm' : room.isProject ? 'p' : 'a',
     room.missionSlug || '', room.projectSlug || '', room.name || '',
-    // Convex-plane rail entries carry the exact backend room key; always '' on
-    // the Supabase plane, so flagless fingerprints keep their old identity.
+    // Rail entries carry the exact backend room key when they know it.
     room.convexKey || '',
   ].join('|');
 }
 
-// ── Convex plane row mapping (corner:convex-multi-agent) ─────────────────────
-// A Convex message → the Supabase row shape project() consumes, so the entire
+// ── Row mapping (corner:convex-multi-agent) ──────────────────────────────────
+// A Convex message → the flat row shape project() consumes, so the entire
 // projection (attachments, link cards, turn logic, caching) runs unchanged.
 // Convex family reads can return the SAME message twice — an imported legacy
 // copy and a native copy live in sibling rooms and share createdAt+text — so
@@ -313,39 +295,26 @@ class RoomThreadEngine {
     // Set by whichever mount holds the data context — every mount passes the same fn.
     this.bumpAgentThread = null;
 
-    // ── Convex plane (corner:convex-multi-agent) ────────────────────────────
-    // Decided once per page load; OFF = the Supabase plane, byte-for-byte as
-    // before. On the Convex plane this engine reads messages:list, writes
-    // messages:send, and POLLS instead of subscribing (1s while a turn is open,
-    // 2.5s idle, nothing while the tab is hidden). The Supabase-bridge
-    // machinery — realtime channel, step feeds, steward, SSE draft, stop/repair
-    // — has no Convex backend, so it stays off: empty liveSteps and a hidden
-    // Stop control are the honest rendering, never a mock.
-    this.convex = convexPlaneActive();
-    this.convexPollTimer = null;
-    this.convexInFlight = false;
-    this.convexReadMarked = false;   // markRead fires once per room open, not per poll
-    if (this.convex) this.stopUnavailable = true;
+    // No stop endpoint exists on Convex, so the Stop control stays hidden.
+    this.stopUnavailable = true;
+    this.convexReadMarked = false;   // markRead fires once per room open, not per push
 
-    // ── Rows we hold. `rows` is the raw server window (merged across deltas); the
-    // rendered thread is projected from it, exactly as the old single fetch was.
+    // ── Rows we hold. `rows` is the raw server window; the rendered thread is
+    // projected from it.
     this.rows = [];
     this.newestTs = 0;
-    this.reconcileTicks = 0;
-    this.inFlight = false;
 
     // ── The refs the hook used to carry, now plain fields on the one engine.
     this.lastSentTs = 0;
     this.lastSentText = '';
     this.lastSentOptions = null;
-    // DEDUP-11: 50ms client debounce — two identical POSTs 20ms apart = 1 row
+    // DEDUP-11: 50ms client debounce — two identical sends 20ms apart = 1 row
     this._lastDedupText = '';
     this._lastDedupTs = 0;
     this.silentTurn = false;      // this turn was declared dead by the backstop
-    this.sawLiveSteps = false;    // the bridge is streaming steps → it owns the stop signal
+    this.sawLiveSteps = false;    // a turn row is streaming steps for this send
     this.didBaseline = false;
-    this.sig = null;              // rendered-thread signature (no-op poll guard)
-    this.stepsSig = '';
+    this.sig = null;              // rendered-thread signature (no-op push guard)
 
     const cached = threadCache.get(this.key);
     this.state = {
@@ -358,12 +327,12 @@ class RoomThreadEngine {
       lastSentId: '',
       liveSteps: [],
       stepsByParent: {},
-      draft: null,          // { text, streaming: true } — live partial reply, never persisted
+      draft: null,          // reserved: a streamed partial reply, never persisted
       turnHealth: null,
       // ── Connection health (corner:bridge frontend-visibility, 2026-08-09) ────
       //   online   — the browser's own network state
       //   realtime — 'connecting' | 'live' | 'reconnecting' | 'off'
-      //   feed     — 'live' (the last thread fetch succeeded) | 'stale' (it failed;
+      //   feed     — 'live' (the last thread read succeeded) | 'stale' (it failed;
       //              what you see is the last good load, nothing was lost)
       // Rendered by RoomConnectionNotice; never used to hide or clear real messages.
       connection: {
@@ -374,25 +343,13 @@ class RoomThreadEngine {
     };
     if (cached) this.sig = cached.sig;
 
-    // Timers / socket, one of each.
-    this.channel = null;
-    this.channelRetryTimer = null;
-    this.channelRetryAttempt = 0;
-    this.reconcileTimer = null;
-    this.stepTimer = null;
-    this.stepsTimer = null;
-    this.stepsCadence = 0;
-    this.stewardTimer = null;
-    // Live draft stream (R-SMOOTHNESS Round D): one SSE reader per live turn,
-    // engine-owned like every other poll. Feeds state.draft only — never
-    // messages/awaiting/liveSteps. SSE unavailable = silent no-op; the 1500ms
-    // step poll is the fallback AND keeps running regardless.
-    this.streamAbort = null;
-    this.streamKey = '';
-    this.turnPollKey = 'off';
-    this.stepLastActivity = 0;
-    this.stepLastCount = -1;
-    this.repairAsked = false;
+    // Subscriptions and timers, one of each.
+    this.unsubThread = null;
+    this.unsubTurns = null;
+    this.roomDocId = null;
+    this.turnsWanted = false;
+    this.backstopTimer = null;
+    this.loadInFlight = false;
 
     this.derived = { messages: [], from: null, pending: null, steps: null, awaiting: null, lastSentId: null };
     this.snapshot = null;
@@ -425,8 +382,8 @@ class RoomThreadEngine {
     // The grace timer can fire between the render that acquired this engine and the
     // effect that retains it — the engine is then stopped AND out of the registry, so
     // the next mount of the same room would build a SECOND engine and we would be back
-    // to two sockets on one room, which is the whole thing this file exists to prevent.
-    // Re-register on the way back up; start() below revives the stopped one.
+    // to two subscriptions on one room, which is the whole thing this file exists to
+    // prevent. Re-register on the way back up; start() below revives the stopped one.
     if (!engines.has(this.key)) engines.set(this.key, this);
     if (!this.started) this.start();
     return () => this.release();
@@ -436,8 +393,8 @@ class RoomThreadEngine {
     this.refs = Math.max(0, this.refs - 1);
     if (this.refs > 0) return;
     // Keep the room warm for a beat: a route change unmounts and remounts the same
-    // room within a tick, and tearing the socket down and back up for that would
-    // churn the connection for nothing.
+    // room within a tick, and tearing the subscription down and back up for that
+    // would churn the connection for nothing.
     if (this.graceTimer) clearTimeout(this.graceTimer);
     this.graceTimer = setTimeout(() => {
       this.graceTimer = null;
@@ -452,17 +409,24 @@ class RoomThreadEngine {
     const before = roomFingerprint(this.worldId, this.room);
     const after = roomFingerprint(this.worldId, room);
     if (before === after) return;
+    const keyBefore = this.canonicalRoomKey();
     this.room = { ...room };
     // A rename changes the agent title on every rendered row, and a mission's project
-    // changes the query — reproject from a fresh full window.
+    // changes the query — reproject, and resubscribe if the room key moved.
     this.sig = null;
-    if (this.started) this.load({ full: true });
+    if (!this.started) return;
+    if (this.canonicalRoomKey() !== keyBefore) {
+      this.subscribeThread();
+      this.subscribeTurns();
+    } else {
+      this.project();
+    }
   }
 
   emit() { for (const listener of this.listeners) listener(); }
 
-  // Commit a state patch. Identical to the old setState calls: only a real change
-  // rebuilds the snapshot, so a no-op poll never re-renders the thread.
+  // Commit a state patch. Only a real change rebuilds the snapshot, so a push that
+  // changes nothing never re-renders the thread.
   commit(patch) {
     let changed = false;
     for (const k of Object.keys(patch)) {
@@ -475,7 +439,7 @@ class RoomThreadEngine {
     if (!changed) return;
     this.rebuildSnapshot();
     this.emit();
-    this.syncTurnPolls();
+    this.syncBackstop();
   }
 
   rebuildSnapshot() {
@@ -510,7 +474,7 @@ class RoomThreadEngine {
     })
     this.snapshot = {
       messages: d.messages,
-      // Raw pre-dedupe fetch size — the only honest input for "older files exist".
+      // Raw fetch size — the only honest input for "older files exist".
       rawRowCount: this.rawRowCount ?? null,
       archivedMessages: s.archivedMessages,
       blocks: s.blocks,
@@ -524,8 +488,7 @@ class RoomThreadEngine {
       turnHealth: s.turnHealth,
       connection: s.connection,
       turnState,
-      // Round E: the Stop control hides for the session after one honest
-      // feature_off answer from the proxy (bridge flag/tunnel not live yet).
+      // The Stop control has no Convex backend; it stays hidden.
       stopAvailable: !this.stopUnavailable,
     };
   }
@@ -547,48 +510,28 @@ class RoomThreadEngine {
     // 'empty' is a settled state from a previous real load (or the cache); only a
     // genuinely unknown thread shows the loader.
     if (this.state.status !== 'ready' && this.state.status !== 'empty') this.commit({ status: 'loading' });
-    this.load({ full: true });
-    if (this.convex) {
-      // Convex plane: no socket, no step feeds — the visibility-aware poll IS
-      // the live thread. Wake listeners still fire the full reload on return.
-      this.updateConnection({ realtime: 'off' });
-      this.attachWakeListeners();
-      this.scheduleConvexPoll();
-      return;
-    }
-    this.subscribeRoom();
+    this.subscribeThread();
+    this.subscribeTurns();
     this.attachWakeListeners();
-    // Live thread: the reconcile poll is the guarantee under a socket that can drop.
-    // It is a DELTA now — only rows newer than the newest we hold — with a full
-    // refetch once a minute so a row edited in place cannot stick.
-    this.reconcileTimer = setInterval(() => {
-      this.reconcileTicks += 1;
-      this.load({ full: this.reconcileTicks % FULL_EVERY_N_RECONCILES === 0 });
-    }, RECONCILE_MS);
-    this.startStepsPoll();
-    this.syncTurnPolls();
+    this.syncBackstop();
   }
 
   stop() {
     this.alive = false;
     this.started = false;
-    if (this.convexPollTimer) { clearTimeout(this.convexPollTimer); this.convexPollTimer = null; }
-    if (this.reconcileTimer) { clearInterval(this.reconcileTimer); this.reconcileTimer = null; }
-    if (this.channelRetryTimer) { clearTimeout(this.channelRetryTimer); this.channelRetryTimer = null; }
-    this.stopTurnPolls();
-    if (this.stepsTimer) { clearInterval(this.stepsTimer); this.stepsTimer = null; this.stepsCadence = 0; }
+    if (this.unsubThread) { try { this.unsubThread(); } catch { /* already gone */ } this.unsubThread = null; }
+    if (this.unsubTurns) { try { this.unsubTurns(); } catch { /* already gone */ } this.unsubTurns = null; }
+    this.turnsWanted = false;
+    if (this.backstopTimer) { clearInterval(this.backstopTimer); this.backstopTimer = null; }
     this.detachWakeListeners();
-    if (this.channel && supabase) { try { supabase.removeChannel(this.channel); } catch { /* already gone */ } }
-    this.channel = null;
   }
 
-  // ── Room identity: the canonical legacy room key ───────────────────────────
+  // ── Room identity: the canonical room key ──────────────────────────────────
   // "aom:mission:corner:convex-multi-agent" / "aom:project:wolfpack" /
-  // "aom:agent:elon" — the SAME string the Supabase realtime filter scopes on
-  // (every messages row carries it as room_id) and the key corner-convex
-  // resolves rooms by (legacyRoomId). Convex rail entries that know their exact
-  // backend key (including native rooms with no legacy slug, keyed by document
-  // _id) carry it as room.convexKey and it wins over derivation.
+  // "aom:agent:elon" — the key corner-convex resolves rooms by (legacyRoomId).
+  // Rail entries that know their exact backend key (including native rooms with
+  // no legacy slug, keyed by document _id) carry it as room.convexKey and it wins
+  // over derivation.
   canonicalRoomKey() {
     const room = this.room;
     if (room.convexKey) return room.convexKey;
@@ -598,36 +541,58 @@ class RoomThreadEngine {
     return `${world}:agent:${room.id}`;
   }
 
-  // ── Convex plane: read + poll ──────────────────────────────────────────────
-  // messages:list for the OPEN room only, full window each time (the endpoint
-  // has no delta cursor). Failure contract is identical to the Supabase load:
-  // a failed poll marks the feed stale and keeps the last good thread.
-  loadConvex() {
-    if (this.convexInFlight) return Promise.resolve();
-    this.convexInFlight = true;
-    return convexQuery('messages:list', { roomId: this.canonicalRoomKey(), limit: 100 })
-      .then((value) => {
+  // ── The live thread ────────────────────────────────────────────────────────
+  // One subscription on messages:list for the OPEN room only. The server pushes
+  // the whole window on every change. Failure contract: a failed read marks the
+  // feed stale and keeps the last good thread.
+  subscribeThread() {
+    if (this.unsubThread) { try { this.unsubThread(); } catch { /* already gone */ } this.unsubThread = null; }
+    if (!this.alive) return;
+    this.updateConnection({ realtime: 'connecting' });
+    this.unsubThread = subscribeConvexQuery(
+      'messages:list',
+      { roomId: this.canonicalRoomKey(), limit: THREAD_WINDOW },
+      (value) => {
         if (!this.alive) return;
-        this.updateConnection({ feed: 'live' });
-        // The RAW fetched count, before dedupe/filtering. "Older files exist" must key
-        // on this: a full 100-row fetch means the window is full regardless of how many
-        // rows survive dedupe (Wolfpack: 100 raw -> 98 shown hid 150+ older files).
-        this.rawRowCount = Array.isArray(value) ? value.length : 0;
-        this.rows = convexRowsToThreadRows(value);
-        this.newestTs = this.rows.reduce((max, row) => Math.max(max, rowTime(row)), 0);
-        this.project();
-      })
-      .then(() => { if (this.alive) this.markConvexRead(); })
+        this.updateConnection({ realtime: 'live' });
+        this.applyRows(value);
+      },
+      () => {
+        if (!this.alive) return;
+        this.updateConnection({ realtime: 'reconnecting' });
+        this.markFeedStale();
+      },
+    );
+  }
+
+  applyRows(value) {
+    this.updateConnection({ feed: 'live' });
+    // The RAW fetched count, before dedupe/filtering. "Older files exist" must key
+    // on this: a full window means more exists regardless of how many rows survive
+    // dedupe (Wolfpack: 100 raw -> 98 shown hid 150+ older files).
+    this.rawRowCount = Array.isArray(value) ? value.length : 0;
+    this.rows = convexRowsToThreadRows(value);
+    this.newestTs = this.rows.reduce((max, row) => Math.max(max, rowTime(row)), 0);
+    this.project();
+    this.markConvexRead();
+  }
+
+  // One-off refetch of the same window (Retry, foreground wake, a room rename).
+  // The subscription stays the live feed; this only pulls the current truth now.
+  load() {
+    if (!this.alive || this.loadInFlight) return Promise.resolve();
+    this.loadInFlight = true;
+    return convexQuery('messages:list', { roomId: this.canonicalRoomKey(), limit: THREAD_WINDOW })
+      .then((value) => { if (this.alive) this.applyRows(value); })
       .catch(() => { if (this.alive) this.markFeedStale(); })
-      .finally(() => { this.convexInFlight = false; });
+      .finally(() => { this.loadInFlight = false; });
   }
 
   // Reading a room clears its unread — server-side, once, on open (gauntlet R1,
   // finding 3). GUARDED: it fires only after listRooms has actually answered with
-  // an `unreadCount` field, so on today's deployment (no read-state table yet)
-  // this is a no-op and costs nothing. One call per room open, never per poll —
-  // the Convex free plan bills on Database I/O. A failure is silent by design:
-  // an unread badge that did not clear is not worth an error in the user's face.
+  // an `unreadCount` field. One call per room open, never per push — the Convex
+  // free plan bills on Database I/O. A failure is silent by design: an unread
+  // badge that did not clear is not worth an error in the user's face.
   markConvexRead() {
     if (this.convexReadMarked || !convexUnreadSupported()) return;
     this.convexReadMarked = true;
@@ -641,70 +606,8 @@ class RoomThreadEngine {
       .catch(() => { /* no read-state backend / renamed mutation: stay silent */ });
   }
 
-  // Poll cadence (iOS ChatViewModel parity): 1s while a turn is open (60s after
-  // a send), 2.5s idle — and NO requests while the tab is hidden; the wake
-  // listener reloads on return. Self-scheduling after each response so calls can
-  // never stack: worst case ≤1 request/second (Convex quota discipline).
-  scheduleConvexPoll() {
-    if (!this.alive || !this.convex) return;
-    if (this.convexPollTimer) clearTimeout(this.convexPollTimer);
-    const openTurn = this.state.awaiting || (this.lastSentTs && (Date.now() - this.lastSentTs) < 60000);
-    this.convexPollTimer = setTimeout(() => {
-      this.convexPollTimer = null;
-      if (!this.alive) return;
-      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
-        this.scheduleConvexPoll();
-        return;
-      }
-      // Dead-turn backstop (the step poll owns this on the Supabase plane): a
-      // turn silent past the ceiling says so out loud and offers Retry/Nudge.
-      if (this.state.awaiting && this.lastSentTs && Date.now() - this.lastSentTs > DEAD_TURN_MS) {
-        this.silentTurn = true;
-        const h = this.state.turnHealth;
-        this.commit({
-          awaiting: false,
-          turnHealth: (h && h.state === 'needs_attention') ? h : { state: 'needs_attention', cause: 'agent_silent', repaired: false },
-        });
-      }
-      Promise.resolve(this.loadConvex()).finally(() => { if (this.alive) this.scheduleConvexPoll(); });
-    }, openTurn ? 1000 : 2500);
-  }
-
-  // ── The thread request ─────────────────────────────────────────────────────
-  buildParams(sinceIso) {
-    const params = new URLSearchParams();
-    params.set('client', this.worldId);
-    const room = this.room;
-    // Mission rooms key on the mission slug; project rooms on the project slug;
-    // everything else is an agent thread.
-    // Agents store the BARE mission slug (e.g. "corner-ui-cv6"), but the room handle is
-    // the colon-joined "project:mission" form. Query on the last segment so the thread
-    // isn't empty.
-    if (room.isMission) {
-      params.set('mission_slug', String(room.missionSlug || room.id || '').split(':').pop());
-      // Pass the mission's project so the reader canonicalizes the bare slug within
-      // the RIGHT project (Bug 1) instead of a foreign first-wins one.
-      if (room.projectSlug) params.set('project', room.projectSlug);
-    } else if (room.isProject) {
-      // The PROJECT chat is the project-level conversation only. Mission-room messages
-      // also carry project=<slug> (so they roll up under the project), but they belong
-      // to their mission room, not the project chat. `project_only` tells the API to
-      // exclude any mission-tagged rows from the project thread.
-      params.set('project', room.id); params.set('project_only', '1');
-    } else {
-      params.set('agent', room.id);
-    }
-    params.set('limit', String(DELTA_WINDOW));
-    if (sinceIso) params.set('since', sinceIso);
-    return params;
-  }
-
-  // A FAILED load must never look like an empty room (corner:bridge frontend-visibility
-  // D2). The old code mapped !r.ok to null and then read `d?.messages` off it, so a
-  // single 401/500 on the reconcile poll produced raw=[] → setMessages([]) → status
-  // 'empty' → and it CACHED that emptiness, so leaving the room and coming back
-  // repainted the wipe. Most common trigger: a phone waking up and racing token
-  // refresh. A failed fetch commits nothing, caches nothing, and simply marks the feed
+  // A FAILED read must never look like an empty room (corner:bridge frontend-visibility
+  // D2). A failed read commits nothing, caches nothing, and simply marks the feed
   // stale so the surface can say "showing the last loaded messages".
   markFeedStale() {
     this.updateConnection({ feed: 'stale' });
@@ -713,37 +616,99 @@ class RoomThreadEngine {
     if (this.state.status === 'loading') this.commit({ status: 'error' });
   }
 
-  load({ full = false } = {}) {
-    if (!this.alive) return Promise.resolve();
-    if (this.convex) return this.loadConvex();
-    // Delta only once we actually hold an anchor row. First load, a re-subscribe and a
-    // foreground wake all ask for the whole window, the way the native app does.
-    const useDelta = !full && this.rows.length > 0 && this.newestTs > 0;
-    const params = this.buildParams(useDelta ? new Date(this.newestTs - DELTA_OVERLAP_MS).toISOString() : null);
-    return authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
-      .then((r) => (r && r.ok ? r.json() : null))
-      .then((d) => {
-        if (!this.alive) return undefined;
-        if (!d) { this.markFeedStale(); return undefined; }
-        this.updateConnection({ feed: 'live' });
-        const incoming = Array.isArray(d.messages) ? d.messages : [];
-        if (useDelta) {
-          if (!incoming.length) return undefined;      // quiet room — no downstream work
-          // More arrived than one window holds: this is a GAP, not a delta. Widen to a
-          // full window rather than concluding anything from the middle of the thread
-          // (the native catch-up makes the same call by anchor).
-          if (incoming.length >= DELTA_WINDOW) return this.load({ full: true });
-          const merged = mergeRows(this.rows, incoming);
-          if (merged === this.rows) return undefined;  // overlap only — nothing new
-          this.rows = merged;
-        } else {
-          this.rows = incoming;
-        }
-        this.newestTs = this.rows.reduce((max, row) => Math.max(max, rowTime(row)), 0);
-        this.project();
-        return undefined;
-      })
-      .catch(() => { if (this.alive) this.markFeedStale(); });
+  // ── Live turns (turns:listTurns) ───────────────────────────────────────────
+  // The agent's working steps for the message you just sent come from the turns
+  // table the dispatcher writes (thinking | working | done | failed, with steps).
+  // The query is keyed by the room document id, so resolve it once; a room this
+  // deployment cannot resolve simply shows the generic working bar.
+  subscribeTurns() {
+    if (this.unsubTurns) { try { this.unsubTurns(); } catch { /* already gone */ } this.unsubTurns = null; }
+    if (!this.alive) return;
+    this.turnsWanted = true;
+    const key = this.canonicalRoomKey();
+    this.resolveRoomDocId(key).then((docId) => {
+      if (!this.alive || !this.turnsWanted || !docId || key !== this.canonicalRoomKey()) return;
+      this.roomDocId = docId;
+      this.unsubTurns = subscribeConvexQuery(
+        'turns:listTurns',
+        { roomId: docId },
+        (turns) => { if (this.alive) this.applyTurns(turns); },
+        () => { /* no turn feed: liveSteps stay honestly empty */ },
+      );
+    }).catch(() => { /* same: the generic working bar is the honest rendering */ });
+  }
+
+  resolveRoomDocId(key) {
+    if (key && !key.includes(':')) return Promise.resolve(key); // already a document id
+    const room = this.room;
+    const worldSlug = convexWorldId(this.worldId);
+    const kind = room.isMission ? 'mission' : room.isProject ? 'project' : 'agent';
+    const args = { worldSlug, kind, key: room.isMission ? String(room.missionSlug || room.id || '').split(':').pop() : String(room.id || '') };
+    if (room.isMission && room.projectSlug) args.project = room.projectSlug;
+    return convexQuery('rooms:resolveCanonical', args).then((r) => (r && r._id ? String(r._id) : null));
+  }
+
+  applyTurns(turns) {
+    const list = Array.isArray(turns) ? turns : [];
+    const sentId = String(this.state.lastSentId || '');
+    const isoOf = (ms) => (ms ? new Date(ms).toISOString() : null);
+    // Steps for THIS sent message only; a turn with no message id (an @mention
+    // dispatch) counts while it is active and newer than the send.
+    const mine = list.filter((t) => t && (
+      (t.messageId && String(t.messageId) === sentId)
+      || (!t.messageId && this.lastSentTs && t.startedAt >= this.lastSentTs - 1000)
+    ));
+    const active = mine.filter((t) => t.status === 'thinking' || t.status === 'working');
+    const liveSteps = [];
+    for (const t of active) {
+      const steps = Array.isArray(t.steps) && t.steps.length ? t.steps : [{ label: 'Working', done: false }];
+      steps.forEach((st, i) => liveSteps.push({
+        step_index: i,
+        text: st.label || 'Working',
+        done: !!st.done,
+        agent: t.agentSlug || '',
+        parent_message_id: t.messageId ? String(t.messageId) : sentId,
+        timestamp: isoOf(t.startedAt),
+      }));
+    }
+    if (!this.state.awaiting) {
+      if (this.state.liveSteps.length) this.commit({ liveSteps: [] });
+      return;
+    }
+    if (liveSteps.length) this.sawLiveSteps = true;
+    const patch = { liveSteps };
+    // Every turn for this send settled: the bar ends here, not at the backstop.
+    if (!active.length && mine.length && this.sawLiveSteps) {
+      patch.awaiting = false;
+      patch.turnHealth = mine.some((t) => t.status === 'failed')
+        ? { state: 'needs_attention', cause: 'agent_silent', repaired: false }
+        : null;
+    }
+    this.commit(patch);
+  }
+
+  // Dead-turn backstop: a turn silent past the ceiling says so out loud and offers
+  // Retry / Nudge (RoomRecoveryNotice renders it at the tail). Runs only while a
+  // turn is open.
+  syncBackstop() {
+    if (!this.started) return;
+    if (!this.state.awaiting) {
+      if (this.backstopTimer) { clearInterval(this.backstopTimer); this.backstopTimer = null; }
+      return;
+    }
+    if (this.backstopTimer) return;
+    this.backstopTimer = setInterval(() => {
+      if (!this.alive || !this.state.awaiting) { this.syncBackstop(); return; }
+      const lastActivity = Math.max(this.lastSentTs || 0, ...this.state.liveSteps.map((s) => (s.timestamp ? new Date(s.timestamp).getTime() : 0)));
+      if (lastActivity && Date.now() - lastActivity > DEAD_TURN_MS) {
+        this.silentTurn = true;
+        const h = this.state.turnHealth;
+        this.commit({
+          awaiting: false,
+          turnHealth: (h && h.state === 'needs_attention') ? h : { state: 'needs_attention', cause: 'agent_silent', repaired: false },
+        });
+      }
+    }, BACKSTOP_TICK_MS);
   }
 
   // Turn the rows we hold into the rendered thread. This is the old fetch handler,
@@ -894,100 +859,27 @@ class RoomThreadEngine {
       this.sawLiveSteps = false;
       this.commit({ lastSentId: String(newestUser.id), awaiting: true, liveSteps: [], draft: null });
     } else if (newestReply && tms(newestReply) >= this.lastSentTs && this.lastSentTs) {
-      // Convex plane: there is no settled sentinel and no step feed on this
-      // surface — a real reply row IS the turn ending (the round-table's answers
-      // land as rows). Without this the bar would only ever clear via the
-      // dead-turn backstop and every answered turn would read as a hang.
-      if (this.convex && this.state.awaiting) {
-        this.commit({ awaiting: false, turnHealth: null });
-      }
-      // R-A2: an interim reply must NEVER end a turn. Only an explicit settled signal
-      // (step_index 9999 / steward health settled) or the dead-turn timeout ends it.
-      // The previous guard `!sawLiveSteps && reply >= lastSentTs` yanked the bar off
-      // a still-running turn before the first step arrived — exactly Patrik's
-      // "it never works properly." Settling on any reply is removed; awaiting now
-      // only clears via liveStepPoll settled sentinel, steward health, or DEAD_TURN_MS.
-      // For simple chat without steps, the bridge must emit a settled sentinel; the
-      // steward health poll (10s cadence) is the fallback so a turn never hangs.
-      // Intentionally no awaiting:false here — see startLiveStepPoll + startStewardPoll.
+      // A real reply row IS the turn ending (the round-table's answers land as
+      // rows). The turns subscription clears the bar earlier when a turn row
+      // settles; this is the guarantee for an agent that answers without one.
+      if (this.state.awaiting) this.commit({ awaiting: false, turnHealth: null });
     }
     // Refresh the session render cache with what this room actually shows now.
     threadCache.set(this.key, { messages: this.state.messages, blocks: liveBlocks, sig });
   }
 
-  // ── Realtime: one self-healing channel per room ─────────────────────────────
-  subscribeRoom() {
-    if (!this.alive) return;
-    // Convex plane has no realtime channel — the poll is the live feed, and the
-    // surface says so honestly ('off'), never a fake "live" pill.
-    if (this.convex) { this.updateConnection({ realtime: 'off' }); return; }
-    if (!supabase) { this.updateConnection({ realtime: 'off' }); return; }
-    // room_id single-filter subscription (corner:one-write-path R5, 2026-07-01).
-    // postgres_changes supports exactly ONE `column=eq.value` filter. Every row now has
-    // a canonical room_id (trigger + backfill), so one equality filter scopes the room
-    // precisely. If a slug is ever non-canonical the filter just misses and the
-    // reconcile still covers. canonicalRoomKey() builds the identical string the
-    // inline derivation here always built.
-    const filter = `room_id=eq.${this.canonicalRoomKey()}`;
-
-    try { if (this.channel) supabase.removeChannel(this.channel); } catch { /* already gone */ }
-    // Self-healing channel (the cv3 R74 pattern — corner:bridge frontend-visibility D5).
-    // `.subscribe()` used to be called with no status callback at all: CHANNEL_ERROR /
-    // TIMED_OUT / CLOSED were never observed, there was no reconnect, and no history
-    // catch-up on re-subscribe. Now: exponential-backoff resubscribe, and a FULL load()
-    // on every SUBSCRIBED so rows that landed while the socket was down come straight in.
-    // Channel-identity guard (PARITY #3): without it one transient
-    // CHANNEL_ERROR/TIMED_OUT causes permanent live↔reconnecting
-    // oscillation — the callback closes over a stale `this.channel` and
-    // a new subscribeRoom() races the old retry timer, each firing
-    // full refetches every 1-2s. This is a top "not responding/blinking" driver.
-    const myChannel = supabase
-      .channel(`cv6-thread-${this.worldId}-${this.room.id}-${Date.now()}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter },
-        // Targeted reload-on-insert: a delta, not a whole-window refetch.
-        () => { if (this.alive && this.channel === myChannel) this.load(); },
-      );
-    this.channel = myChannel;
-    myChannel.subscribe((channelStatus) => {
-        if (!this.alive) return;
-        if (myChannel !== this.channel) return; // stale channel — ignore
-        if (channelStatus === 'SUBSCRIBED') {
-          this.channelRetryAttempt = 0;
-          this.updateConnection({ realtime: 'live' });
-          this.load({ full: true });   // catch-up for anything missed while the socket was down
-        } else if (channelStatus === 'CHANNEL_ERROR' || channelStatus === 'TIMED_OUT' || channelStatus === 'CLOSED') {
-          this.updateConnection({ realtime: 'reconnecting' });
-          const delay = Math.min(30000, 1000 * (2 ** this.channelRetryAttempt));
-          this.channelRetryAttempt += 1;
-          if (this.channelRetryTimer) clearTimeout(this.channelRetryTimer);
-          this.channelRetryTimer = setTimeout(() => { if (this.alive && this.channel === myChannel) this.subscribeRoom(); }, delay);
-        }
-      });
-  }
-
   // ── Foreground catch-up (corner:bridge frontend-visibility D4) ──────────────
-  // Inside the phone's web view, backgrounding freezes JS timers and kills the realtime
-  // socket. Nothing in the CV6 chat path listened for the app coming BACK, so a resumed
-  // thread sat frozen until the next tick — and if that first request 401'd on a
-  // not-yet-refreshed token, the old code wiped the thread. Refresh the session FIRST,
-  // then reload the FULL window, then make sure the socket is really up. One listener
-  // set for the room, not one per mount.
+  // Inside the phone's web view, backgrounding freezes JS timers and can drop the
+  // websocket. The Convex client reconnects on its own; this refreshes the token
+  // FIRST, then pulls the current window so a resumed thread never sits frozen
+  // until the next push. One listener set for the room, not one per mount.
   attachWakeListeners() {
     this.onWake = () => {
       if (!this.alive) return;
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-      const refreshed = (supabase && supabase.auth && supabase.auth.getSession)
-        ? Promise.resolve(supabase.auth.getSession()).catch(() => null)
-        : Promise.resolve(null);
-      refreshed.then(() => {
+      Promise.resolve(hasSession() ? ensureFreshToken() : null).catch(() => null).then(() => {
         if (!this.alive) return;
-        this.load({ full: true });
-        // Only rebuild a socket that is actually down. Tearing a healthy channel down on
-        // every tab focus would churn the connection for no reason.
-        const socketState = this.channel && this.channel.state;
-        if (supabase && (!this.channel || socketState === 'closed' || socketState === 'errored' || socketState === 'leaving')) this.subscribeRoom();
+        this.load();
       });
     };
     this.onOnline = () => { this.updateConnection({ online: true }); this.onWake(); };
@@ -1010,217 +902,15 @@ class RoomThreadEngine {
     this.onWake = null; this.onOnline = null; this.onOffline = null;
   }
 
-  // ── Step feeds ─────────────────────────────────────────────────────────────
-  stepQuery(limit) {
-    const room = this.room;
-    const agentParam = (room.isMission || room.isProject) ? 'corner' : room.id;
-    const projParam = room.isMission ? room.projectSlug : (room.isProject ? room.id : '');
-    const q = new URLSearchParams({ client_id: this.worldId, agent: agentParam, limit: String(limit) });
-    if (projParam) q.set('project', projParam);
-    return q;
-  }
-
-  // The live step heartbeats for the message you just sent (events table via
-  // /message-steps; client-side anon reads are RLS-blocked, hence the server proxy).
-  // Runs only while a turn is open, and restarts clean on every new turn.
-  startLiveStepPoll() {
-    this.stepLastActivity = Date.now();
-    this.stepLastCount = -1;
-    const q = this.stepQuery(50);
-    const poll = () => authFetch(`/api/dashboard/message-steps?${q.toString()}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!this.alive || !d || !this.state.awaiting) return;
-        const all = Array.isArray(d.steps) ? d.steps : [];
-        // Only the steps for THIS sent message; if we don't yet have its id, show
-        // nothing (the generic working indicator still renders from `awaiting`).
-        const sentId = this.state.lastSentId;
-        const mine = sentId ? all.filter((s) => String(s.parent_message_id) === sentId) : [];
-        this.commit({ liveSteps: mine });
-        // `settled` (step_index 9999) IS "the agent stopped working" — stop the bar on
-        // it, no guessing, so working-vs-stopped is honest (Patrik 2026-06-27).
-        if (mine.some((s) => s.step_index === 9999 || s.text === 'settled')) { this.commit({ awaiting: false }); return; }
-        const renderable = mine.filter((s) => s.step_index !== 9999 && s.text !== 'settled').length;
-        // Once a real step lands, the bridge is streaming — from here the settled
-        // sentinel above (or the dead-bridge backstop) is the ONLY thing that stops the
-        // bar; interim reply bubbles must not (see the project() settle guard).
-        if (renderable > 0) this.sawLiveSteps = true;
-        if (renderable !== this.stepLastCount) { this.stepLastCount = renderable; this.stepLastActivity = Date.now(); }
-        // Dead-bridge insurance: fully silent (no new step, no reply) for a long
-        // stretch. This used to just switch the working bar off, which rendered a DEAD
-        // turn as a quiet settle — the room looked idle, as if you had never asked
-        // (corner:bridge frontend-visibility D1, the reported symptom). It now says so
-        // out loud and offers Retry / Nudge; RoomRecoveryNotice renders it at the tail.
-        if (Date.now() - this.stepLastActivity > DEAD_TURN_MS) {
-          this.silentTurn = true;
-          const h = this.state.turnHealth;
-          this.commit({
-            awaiting: false,
-            turnHealth: (h && h.state === 'needs_attention') ? h : { state: 'needs_attention', cause: 'agent_silent', repaired: false },
-          });
-        }
-      })
-      .catch(() => {});
-    poll();
-    this.stepTimer = setInterval(poll, 1500);
-  }
-
-  // Follow the exact persisted message through the steward. Inspection is read-only;
-  // after 45 seconds without activity we ask once for the server's narrowly allowlisted
-  // repair. Server-side retry counts prevent loops across tabs and background cron runs.
-  startStewardPoll() {
-    this.repairAsked = false;
-    const messageId = this.state.lastSentId;
-    const inspect = async () => {
-      if (!this.alive || !this.state.awaiting) return;
-      const shouldRepair = Date.now() - this.lastSentTs >= 45000 && !this.repairAsked;
-      if (shouldRepair) this.repairAsked = true;
-      try {
-        const response = shouldRepair
-          ? await authFetch('/api/dashboard/room-health', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ client_id: this.worldId, message_id: messageId }),
-            })
-          : await authFetch(`/api/dashboard/room-health?${new URLSearchParams({ client_id: this.worldId, message_id: messageId }).toString()}`);
-        if (!this.alive || !response?.ok) return;
-        const health = await response.json();
-        if (!health?.found) return;
-        this.commit({ turnHealth: health });
-        if (health.state === 'settled') {
-          this.commit({ awaiting: false });
-          this.load({ full: true });
-        } else if (health.state === 'needs_attention' && !health.repaired) {
-          this.commit({ awaiting: false });
-        }
-      } catch { /* the message and step polls remain the fallback */ }
-    };
-    inspect();
-    this.stewardTimer = setInterval(inspect, 10000);
-  }
-
-  stopTurnPolls() {
-    if (this.stepTimer) { clearInterval(this.stepTimer); this.stepTimer = null; }
-    if (this.stewardTimer) { clearInterval(this.stewardTimer); this.stewardTimer = null; }
-    this.stopTurnStream();
-    this.turnPollKey = '';
-  }
-
-  stopTurnStream() {
-    if (this.streamAbort) { try { this.streamAbort.abort(); } catch { /* already dead */ } }
-    this.streamAbort = null;
-    this.streamKey = '';
-  }
-
-  // Live draft stream (R-SMOOTHNESS Round D). Reads the bridge's SSE mirror via
-  // the chat-bridge proxy and feeds state.draft with the growing partial reply.
-  // Contract: NEVER touches messages/awaiting/liveSteps; every failure shape is
-  // a silent no-op (the step poll is the fallback and runs regardless); the
-  // real row's arrival clears the draft in project().
-  startTurnStream(messageId) {
-    if (!messageId || this.streamKey === messageId) return;
-    this.stopTurnStream();
-    this.streamKey = messageId;
-    const controller = new AbortController();
-    this.streamAbort = controller;
-    let fullText = '';
-    authFetch(`/api/dashboard/chat-bridge?stream=${encodeURIComponent(messageId)}`, {
-      signal: controller.signal,
-    }).then(async (res) => {
-      if (!res.ok || !res.body) return;
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          let event;
-          try { event = JSON.parse(line.slice(6)); } catch { continue; }
-          if (!this.alive || this.streamKey !== messageId) return;
-          if (event.type === 'chunk' && event.text) {
-            fullText += event.text;
-            this.commit({ draft: { text: fullText, streaming: true } });
-          } else if (event.type === 'done' || event.type === 'fallback'
-            || event.type === 'superseded' || event.type === 'error') {
-            // The durable row arrives via realtime/reconcile; pull it now so
-            // the draft-to-row swap is immediate rather than next-poll.
-            this.load({ full: false });
-            return;
-          }
-        }
-      }
-    }).catch(() => { /* silent — the step poll carries the turn */ });
-  }
-
-  // The turn-scoped polls used to be effects keyed on [awaiting, lastSentId]. Same key,
-  // same restart-on-change semantics — just driven by the engine instead of React.
-  syncTurnPolls() {
-    if (!this.started) return;
-    // Convex plane: step feed, steward and SSE draft are Supabase-bridge
-    // machinery with no Convex backend — the 1s open-turn poll is the live
-    // feed, and liveSteps stay honestly empty.
-    if (this.convex) return;
-    const key = this.state.awaiting ? `on|${this.state.lastSentId}` : 'off';
-    if (key !== this.turnPollKey) {
-      this.stopTurnPolls();
-      this.turnPollKey = key;
-      if (this.state.awaiting) {
-        this.startLiveStepPoll();
-        if (this.state.lastSentId) {
-          this.startStewardPoll();
-          this.startTurnStream(this.state.lastSentId);
-        }
-      }
-    }
-    // While a turn is live, refresh the persisted steps a touch faster.
-    const cadence = this.state.awaiting ? 3000 : 12000;
-    if (cadence !== this.stepsCadence) this.startStepsPoll();
-  }
-
-  // Persist EVERY turn's working steps (not just the live one). Polls the same step feed
-  // regardless of `awaiting` and groups by parent_message_id, so a finished turn's steps
-  // stay available to render in the conversation — and survive a reload.
-  startStepsPoll() {
-    if (this.convex) return; // no Convex step feed — see syncTurnPolls
-    if (this.stepsTimer) { clearInterval(this.stepsTimer); this.stepsTimer = null; }
-    this.stepsCadence = this.state.awaiting ? 3000 : 12000;
-    const q = this.stepQuery(100);
-    const load = () => authFetch(`/api/dashboard/message-steps?${q.toString()}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!this.alive || !d) return;
-        const all = Array.isArray(d.steps) ? d.steps : [];
-        const byParent = {};
-        for (const s of all) {
-          const pid = s && s.parent_message_id ? String(s.parent_message_id) : '';
-          if (!pid) continue;
-          (byParent[pid] = byParent[pid] || []).push(s);
-        }
-        // Only commit when the grouped steps actually changed (count + newest id per
-        // turn). The feed is identical between polls in a quiet room; committing a fresh
-        // object each time would churn a re-render and yank the scroll.
-        const sig = Object.keys(byParent).sort().map((k) => `${k}:${byParent[k].length}:${byParent[k][0]?.id || ''}`).join('~');
-        if (sig !== this.stepsSig) { this.stepsSig = sig; this.commit({ stepsByParent: byParent }); }
-      })
-      .catch(() => {});
-    load();
-    this.stepsTimer = setInterval(load, this.stepsCadence);
-  }
-
   // ── Sending ────────────────────────────────────────────────────────────────
   async send(text, options = {}) {
     const worldId = this.worldId;
     const room = this.room;
     const body = String(text || '').trim();
     if (!worldId || !room?.id || !body) return false;
-    // Real local no-Supabase mode is read-only (no phantom sends); explicit ?demo=
-    // fixtures keep the send path live because Playwright intercepts own the POST.
-    // The Convex plane needs neither: messages:send is a plain unauthenticated fetch.
-    if (!this.convex && !supabase && !demoFixtureActive()) return false;
+    // A signed-out page is read-only (no phantom sends); explicit ?demo= fixtures
+    // keep the send path live because the fixture backend answers the mutation.
+    if (!hasSession() && !demoFixtureActive()) return false;
     // DEDUP-11: 50ms client debounce — second identical POST within 50ms is a double-click
     const _dedupNow = Date.now();
     if (body === this._lastDedupText && (_dedupNow - this._lastDedupTs) < 50) {
@@ -1251,27 +941,15 @@ class RoomThreadEngine {
     const handoffMeta = options?.handoffTo ? { handoff_to: String(options.handoffTo), handoff_from: String(options.handoffFrom || roomAgent) } : null
     const clientMessageMeta = { client_message_id: optId }
     const mergedMeta = { ...(extraMeta || {}), ...(handoffMeta || {}), ...clientMessageMeta }
-    const payload = room.isMission
-      // Send the CANONICAL "<project>:<mission>" slug (room.missionSlug), not the bare
-      // tail — write-message.js passes a slug containing ':' through untouched, so the
-      // mission never enters the bare-slug first-wins lottery (Bug 1).
-      ? { client_id: worldId, agent: roomAgent, project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || ''), interaction_mode: interactionMode, ...mergedMeta } }
-      : room.isProject
-        ? { client_id: worldId, agent: roomAgent, project: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode, ...mergedMeta } }
-        : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: interactionMode, ...mergedMeta } };
-    if (options?.replyTo) payload.reply_to = String(options.replyTo);
     // Show "working" the instant you send, so the thread never looks dead.
     this.sawLiveSteps = false;
     this.lastSentTs = now.getTime();
     this.lastSentText = body;
     this.lastSentOptions = { interactionMode, agent: roomAgent };
     this.silentTurn = false;
-    // FIX: progress bar vanishing on 2nd+ message — `lastSentId` was left stale (previous turn's server id)
-    // while `awaiting:true` was already set for the new turn. `startLiveStepPoll`/`startStewardPoll`
-    // then polled the *old* `parent_message_id` and saw its `settled` sentinel, clearing `awaiting`
-    // after ~1.5s (the exact "disappears after first few seconds on second message" you just reported).
-    // Set `lastSentId` optimistically to the pending `optId` so the poll filters for a non-existent
-    // parent (empty `mine`, no `settled`) until `project()` flips it to the real server id.
+    // `lastSentId` is set optimistically to the pending `optId` so the turns
+    // subscription matches nothing (no stale settle from the previous turn) until
+    // the server id lands and project() flips it to the real row.
     this.commit({ lastSentId: optId, awaiting: true, turnHealth: { state: 'accepted', cause: null, repaired: false }, liveSteps: [], draft: null });
     // A failed send KEEPS its bubble (corner:bridge frontend-visibility D3). Deleting it
     // was the single most alarming failure on the surface: your words flashed into the
@@ -1286,74 +964,44 @@ class RoomThreadEngine {
       // them into the box (one copy of your message, not two).
       try { options?.onKeptInThread?.(reason); } catch { /* caller-supplied */ }
     };
-    const classify = (r) => {
+    const classify = (err) => {
       if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
-      if (r && r.status === 401) return 'signed_out';
-      if (!r) return 'offline';
-      return 'server';
+      const msg = String((err && err.message) || '');
+      if (/HTTP 401|not signed in|unauthenticated/i.test(msg)) return 'signed_out';
+      if (/HTTP \d{3}/.test(msg)) return 'server';
+      return 'offline';
     };
-    // ── Convex plane write: messages:send resolves/creates the room by its
-    // canonical key, inserts the row, and schedules ai.dispatchMessage — the
-    // agent reply arrives as a thread row through the poll. Same failure
-    // contract as the Supabase path: a failed send keeps its bubble, marked
-    // "Not sent", with a one-tap retry.
-    if (this.convex) {
-      try {
-        const viewer = await convexViewerIdentity();
-        const id = await convexMutation('messages:send', {
-          roomId: this.canonicalRoomKey(),
-          text: body,
-          role: 'user',
-          clientId: convexWorldId(worldId),
-          source: 'cv6-dashboard',
-          userId: viewer.userId,
-          userEmail: viewer.userEmail,
-          userName: viewer.userName,
-          metadata: mergedMeta,
-          ...(options?.replyTo ? { replyTo: String(options.replyTo) } : {}),
-        });
-        if (id) {
-          this.commit({ lastSentId: String(id) });
-          this.updatePending((p) => p.map((m) => (m.optId === optId ? { ...m, serverId: String(id), receipt: true } : m)));
-        }
-        // Rooms rail: fetched on load and refreshed after a send — never polled.
-        refreshConvexRooms();
-        this.load({ full: true });
-        this.scheduleConvexPoll(); // snap to the 1s open-turn cadence now
-        return true;
-      } catch (err) {
-        markFailed((err && (err.name === 'TimeoutError' || err.name === 'AbortError')) ? 'timeout' : classify(null));
-        return false;
-      }
-    }
+    // ── The write: messages:send resolves/creates the room by its canonical key,
+    // inserts the row, and schedules ai.dispatchMessage — the agent reply arrives
+    // as a thread row through the subscription. A failed send keeps its bubble,
+    // marked "Not sent", with a one-tap retry.
     try {
-      const r = await authFetch('/api/dashboard/supabase-messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-        // A black-holed connection (tunnel down, radio dead) used to hang at the browser
-        // default — minutes of a pending bubble before the silent delete. 20s, then fail
-        // honestly and visibly.
-        ...(typeof AbortSignal !== 'undefined' && AbortSignal.timeout ? { signal: AbortSignal.timeout(20000) } : {}),
+      const viewer = await convexViewerIdentity();
+      const id = await convexMutation('messages:send', {
+        roomId: this.canonicalRoomKey(),
+        text: body,
+        role: 'user',
+        clientId: convexWorldId(worldId),
+        clientMessageId: optId,
+        source: 'cv6-dashboard',
+        userId: viewer.userId,
+        userEmail: viewer.userEmail,
+        userName: viewer.userName,
+        metadata: mergedMeta,
+        ...(options?.replyTo ? { replyTo: String(options.replyTo) } : {}),
       });
-      if (!r || !r.ok) { markFailed(classify(r)); return false; }
-      // The created row id is the parent the bridge keys its step heartbeats to — and
-      // the key the optimistic bubble reconciles on (never text: two sends of "ok" used
-      // to collapse into one bubble).
-      try {
-        const j = await r.clone().json();
-        const id = j?.message?.id;
-        if (id) {
-          this.commit({ lastSentId: String(id) });
-          this.updatePending((p) => p.map((m) => (m.optId === optId ? { ...m, serverId: String(id), receipt: true } : m)));
-        }
-        if (j?.turn_receipt) this.commit({ turnHealth: { state: j.turn_receipt.state || 'accepted', cause: null, repaired: false } });
-      } catch { /* non-JSON */ }
-      // Immediately bump this direct agent thread's recency so Recently Active reflects
-      // the send before the next poll cycle picks it up.
+      if (id) {
+        this.commit({ lastSentId: String(id) });
+        this.updatePending((p) => p.map((m) => (m.optId === optId ? { ...m, serverId: String(id), receipt: true } : m)));
+      }
+      // Rooms rail: fetched on load and refreshed after a send — never polled.
+      refreshConvexRooms();
+      // Immediately bump this direct agent thread's recency so Recently Active
+      // reflects the send before the rail refresh lands.
       if (!room.isProject && !room.isMission && this.bumpAgentThread) this.bumpAgentThread(room.id, body);
-      this.reload();
       return true;
     } catch (err) {
-      markFailed((err && (err.name === 'TimeoutError' || err.name === 'AbortError')) ? 'timeout' : classify(null));
+      markFailed((err && (err.name === 'TimeoutError' || err.name === 'AbortError')) ? 'timeout' : classify(err));
       return false;
     }
   }
@@ -1379,86 +1027,50 @@ class RoomThreadEngine {
     return this.send('Are you still on this? Give me a quick status on my last message.', this.lastSentOptions || {});
   }
 
-  // One-tap restart for a stuck turn (R-SMOOTHNESS Round E): ask the steward to
-  // run its server-allowlisted repair for this exact turn, then reload. Same
-  // endpoint the 45s auto-repair path uses — a human tap just asks sooner.
+  // There is no server-side repair for a stuck turn on Convex. Retry / Nudge
+  // (above) are the honest recovery; this stays so callers keep their shape.
   async repairTurn() {
-    if (this.convex) return false; // steward repair is Supabase-bridge machinery
-    if (!this.state.lastSentId) return false;
-    try {
-      const res = await authFetch('/api/dashboard/room-health', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: this.worldId, message_id: this.state.lastSentId }),
-      });
-      const j = res.ok ? await res.json() : null;
-      this.load({ full: true });
-      return !!j?.repaired;
-    } catch { return false; }
+    return false;
   }
 
-  // Stop the live turn (R-SMOOTHNESS Round E, bridge Round C). Optimistic
-  // 'stopping' state; the durable stopped row arrives through the normal feed.
-  // Never fakes a settled turn: awaiting only flips when the server's row or
-  // sentinel says so. feature_off (bridge flag/tunnel not live) hides the
-  // control for the rest of the session.
+  // No stop endpoint on Convex; the control is hidden (stopUnavailable).
   async stopTurn() {
-    if (this.convex) return false; // no Convex stop endpoint; the control is hidden (stopUnavailable)
-    if (!this.state.awaiting || !this.state.lastSentId) return false;
-    this.commit({ turnHealth: { state: 'stopping', cause: null } });
-    try {
-      const res = await authFetch('/api/dashboard/chat-bridge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'stop', message_id: this.state.lastSentId, client_id: this.worldId }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (j.stopped) { this.load({ full: false }); return true; }
-      if (j.feature_off) this.stopUnavailable = true;
-      this.commit({ turnHealth: null });
-      return false;
-    } catch {
-      this.commit({ turnHealth: null });
-      return false;
-    }
+    return false;
   }
 
-  // The old reloadKey bump: a full window, fresh persisted steps, and a socket check.
+  // The old reloadKey bump: pull the current window now.
   reload() {
     if (!this.started) return;
-    this.load({ full: true });
-    if (this.convex) return; // no steps feed / socket to refresh on the Convex plane
-    this.startStepsPoll();
-    const socketState = this.channel && this.channel.state;
-    if (supabase && (!this.channel || socketState === 'closed' || socketState === 'errored' || socketState === 'leaving')) this.subscribeRoom();
+    this.load();
   }
 
+  // Clear the chat: a system row with source 'room_reset' is the marker project()
+  // already honors — everything before it moves to the archive, the room keeps
+  // its history on the server, and every surface (web, phone) agrees on where
+  // the fold is. Nothing is deleted.
   async clearRoom() {
-    // No Convex room-reset backend: report the honest failure rather than fake
-    // a wipe the server would undo on the next poll.
-    if (this.convex) return false;
     const worldId = this.worldId;
     const room = this.room;
     if (!worldId || !room?.id) return false;
-    const payload = room.isMission
-      ? { client_id: worldId, agent: 'corner', project: room.projectSlug, mission_slug: String(room.missionSlug || room.id || '').split(':').pop() }
-      : room.isProject
-        ? { client_id: worldId, agent: 'corner', project: room.id }
-        : { client_id: worldId, agent: room.id };
+    if (!hasSession() && !demoFixtureActive()) return false;
     try {
-      const response = await authFetch('/api/dashboard/room-reset', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      const viewer = await convexViewerIdentity();
+      const id = await convexMutation('messages:send', {
+        roomId: this.canonicalRoomKey(),
+        text: 'Chat cleared',
+        role: 'system',
+        clientId: convexWorldId(worldId),
+        source: 'room_reset',
+        userId: viewer.userId,
+        userEmail: viewer.userEmail,
+        userName: viewer.userName,
+        metadata: { room_reset: true },
       });
-      if (!response?.ok) return false;
-      this.commit({
-        archivedMessages: [...this.state.archivedMessages, ...this.state.messages],
-        messages: [], pending: [], awaiting: false, liveSteps: [], status: 'empty',
-      });
-      this.rows = [];
-      this.newestTs = 0;
+      if (!id) return false;
+      this.commit({ pending: [], awaiting: false, liveSteps: [] });
       this.sig = null;
       threadCache.delete(this.key);
-      this.reload();
+      this.load();
       return true;
     } catch { return false; }
   }
@@ -1484,6 +1096,8 @@ const NULL_ENGINE = {
   clearRoom: () => Promise.resolve(false),
   retryTurn: () => Promise.resolve(false),
   nudgeTurn: () => Promise.resolve(false),
+  repairTurn: () => Promise.resolve(false),
+  stopTurn: () => Promise.resolve(false),
   reload: () => {},
   bumpAgentThread: null,
 };
@@ -1505,46 +1119,13 @@ function acquireEngine(worldId, room) {
   return engine;
 }
 
-// Prefetch a room's thread into the render cache so opening it shows content instantly.
-// Called from useHome after the first successful data load for the top 5 recent rooms.
-export function prefetchThread(worldId, room) {
-  // Convex plane: never prefetch. It would (a) seed the render cache with rows
-  // from the WRONG plane and (b) spend Convex-adjacent traffic on rooms nobody
-  // opened — the open room's poll is the only thread read allowed.
-  if (convexPlaneActive()) return;
-  const key = threadCacheKey(worldId, room);
-  if (!worldId || !key || threadCache.has(key)) return;
-  const params = new URLSearchParams();
-  params.set('client', worldId);
-  if (room.isMission) {
-    params.set('mission_slug', String(room.missionSlug || room.id || '').split(':').pop());
-    if (room.projectSlug) params.set('project', room.projectSlug);
-  } else if (room.isProject) {
-    params.set('project', room.id);
-    params.set('project_only', '1');
-  } else {
-    params.set('agent', room.id);
-  }
-  params.set('limit', '20');
-  authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
-    .then(r => r && r.ok ? r.json() : null)
-    .then(d => {
-      if (!d) return;
-      const msgs = Array.isArray(d.messages) ? d.messages : [];
-      if (!msgs.length) return;
-      // Store raw projection in the cache (same shape project() builds)
-      threadCache.set(key, { messages: msgs.map(m => ({
-        id: m.id || '', isUser: m.role === 'user' || !!m.user_name,
-        agentName: (m.role === 'user' || m.user_name) ? (m.user_name || 'You') : titleForAgent(m.agent || room.name),
-        text: m.text || '', time: '', ts: m.timestamp || null,
-      })).filter(m => m.text), blocks: null, sig: null });
-    })
-    .catch(() => {});
-}
+// Kept for callers: there is no prefetch. Only the open room subscribes to its
+// thread (Convex bills on database reads, and a room nobody opened is not worth one).
+export function prefetchThread() {}
 
 // Fetch the room's thread. `room` is an agent room { id (slug), name }.
 // Thin view over the room's ONE engine: every mount of the same room shares its
-// subscription, its reconcile timer and its state.
+// subscription and its state.
 export function useRoomThread(worldId, room) {
   const { bumpAgentThread } = useDataContext() || {};
   const key = threadCacheKey(worldId, room);
@@ -1568,28 +1149,33 @@ export function useRoomThread(worldId, room) {
 
 
 // ── The Goal Thread: real per-room step state (the step thread, our live conversation) ──
-// Steps come from room-goal-steps (the ordered checklist the agent works); the goal title
-// from room-goals. Per the design guardrail, a step animates (active/spinner) ONLY when the
-// agent is live right now; otherwise it renders its static state (done or pending), never a
-// fake loop. Returns null when the room has no goal/steps (so the thread simply doesn't show).
+// Steps come from the per-room checklist (state kind dash_room_goal_steps, the
+// ordered list the agent works); the goal title from the loop's goal memory
+// (state kind dash_room_goals). Both are live Convex subscriptions on the world's
+// state rows. Per the design guardrail, a step animates (active/spinner) ONLY when
+// the agent is live right now; otherwise it renders its static state (done or
+// pending), never a fake loop. Returns null when the room has no goal/steps (so the
+// thread simply doesn't show).
 function roomKeyFor(room) {
   if (!room?.id) return '';
   return room.isProject ? String(room.id) : `agent:${room.id}`;
 }
 const LIVE = new Set(['live', 'working', 'online', 'running']);
+const STEPS_KIND = 'dash_room_goal_steps';
+const GOALS_KIND = 'dash_room_goals';
+const stateValue = (row) => (row && row.value && typeof row.value === 'object' ? row.value : null);
+
 export function useGoalThread(worldId, room) {
   const [goal, setGoal] = useState(null);
   useEffect(() => {
     const roomKey = roomKeyFor(room);
-    if (!worldId || !roomKey) { setGoal(null); return undefined; }
+    if (!worldId || !roomKey || !hasSession()) { setGoal(null); return undefined; }
     let alive = true;
-    Promise.all([
-      authFetch(`/api/dashboard/room-goal-steps?world=${encodeURIComponent(worldId)}&room=${encodeURIComponent(roomKey)}`).then((r) => (r && r.ok ? r.json() : null)).catch(() => null),
-      authFetch(`/api/dashboard/room-goals?world=${encodeURIComponent(worldId)}`).then((r) => (r && r.ok ? r.json() : null)).catch(() => null),
-    ]).then(([stepsD, goalsD]) => {
-      if (!alive) return;
-      const list = Array.isArray(stepsD?.list) ? stepsD.list : [];
-      const goalText = goalsD?.rooms?.[roomKey]?.goal || '';
+    let list = null;
+    let goalText = null;
+    const worldSlug = convexWorldId(worldId);
+    const shape = () => {
+      if (!alive || list === null || goalText === null) return;
       if (!list.length && !goalText) { setGoal(null); return; }
       const live = LIVE.has(String(room.status || '').toLowerCase());
       const doneCount = list.filter((s) => s.done).length;
@@ -1606,43 +1192,53 @@ export function useGoalThread(worldId, room) {
         pct: total ? Math.round((doneCount / total) * 100) : 0,
         checklist,
       });
-    });
-    return () => { alive = false; };
+    };
+    const offSteps = subscribeConvexQuery('state:get', { kind: STEPS_KIND, scopeId: 'all', worldSlug }, (row) => {
+      const items = stateValue(row)?.items;
+      const raw = items && typeof items === 'object' ? items[roomKey] : null;
+      list = Array.isArray(raw) ? raw : [];
+      shape();
+    }, () => { list = list || []; shape(); });
+    const offGoals = subscribeConvexQuery('state:get', { kind: GOALS_KIND, scopeId: 'all', worldSlug }, (row) => {
+      const rooms = stateValue(row)?.rooms;
+      goalText = String((rooms && typeof rooms === 'object' && rooms[roomKey] && rooms[roomKey].goal) || '');
+      shape();
+    }, () => { goalText = goalText || ''; shape(); });
+    return () => { alive = false; offSteps(); offGoals(); };
   }, [worldId, room?.id, room?.isProject, room?.status]);
   return goal;
 }
 
 // ── The editable forward plan for one room (goal-thread-plan mission) ──
-// Source of truth = room-goal-steps.json (the per-room checklist), now carrying source +
-// proposed so the three item types read apart: DONE history lives in the message blocks
-// above; here we hold the FUTURE — user-added steps (source:user) and agent suggestions
-// (source:agent, proposed). The user steers it: add / check-done / edit / accept / dismiss,
-// and hands a step to the agent via the room's normal send() (a real message, not a side
-// channel). Polls so an agent that proposes a next step shows up without a refresh.
+// Source of truth = the per-room checklist (state kind dash_room_goal_steps),
+// carrying source + proposed so the three item types read apart: DONE history lives
+// in the message blocks above; here we hold the FUTURE — user-added steps
+// (source:user) and agent suggestions (source:agent, proposed). The user steers it:
+// add / check-done / edit / accept / dismiss, and hands a step to the agent via the
+// room's normal send() (a real message, not a side channel). The list is a live
+// subscription, so an agent that proposes a next step shows up without a refresh;
+// writes go through the room-goal-steps route, which owns the row's edit rules.
 export function useRoomPlan(worldId, room) {
   const [plan, setPlan] = useState([]);
   const [reloadKey, setReloadKey] = useState(0);
   const roomKey = roomKeyFor(room);
 
   useEffect(() => {
-    if (!worldId || !roomKey) { setPlan([]); return undefined; }
+    if (!worldId || !roomKey || !hasSession()) { setPlan([]); return undefined; }
     let alive = true;
-    const load = () => authFetch(`/api/dashboard/room-goal-steps?world=${encodeURIComponent(worldId)}&room=${encodeURIComponent(roomKey)}`)
-      .then((r) => (r && r.ok ? r.json() : null))
-      .then((d) => {
-        if (!alive || !d) return;
-        const list = Array.isArray(d.list) ? d.list : [];
-        // Tolerate old rows written before source/proposed existed.
-        setPlan(list.map((s) => ({
-          id: s.id, text: s.text || '', done: !!s.done,
-          source: s.source === 'agent' ? 'agent' : 'user',
-          proposed: !!s.proposed,
-        })));
-      })
-      .catch(() => {});
-    load();
-    const t = setInterval(load, 5000);
-    return () => { alive = false; clearInterval(t); };
+    const off = subscribeConvexQuery('state:get', { kind: STEPS_KIND, scopeId: 'all', worldSlug: convexWorldId(worldId) }, (row) => {
+      if (!alive) return;
+      const items = stateValue(row)?.items;
+      const raw = items && typeof items === 'object' ? items[roomKey] : null;
+      const list = Array.isArray(raw) ? raw : [];
+      // Tolerate old rows written before source/proposed existed.
+      setPlan(list.map((s) => ({
+        id: s.id, text: s.text || '', done: !!s.done,
+        source: s.source === 'agent' ? 'agent' : 'user',
+        proposed: !!s.proposed,
+      })));
+    }, () => { /* keep the last plan */ });
+    return () => { alive = false; off(); };
   }, [worldId, roomKey, reloadKey]);
 
   const post = useCallback(async (body) => {
@@ -1657,7 +1253,7 @@ export function useRoomPlan(worldId, room) {
     return false;
   }, [worldId, roomKey]);
 
-  // Optimistic where it helps the tap feel instant; the 5s poll reconciles to truth.
+  // Optimistic where it helps the tap feel instant; the live row reconciles to truth.
   const addStep = useCallback((text) => {
     const t = String(text || '').trim(); if (!t) return Promise.resolve(false);
     setPlan((p) => [...p, { id: `tmp-${p.length}-${t.slice(0, 8)}`, text: t, done: false, source: 'user', proposed: false }]);

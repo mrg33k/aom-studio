@@ -7,7 +7,7 @@
 //   corner/users/aom/projects/ambition-mechanical/missions/website/VISION.md
 //
 // Tenant-gated: the world is extracted from the path, the project slug is
-// looked up in Supabase to confirm the world matches, then verifyTenant
+// looked up in the Convex project registry to confirm the world matches, then verifyTenant
 // validates the JWT. Asking for a hidden file (PHONEBOOK.md, history.md,
 // rules.md, decisions.md, archive/*, vision-qa/*) returns 404 — no leakage
 // of the filename.
@@ -30,8 +30,7 @@ const AOM_EA_HARDCODED = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA';
 const AOM_EA_SIBLING = path.resolve(process.cwd(), '..', 'AOM-EA');
 const AOM_EA_ROOT = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARDCODED : AOM_EA_SIBLING);
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { convexQuery } from '../_lib/reportsStore.js';
 
 // ── Hidden names (never surfaced) ─────────────────────────────────────────────
 // The ONE shared hide-list (api/_lib/hideList.js; Python twin
@@ -48,20 +47,12 @@ function containsHiddenSegment(segments) {
 }
 
 // ── Project world lookup ──────────────────────────────────────────────────────
+// The world that holds this project, from the Convex project registry
+// (corner:retire-supabase, 2026-09-03; was the Supabase projects table).
 async function resolveProjectWorld(slug) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null;
   try {
-    const url = `${SUPABASE_URL}/rest/v1/projects?slug=eq.${encodeURIComponent(slug)}&select=slug,client_id&limit=1`;
-    const r = await fetch(url, {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      },
-    });
-    if (!r.ok) return null;
-    const rows = await r.json();
-    if (!Array.isArray(rows) || !rows[0]) return null;
-    return rows[0].client_id || null;
+    const row = await convexQuery('projects:lookupBySlug', { slug });
+    return row?.ownerWorld ? String(row.ownerWorld).toLowerCase() : null;
   } catch {
     return null;
   }

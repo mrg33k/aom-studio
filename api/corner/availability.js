@@ -7,34 +7,40 @@
 // - days (optional): number of business days to check ahead (default 6)
 // - slotDurationMin (optional): minutes per slot (default 30)
 // - slotsPerDay (optional): number of slots to offer per day (default 3)
+//
+// corner:retire-supabase (2026-09-03): the calendar token lives on Convex
+// (integrations table, read through calendarClient -> integrations:getOAuthTokens).
+// Convex keys the token by its owner, so this route asks for the owner by
+// account instead of looking the owner up in a Supabase table.
 
 import { getCalendarToken, calendarFetch } from '../_lib/calendarClient.js'
-import { extractJwt } from '../_lib/verifyTenant.js'
 
 const ARIZONA_TZ = 'America/Phoenix'
 
-// Utility: get Patrik's user ID from the request JWT
-// In this setup, Patrik is the workspace owner; we hardcode his workspace ID.
-// A real multi-tenant system would look up the workspace and its owner.
-async function getPatrikUserId() {
-  // Resolve to whoever connected the google-calendar integration. Only Patrik connects it
-  // for the public booking calendar, so the single connected row IS the right owner.
-  // No env var / workspace lookup needed: pre-connection this returns null -> {connected:false}
-  // -> the page falls back to mock slots; the instant Patrik connects, the row exists and
-  // real availability flows. An optional PATRIK_USER_ID env still overrides if ever needed.
-  if (process.env.PATRIK_USER_ID) return process.env.PATRIK_USER_ID
+// Who owns the booking calendar. The public booking page only ever shows
+// Patrik's calendar, so this is a short list of his accounts, first one that
+// has Google Calendar connected wins. PATRIK_USER_ID (a Convex user id or an
+// email) overrides everything when set.
+export function calendarOwnerCandidates() {
+  const out = []
+  if (process.env.PATRIK_USER_ID) out.push(process.env.PATRIK_USER_ID)
+  if (process.env.CALENDAR_OWNER_EMAIL) out.push(process.env.CALENDAR_OWNER_EMAIL)
+  out.push('hello@aom-inhouse.com', 'patrikmatheson@gmail.com')
+  return [...new Set(out.map((v) => String(v).trim()).filter(Boolean))]
+}
 
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null
-
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?integration_slug=eq.google-calendar&order=connected_at.desc&limit=1&select=user_id`,
-    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
-  )
-  if (!r.ok) return null
-  const rows = await r.json()
-  return (Array.isArray(rows) && rows.length) ? rows[0].user_id : null
+// Returns { userId, token } for the first owner with a connected calendar,
+// or null when nobody has connected one yet (the page then shows mock slots).
+export async function resolveCalendarOwner() {
+  for (const candidate of calendarOwnerCandidates()) {
+    try {
+      const token = await getCalendarToken(candidate)
+      if (token) return { userId: candidate, token }
+    } catch (err) {
+      console.warn('calendar token lookup failed for', candidate, err?.message || err)
+    }
+  }
+  return null
 }
 
 // Utility: generate date range (business days only, Arizona time)
@@ -92,38 +98,18 @@ function generateDaySlots(dateObj) {
   return { date: dateObj, dateLabel, times: daySlots }
 }
 
-// Utility: convert ISO time to Arizona local time
-function toArizonaTime(isoString) {
-  const d = new Date(isoString)
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: ARIZONA_TZ,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).format(d)
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
-    const patrikUserId = await getPatrikUserId()
-    if (!patrikUserId) {
-      // No calendar connected yet — clean signal for the frontend to use mock slots.
+    const owner = await resolveCalendarOwner()
+    if (!owner) {
+      // No calendar connected yet. Clean signal for the frontend to use mock slots.
       return res.status(200).json({ connected: false })
     }
-
-    const calToken = await getCalendarToken(patrikUserId)
-    if (!calToken) {
-      // Calendar not connected — graceful fallback
-      return res.status(200).json({ connected: false })
-    }
+    const calToken = owner.token
 
     // Query freeBusy for the next 6 business days
     const daysToCheck = parseInt(req.query.days || '6', 10)
@@ -150,7 +136,7 @@ export default async function handler(req, res) {
     if (!fbRes.ok) {
       const errText = await fbRes.text().catch(() => '')
       console.error('freeBusy query failed:', fbRes.status, errText)
-      // Treat as "calendar not properly set up" — fallback to mock
+      // Treat as "calendar not properly set up" and fall back to mock
       return res.status(200).json({ connected: false })
     }
 

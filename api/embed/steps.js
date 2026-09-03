@@ -1,20 +1,21 @@
-// GET /api/embed/steps?embed_id=...&parent_message_id=<uuid>
+// GET /api/embed/steps?embed_id=...&parent_message_id=<id>
 //
 // Returns the live-thread step events for the visitor's last message.
-// Same source the dashboard live thread reads: events table,
-// event_type='message_step', scoped by payload.parent_message_id.
+// Two sources, merged (corner:retire-supabase, 2026-09-03):
+//   1. The Convex events table, event_type='message_step', scoped by
+//      payload.parent_message_id. This is the shape the terminal bridge
+//      writes (relay-emit-step) and the dashboard live thread reads.
+//   2. The Convex turns table for the embed's room: an agent turn that names
+//      this message carries its own steps ([{label, done}]).
 //
 // Widget polls this in parallel with /api/embed/messages so the visitor
 // sees real progress while the agent works ("Looking at SRWPartnerships.jsx",
 // "Running a quick command", "Reading your message"...).
 
-import { getEmbed } from '../../lib/embed-registry.js'
-
-const SUPABASE_URL =
-  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+// The embed config comes from getEmbed in ./messages.js (Convex embeds:get
+// first, bundled _embeds.json as the fallback).
+import { getEmbed } from './messages.js'
+import { convexQuery } from '../_lib/reportsStore.js'
 
 // ─── Exact origin + scheme check (TOP-20 #3 #13) ────────────────────────────
 function normalizeOrigin(origin) {
@@ -44,12 +45,72 @@ function isOriginAllowed(origin, allowlist) {
   return false;
 }
 
-function sbHeaders() {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
+// Steps written as message_step events (latest status per step_index; an index
+// can flip in_progress -> done).
+async function stepsFromEvents(parentId) {
+  const rows = await convexQuery('events:find', {
+    event_type: 'message_step',
+    payload_eq: { key: 'parent_message_id', value: parentId },
+    order: 'asc',
+    limit: 100,
+  })
+  const latestByIdx = new Map()
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const p = row.payload || {}
+    const idx = p.step_index
+    if (idx === undefined || idx === null) continue
+    const prev = latestByIdx.get(idx)
+    if (!prev || (row.timestamp || '') > (prev.timestamp || '')) {
+      latestByIdx.set(idx, { ...row, _idx: idx })
+    }
   }
+  return Array.from(latestByIdx.values())
+    .sort((a, b) => a._idx - b._idx)
+    .map((row) => ({
+      index: row._idx,
+      text: row.payload.text || '',
+      status: row.payload.status || 'in_progress',
+      timestamp: row.timestamp,
+    }))
+}
+
+// Steps from the Convex agent turn that answers this message, if the embed's
+// room can be resolved. Room key grammar mirrors api/_lib/write-message.js
+// deriveRoomId: mission room when the embed names a mission, else project.
+async function stepsFromTurns(cfg, parentId) {
+  const routing = cfg.routing || {}
+  const world = routing.client_id
+  if (!world || String(world).startsWith('shared:')) return []
+  let lookup
+  if (routing.mission_slug) {
+    const slug = String(routing.mission_slug)
+    const idx = slug.indexOf(':')
+    lookup = idx > 0
+      ? { worldSlug: world, kind: 'mission', project: slug.slice(0, idx), key: slug.slice(idx + 1) }
+      : { worldSlug: world, kind: 'mission', project: routing.project || undefined, key: slug }
+  } else if (routing.project) {
+    lookup = { worldSlug: world, kind: 'project', key: String(routing.project) }
+  } else {
+    lookup = { worldSlug: world, kind: 'agent', key: String(routing.agent || 'elon') }
+  }
+  const room = await convexQuery('rooms:resolveCanonical', lookup)
+  if (!room || !room._id) return []
+  const turns = await convexQuery('turns:listTurns', { roomId: room._id })
+  const mine = (Array.isArray(turns) ? turns : []).filter((t) => String(t.messageId || '') === String(parentId))
+  const out = []
+  let index = 0
+  for (const turn of mine.sort((a, b) => a.startedAt - b.startedAt)) {
+    const ts = new Date(turn.completedAt || turn.startedAt).toISOString()
+    for (const step of Array.isArray(turn.steps) ? turn.steps : []) {
+      out.push({
+        index: index++,
+        text: step.label || '',
+        status: step.done ? 'done' : (turn.status === 'failed' ? 'failed' : 'in_progress'),
+        timestamp: ts,
+      })
+    }
+  }
+  return out
 }
 
 export default async function handler(req, res) {
@@ -64,9 +125,6 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'GET') return res.status(405).json({ error: 'method' })
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' })
-  }
 
   const q = req.query || {}
   const embedId = q.embed_id
@@ -82,43 +140,15 @@ export default async function handler(req, res) {
   }
   res.setHeader('Access-Control-Allow-Origin', origin || '*')
 
-  // events table — event_type='message_step', payload.parent_message_id eq parentId
-  const params = new URLSearchParams()
-  params.set('select', 'id,timestamp,payload')
-  params.set('event_type', 'eq.message_step')
-  params.set('payload->>parent_message_id', `eq.${parentId}`)
-  params.set('limit', '100')
-
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/events?${params.toString()}`,
-      { headers: sbHeaders() }
-    )
-    if (!r.ok) {
-      const t = await r.text()
-      return res.status(r.status).json({ error: t })
-    }
-    const rows = await r.json()
-    // Latest status per step_index (an index can flip in_progress -> done).
-    const latestByIdx = new Map()
-    for (const row of rows) {
-      const p = row.payload || {}
-      const idx = p.step_index
-      if (idx === undefined || idx === null) continue
-      const prev = latestByIdx.get(idx)
-      if (!prev || (row.timestamp || '') > (prev.timestamp || '')) {
-        latestByIdx.set(idx, { ...row, _idx: idx })
+    let steps = await stepsFromEvents(String(parentId))
+    if (!steps.length) {
+      try {
+        steps = await stepsFromTurns(cfg, String(parentId))
+      } catch (_) {
+        steps = []
       }
     }
-    const steps = Array.from(latestByIdx.values())
-      .sort((a, b) => a._idx - b._idx)
-      .map((row) => ({
-        index: row._idx,
-        text: row.payload.text || '',
-        status: row.payload.status || 'in_progress',
-        timestamp: row.timestamp,
-      }))
-
     return res.status(200).json({ steps })
   } catch (err) {
     return res.status(500).json({ error: String(err && err.message) })

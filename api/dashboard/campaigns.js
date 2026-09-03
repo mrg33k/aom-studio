@@ -1,103 +1,96 @@
-// /api/dashboard/campaigns — corner:campaign-tool R3.
+// /api/dashboard/campaigns
 // The Email > Campaign tool's main endpoint:
-//   GET    ?world=ben                — list campaigns (health light + stats per row)
-//   GET    ?world=ben&id=<uuid>      — full detail: pipeline counts, TODAY payload, stats
-//   POST   {world, name, ...}        — create from the wizard (csv rows or dataset filter)
-//   PATCH  {world, id, ...fields}    — edit settings (name, template, cap, goal)
-// Sending/health mutation lives in the engine (scripts/campaign-send.py) and
-// /api/dashboard/campaign-actions.js — this file never sends mail.
+//   GET    ?world=ben                - list campaigns (health light + stats per row)
+//   GET    ?world=ben&id=<id>        - full detail: pipeline counts, TODAY payload, stats
+//   POST   {world, name, ...}        - create from the wizard (csv rows or dataset filter)
+//   PATCH  {world, id, ...fields}    - edit settings (name, template, cap, goal)
+// Sending/health mutation lives in the engine and campaign-actions.js; this
+// file never sends mail.
+//
+// corner:retire-supabase (2026-09-03): campaigns live on Convex
+// (campaigns:list / get / create / update / addContacts / recordEvent). The
+// old columns that Convex does not carry as fields (template_*, daily_cap,
+// send_hour_local, autopilot, goal_*, next_run_at, health_*, sending
+// account) live in the campaign's `settings` blob and are spread back onto
+// each row so the UI reads the same keys it always did.
 
-import { resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js';
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { requestedTenantFromCompat, sendTenantContextError } from '../_lib/tenantContext.js';
 import { csvToContacts, datasetToContacts, EMAIL_RE } from '../_lib/csvAudience.js';
 import { buildCampaignSetupTruth } from '../_lib/campaignTruth.js';
-import { listConnectionsForUser } from '../_lib/mailAccess.js';
-
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { convexQuery, convexMutation } from '../_lib/reportsStore.js';
 
 const STAGES = ['to_contact', 'contacted', 'replied', 'call_set', 'won', 'lost', 'bounced', 'noise'];
 const MAX_AUDIENCE_ROWS = 25000;
 const DATASET_PATH = '/arsenal-municipality-data.json';
 
-function sb(path, opts = {}) {
-  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...opts,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: opts.prefer || 'return=representation',
-      ...(opts.headers || {}),
-    },
-  });
+const STAGE_ALIAS = { queued: 'to_contact', sent: 'contacted', opened: 'contacted', unsubscribed: 'noise' };
+function pipelineStage(stage) {
+  return STAGE_ALIAS[stage] || stage;
 }
 
-function restIn(values) {
-  return (values || [])
-    .map(value => encodeURIComponent(String(value)))
-    .join(',');
+function shapeCampaign(c, world) {
+  const s = (c.settings && typeof c.settings === 'object') ? c.settings : {};
+  return {
+    ...s,
+    id: c._id,
+    world,
+    name: c.name,
+    slug: s.slug || null,
+    status: c.status === 'running' ? 'active' : c.status,
+    template_subject: c.subject ?? s.template_subject ?? null,
+    template_body: c.body ?? s.template_body ?? null,
+    sending_email: c.fromEmail ?? s.sending_email ?? null,
+    created_at: new Date(c.createdAt).toISOString(),
+    updated_at: new Date(c.updatedAt).toISOString(),
+  };
 }
 
-async function scopedCampaignConnectionIds(tenantContext) {
-  if (!tenantContext?.userId) return [];
-  const aliasSet = new Set(tenantContext.aliases || []);
-  try {
-    const connections = await listConnectionsForUser(tenantContext.userId);
-    return connections
-      .filter(connection => connection.workspace_id && aliasSet.has(String(connection.workspace_id).trim().toLowerCase()))
-      .map(connection => connection.id)
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
+function shapeContact(c) {
+  return {
+    id: c._id, name: c.name || null, email: c.email || null, merge_fields: c.fields || {}, stage: pipelineStage(c.stage),
+    last_reply_at: c.fields?.last_reply_at || null, reply_thread_id: c.fields?.reply_thread_id || null,
+    follow_up_due_at: c.fields?.follow_up_due_at || null,
+  };
 }
 
-async function listMisfiledCampaigns(tenantContext, limit = 10) {
-  const connectionIds = await scopedCampaignConnectionIds(tenantContext);
-  if (!connectionIds.length || !(tenantContext?.aliases || []).length) return [];
-  const r = await sb(
-    `campaigns?sending_connection_id=in.(${restIn(connectionIds)})` +
-      `&world=not.in.(${restIn(tenantContext.aliases)})` +
-      `&select=id,name,slug,status,world,created_at,updated_at&order=created_at.desc&limit=${limit}`,
-  );
-  if (!r.ok) return [];
-  const rows = await r.json();
-  return Array.isArray(rows) ? rows : [];
+function shapeBatch(batch) {
+  if (!batch) return null;
+  return {
+    id: batch._id, status: batch.status, contact_count: batch.size,
+    batch_date: batch.scheduledFor ? new Date(batch.scheduledFor).toISOString().slice(0, 10) : null,
+    created_at: new Date(batch.createdAt).toISOString(),
+  };
 }
 
-async function countWhere(table, filter) {
-  const r = await sb(`${table}?${filter}&select=id&limit=1`, {
-    method: 'HEAD',
-    prefer: 'count=exact',
-  });
-  const range = r.headers.get('content-range') || '';
-  const total = parseInt(range.split('/')[1], 10);
-  return Number.isFinite(total) ? total : 0;
+async function contactsOf(campaignId) {
+  const page = await convexQuery('campaigns:contacts', { id: campaignId, limit: 100000 });
+  return page?.rows || [];
 }
 
-async function pipelineCounts(campaignId) {
+function pipelineCounts(contacts) {
   const out = {};
-  await Promise.all(
-    STAGES.map(async (s) => {
-      out[s] = await countWhere(
-        'campaign_contacts',
-        `campaign_id=eq.${campaignId}&stage=eq.${s}`
-      );
-    })
-  );
+  for (const s of STAGES) out[s] = 0;
+  for (const c of contacts) {
+    const stage = pipelineStage(c.stage);
+    out[stage] = (out[stage] || 0) + 1;
+  }
   return out;
 }
 
-async function statsFor(campaignId, pipeline) {
-  const sent = await countWhere('campaign_sends', `campaign_id=eq.${campaignId}`);
-  const p = pipeline || (await pipelineCounts(campaignId));
+function statsFor(pipeline, sent) {
   return {
     sent,
-    // human replies only — auto-replies sit in the 'noise' stage and don't count
-    replies: (p.replied || 0) + (p.call_set || 0) + (p.won || 0),
-    calls: (p.call_set || 0) + (p.won || 0),
-    won: p.won || 0,
+    // human replies only; auto-replies sit in the 'noise' stage and don't count
+    replies: (pipeline.replied || 0) + (pipeline.call_set || 0) + (pipeline.won || 0),
+    calls: (pipeline.call_set || 0) + (pipeline.won || 0),
+    won: pipeline.won || 0,
   };
+}
+
+async function sentCount(campaignId) {
+  const events = await convexQuery('campaigns:events', { id: campaignId, limit: 100000 }).catch(() => []);
+  return (Array.isArray(events) ? events : []).filter((e) => e.kind === 'sent').length;
 }
 
 function slugify(name) {
@@ -114,55 +107,44 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' });
-  }
-
-  let tenantContext;
   let world;
+  let tenantContext;
   try {
-    tenantContext = await resolveTenantContext(req);
-    world = tenantContext.tenantId;
+    const requested = requestedTenantFromCompat({ query: req.query || {}, body: req.body || {} });
+    const auth = await verifyTenant(requested, req);
+    world = auth.tenant;
+    tenantContext = { ok: true, tenantId: world, canonicalSlug: world, aliases: [world], userId: auth.userId, isAdmin: !!auth.isAdmin };
   } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ ok: false, error: err.message });
     return sendTenantContextError(res, err);
   }
-  const campaignWorlds = tenantContext.aliases?.length ? tenantContext.aliases : [world];
-  const campaignWorldFilter = `world=in.(${restIn(campaignWorlds)})`;
 
   try {
+    const owner = await convexQuery('worlds:getBySlug', { slug: world }).catch(() => null);
+
     if (req.method === 'GET' && req.query.id) {
       // ---- detail ------------------------------------------------------
       const id = String(req.query.id);
-      const r = await sb(`campaigns?id=eq.${id}&${campaignWorldFilter}&select=*`);
-      if (!r.ok) return res.status(r.status).json({ error: await r.text() });
-      const rows = await r.json();
-      if (!rows.length) return res.status(404).json({ error: 'campaign not found' });
-      const campaign = rows[0];
-      const campaignSetup = buildCampaignSetupTruth({ tenantContext, campaigns: rows });
+      const c = await convexQuery('campaigns:get', { id }).catch(() => null);
+      if (!c || !owner || String(owner._id) !== String(c.worldId)) return res.status(404).json({ error: 'campaign not found' });
+      const campaign = shapeCampaign(c, world);
+      const campaignSetup = buildCampaignSetupTruth({ tenantContext, campaigns: [campaign] });
 
-      const pipeline = await pipelineCounts(id);
-      const stats = await statsFor(id, pipeline);
+      const contacts = await contactsOf(c._id);
+      const pipeline = pipelineCounts(contacts);
+      const stats = statsFor(pipeline, await sentCount(c._id));
 
-      const threeDaysAgo = new Date(Date.now() - 3 * 864e5).toISOString();
-      const [repliesR, batchR, followR, flaggedCount] = await Promise.all([
-        sb(
-          `campaign_contacts?campaign_id=eq.${id}&last_reply_at=gte.${encodeURIComponent(
-            threeDaysAgo
-          )}&stage=in.(replied,call_set,won)&select=id,name,email,merge_fields,stage,last_reply_at,reply_thread_id&order=last_reply_at.desc&limit=10`
-        ),
-        sb(
-          `campaign_batches?campaign_id=eq.${id}&select=*&order=created_at.desc&limit=1`
-        ),
-        sb(
-          `campaign_contacts?campaign_id=eq.${id}&follow_up_due_at=lte.${encodeURIComponent(
-            new Date().toISOString()
-          )}&stage=in.(contacted,replied,call_set)&select=id,name,email,merge_fields,stage,follow_up_due_at&order=follow_up_due_at.asc&limit=10`
-        ),
-        countWhere('campaign_contacts', `campaign_id=eq.${id}&hygiene_flag=not.is.null&stage=eq.to_contact`),
-      ]);
-      const newReplies = repliesR.ok ? await repliesR.json() : [];
-      const batches = batchR.ok ? await batchR.json() : [];
-      const followUps = followR.ok ? await followR.json() : [];
+      const threeDaysAgo = Date.now() - 3 * 864e5;
+      const nowIso = new Date().toISOString();
+      const newReplies = contacts
+        .filter((x) => ['replied', 'call_set', 'won'].includes(pipelineStage(x.stage)) && x.fields?.last_reply_at && Date.parse(x.fields.last_reply_at) >= threeDaysAgo)
+        .sort((a, b) => String(b.fields.last_reply_at).localeCompare(String(a.fields.last_reply_at)))
+        .slice(0, 10).map(shapeContact);
+      const followUps = contacts
+        .filter((x) => ['contacted', 'replied', 'call_set'].includes(pipelineStage(x.stage)) && x.fields?.follow_up_due_at && x.fields.follow_up_due_at <= nowIso)
+        .sort((a, b) => String(a.fields.follow_up_due_at).localeCompare(String(b.fields.follow_up_due_at)))
+        .slice(0, 10).map(shapeContact);
+      const flaggedCount = contacts.filter((x) => x.fields?.hygiene_flag && pipelineStage(x.stage) === 'to_contact').length;
 
       return res.status(200).json({
         ok: true,
@@ -173,7 +155,7 @@ export default async function handler(req, res) {
         stats,
         today: {
           newReplies,
-          batch: batches[0] || null,
+          batch: shapeBatch((Array.isArray(c.batches) ? c.batches : [])[0] || null),
           followUpsDue: followUps,
           flaggedCount,
         },
@@ -182,15 +164,15 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       // ---- list --------------------------------------------------------
-      const r = await sb(
-        `campaigns?${campaignWorldFilter}&select=*&order=created_at.asc`
-      );
-      if (!r.ok) return res.status(r.status).json({ error: await r.text() });
-      const campaigns = await r.json();
-      const misfiledCampaigns = campaigns.length ? [] : await listMisfiledCampaigns(tenantContext);
-      const campaignSetup = buildCampaignSetupTruth({ tenantContext, campaigns, misfiledCampaigns });
+      const rows = await convexQuery('campaigns:list', { worldId: world });
+      const campaigns = (Array.isArray(rows) ? rows : []).map((c) => shapeCampaign(c, world))
+        .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+      const campaignSetup = buildCampaignSetupTruth({ tenantContext, campaigns, misfiledCampaigns: [] });
       const withStats = await Promise.all(
-        campaigns.map(async (c) => ({ ...c, stats: await statsFor(c.id) }))
+        campaigns.map(async (c) => {
+          const contacts = await contactsOf(c.id);
+          return { ...c, stats: statsFor(pipelineCounts(contacts), await sentCount(c.id)) };
+        })
       );
       return res.status(200).json({
         ok: true,
@@ -238,27 +220,19 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: `audience too large (max ${MAX_AUDIENCE_ROWS})` });
       }
 
+      const existing = (await convexQuery('campaigns:list', { worldId: world }).catch(() => [])) || [];
+      const takenSlugs = new Set(existing.map((c) => c.settings?.slug).filter(Boolean));
       const slugBase = slugify(name) || 'campaign';
       let slug = slugBase;
-      for (let i = 2; i < 20; i++) {
-        const dup = await countWhere(
-          'campaigns',
-          `world=eq.${encodeURIComponent(world)}&slug=eq.${slug}`
-        );
-        if (!dup) break;
-        slug = `${slugBase}-${i}`;
-      }
+      for (let i = 2; i < 20 && takenSlugs.has(slug); i++) slug = `${slugBase}-${i}`;
 
       const sendHour = Number.isFinite(+b.send_hour_local) ? Math.min(Math.max(+b.send_hour_local, 0), 23) : 7;
       const next = new Date();
       next.setUTCDate(next.getUTCDate() + 1);
       next.setUTCHours((sendHour + 7) % 24, 0, 0, 0); // America/Phoenix = UTC-7, no DST
 
-      const row = {
-        world,
+      const settings = {
         slug,
-        name,
-        status: b.launch === false ? 'draft' : 'active',
         goal_target: parseInt(b.goal_target, 10) || null,
         goal_unit: (b.goal_unit || '').trim() || null,
         template_subject: subject,
@@ -273,65 +247,48 @@ export default async function handler(req, res) {
         autopilot: !!b.autopilot,
         next_run_at: b.launch === false ? null : next.toISOString(),
       };
-      const cr = await sb('campaigns', { method: 'POST', body: JSON.stringify(row) });
-      if (!cr.ok) return res.status(cr.status).json({ error: await cr.text() });
-      const campaign = (await cr.json())[0];
+      const campaignId = await convexMutation('campaigns:create', {
+        worldId: world, name, subject, body, fromEmail: b.sending_email, settings,
+      });
+      if (b.launch !== false) await convexMutation('campaigns:update', { id: campaignId, patch: { status: 'running' } });
 
-      // contacts from the materialized audience
+      // contacts from the materialized audience. Convex dedupes by email; rows
+      // with no email but a place key are keyed on the place instead.
       let inserted = 0;
       let skipped = 0;
       if (contactsIn.length) {
         const seen = new Set();
-        const withPlace = [];
-        const byEmail = [];
+        const rows = [];
         for (const c of contactsIn) {
           const email = (c.email || '').trim().toLowerCase();
-          if (email && (!EMAIL_RE.test(email) || seen.has(email))) {
-            skipped++;
-            continue;
-          }
+          if (email && (!EMAIL_RE.test(email) || seen.has(email))) { skipped++; continue; }
+          if (!email && !c.place_key) { skipped++; continue; }
           if (email) seen.add(email);
-          const row = {
-            campaign_id: campaign.id,
-            world,
-            email: email || null,
-            name: (c.name || '').trim() || null,
-            place_key: c.place_key || null,
-            merge_fields: c.merge_fields && typeof c.merge_fields === 'object' ? c.merge_fields : {},
-            stage: 'to_contact',
-            metadata: { source: audience.source || 'wizard' },
-          };
-          (c.place_key ? withPlace : byEmail).push(row);
+          rows.push({
+            email: email || `${String(c.place_key).replace(/[^a-z0-9._-]/gi, '-').toLowerCase()}@no-email.local`,
+            name: (c.name || '').trim() || undefined,
+            fields: { ...(c.merge_fields && typeof c.merge_fields === 'object' ? c.merge_fields : {}), ...(c.place_key ? { place_key: c.place_key } : {}), source: audience.source || 'wizard' },
+          });
         }
-        const insert = async (rows, conflict) => {
-          for (let i = 0; i < rows.length; i += 1000) {
-            const ir = await sb(`campaign_contacts?on_conflict=${conflict}`, {
-              method: 'POST',
-              prefer: 'resolution=ignore-duplicates,return=minimal',
-              body: JSON.stringify(rows.slice(i, i + 1000)),
-            });
-            if (!ir.ok) throw new Error(await ir.text());
-            inserted += rows.slice(i, i + 1000).length;
-          }
-        };
-        await insert(withPlace, 'campaign_id,place_key');
-        await insert(byEmail, 'campaign_id,email');
+        for (let i = 0; i < rows.length; i += 1000) {
+          const result = await convexMutation('campaigns:addContacts', { id: campaignId, contacts: rows.slice(i, i + 1000) });
+          inserted += result?.added || 0;
+          skipped += result?.skipped || 0;
+        }
         if (csvSkipped) skipped += csvSkipped.noEmail + csvSkipped.badEmail + csvSkipped.dupes;
       }
 
-      await sb('campaign_events', {
-        method: 'POST',
-        prefer: 'return=minimal',
-        body: JSON.stringify({
-          campaign_id: campaign.id,
-          world,
-          kind: 'import',
+      await convexMutation('campaigns:recordEvent', {
+        campaignId,
+        kind: 'import',
+        payload: {
           summary: `Campaign created: ${inserted} contacts loaded${skipped ? `, ${skipped} rows skipped` : ''}`,
           details: { inserted, skipped, source: audience.source || 'wizard' },
-        }),
+        },
       });
 
-      return res.status(200).json({ ok: true, campaign, inserted, skipped });
+      const created = await convexQuery('campaigns:get', { id: campaignId });
+      return res.status(200).json({ ok: true, campaign: shapeCampaign(created, world), inserted, skipped });
     }
 
     if (req.method === 'PATCH') {
@@ -341,18 +298,22 @@ export default async function handler(req, res) {
         'name', 'goal_target', 'goal_unit', 'template_subject', 'template_body',
         'merge_fields', 'daily_cap', 'send_hour_local',
       ];
+      const c = await convexQuery('campaigns:get', { id: String(b.id) }).catch(() => null);
+      if (!c || !owner || String(owner._id) !== String(c.worldId)) return res.status(404).json({ error: 'campaign not found' });
+      const settingsPatch = {};
       const patch = {};
-      for (const k of allowed) if (k in b) patch[k] = b[k];
-      if (!Object.keys(patch).length) return res.status(400).json({ error: 'nothing to update' });
-      patch.updated_at = new Date().toISOString();
-      const r = await sb(
-        `campaigns?id=eq.${b.id}&world=eq.${encodeURIComponent(world)}`,
-        { method: 'PATCH', body: JSON.stringify(patch) }
-      );
-      if (!r.ok) return res.status(r.status).json({ error: await r.text() });
-      const rows = await r.json();
-      if (!rows.length) return res.status(404).json({ error: 'campaign not found' });
-      return res.status(200).json({ ok: true, campaign: rows[0] });
+      for (const k of allowed) {
+        if (!(k in b)) continue;
+        if (k === 'name') patch.name = String(b.name || '').trim() || c.name;
+        else if (k === 'template_subject') { patch.subject = b[k]; settingsPatch[k] = b[k]; }
+        else if (k === 'template_body') { patch.body = b[k]; settingsPatch[k] = b[k]; }
+        else settingsPatch[k] = b[k];
+      }
+      if (!Object.keys(patch).length && !Object.keys(settingsPatch).length) return res.status(400).json({ error: 'nothing to update' });
+      if (Object.keys(settingsPatch).length) patch.settings = { ...((c.settings && typeof c.settings === 'object') ? c.settings : {}), ...settingsPatch };
+      await convexMutation('campaigns:update', { id: c._id, patch });
+      const updated = await convexQuery('campaigns:get', { id: c._id });
+      return res.status(200).json({ ok: true, campaign: shapeCampaign(updated, world) });
     }
 
     return res.status(405).json({ error: 'method not allowed' });

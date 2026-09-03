@@ -1,26 +1,106 @@
 // POST /api/dashboard/create-project-task
-// R21c. Server-side task creation scoped to a project. Mirrors
-// lib/rexTaskClient.js createTaskWithRex but runs with the service role
-// key so RLS on dependent tables (events triggers, etc.) doesn't block
-// the client-side insert.
+// R21c. Server-side task creation scoped to a project.
 //
 // Body: { text, projectSlug, clientId?, mission_slug? }
 // Returns: { ok: true, task: { id, title, status, project } }
+//
+// corner:retire-supabase (2026-09-03): the row now lands on the Convex task
+// queue (tasks:queue) and the mission warning on tasks:logEvent. The repo path
+// comes from projects:lookupBySlug. No Supabase anywhere in this file.
 //
 // AUTH (corner:identity-attribution, 2026-07-27). The row this endpoint writes
 // is status='queued', and scripts/task-runner.sh claims queued rows and runs
 // their free text as the brief of a fresh Claude Code session on Patrik's Mac.
 // Unauthenticated that is remote code execution from the open internet. So:
-//   - a valid JWT is required and must pass verifyTenant() for the world,
-//   - `created_by` comes from the JWT, never from the body (a task attributed
-//     to a name the caller chose is exactly the "Patrik said X" forgery),
+//   - a valid session is required and must pass verifyTenant() for the world,
+//   - `created_by` comes from the session, never from the body,
 //   - CORS is the dashboard origins, not `*`.
 
-import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
-import { authorizeTaskProject, taskScopeDenialMessage } from '../_lib/taskScope.js';
+// ---------------------------------------------------------------------------
+// Convex is the only backend (corner:retire-supabase, 2026-09-03). The signed
+// in person's Convex Auth token arrives as Authorization: Bearer and the
+// deployment checks it in users:verifyToken. This block is repeated in each
+// route on purpose until a shared helper lands in api/_lib.
+// ---------------------------------------------------------------------------
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud';
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || undefined;
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+async function convexCall(kind, path, args, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const r = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  });
+  if (!r.ok) throw new Error(`convex ${kind} ${path}: HTTP ${r.status}`);
+  const data = await r.json();
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex ${kind} ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`);
+  }
+  return data.value;
+}
+const convexQuery = (path, args, token) => convexCall('query', path, args, token);
+const convexMutation = (path, args, token) => convexCall('mutation', path, args, token);
+
+class AuthError extends Error {
+  constructor(message, status = 403) { super(message); this.name = 'AuthError'; this.status = status; }
+}
+
+function bearerToken(req) {
+  const auth = req.headers?.authorization || req.headers?.Authorization;
+  if (typeof auth === 'string' && /^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, '').trim() || null;
+  return null;
+}
+
+// Who is calling. Throws 401 when the request carries no valid session.
+async function requireCaller(req) {
+  const token = bearerToken(req);
+  if (!token) throw new AuthError('sign-in required', 401);
+  let who = null;
+  try { who = await convexQuery('users:verifyToken', {}, token); } catch { who = null; }
+  if (!who || !who.userId) throw new AuthError('invalid session', 401);
+  const world = who.world ? String(who.world).toLowerCase() : null;
+  let superAdmin = false;
+  try { superAdmin = !!(await convexQuery('worlds:isAdmin', { worldId: 'aom' }, token)); } catch { superAdmin = false; }
+  return { userId: who.userId, email: who.email || null, userName: who.name || null, world, worldId: who.worldId || null, isAdmin: !!who.isAdmin, superAdmin, token };
+}
+
+// May the caller act inside `tenant`? A world slug admits an aom admin
+// (Patrik) everywhere and any member of that world. "shared:<project>" admits
+// a world that holds the project or a grant on it.
+async function verifyTenant(tenant, req) {
+  const t = String(tenant || '').trim().toLowerCase();
+  if (!t) throw new AuthError('tenant required', 400);
+  const who = await requireCaller(req);
+  if (who.superAdmin) return { ok: true, tenant: t, ...who, isAdmin: true };
+  if (t.startsWith('shared:')) {
+    const slug = t.slice('shared:'.length);
+    const access = who.world ? await convexQuery('projects:hasAccess', { slug, worldId: who.world }, who.token).catch(() => null) : null;
+    if (access && access.ok) return { ok: true, tenant: t, ...who, isAdmin: false };
+  } else {
+    const m = await convexQuery('worlds:membership', { worldId: t }, who.token).catch(() => null);
+    if (m && m.role) return { ok: true, tenant: t, ...who, isAdmin: m.role === 'owner' || m.role === 'admin' };
+    if (who.world === t) return { ok: true, tenant: t, ...who };
+  }
+  throw new AuthError(`forbidden: caller world "${who.world || '(none)'}" cannot access "${t}"`, 403);
+}
+
+// May this tenant put work under `slug`? The holder world and any world with a
+// grant pass. A project with no registry row is admitted when the tenant
+// already has a room for it. Same rule every message writer applies.
+async function authorizeTaskProject({ verified, projectSlug }) {
+  if (verified.superAdmin) return { ok: true, reason: 'super-admin' };
+  const tenant = verified.tenant;
+  const access = await convexQuery('projects:hasAccess', { slug: projectSlug, worldId: tenant }, verified.token).catch(() => null);
+  if (access && access.ok) return { ok: true, reason: access.role };
+  const project = await convexQuery('projects:lookupBySlug', { slug: projectSlug }, verified.token).catch(() => null);
+  if (project) return { ok: false, reason: `project "${projectSlug}" belongs to world "${project.ownerWorld}"` };
+  const rooms = await convexQuery('rooms:listRooms', { worldId: tenant }, verified.token).catch(() => []);
+  const hit = (Array.isArray(rooms) ? rooms : []).some(r => String(r.project || '').toLowerCase() === projectSlug);
+  if (hit) return { ok: true, reason: 'unregistered-project' };
+  return { ok: false, reason: `world "${tenant}" has no project or room called "${projectSlug}"` };
+}
 
 const ALLOWED_ORIGIN_PATTERNS = [
   /^https:\/\/lab\.aheadofmarket\.com$/i,
@@ -52,29 +132,20 @@ function applyCors(req, res) {
 function cleanTitle(raw) {
   const s = (raw || '').trim().replace(/\s+/g, ' ');
   if (!s) return 'Untitled task';
-  return s.length > 140 ? s.slice(0, 137) + '…' : s;
+  return s.length > 140 ? s.slice(0, 137) + '...' : s;
 }
 
-// Fire-and-forget: log mission_first_warn to events table.
+// Fire-and-forget: log mission_first_warn to the events ledger.
 async function _logMissionWarnEvent({ project, source }) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return;
   const now = new Date().toISOString();
-  const event = {
-    id: crypto.randomUUID(),
-    timestamp: now,
-    agent: 'corner-dashboard',
-    event_type: 'mission_first_warn',
-    payload: { project: project || '', source: source || 'create-project-task.js', timestamp: now },
-  };
-  await fetch(`${SUPABASE_URL}/rest/v1/events`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
+  await convexMutation('tasks:logEvent', {
+    key: CONVEX_KEY,
+    event: {
+      timestamp: now,
+      agent: 'corner-dashboard',
+      event_type: 'mission_first_warn',
+      payload: { project: project || '', source: source || 'create-project-task.js', timestamp: now },
     },
-    body: JSON.stringify(event),
   });
 }
 
@@ -82,22 +153,20 @@ export default async function handler(req, res) {
   applyCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
   const { text, projectSlug, clientId, mission_slug: rawMission, ops_query } = req.body || {};
   if (!text || typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'text is required' });
   }
 
-  // Tenant gate BEFORE anything is written. verifyTenant admits the owner world
-  // and (for shared:<slug>) any world holding a project_access grant.
+  // Tenant gate BEFORE anything is written.
   const _reqClient = clientId && String(clientId).trim();
   if (!_reqClient) return res.status(401).json({ error: 'Missing client' });
   let verified;
   try {
     verified = await verifyTenant(_reqClient.toLowerCase(), req);
   } catch (err) {
-    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    if (err instanceof AuthError) return res.status(err.status).json({ error: err.message });
     throw err;
   }
   const slug = (projectSlug || '').toString().trim().toLowerCase() || null;
@@ -106,31 +175,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invalid projectSlug' });
   }
 
-  // --- PROJECT SCOPE (r7) ---------------------------------------------------
-  // verifyTenant above answered "may this caller act inside their own WORLD".
-  // It says NOTHING about `slug`, and until now nothing else did either: the
-  // shape regex was the only check the slug ever faced. Everything the slug
-  // then steers is execution — `project` and `metadata.repo` pick the checkout
-  // task-runner.sh cds into, `project_path` is read straight out of
-  // projects.repo_path FOR THAT SLUG regardless of which world holds it, and
-  // `text` becomes a fresh sub-agent's brief.
-  //
-  // VERIFIED live: POST {clientId:'arsenal', projectSlug:'corner'} passed
-  // verifyTenant (genuinely arsenal's own world) and produced a queued row with
-  // project_path = AOM's aom-studio checkout. That is arbitrary agent execution
-  // in another world's repository from an ordinary cross-world login.
-  //
-  // Same decision as every message writer (verifyProjectAccess, reached through
-  // makeProjectScopeAuthorizer) — see api/_lib/taskScope.js for the one rule
-  // that path adds and why. REFUSING, not dropping: a task stripped of its
-  // project still runs, and "runs somewhere else" is the bug.
-  const scopeVerdict = await authorizeTaskProject({ req, clientId: verified.tenant, projectSlug: slug });
+  // PROJECT SCOPE: verifyTenant answered "may this caller act inside their own
+  // world". It says nothing about `slug`, and the slug steers execution (the
+  // checkout the runner cds into, the brief a worker runs). Refuse, do not drop.
+  const scopeVerdict = await authorizeTaskProject({ verified, projectSlug: slug });
   if (!scopeVerdict.ok) {
     console.warn(
-      `[create-project-task] project scope DENIED: tenant "${verified.tenant}" slug "${slug}" — ${scopeVerdict.reason}`,
+      `[create-project-task] project scope DENIED: tenant "${verified.tenant}" slug "${slug}": ${scopeVerdict.reason}`,
     );
     return res.status(403).json({
-      error: taskScopeDenialMessage({ clientId: verified.tenant, projectSlug: slug, reason: scopeVerdict.reason }),
+      error: `World "${verified.tenant}" cannot queue work under project "${slug}": ${scopeVerdict.reason}`,
       code: 'PROJECT_SCOPE_DENIED',
     });
   }
@@ -149,23 +203,15 @@ export default async function handler(req, res) {
 
   const title = cleanTitle(text);
   const client = verified.tenant;
-  // Who queued this is derived from the JWT. If identity can't be resolved we
-  // leave created_by null — an unattributed task, never a borrowed name.
-  const identity = await callerIdentity(req).catch(() => null);
-  const createdBy = identity?.userId || verified.userId || null;
+  // Who queued this comes from the session. Never a borrowed name.
+  const createdBy = verified.userId || null;
 
   try {
-    // Resolve repo_path for this slug so the runner knows where to cd.
+    // Resolve the repo path for this slug so the runner knows where to cd.
     let repoPath = '';
     try {
-      const r = await fetch(
-        `${SUPABASE_URL}/rest/v1/projects?slug=eq.${encodeURIComponent(slug)}&select=repo_path&limit=1`,
-        { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
-      );
-      if (r.ok) {
-        const rows = await r.json();
-        repoPath = (Array.isArray(rows) && rows[0] && rows[0].repo_path) || '';
-      }
+      const project = await convexQuery('projects:lookupBySlug', { slug, worldId: client }, verified.token);
+      repoPath = (project && project.repoPath) || '';
     } catch (_) { /* best effort */ }
 
     const metadata = {
@@ -173,9 +219,9 @@ export default async function handler(req, res) {
       created_via: 'r21c-in-chat',
       model: 'sonnet',
       // Verified author, carried into the brief's metadata so a worker reading
-      // the row can see WHO asked — and see the absence when nobody is named.
-      requested_by_name: identity?.userName || null,
-      requested_by_email: identity?.email || null,
+      // the row can see WHO asked, and see the absence when nobody is named.
+      requested_by_name: verified.userName || null,
+      requested_by_email: verified.email || null,
     };
     if (missionSlug) metadata.mission_slug = missionSlug;
 
@@ -191,22 +237,7 @@ export default async function handler(req, res) {
       project_path: repoPath,
       metadata,
     };
-    const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation',
-      },
-      body: JSON.stringify(row),
-    });
-    if (!resp.ok) {
-      const t = await resp.text().catch(() => '');
-      return res.status(502).json({ error: `Supabase insert failed: ${t.slice(0, 200)}` });
-    }
-    const inserted = await resp.json();
-    const task = (Array.isArray(inserted) && inserted[0]) || null;
+    const task = await convexMutation('tasks:queue', { key: CONVEX_KEY, row }, verified.token);
     return res.status(200).json({
       ok: true,
       task: task ? { id: task.id, title: task.title, status: task.status, project: task.project } : null,

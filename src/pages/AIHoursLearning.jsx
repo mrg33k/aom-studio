@@ -1,5 +1,27 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../dashboard/lib/supabase.js'
+import { getSession } from '../dashboard/lib/auth.js'
+import { convexQuery, convexMutation, hasSession } from '../dashboard/lib/convex.js'
+
+// corner:retire-supabase R3: the Corner session check is Convex (users:viewer)
+// and the client roster is the Convex aiHoursClients table. The fields the old
+// table had beyond name/email (current_session, granted_by, notes) ride in the
+// row's checklist object, same as api/ai-hours/clients.js does it.
+function legacyClient(row) {
+  if (!row) return null
+  const extra = row.checklist && typeof row.checklist === 'object' ? row.checklist : {}
+  return {
+    id: row.slug,
+    convex_id: String(row._id),
+    access_code: row.slug,
+    client_name: row.name,
+    email: row.email || null,
+    current_session: Number.isFinite(Number(extra.current_session)) ? Number(extra.current_session) : 1,
+    granted_by: extra.granted_by || 'aom',
+    notes: extra.notes || null,
+    created_at: row.createdAt ? new Date(row.createdAt).toISOString() : null,
+    _extra: extra,
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AI Hours Learning Center
@@ -1072,9 +1094,9 @@ function AccessCodeGate({ onClientSuccess }) {
     }
 
     try {
-      // Check Corner Supabase session
-      if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession()
+      // Check the Corner (Convex) session, read-only
+      if (hasSession()) {
+        const session = await getSession()
         if (session?.user && isAOMTeamMember(session.user.email)) {
           // Stamp the AI Hours session so /ai-hours/admin recognizes them without re-auth
           localStorage.setItem('ai-hours-admin-session', JSON.stringify({ email: session.user.email }))
@@ -1108,8 +1130,8 @@ function AccessCodeGate({ onClientSuccess }) {
       } catch { /* ignore */ }
 
       // If already logged into Corner as AOM team member, redirect directly (read-only session check)
-      if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession()
+      if (hasSession()) {
+        const session = await getSession()
         if (session?.user && isAOMTeamMember(session.user.email)) {
           // Stamp the AI Hours session so /ai-hours/admin recognizes them without re-auth
           localStorage.setItem('ai-hours-admin-session', JSON.stringify({ email: session.user.email }))
@@ -1138,7 +1160,7 @@ function AccessCodeGate({ onClientSuccess }) {
         return
       }
 
-      // Store isolated AI Hours session — never touches supabase.auth
+      // Store isolated AI Hours session, never the Corner session
       localStorage.setItem('ai-hours-admin-session', JSON.stringify({ email: result.email }))
       window.location.replace('/ai-hours/admin')
     } catch {
@@ -1320,7 +1342,7 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isReadOnly 
   const storageKey = `ai_hours_checklist_${accessCode}_${sessionNumber}`
 
   // If session is read-only (AOM-marked complete), show all items checked.
-  // Otherwise load from localStorage with Supabase as background sync source.
+  // Otherwise load from localStorage with the server as background sync source.
   const [checked, setChecked] = useState(() => {
     if (isReadOnly) return allIndices
     try {
@@ -1339,7 +1361,7 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isReadOnly 
     }
   }, [isReadOnly]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync from Supabase on mount (active sessions only — done sessions always show all checked)
+  // Sync from the server on mount (active sessions only; done sessions always show all checked)
   useEffect(() => {
     if (!accessCode || isReadOnly) return
     fetch(`/api/ai-hours/checklist?access_code=${encodeURIComponent(accessCode)}&session=${sessionNumber}`)
@@ -1368,7 +1390,7 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isReadOnly 
     const allNowDone = next.length >= items.length
     if (onAllChecked) onAllChecked(sessionNumber, allNowDone)
 
-    // persist to Supabase in background (best-effort)
+    // persist to the server in background (best-effort)
     fetch('/api/ai-hours/checklist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2022,12 +2044,14 @@ function TeamView({ user, onLogout }) {
   }, [])
 
   async function loadClients() {
-    if (!supabase) return
-    const { data } = await supabase
-      .from('ai_hours_clients')
-      .select('*')
-      .order('created_at', { ascending: false })
-    setClients(data || [])
+    try {
+      const rows = await convexQuery('aiHours:clients', {})
+      const shaped = (Array.isArray(rows) ? rows : []).map(legacyClient)
+      shaped.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+      setClients(shaped)
+    } catch {
+      setClients([])
+    }
     setClientsLoading(false)
   }
 
@@ -2045,20 +2069,21 @@ function TeamView({ user, onLogout }) {
     const access_code = generateAccessCode(clients.length)
     const client_name = addForm.name.trim()
     const client_email = addForm.email.trim()
-    const { data, error } = await supabase
-      .from('ai_hours_clients')
-      .insert({
-        access_code,
-        client_name,
+    try {
+      // The access code minted here is the row's slug, so the code the
+      // facilitator hands out is the one that works on the portal.
+      await convexMutation('aiHours:upsertClient', {
+        slug: access_code,
+        name: client_name,
         email: client_email,
-        current_session: 1,
-        granted_by: 'aom',
-        notes: addForm.notes.trim() || null,
+        checklist: {
+          current_session: 1,
+          granted_by: 'aom',
+          notes: addForm.notes.trim() || null,
+        },
       })
-      .select()
-      .single()
-    if (error) {
-      setAddError(error.message)
+    } catch (error) {
+      setAddError(error?.message || 'Could not add the client.')
       setAddingSaving(false)
       return
     }
@@ -2091,11 +2116,10 @@ function TeamView({ user, onLogout }) {
     setMarkStates(prev => ({ ...prev, [clientId]: 'loading' }))
     try {
       const newSession = client.current_session + 1
-      const { error } = await supabase
-        .from('ai_hours_clients')
-        .update({ current_session: newSession })
-        .eq('id', clientId)
-      if (error) throw error
+      await convexMutation('aiHours:updateChecklist', {
+        slug: client.access_code,
+        checked: { ...(client._extra || {}), current_session: newSession },
+      })
       setMarkConfirm({ client_name: client.client_name, new_session: newSession })
       await loadClients()
       setTimeout(() => {

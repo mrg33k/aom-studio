@@ -15,23 +15,19 @@
 import fs from 'fs';
 import path from 'path';
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
-
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { convexQuery } from '../_lib/reportsStore.js';
 
 const AOM_EA_ENV = process.env.AOM_EA_ROOT;
 const AOM_EA_HARDCODED = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA';
 const AOM_EA_SIBLING = path.resolve(process.cwd(), '..', 'AOM-EA');
 const AOM_EA_ROOT = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARDCODED : AOM_EA_SIBLING);
 
+// The world that holds this project, from the Convex project registry
+// (corner:retire-supabase, 2026-09-03; was the Supabase projects table).
 async function resolveProjectWorld(slug) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null;
   try {
-    const url = `${SUPABASE_URL}/rest/v1/projects?slug=eq.${encodeURIComponent(slug)}&select=slug,client_id&limit=1`;
-    const r = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
-    if (!r.ok) return null;
-    const rows = await r.json();
-    return rows[0]?.client_id || null;
+    const row = await convexQuery('projects:lookupBySlug', { slug });
+    return row?.ownerWorld ? String(row.ownerWorld).toLowerCase() : null;
   } catch { return null; }
 }
 

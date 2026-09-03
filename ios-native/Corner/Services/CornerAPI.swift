@@ -3,8 +3,8 @@
 //
 // Auth, the authorized fetch wrapper, and every /api/* call this app makes.
 //
-// THE ONE WRITE PATH. Sending a message is POST /api/dashboard/supabase-messages
-// with the user's Supabase JWT — never a direct PostgREST insert from the device.
+// THE WRITE PATH. Chat sends go to Convex (messages:send) with the user's Convex
+// JWT; everything else goes through /api/* carrying that same token.
 // Identity stamping (author from the JWT, never from the body), tenant verification,
 // room_id derivation and mission-slug canonicalization all live server-side in that
 // one route. Writing rows straight from the client would recreate the privilege
@@ -16,7 +16,6 @@
 // 2026-05-24, and on a phone it would be silent.
 
 import Foundation
-import Supabase
 import UIKit
 
 @MainActor
@@ -24,27 +23,28 @@ final class CornerAPI: ObservableObject {
 
     static let shared = CornerAPI()
 
-    let client: SupabaseClient
+    private let auth = ConvexAuth.shared
 
     /// Nil = signed out. Drives the root view.
-    @Published private(set) var session: Session?
+    @Published private(set) var session: AuthSession?
     /// The signed-in user's world/tenant, or nil if their account carries none.
     @Published private(set) var world: String?
 
     private init() {
-        client = SupabaseClient(
-            supabaseURL: Config.supabaseURL,
-            supabaseKey: Config.supabaseAnonKey
-        )
-        let existing = client.auth.currentSession
+        let existing = auth.load()
         session = existing
-        world = CornerAPI.worldFrom(session: existing)
+        world = existing?.user.world
 
-        Task { [weak self] in
-            guard let self else { return }
-            for await (_, session) in self.client.auth.authStateChanges {
-                self.session = session
-                self.world = CornerAPI.worldFrom(session: session)
+        // Re-read the viewer row on launch so a password change or a world change
+        // made elsewhere lands here without a sign-out. Offline is fine: the
+        // Keychain copy stands until the network is back.
+        if let existing {
+            Task { [weak self] in
+                guard let self else { return }
+                if let fresh = try? await self.auth.validSession(existing) {
+                    self.session = fresh
+                    self.world = fresh.user.world
+                }
             }
         }
     }
@@ -84,25 +84,54 @@ final class CornerAPI: ObservableObject {
     // MARK: - Auth
 
     func signIn(email: String, password: String) async throws {
-        try await client.auth.signIn(email: email, password: password)
+        let s = try await auth.signIn(email: email, password: password)
+        session = s
+        world = s.user.world
     }
+
+    /// First sign-in after the Convex cutover: the account was seeded with a
+    /// one-time password and must set its own before anything else opens.
+    var mustChangePassword: Bool { session?.user.mustChangePassword ?? false }
+
+    func changePassword(newPassword: String, currentPassword: String? = nil) async throws {
+        guard let s = session else { throw APIError.notSignedIn }
+        try await auth.changePassword(session: s, newPassword: newPassword, currentPassword: currentPassword)
+        let fresh = await auth.refreshViewer(s)
+        session = fresh
+        world = fresh.user.world
+    }
+
+    #if DEBUG
+    /// Simulator walk rig only: install a session from tokens minted elsewhere.
+    func installSession(accessToken: String, refreshToken: String) async throws {
+        let user = try await auth.viewer(token: accessToken)
+        let s = AuthSession(accessToken: accessToken, refreshToken: refreshToken, user: user)
+        auth.save(s)
+        session = s
+        world = s.user.world
+    }
+    #endif
 
     func signOut() async {
         // Drop this device's push registration BEFORE the token is gone, or the row
         // keeps pointing a stranger's phone at this world's room names.
         await PushService.shared.unregisterCurrentDevice()
-        // `.local` clears the Keychain-persisted session with NO network round-trip. The
-        // default `.global` scope calls /logout and throws on any non-2xx (expired token,
-        // offline, a 403) BEFORE removing the local session — and `try?` swallowed that
-        // throw, leaving the Keychain session intact so the app came back on Home still
-        // signed in. Local cannot fail that way: it removes the session, period.
-        try? await client.auth.signOut(scope: .local)
-        // Do not wait on the authStateChanges stream to flip the gate. Drive the published
-        // state to signed-out this runloop so RootView returns to the login screen the
-        // instant the Account sheet dismisses. The stream's own .signedOut lands after and
-        // sets these to nil again — idempotent.
+        // Flip the published state first so RootView returns to the login screen the
+        // instant the Account sheet dismisses; the Keychain wipe cannot fail, and the
+        // server-side sign-out is best effort (offline is fine).
+        let s = session
         session = nil
         world = nil
+        await auth.signOut(s)
+    }
+
+    /// The current Convex JWT, refreshed when it is about to expire, so a
+    /// long-backgrounded app does not come back to a wall of 401s.
+    private func freshAccessToken() async throws -> String {
+        guard let s = session else { throw APIError.notSignedIn }
+        let valid = try await auth.validSession(s)
+        if valid != s { session = valid; world = valid.user.world }
+        return valid.accessToken
     }
 
     var userEmail: String? { session?.user.email }
@@ -116,24 +145,13 @@ final class CornerAPI: ObservableObject {
     }
 
     var userDisplayName: String? {
-        guard let meta = session?.user.userMetadata else { return nil }
-        for key in ["name", "full_name", "user_name"] {
-            if let v = meta[key]?.stringValue, !v.isEmpty { return v }
-        }
-        return nil
-    }
-
-    private static func worldFrom(session: Session?) -> String? {
-        guard let raw = session?.user.userMetadata["world"]?.stringValue else { return nil }
-        let trimmed = raw.trimmingCharacters(in: .whitespaces).lowercased()
-        return trimmed.isEmpty ? nil : trimmed
+        guard let n = session?.user.name?.trimmingCharacters(in: .whitespaces), !n.isEmpty else { return nil }
+        return n
     }
 
     // MARK: - authFetch
 
-    /// Mirrors src/dashboard/lib/authFetch.js — attach the current access token.
-    /// `client.auth.session` refreshes it when expired, so a long-backgrounded app
-    /// does not come back to a wall of 401s.
+    /// Mirrors src/dashboard/lib/authFetch.js — attach the current Convex JWT.
     private func authorizedRequest(
         path: String,
         queryItems: [URLQueryItem] = [],
@@ -142,7 +160,7 @@ final class CornerAPI: ObservableObject {
     ) async throws -> URLRequest {
         let token: String
         do {
-            token = try await client.auth.session.accessToken
+            token = try await freshAccessToken()
         } catch {
             throw APIError.notSignedIn
         }
@@ -313,7 +331,7 @@ final class CornerAPI: ObservableObject {
     /// is the "it's in your Files panel but it isn't" class of bug.
     func uploadFile(data: Data, filename: String, mime: String, room: Room) async throws -> UploadedFile {
         let token: String
-        do { token = try await client.auth.session.accessToken }
+        do { token = try await freshAccessToken() }
         catch { throw APIError.notSignedIn }
         let world = try requireWorld()
 
@@ -1313,7 +1331,7 @@ final class CornerAPI: ObservableObject {
     /// own URLSession delegate, so they cannot go through `run()` — but they must still
     /// carry the same identity, and the token must still be the refreshed one.
     func currentAccessToken() async throws -> String {
-        do { return try await client.auth.session.accessToken }
+        do { return try await freshAccessToken() }
         catch { throw APIError.notSignedIn }
     }
 
@@ -1398,53 +1416,17 @@ final class CornerAPI: ObservableObject {
 
     // MARK: - Realtime
 
-    /// Live subscription for one room. Every INSERT on the room's canonical room_id
-    /// triggers `onInsert`, and the caller RELOADS the thread rather than decoding and
-    /// appending — byte-for-byte the web's behavior, and it makes a missed event
-    /// self-healing instead of a permanent hole in the thread.
+    /// Convex has no per-room push into this app yet; the thread reconcile poll in
+    /// ChatViewModel (1.0 s during a turn, 2.5 s idle) is the live path. The seam
+    /// stays so MessageTransport and the tests keep their shape; `onInsert` is not
+    /// called, and the poll carries everything.
     final class RoomSubscription {
-        private let channel: RealtimeChannelV2
-        private let client: SupabaseClient
-        private var handle: RealtimeSubscription?
-        private var task: Task<Void, Never>?
-
-        fileprivate init(client: SupabaseClient, room: Room, onInsert: @escaping @Sendable () -> Void) {
-            self.client = client
-            self.channel = client.realtimeV2.channel("native-thread-\(room.roomID)")
-            // Registering the callback BEFORE subscribe is the SDK's contract; the
-            // other order silently drops the first events.
-            handle = channel.onPostgresChange(
-                InsertAction.self,
-                schema: "public",
-                table: "messages",
-                filter: .eq("room_id", value: room.roomID)
-            ) { _ in
-                onInsert()
-            }
-            let channel = self.channel
-            task = Task {
-                do {
-                    try await channel.subscribeWithError()
-                } catch {
-                    // Offline, or a token hiccup. The reconcile poll still carries
-                    // everything — realtime is the accelerator, not the guarantee.
-                }
-            }
-        }
-
-        func stop() {
-            task?.cancel()
-            task = nil
-            handle?.cancel()
-            handle = nil
-            let channel = channel
-            let client = client
-            Task { await client.realtimeV2.removeChannel(channel) }
-        }
+        fileprivate init() {}
+        func stop() {}
     }
 
     func subscribe(room: Room, onInsert: @escaping @Sendable () -> Void) -> RoomSubscription {
-        RoomSubscription(client: client, room: room, onInsert: onInsert)
+        RoomSubscription()
     }
 
     // MARK: - Avatar identity (corner:native-ios — tap to edit photo/initials/color)
@@ -1470,13 +1452,13 @@ final class CornerAPI: ObservableObject {
     /// The signed-in user's current avatar identity, read from session metadata.
     /// Falls back to name-derived initials + the web's default blue when nothing is saved.
     var userAvatarIdentity: AvatarIdentity {
-        let meta = session?.user.userMetadata ?? [:]
+        let user = session?.user
         let displayName = userDisplayName
             ?? userEmail?.split(separator: "@").first.map(String.init)
             ?? "U"
-        let savedInitials = meta["avatar_initials"]?.stringValue
-        let savedColor   = meta["avatar_color"]?.stringValue
-        let savedURL     = meta["avatar_url"]?.stringValue
+        let savedInitials = user?.initials
+        let savedColor   = user?.color
+        let savedURL     = user?.avatarUrl
 
         let initials: String
         if let si = savedInitials, !si.isEmpty { initials = si }
@@ -1540,9 +1522,8 @@ final class CornerAPI: ObservableObject {
                 message: msg.isEmpty ? "Profile could not be updated." : msg
             )
         }
-        // Refresh the session so userAvatarIdentity picks up the new metadata. The
-        // authStateChanges stream delivers the refreshed session into `session`.
-        try? await client.auth.refreshSession()
+        // Re-read the viewer row so userAvatarIdentity picks up the saved fields.
+        if let s = session { session = await auth.refreshViewer(s) }
         let url = resp.avatar_url
         return AvatarIdentity(
             initials: resp.initials ?? initials,

@@ -6,7 +6,7 @@ import {
   ArrowLeft, Shield, Zap, Building2,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../dashboard/lib/supabase.js'
+import { signOut } from '../dashboard/lib/auth.js'
 import { authFetch } from '../dashboard/lib/authFetch.js'
 
 // ---- THEME ----------------------------------------------------------------
@@ -300,8 +300,6 @@ const API_FIELDS = [
   { id: 'claude', label: 'Claude API Key', placeholder: 'sk-ant-...' },
   { id: 'gemini', label: 'Gemini API Key', placeholder: 'AIza...' },
   { id: 'elevenlabs', label: 'ElevenLabs API Key', placeholder: 'el_...' },
-  { id: 'supabase_url', label: 'Supabase URL', placeholder: 'https://xxx.supabase.co' },
-  { id: 'supabase_key', label: 'Supabase Anon Key', placeholder: 'eyJ...' },
 ]
 
 function ApiKeysSection() {
@@ -685,9 +683,12 @@ function AccountSection() {
     setTimeout(() => setPwSaved(false), 2500)
   }
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    // Convex Auth sign out (corner:retire-supabase R3). The server call is best
+    // effort; the local token is always cleared.
+    try { await signOut() } catch { /* already gone */ }
     localStorage.removeItem('corner_session')
-    window.location.href = '/dashboard'
+    window.location.href = '/login'
   }
 
   // Step 1. Ask the server what deleting this account actually does, and get the
@@ -739,7 +740,7 @@ function AccountSection() {
       setDel((s) => ({ ...s, status: 'done', error: '' }))
       // The session is dead server-side; clear it locally too so the app does not sit
       // holding a token for an account that no longer exists.
-      try { if (supabase) await supabase.auth.signOut() } catch { /* already gone */ }
+      try { await signOut() } catch { /* already gone */ }
       localStorage.removeItem('corner_session')
       window.location.href = '/'
     } catch {

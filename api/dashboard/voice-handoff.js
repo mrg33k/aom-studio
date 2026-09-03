@@ -102,12 +102,32 @@
 // exists to undo — and an unscoped row mints no evidence, so dropping is fully
 // sufficient. Every drop is stamped on the row and logged.
 
-import crypto from 'crypto'
-import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
-import { makeProjectScopeAuthorizer, deriveRowWorld } from '../_lib/write-message.js'
+// ── 2026-09-03, corner:retire-supabase ───────────────────────────────────────
+// The row is now written to Convex (messages:send, then messages:patchMetadata
+// for the free-form fields). The room is derived with the same deriveRoomId
+// rule every other writer uses, so the transcript lands in the agent's room
+// (or the project / mission room when the call was scoped there) and the
+// Convex dispatcher hands it to the agent the way any typed message is.
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
+import { makeProjectScopeAuthorizer, deriveRowWorld, deriveRoomId } from '../_lib/write-message.js'
+
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || ''
+
+async function convexMutation(path, args) {
+  const res = await fetch(`${CONVEX_URL}/api/mutation`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  })
+  if (!res.ok) throw new Error(`convex mutation ${path}: HTTP ${res.status}`)
+  const data = await res.json()
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex mutation ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`)
+  }
+  return data.value
+}
 
 // There is deliberately NO default-world constant here. An earlier pass added
 // one pinned to the AOM slug, which is the same single-player assumption this
@@ -243,11 +263,12 @@ function formatTranscript(transcript, speakerLabel) {
 }
 
 async function writeMessage({
-  agent, text, client_id, user_id, user_name, project, mission_slug, unattributed,
+  agent, text, client_id, user_id, user_email, user_name, project, mission_slug, unattributed,
   authorWorld, scopeDenied,
 }) {
   const metadata = {
     ...(mission_slug ? { mission_slug } : {}),
+    ...(project ? { project } : {}),
     // Mirrors api/_lib/write-message.js: a human-role row with no verified
     // attribution is stamped so the gap is visible in the data instead of
     // silently blank. `world_unresolved` says WHY: we had a session but no
@@ -265,55 +286,49 @@ async function writeMessage({
   // below there is nothing to stamp and the column is left alone, matching the
   // row's deliberate refusal to assert a workspace it cannot demonstrate.
   const stampedWorld = client_id ? deriveRowWorld({ clientId: client_id, worldId: authorWorld || null }) : null
-  const payload = {
-    id: crypto.randomUUID(),
+  if (stampedWorld) metadata.world_id = stampedWorld.world
+
+  // THE ROOM. A Convex message lives in exactly one room, and the room key
+  // carries the world. When no workspace could be proved there is no honest
+  // room to file this under, so the AUTHOR's own world (off the verified
+  // session) is the only place it can land; when even that is unknown the
+  // shared team world takes it, flagged unattributed and stripped of any
+  // authority (see buildPreamble). A fallback landing, not a claim of belonging.
+  const roomWorld = client_id || authorWorld || 'aom'
+  if (!client_id) metadata.room_fallback_world = roomWorld
+  const roomId = deriveRoomId({
+    clientId: roomWorld,
     agent,
-    role: 'user',
-    text,
-    source: 'voice-handoff',
-    // Always the world the handler already resolved and authorized. No `||`
-    // fallback here: a defaulted world silently writes one person's call into
-    // another world's room. Omitted entirely when no workspace could be proved.
-    //
-    // BE HONEST ABOUT WHAT OMITTING IT DOES: messages.client_id is
-    // `text NOT NULL DEFAULT 'aom'` (migrations/015_add_client_client_id_and_rls.sql
-    // line 107) and supabase-listener.py reads `record.get("client_id","aom")`,
-    // so the row still LANDS IN AOM. What this endpoint refuses to do is
-    // ASSERT a tenant it cannot demonstrate — the row arrives stripped of the
-    // speaker's name, flagged unattributed, and carrying a preamble that denies
-    // it any authority. It is a fallback landing, not a claim of belonging.
-    // The real cure is a data fix, not a code one: the four live accounts with
-    // no user_metadata.world need one set.
-    ...(client_id ? { client_id } : {}),
-    ...(stampedWorld ? { world_id: stampedWorld.world } : {}),
     // Only ever the SCOPE-AUTHORIZED slug — a refused tag was already dropped by
     // the handler, which also removes the presence evidence the read-side floor
     // would otherwise be asked to trust.
-    ...(project ? { project } : {}),
-    ...(Object.keys(metadata).length ? { metadata } : {}),
-    // Server-derived only. An absent author stays absent — never defaulted.
-    // user_id is kept even on the unattributed path (the session WAS verified,
-    // so the audit trail is real); user_name is withheld there on purpose, so
-    // no downstream reader can manufacture "<name> said X" out of a call we
-    // could not scope to a room.
-    ...(user_id ? { user_id } : {}),
-    ...(user_name ? { user_name } : {}),
-  }
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify(payload),
+    project: project || undefined,
+    missionSlug: mission_slug || undefined,
   })
-  if (!resp.ok) {
-    throw new Error(`Supabase ${resp.status}: ${await resp.text()}`)
+
+  // Server-derived only. An absent author stays absent — never defaulted.
+  // user_id / user_email are kept even on the unattributed path (the session
+  // WAS verified, so the audit trail is real); user_name is withheld there on
+  // purpose, so no downstream reader can manufacture "<name> said X" out of a
+  // call we could not scope to a room.
+  const messageId = await convexMutation('messages:send', {
+    roomId,
+    text,
+    role: 'user',
+    source: 'voice-handoff',
+    ...(client_id && !String(client_id).startsWith('shared:') ? { clientId: client_id } : {}),
+    ...(user_id ? { userId: String(user_id) } : {}),
+    ...(user_email ? { userEmail: user_email } : {}),
+    ...(user_name ? { userName: user_name } : {}),
+  })
+  if (Object.keys(metadata).length) {
+    await convexMutation('messages:patchMetadata', {
+      ...(CONVEX_KEY ? { key: CONVEX_KEY } : {}),
+      messageId,
+      patch: metadata,
+    })
   }
-  const rows = await resp.json()
-  return rows?.[0] || payload
+  return { id: messageId, roomId }
 }
 
 export const config = { maxDuration: 30 }
@@ -322,7 +337,6 @@ export default async function handler(req, res) {
   applyCors(req, res)
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
-  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' })
 
   // user_id / user_name are deliberately NOT destructured from the body. A
   // client-supplied author is a claim, not an identity, and this row is
@@ -529,6 +543,7 @@ export default async function handler(req, res) {
       text: body,
       client_id: resolvedClientId,
       user_id: speaker?.userId || verifiedUserId || null,
+      user_email: speaker?.email || null,
       // Withheld when the workspace could not be resolved — see writeMessage.
       user_name: tenantResolved ? speakerName : null,
       project: scopedProject,

@@ -1,13 +1,39 @@
 // POST /api/onboarding/create-agents
 // Triggers the Agent Creation Pipeline with the Architect's approved plan.
-// Writes agents to Supabase agent_status for immediate dashboard visibility.
-// Also queues the workspace creation for Mac-side file system execution.
+// Writes the agents to Convex for immediate dashboard visibility and queues
+// the workspace creation for Mac-side file system execution.
+//
+// corner:retire-supabase (2026-09-03). What each Supabase write became:
+//   worlds (claimed check)   -> worlds:getBySlug
+//   world creation           -> users:ensureWorld + worlds:addMember (owner)
+//   agent_status rows        -> agents:upsert (world-scoped rows)
+//   onboarding_queue row     -> onboarding:enqueue
+//   auth user_metadata.world -> the membership row IS the world now; the
+//                               onboarded flag goes to users:setPrefs
 
-import { callerIdentity } from '../_lib/verifyTenant.js'
+import { callerIdentity, extractJwt } from '../_lib/verifyTenant.js'
 import { applyCors } from '../_lib/originAllowlist.js'
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || ''
+
+async function convex(kind, path, args, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+  const res = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  })
+  if (!res.ok) throw new Error(`convex ${kind} ${path}: HTTP ${res.status}`)
+  const data = await res.json()
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex ${kind} ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`)
+  }
+  return data.value
+}
+
+const withKey = (args) => (CONVEX_KEY ? { key: CONVEX_KEY, ...args } : args)
 
 // Color by role category
 function pickAgentColor(role) {
@@ -25,24 +51,8 @@ function pickAgentColor(role) {
   return '#94A3B8'
 }
 
-async function supabaseFetch(url, method, body, headers = {}) {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return { ok: false, error: 'Supabase not configured' }
-  const res = await fetch(url, {
-    method,
-    headers: {
-      apikey: SUPABASE_SERVICE_KEY,
-      Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-      ...headers,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-  if (!res.ok) {
-    const err = await res.text().catch(() => 'Unknown error')
-    return { ok: false, error: err }
-  }
-  return { ok: true }
+function slugifyWorld(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
 }
 
 export default async function handler(req, res) {
@@ -56,7 +66,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { clientId, plan } = req.body
+  const { clientId, plan } = req.body || {}
 
   if (!clientId || !plan) {
     return res.status(400).json({ error: 'clientId and plan are required' })
@@ -64,16 +74,13 @@ export default async function handler(req, res) {
 
   // ── AUTH (r7:open-agent-surface, 2026-07-27) ────────────────────────────
   // This was unauthenticated with `Access-Control-Allow-Origin: *`. It writes
-  // `agent_status` rows into whatever world the body names AND queues an
-  // `onboarding_queue` row whose `plan` is executed Mac-side, so an anonymous
-  // POST could bolt agents onto an existing world's roster and hand a local
-  // runner a plan it did not ask for.
+  // agent rows into whatever world the body names AND queues a workspace plan
+  // that is executed Mac-side, so an anonymous POST could bolt agents onto an
+  // existing world's roster and hand a local runner a plan it did not ask for.
   //
   // The gate is deliberately NOT verifyTenant. Onboarding runs BEFORE the user
-  // has a world — user_metadata.world is set by the frontend a few lines after
-  // this call returns — so verifyTenant would refuse every legitimate signup
-  // and this endpoint would only ever work for people who no longer need it.
-  // That is the over-correction shape this round exists to avoid.
+  // has a world, so verifyTenant would refuse every legitimate signup and this
+  // endpoint would only ever work for people who no longer need it.
   //
   // Instead: a verified session is required (no anonymous signups), and a
   // clientId that names an ALREADY-CLAIMED world is refused unless the caller
@@ -81,27 +88,22 @@ export default async function handler(req, res) {
   // somebody else's does not.
   const who = await callerIdentity(req)
   if (!who) return res.status(401).json({ error: 'sign in required' })
+  const token = extractJwt(req)
 
   const targetWorld = String(clientId).trim().toLowerCase()
-  if (targetWorld !== String(who.userId).toLowerCase() && targetWorld !== (who.world || '')) {
+  const ownWorld = (who.world || '').toLowerCase()
+  let existingWorld = null
+  let lookupFailed = false
+  try {
+    existingWorld = await convex('query', 'worlds:getBySlug', { slug: targetWorld })
+  } catch {
+    lookupFailed = true
+  }
+  if (targetWorld !== String(who.userId).toLowerCase() && targetWorld !== ownWorld) {
     // Not the caller's own uid and not their own world — allowed only if the
-    // world does not exist yet (a genuinely new workspace).
-    let claimed = false
-    try {
-      const r = await fetch(
-        `${SUPABASE_URL}/rest/v1/worlds?or=(slug.eq.${encodeURIComponent(targetWorld)},client_id.eq.${encodeURIComponent(targetWorld)})&select=slug&limit=1`,
-        { headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` } },
-      )
-      if (r.ok) {
-        const rows = await r.json()
-        claimed = Array.isArray(rows) && rows.length > 0
-      } else {
-        claimed = true // cannot tell -> refuse rather than hand over a world
-      }
-    } catch {
-      claimed = true
-    }
-    if (claimed) {
+    // world does not exist yet (a genuinely new workspace). A lookup failure
+    // reads as claimed: refuse rather than hand over a world.
+    if (lookupFailed || existingWorld) {
       return res.status(403).json({ error: 'that workspace already exists' })
     }
   }
@@ -123,61 +125,64 @@ export default async function handler(req, res) {
     color: pickAgentColor(a.role),
   }))
 
-  // Without Supabase (local dev no-DB mode): return success immediately
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    return res.status(200).json({
-      success: true,
-      clientId,
-      agents: agentList,
-      projects: plan.projects,
-      queued: false,
-      note: 'No Supabase — workspace creation skipped in this mode.',
-    })
-  }
-
   try {
-    // 1. Queue workspace creation for Mac-side script execution
-    const queueId = crypto.randomUUID()
-    await supabaseFetch(
-      `${SUPABASE_URL}/rest/v1/onboarding_queue`,
-      'POST',
-      {
-        id: queueId,
-        client_id: clientId,
-        plan,
-        status: 'pending',
-        created_at: new Date().toISOString(),
+    // 1. The world. Make sure it exists and the caller is its owner. The
+    //    membership row is what used to be user_metadata.world.
+    const worldSlug = slugifyWorld(targetWorld) || targetWorld
+    const workspaceName = String(plan.user_profile?.workspace_name || plan.user_profile?.company || plan.user_profile?.name || worldSlug).trim() || worldSlug
+    let worldId = existingWorld?._id || null
+    if (!worldId) {
+      worldId = await convex('mutation', 'users:ensureWorld', { ownerId: who.userId, name: workspaceName, slug: worldSlug })
+    }
+    try {
+      await convex('mutation', 'worlds:addMember', withKey({ worldId: String(worldId), userId: who.userId, role: 'owner' }), token)
+    } catch (err) {
+      // An existing world the caller is already in refuses nothing; any other
+      // refusal is reported and the rest of onboarding still runs.
+      console.warn('[create-agents] addMember:', err.message)
+    }
+
+    // 2. Queue workspace creation for Mac-side script execution
+    let queued = false
+    try {
+      await convex('mutation', 'onboarding:enqueue', { worldId: String(worldId), plan })
+      queued = true
+    } catch (err) {
+      // Don't fail on queue error -- agents get written regardless
+      console.warn('[create-agents] enqueue:', err.message)
+    }
+
+    // 3. Write the agents for immediate dashboard visibility (world-scoped rows)
+    for (const agent of plan.agents) {
+      await convex('mutation', 'agents:upsert', withKey({
+        slug: String(agent.slug || agent.name).trim().toLowerCase(),
+        title: agent.name,
+        subtitle: agent.role,
+        color: pickAgentColor(agent.role),
+        instructions: `You are ${agent.name}, ${agent.role || 'a teammate'} in the ${workspaceName} workspace.${agent.project ? ` You work on ${agent.project}.` : ''}`,
+        active: true,
+        worldId: String(worldId),
+      }))
+    }
+
+    // 4. Mark the person onboarded (was the frontend's auth.updateUser call).
+    //    Best effort, and only when the caller sent a token to act as.
+    if (token) {
+      try {
+        await convex('mutation', 'users:setPrefs', { patch: { onboarded: true, workspaceName, world: worldSlug } }, token)
+      } catch (err) {
+        console.warn('[create-agents] setPrefs:', err.message)
       }
-    )
-    // Don't fail on queue error -- agents get written to Supabase regardless
-
-    // 2. Write agents to agent_status for immediate dashboard visibility
-    const agentRows = plan.agents.map(agent => ({
-      slug: agent.slug,
-      name: agent.name,
-      role: agent.role,
-      status: 'idle',
-      client_id: clientId,
-      type: 'agent',
-      color: pickAgentColor(agent.role),
-    }))
-
-    await supabaseFetch(
-      `${SUPABASE_URL}/rest/v1/agent_status`,
-      'POST',
-      agentRows,
-      { Prefer: 'resolution=merge-duplicates,return=minimal' }
-    )
-
-    // 3. Update user metadata world to clientId
-    // (The frontend also does this via supabase.auth.updateUser, but belt+suspenders)
+    }
 
     return res.status(200).json({
       success: true,
       clientId,
+      world: worldSlug,
+      worldId: String(worldId),
       agents: agentList,
       projects: plan.projects,
-      queued: true,
+      queued,
     })
 
   } catch (err) {

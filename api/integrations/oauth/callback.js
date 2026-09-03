@@ -4,37 +4,47 @@
 //   1. Verify state HMAC + age (10min window) — extracts user_id + slug.
 //   2. Look up provider config + client creds.
 //   3. POST to provider's token endpoint to exchange code for access/refresh.
-//   4. AES-GCM encrypt the token blob, upsert into account_integrations.
+//   4. AES-GCM encrypt the token blob, store it on the Convex integrations row.
 //   5. 302 back to /dashboard?integrations=connected&slug=<x> so the modal
 //      can show success on next open.
+//
+// corner:retire-supabase (2026-09-03): the encrypted blob used to be upserted
+// into the Supabase account_integrations table. It now goes to the Convex
+// integrations table through integrations:setOAuthTokens (one row per user +
+// provider; the connectionId is what the mail clients address). The
+// diagnostic trail goes to the Convex events table through tasks:logEvent.
+// A scope-insufficient consent clears the row with integrations:disconnect.
 
 import { getProvider, getProviderCreds, buildRedirectUri } from '../../_lib/oauthProviders.js'
 import { verifyState, encryptJson } from '../../_lib/oauthCrypto.js'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || ''
 const APP_ORIGIN = process.env.APP_ORIGIN || 'https://aheadofmarket.com'
+
+async function convex(kind, path, args) {
+  const res = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  })
+  if (!res.ok) throw new Error(`convex ${kind} ${path}: HTTP ${res.status}`)
+  const data = await res.json()
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex ${kind} ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`)
+  }
+  return data.value
+}
+
+const withKey = (args) => (CONVEX_KEY ? { key: CONVEX_KEY, ...args } : args)
 
 // Best-effort persistent diagnostic. Writes to the events table so we can
 // query the failure trail long after Vercel rotates its runtime logs.
 async function logEvent(eventType, payload) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify({
-        agent: 'oauth-callback',
-        event_type: eventType,
-        payload,
-        timestamp: new Date().toISOString(),
-      }),
-    })
+    await convex('mutation', 'tasks:logEvent', withKey({
+      event: { agent: 'oauth-callback', event_type: eventType, payload, timestamp: new Date().toISOString() },
+    }))
   } catch { /* never throw out of diagnostics */ }
 }
 
@@ -96,138 +106,38 @@ function parseGrantedScopes(scopeStr) {
   return new Set(scopeStr.split(/\s+/).map(s => s.trim()).filter(Boolean))
 }
 
-// R12 (2026-05-25) — Delete any existing scope-insufficient connection row
-// so a half-granted consent (user skipped "Select all" on Google's granular
-// permissions screen) doesn't linger pretending to be live. Mirrors the
-// upsertConnection lookup branches but does a DELETE instead.
-async function deleteConnectionMatching({ userId, slug, workspaceId, accountEmail }) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return { ok: false, error: 'supabase env missing' }
-  const svcHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+// R12 (2026-05-25) — Clear any existing scope-insufficient connection so a
+// half-granted consent (user skipped "Select all" on Google's granular
+// permissions screen) doesn't linger pretending to be live.
+async function deleteConnectionMatching({ userId, slug }) {
   try {
-    if (workspaceId) {
-      const emailKey = encodeURIComponent(accountEmail || '')
-      const r = await fetch(
-        `${SUPABASE_URL}/rest/v1/account_integrations?workspace_id=eq.${workspaceId}&integration_slug=eq.${slug}&config->>account_email=eq.${emailKey}`,
-        { method: 'DELETE', headers: { ...svcHeaders, Prefer: 'return=minimal' } },
-      )
-      return { ok: r.ok, status: r.status }
-    }
-    // Email-scoped when known, so a partial consent on one account doesn't
-    // delete the user's other connected accounts (multi-account, 2026-06-09).
-    const emailFilter = accountEmail
-      ? `&config->>account_email=eq.${encodeURIComponent(accountEmail)}`
-      : ''
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.${slug}${emailFilter}`,
-      { method: 'DELETE', headers: { ...svcHeaders, Prefer: 'return=minimal' } },
-    )
-    return { ok: r.ok, status: r.status }
+    const out = await convex('mutation', 'integrations:disconnect', withKey({ userId, slug }))
+    return { ok: !!(out && out.ok) }
   } catch (e) {
     return { ok: false, error: (e.message || '').slice(0, 200) }
   }
 }
 
-async function upsertConnection({ userId, slug, tokenBlob, providerProfile, workspaceId, accountEmail, grantedScopes = [] }) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return { ok: false, error: 'supabase env missing' }
-  const svcHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-  const now = new Date().toISOString()
-  const ownerCols = workspaceId
-    ? { workspace_id: workspaceId, user_id: null }
-    : { user_id: userId, workspace_id: null }
-  const body = {
-    ...ownerCols,
-    integration_slug: slug,
-    status: 'connected',
-    credentials_ref: 'inline:v1',
-    config: {
-      tokens: tokenBlob,
-      account_email: accountEmail || null,
-      profile: providerProfile || null,
-      connector_user_id: userId,
-      // R12 — plaintext scope list so listConnectionsForUser can filter without
-      // decrypting the blob. Required scopes were already validated upstream.
-      granted_scopes: Array.isArray(grantedScopes) ? grantedScopes : [],
-    },
-    connected_at: now,
-    updated_at: now,
+async function upsertConnection({ userId, slug, tokenBlob, providerProfile, workspaceId, accountEmail, grantedScopes = [], expiresAt }) {
+  try {
+    // The profile and granted scope list ride inside the encrypted blob (see
+    // the handler): the Convex row only carries the ciphertext, the account
+    // email, the expiry and the owner.
+    void providerProfile
+    void grantedScopes
+    const out = await convex('mutation', 'integrations:setOAuthTokens', withKey({
+      userId,
+      slug,
+      ciphertext: tokenBlob,
+      email: accountEmail || undefined,
+      expiresAt: expiresAt || undefined,
+      workspaceId: workspaceId || undefined,
+    }))
+    if (!out || !out.ok) return { ok: false, error: 'convex setOAuthTokens returned no ok' }
+    return { ok: true, connectionId: out.connectionId || null }
+  } catch (e) {
+    return { ok: false, error: `convex setOAuthTokens: ${(e.message || '').slice(0, 200)}` }
   }
-
-  // Workspace-owned: PostgREST can't unique-conflict on a JSON key, so
-  // read-then-write keyed on (workspace_id, slug, account_email).
-  if (workspaceId) {
-    const emailKey = encodeURIComponent(accountEmail || '')
-    const existing = await fetch(
-      `${SUPABASE_URL}/rest/v1/account_integrations?workspace_id=eq.${workspaceId}&integration_slug=eq.${slug}&config->>account_email=eq.${emailKey}&select=id&limit=1`,
-      { headers: svcHeaders },
-    )
-    const existingRow = existing.ok ? (await existing.json())[0] : null
-    if (existingRow) {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/account_integrations?id=eq.${existingRow.id}`, {
-        method: 'PATCH',
-        headers: { ...svcHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-        body: JSON.stringify(body),
-      })
-      if (!r.ok) {
-        const text = await r.text().catch(() => '')
-        return { ok: false, error: `supabase ws-patch ${r.status}: ${text.slice(0, 200)}` }
-      }
-      return { ok: true }
-    }
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/account_integrations`, {
-      method: 'POST',
-      headers: { ...svcHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify(body),
-    })
-    if (!r.ok) {
-      const text = await r.text().catch(() => '')
-      return { ok: false, error: `supabase ws-insert ${r.status}: ${text.slice(0, 200)}` }
-    }
-    return { ok: true }
-  }
-
-  // R12 (2026-05-25) — User-owned: read-then-write pattern. The original code
-  // used `?on_conflict=user_id,integration_slug` but the account_integrations
-  // table doesn't actually have a unique constraint on (user_id,
-  // integration_slug) — Supabase events showed every user-owned upsert
-  // failing with Postgres 42P10 ("no unique or exclusion constraint
-  // matching the ON CONFLICT specification"). This mirrors the workspace
-  // branch above: look up the existing row, PATCH if present, POST if not.
-  //
-  // MULTI-ACCOUNT (2026-06-09): key on (user_id, slug, account_email) when an
-  // account email is known, so connecting a SECOND Google account creates its
-  // own row instead of overwriting the first (the bug that flipped hello@ ->
-  // personal). Re-authing the SAME account still updates its own row. For
-  // providers with no account email (null), fall back to (user_id, slug).
-  const emailFilter = accountEmail
-    ? `&config->>account_email=eq.${encodeURIComponent(accountEmail)}`
-    : ''
-  const existing = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.${slug}${emailFilter}&select=id&limit=1`,
-    { headers: svcHeaders },
-  )
-  const existingRow = existing.ok ? (await existing.json())[0] : null
-  if (existingRow) {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/account_integrations?id=eq.${existingRow.id}`, {
-      method: 'PATCH',
-      headers: { ...svcHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify(body),
-    })
-    if (!r.ok) {
-      const text = await r.text().catch(() => '')
-      return { ok: false, error: `supabase user-patch ${r.status}: ${text.slice(0, 200)}` }
-    }
-    return { ok: true }
-  }
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/account_integrations`, {
-    method: 'POST',
-    headers: { ...svcHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-    body: JSON.stringify(body),
-  })
-  if (!r.ok) {
-    const text = await r.text().catch(() => '')
-    return { ok: false, error: `supabase user-insert ${r.status}: ${text.slice(0, 200)}` }
-  }
-  return { ok: true }
 }
 
 async function fetchGmailProfile(accessToken) {
@@ -324,8 +234,7 @@ export default async function handler(req, res) {
     return failRedirect(res, `exchange-failed:${e.message?.slice(0, 80) || 'unknown'}`, returnTo)
   }
 
-  // Pull provider profile early so we can target the exact row to delete
-  // when scopes are insufficient (the workspace upsert keys on email).
+  // Pull provider profile early so the row carries the account email.
   let gmailProfile = null
   let outlookProfile = null
   let accountEmail = null
@@ -341,9 +250,9 @@ export default async function handler(req, res) {
   // R12 (2026-05-25) — validate granted scopes BEFORE storing. If the user
   // skipped "Select all" on Google's granular consent page, Google returns
   // a token whose scope list is missing the required Gmail scopes. Storing
-  // it as 'connected' makes the UI lie. Instead: delete any prior partial
-  // row for this owner/slug/email, then redirect with an explicit reason
-  // so the user can re-grant.
+  // it as 'connected' makes the UI lie. Instead: clear any prior partial
+  // row for this owner/slug, then redirect with an explicit reason so the
+  // user can re-grant.
   const grantedSet = parseGrantedScopes(tokens.scope)
   const required = Array.isArray(provider.requiredScopes) ? provider.requiredScopes : []
   const missingScopes = required.filter(s => !grantedSet.has(s))
@@ -356,21 +265,30 @@ export default async function handler(req, res) {
       accountEmail,
     })
     // Best-effort cleanup of any partial row so the UI doesn't keep showing
-    // "connected" for a useless connection. Failure here is non-fatal —
-    // listConnectionsForUser will also filter on granted_scopes.
-    await deleteConnectionMatching({ userId, slug, workspaceId: workspaceId || null, accountEmail })
+    // "connected" for a useless connection. Failure here is non-fatal.
+    await deleteConnectionMatching({ userId, slug })
     return failRedirect(res, `scope-insufficient:${missingScopes.map(s => s.split('/').pop()).join(',')}`, returnTo)
   }
 
+  const obtainedAt = Date.now()
+  const expiresAt = tokens.expires_in ? obtainedAt + Number(tokens.expires_in) * 1000 : null
   let encrypted
   try {
     encrypted = encryptJson({
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token || null,
       expires_in: tokens.expires_in || null,
+      expires_at: expiresAt,
       token_type: tokens.token_type || null,
       scope: tokens.scope || null,
-      obtained_at: Date.now(),
+      obtained_at: obtainedAt,
+      // What the old row kept beside the tokens: the provider profile, the
+      // account email and the plaintext scope list. They ride inside the
+      // blob now so the gmail/outlook clients can keep reading them.
+      account_email: accountEmail || null,
+      profile: gmailProfile || outlookProfile || tokens.team || tokens.workspace_name || null,
+      granted_scopes: Array.from(grantedSet),
+      connector_user_id: userId,
     })
     console.log('[oauth/callback] encrypt ok', { blobLen: encrypted?.length })
     await logEvent('oauth_encrypt_ok', { slug, blobLen: encrypted?.length || 0 })
@@ -388,9 +306,10 @@ export default async function handler(req, res) {
     workspaceId: workspaceId || null,
     accountEmail,
     grantedScopes: Array.from(grantedSet),
+    expiresAt,
   })
   console.log('[oauth/callback] upsert', upsert)
-  await logEvent('oauth_upsert', { slug, userId, ok: !!upsert.ok, error: upsert.error ? upsert.error.slice(0, 500) : null })
+  await logEvent('oauth_upsert', { slug, userId, ok: !!upsert.ok, connectionId: upsert.connectionId || null, error: upsert.error ? upsert.error.slice(0, 500) : null })
   if (!upsert.ok) {
     console.error('[oauth/callback] db-fail', upsert.error)
     return failRedirect(res, `db:${upsert.error.slice(0, 80)}`, returnTo)

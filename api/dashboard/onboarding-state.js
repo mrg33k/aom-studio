@@ -1,12 +1,17 @@
 // GET  /api/dashboard/onboarding-state?tenant=<slug>
 // POST /api/dashboard/onboarding-state  { tenant, checklist?, nudge_state?, path? }
 //
-// System-level per-tenant onboarding state for R33 -- pruned-context restart +
-// tooltip CTA + decaying nudge. Schema-free: stored as an event row with
-// event_type='onboarding_state', agent=<tenant_slug>, payload={checklist,
-// nudge_state, path}.
+// System-level per-tenant onboarding state for R33: pruned-context restart +
+// tooltip CTA + decaying nudge.
 //
-// payload shape (all optional at write time; merged into latest on POST):
+// corner:retire-supabase (2026-09-03): stored as ONE keyed row in the Convex
+// state table (state:get / state:put, kind='onboarding_state', scopeId=<tenant>,
+// scoped to the tenant's world). It used to be an append-only event row per
+// write in the Supabase events table; a keyed row is the same read with no
+// history to page through. kb:get was the suggested replacement but it returns
+// only the key and byte count, never the content, so it cannot back a read.
+//
+// value shape (all optional at write time; merged into latest on POST):
 // {
 //   checklist: [{ key, label, status: 'pending'|'done', value?: string }, ...],
 //   nudge_state: {
@@ -18,17 +23,14 @@
 //   path: 'projects' | 'onboarding' | null,  // what the user chose after cleanup-hello
 // }
 //
-// This endpoint is tenant-agnostic in the sense that it doesn't hardcode any
-// specific tenant — but every call still requires a JWT authorized for the
-// requested tenant via verifyTenant (R3 Phase 2, 2026-04-26). Ben is a
-// proving case; the code does not know about Ben.
+// This endpoint is tenant-agnostic: it doesn't hardcode any specific tenant,
+// but every call still requires a JWT authorized for the requested tenant via
+// verifyTenant (R3 Phase 2, 2026-04-26).
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+import { convexQuery, convexMutation } from '../_lib/verifyTenant.js'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-const EVENT_TYPE = 'onboarding_state'
+const STATE_KIND = 'onboarding_state'
 
 const EMPTY_STATE = Object.freeze({
   checklist: [],
@@ -41,18 +43,9 @@ function validSlug(s) {
 }
 
 async function fetchLatest(tenant) {
-  const url = `${SUPABASE_URL}/rest/v1/events` +
-    `?event_type=eq.${EVENT_TYPE}` +
-    `&agent=eq.${encodeURIComponent(tenant)}` +
-    `&order=timestamp.desc` +
-    `&limit=1`
-  const resp = await fetch(url, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-  })
-  if (!resp.ok) throw new Error(`events read failed: ${resp.status}`)
-  const rows = await resp.json()
-  if (!rows.length) return { ...EMPTY_STATE }
-  const payload = rows[0].payload || {}
+  const row = await convexQuery('state:get', { kind: STATE_KIND, scopeId: tenant, worldId: tenant })
+  const payload = (row && row.value && typeof row.value === 'object') ? row.value : null
+  if (!payload) return { ...EMPTY_STATE }
   return {
     checklist: Array.isArray(payload.checklist) ? payload.checklist : [],
     nudge_state: { ...EMPTY_STATE.nudge_state, ...(payload.nudge_state || {}) },
@@ -61,27 +54,13 @@ async function fetchLatest(tenant) {
 }
 
 async function writeLatest(tenant, state) {
-  const crypto = await import('crypto')
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/events`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify({
-      id: crypto.randomUUID(),
-      event_type: EVENT_TYPE,
-      agent: tenant,
-      timestamp: new Date().toISOString(),
-      payload: state,
-    }),
+  await convexMutation('state:put', {
+    kind: STATE_KIND,
+    scopeId: tenant,
+    worldSlug: tenant,
+    value: state,
+    updatedBy: 'onboarding-state.js',
   })
-  if (!resp.ok) {
-    const err = await resp.text()
-    throw new Error(`events write failed: ${resp.status} ${err}`)
-  }
 }
 
 export default async function handler(req, res) {
@@ -90,9 +69,6 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
 
   if (req.method === 'OPTIONS') return res.status(200).end()
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' })
-  }
 
   try {
     if (req.method === 'GET') {

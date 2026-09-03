@@ -1,65 +1,31 @@
 // POST /api/dashboard/prune-context  { agent, tenant?, cleanup_hello? }
 //
-// R33(a+b): pruned EA restart + cleanup-hello. Stronger than clear-context --
+// R33(a+b): pruned EA restart + cleanup-hello. Stronger than clear-context:
 // archives the super-agent's working context (tape rotation signal) AND writes
-// a cleanup-hello message into the messages table that the EA introduces
-// themselves with after the prune. The underlying `messages` rows stay intact
-// and queryable; only the EA's live working context is pruned.
+// a cleanup-hello message that the EA introduces themselves with after the
+// prune. The room's history stays intact; only the EA's live working context
+// is pruned.
 //
-// Flow:
-//   1. Record the prune as a `context_prune` event (audit + idempotency).
-//   2. Post the cleanup-hello into the messages table (role=agent, the EA
-//      speaks) so the user sees it appear the moment they reopen the chat.
-//   3. Write a row with source='clear_context' so supabase-listener.py sends
-//      /clear to the agent's tmux (pruning the live context window).
+// corner:retire-supabase (2026-09-03): all three writes go to Convex.
+//   1. Record the prune as a `context_prune` event (tasks:logEvent).
+//   2. Post the cleanup-hello into the agent's room (messages:send, the EA
+//      speaks, so it appears the moment the user reopens the chat).
+//   3. Write a control row with source='clear_context' (messages:send) so the
+//      Mac listener (Convex subscription, R2) sends /clear to the agent's tmux.
+// Control rows go out as assistant-role rows from the 'system' agent because
+// Convex dispatches any row without an agentSlug to the AI round table.
 //
 // Tenant-agnostic. Caller passes the EA's slug (agent) + optionally a tenant
 // slug for audit. No 'if user == "ben"' anywhere. Any future tenant inherits
 // this on day one.
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+import { convexMutation } from '../_lib/verifyTenant.js'
 
 const DEFAULT_HELLO = "Hey -- we've done some cleanup. I can help with your projects, or we can finish onboarding -- your call."
 
 function validSlug(s) {
   return typeof s === 'string' && /^[a-z][a-z0-9-]*$/.test(s)
-}
-
-async function insertMessage(row) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify(row),
-  })
-  if (!resp.ok) {
-    const err = await resp.text()
-    throw new Error(`messages insert failed: ${resp.status} ${err}`)
-  }
-}
-
-async function insertEvent(row) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/events`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify(row),
-  })
-  if (!resp.ok) {
-    const err = await resp.text()
-    throw new Error(`events insert failed: ${resp.status} ${err}`)
-  }
 }
 
 export default async function handler(req, res) {
@@ -68,9 +34,6 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' })
-  }
 
   const body = req.body || {}
   const agent = (body.agent || '').toString().trim().toLowerCase()
@@ -82,48 +45,59 @@ export default async function handler(req, res) {
   if (!validSlug(agent)) return res.status(400).json({ error: 'valid agent required' })
   if (!validSlug(requestedTenant)) return res.status(400).json({ error: 'valid tenant required' })
 
-  let tenant
+  let verified
   try {
-    ({ tenant } = await verifyTenant(requestedTenant, req))
+    verified = await verifyTenant(requestedTenant, req)
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
     throw err
   }
+  const tenant = verified.tenant
 
   try {
-    const crypto = await import('crypto')
     const now = new Date().toISOString()
+    const roomId = `${tenant}:agent:${agent}`
 
     // 1) Audit event
-    await insertEvent({
-      id: crypto.randomUUID(),
-      event_type: 'context_prune',
-      agent,
-      timestamp: now,
-      payload: { tenant, initiated_by: 'dashboard' },
+    await convexMutation('tasks:logEvent', {
+      event: {
+        event_type: 'context_prune',
+        agent,
+        timestamp: now,
+        payload: { tenant, initiated_by: 'dashboard', user_id: verified.userId || null },
+      },
     })
 
-    // 2) Cleanup-hello in the user-visible messages table
-    await insertMessage({
-      id: crypto.randomUUID(),
-      agent,
-      role: 'agent',
-      source: 'cleanup_hello',
+    // 2) Cleanup-hello, spoken by the EA in its own room
+    await convexMutation('messages:send', {
+      roomId,
+      clientId: tenant,
       text: helloText,
-      client_id: tenant,
-      timestamp: now,
+      role: 'assistant',
+      agentSlug: agent,
+      source: 'cleanup_hello',
     })
 
     // 3) /clear signal to the tmux session (same mechanism as clear-context.js)
-    await insertMessage({
-      id: crypto.randomUUID(),
-      agent,
-      role: 'system',
-      source: 'clear_context',
+    const controlId = await convexMutation('messages:send', {
+      roomId,
+      clientId: tenant,
       text: agent,
-      client_id: tenant,
-      timestamp: new Date(Date.now() + 500).toISOString(),
+      role: 'assistant',
+      agentSlug: 'system',
+      source: 'clear_context',
+      userId: verified.userId || undefined,
+      userEmail: verified.email || undefined,
     })
+
+    // messages:send does not keep the free-form metadata bag on the row, so the
+    // provenance is stamped right after. Best effort: the signal already landed.
+    try {
+      await convexMutation('messages:patchMetadata', {
+        messageId: String(controlId),
+        patch: { control: 'clear_context', agent, requested_by: verified.userId || null },
+      })
+    } catch { /* the control row is what the listener reads */ }
 
     return res.status(200).json({ ok: true, agent, tenant })
   } catch (err) {

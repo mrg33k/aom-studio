@@ -42,12 +42,12 @@
 		47067B6C4D6E1B1C956E98DF /* DeepLinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 714FB0F47259B6FE53E2B007 /* DeepLinkTests.swift */; };
 		47CCB79C447AFA2DE3D47EFE /* ReviewStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A37CB7AFC65227A32353A1D /* ReviewStore.swift */; };
 		4B264EB64750986042B1356F /* TrackerModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 414FBC6E316F126CBB060672 /* TrackerModels.swift */; };
-		4B6099647E0C5ED3B50D890F /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 75430995A119BF809AA1762E /* Supabase */; };
 		5109FDB27364FB26A7243EBA /* CornerAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49FDC9EB2F5FB0CC8AF8FFF7 /* CornerAPI.swift */; };
 		5439CC4459706B0FAD7EEB0A /* FilePreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 903AFF4D43CCE9D4B8913D59 /* FilePreviewView.swift */; };
 		55924787137A19668A11C0E9 /* TrackerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30D577DF665C37F7C6CDC690 /* TrackerView.swift */; };
 		591609AA2AC6B868B4C86CB6 /* BackgroundWorkStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B278AB85C4B9477505810FB5 /* BackgroundWorkStore.swift */; };
 		5CCD87F91BDBF76B032178E5 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = B367859B24AAEF52EBFEE774 /* Typography.swift */; };
+		5E980167A403980FE7DC9DCB /* ConvexAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27626D75DA7FE9B2C93F6437 /* ConvexAuth.swift */; };
 		5EE25042FDF42579C1AE1705 /* RoomChecklistStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA58C64409596C25343E0CE7 /* RoomChecklistStore.swift */; };
 		64A1F4E8A28A7508AA474B8F /* ChatViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B389E68564C3776CD2DBC754 /* ChatViewModelTests.swift */; };
 		64C84398FCE2AEEB0B12C3C2 /* RenderGalleryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 602A96887BE24D9CBBF02832 /* RenderGalleryTests.swift */; };
@@ -67,6 +67,7 @@
 		97D0B387A6639C5A5AB59DE3 /* AirPodsVoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99FB8DFF3ED23530DF860CA1 /* AirPodsVoiceView.swift */; };
 		A1AEA03D8041FEA6FBEA89F9 /* PushService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131E1F3ED0F460574DE878C8 /* PushService.swift */; };
 		A22E60838F4603A0CDEF0E27 /* CornerWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD47F90E2DE3A97BBC7C7CCE /* CornerWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A25EBBEA8AECF2C1629DB981 /* SetPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40845571B718FF82471F844C /* SetPasswordView.swift */; };
 		A2EAF0E7C9A5AF056437FB67 /* TurnStreamEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00ECA7EAEB08CBB46C7E3091 /* TurnStreamEvent.swift */; };
 		A37A798B47F30125C1DF2AC4 /* FilesAndReviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0DB974AD71B1EFB7D9FEB9E /* FilesAndReviewTests.swift */; };
 		A8CE144E7B95956A1649A091 /* OrganizeStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05A3070E25A550ED51EC0D6C /* OrganizeStore.swift */; };
@@ -163,12 +164,14 @@
 		250FB7020FBCD6913F87DC0E /* RoomChecklistPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomChecklistPanelView.swift; sourceTree = "<group>"; };
 		26170D6B1CAAE06391DEEC4A /* CornerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerApp.swift; sourceTree = "<group>"; };
 		2668E5F1D641717C4F6D22D1 /* RoomFilesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomFilesView.swift; sourceTree = "<group>"; };
+		27626D75DA7FE9B2C93F6437 /* ConvexAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConvexAuth.swift; sourceTree = "<group>"; };
 		277963E40CC1BA7254A5AFEB /* PreviewHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewHarness.swift; sourceTree = "<group>"; };
 		2A92F26E1C6D5083CFB19872 /* AssignSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssignSheet.swift; sourceTree = "<group>"; };
 		2B7AF275C1A50596A51C2BE7 /* AvatarEditSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarEditSheet.swift; sourceTree = "<group>"; };
 		30D577DF665C37F7C6CDC690 /* TrackerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerView.swift; sourceTree = "<group>"; };
 		3BDDB385881E1A882A2BB055 /* TurnActivityService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurnActivityService.swift; sourceTree = "<group>"; };
 		3DA0369243BECC948ABC6C34 /* Room.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Room.swift; sourceTree = "<group>"; };
+		40845571B718FF82471F844C /* SetPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetPasswordView.swift; sourceTree = "<group>"; };
 		40AE09620DF2207D00FDA5FA /* ScrollBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollBrain.swift; sourceTree = "<group>"; };
 		414FBC6E316F126CBB060672 /* TrackerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerModels.swift; sourceTree = "<group>"; };
 		41EB3D2C357667840C871590 /* RoomAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomAvatarView.swift; sourceTree = "<group>"; };
@@ -253,17 +256,6 @@
 		FD47F90E2DE3A97BBC7C7CCE /* CornerWidgets.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = CornerWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFrameworksBuildPhase section */
-		859E46210D5049B0A7486D12 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				4B6099647E0C5ED3B50D890F /* Supabase in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
-
 /* Begin PBXGroup section */
 		28AF62F4EFD28C9C4F8990C5 /* Views */ = {
 			isa = PBXGroup;
@@ -296,6 +288,7 @@
 				8FE3EAACFEA3E82CAEC19854 /* RoomSettingsView.swift */,
 				916A7D1153B518D56BC67226 /* RootView.swift */,
 				6163C7CC8968AAD5CB272E08 /* SessionHistoryView.swift */,
+				40845571B718FF82471F844C /* SetPasswordView.swift */,
 				DC4E330537A94F6BCADAAAD4 /* SignInView.swift */,
 				738107B73EFB279CB127593B /* Theme.swift */,
 				30D577DF665C37F7C6CDC690 /* TrackerView.swift */,
@@ -350,6 +343,7 @@
 				AFB91EBAB88CC0CFBBD574FE /* AirPodsVoiceService.swift */,
 				E3984DE7AC39AFF032327719 /* AppRouter.swift */,
 				B278AB85C4B9477505810FB5 /* BackgroundWorkStore.swift */,
+				27626D75DA7FE9B2C93F6437 /* ConvexAuth.swift */,
 				7CCA195DB3CAFCF12889A9BB /* ConvexService.swift */,
 				49FDC9EB2F5FB0CC8AF8FFF7 /* CornerAPI.swift */,
 				53452A91F35EB1FCB0A97D20 /* DebugAuth.swift */,
@@ -479,7 +473,6 @@
 			buildPhases = (
 				6E6190A8F0E0A95FE051DB63 /* Sources */,
 				C7555F2840F62EDC31BF5F15 /* Resources */,
-				859E46210D5049B0A7486D12 /* Frameworks */,
 				8729365FE4AB2051547554CB /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -489,7 +482,6 @@
 			);
 			name = Corner;
 			packageProductDependencies = (
-				75430995A119BF809AA1762E /* Supabase */,
 			);
 			productName = Corner;
 			productReference = C9DA6E1D50DE52ED44D3041F /* Corner.app */;
@@ -567,9 +559,6 @@
 			);
 			mainGroup = 47DD8E7F934486C75F01A554;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (
-				8097A2ABD88F8D4C10C8B762 /* XCRemoteSwiftPackageReference "supabase-swift" */,
-			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 485F22BA650FA307351DBBDD /* Products */;
 			projectDirPath = "";
@@ -663,6 +652,7 @@
 				2AC0BF1ADB5977E4643C2A9B /* ChatViewModel.swift in Sources */,
 				2FF41C56D373CB68724A6820 /* ChecklistModels.swift in Sources */,
 				E4993169B470D0B135C28721 /* Config.swift in Sources */,
+				5E980167A403980FE7DC9DCB /* ConvexAuth.swift in Sources */,
 				068C15BB396647F8FD1E742E /* ConvexService.swift in Sources */,
 				5109FDB27364FB26A7243EBA /* CornerAPI.swift in Sources */,
 				8D12035D67DD5AF1CABB60A3 /* CornerApp.swift in Sources */,
@@ -707,6 +697,7 @@
 				2B98AAF3B36FDA0762FFCB64 /* RootView.swift in Sources */,
 				D3994FF4F8135E0708B1A9EB /* ScrollBrain.swift in Sources */,
 				E8B80F143EFA78E8DDC4C953 /* SessionHistoryView.swift in Sources */,
+				A25EBBEA8AECF2C1629DB981 /* SetPasswordView.swift in Sources */,
 				0488714B0ACA56A6F88863C2 /* SignInView.swift in Sources */,
 				E81089AB818B6D912CEA6C57 /* SpeechService.swift in Sources */,
 				256F30250207446B2B8E8AC2 /* Theme.swift in Sources */,
@@ -777,7 +768,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 10;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = PDYFTMXNJ2;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -975,7 +966,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 10;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = PDYFTMXNJ2;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -1078,25 +1069,6 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		8097A2ABD88F8D4C10C8B762 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/supabase/supabase-swift";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		75430995A119BF809AA1762E /* Supabase */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8097A2ABD88F8D4C10C8B762 /* XCRemoteSwiftPackageReference "supabase-swift" */;
-			productName = Supabase;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = DAB69DFD71A5E4425F4FF6F1 /* Project object */;
 }

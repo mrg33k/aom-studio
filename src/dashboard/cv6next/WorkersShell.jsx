@@ -18,16 +18,18 @@
 //                               it would report back and hasn't. A commitment,
 //                               not proof that CPU is burning.
 //
-// Actions post REAL user messages into the promise's own room via the same
-// endpoint the composer uses (/api/dashboard/supabase-messages) — visible in
-// that room's thread afterwards, no invisible side effects. Dismiss goes
-// through /api/dashboard/dismiss-followup and only reports success when the
-// row actually flipped.
+// Actions post REAL user messages into the promise's own room through the same
+// Convex mutation the composer uses (messages:send) — visible in that room's
+// thread afterwards, no invisible side effects. Dismiss calls followups:dismiss
+// and only reports success when the row actually flipped.
+// (corner:retire-supabase 2026-09-03: was the supabase-messages and
+// dismiss-followup API routes.)
 
 import React, { useState, useEffect } from 'react';
 import { useRunningTasks } from './data/useRunningTasks.js';
-import { authFetch } from '../lib/authFetch';
 import { useWorldId } from '../lib/tenantContext.jsx';
+import { convexMutation, convexWorldId } from './data/convexClient.js';
+import { convexViewerIdentity } from './data/convexIdentity.js';
 import ColumnExpandButton from './ColumnExpandButton.jsx';
 import { useTaskBoard, AnswerBox } from './WorkersBoard.jsx';
 
@@ -78,17 +80,56 @@ function splitCount(title) {
            : { title: t, more: '' };
 }
 
-// The message a promise's own room receives when acted on from here. Routing is
-// derived from the followup row exactly the way useRoomThread.send derives it
-// from the room object: mission -> corner + project + mission_slug metadata,
-// project -> corner + project, otherwise the agent's own 1:1 room.
-export function roomPayload(p, worldId, text) {
-  const base = { client_id: worldId, text, role: 'user', source: 'corner-dashboard', metadata: { interaction_mode: 'work' } };
-  if (p.mission && p.project) {
-    return { ...base, agent: 'corner', project: p.project, metadata: { ...base.metadata, mission_slug: String(p.mission) } };
-  }
-  if (p.project) return { ...base, agent: 'corner', project: p.project };
-  return { ...base, agent: p.who || 'corner' };
+// ── Posting into a room from outside its thread ──────────────────────────────
+// The one send path every dashboard surface outside the chat thread uses
+// (catch-up reply, the composer's voice and image turns, the workers window,
+// the task answer box). Same mutation and same room key the thread engine
+// (useRoomThread.send) uses, so the row lands in the same room the thread reads.
+//
+// The room key is the canonical legacy string corner-convex resolves rooms by:
+//   "<world>:mission:<missionSlug>", "<world>:project:<slug>", "<world>:agent:<slug>"
+
+export function legacyRoomKey(worldId, target = {}) {
+  const world = convexWorldId(worldId);
+  if (target.missionSlug) return `${world}:mission:${String(target.missionSlug)}`;
+  if (target.project) return `${world}:project:${String(target.project)}`;
+  return `${world}:agent:${String(target.agent || 'corner')}`;
+}
+
+// Send a message as the signed-in person (role user) or as an agent (role
+// assistant, agentSlug required). Resolves to the new message id; throws when
+// the send did not land, so callers can show an honest failure.
+export async function sendRoomMessage({ worldId, agent, project, missionSlug, text, role = 'user', source = 'corner-dashboard', metadata, replyTo, agentSlug }) {
+  const body = String(text || '').trim();
+  if (!worldId || !body) throw new Error('sendRoomMessage: world and text are required');
+  const meta = { ...(metadata || {}) };
+  if (missionSlug && !meta.mission_slug) meta.mission_slug = String(missionSlug);
+  const isUser = role !== 'assistant' && role !== 'system';
+  const viewer = isUser ? await convexViewerIdentity().catch(() => ({})) : {};
+  const args = {
+    roomId: legacyRoomKey(worldId, { agent, project, missionSlug }),
+    text: body,
+    role: isUser ? 'user' : role,
+    clientId: convexWorldId(worldId),
+    source,
+    ...(isUser && viewer.userId ? { userId: viewer.userId } : {}),
+    ...(isUser && viewer.userEmail ? { userEmail: viewer.userEmail } : {}),
+    ...(isUser && viewer.userName ? { userName: viewer.userName } : {}),
+    ...(!isUser && (agentSlug || agent) ? { agentSlug: agentSlug || agent } : {}),
+    ...(Object.keys(meta).length ? { metadata: meta } : {}),
+    ...(replyTo ? { replyTo: String(replyTo) } : {}),
+  };
+  return convexMutation('messages:send', args);
+}
+
+// Where a promise's own room is. Routing is derived from the followup row
+// exactly the way useRoomThread.send derives it from the room object: mission
+// -> the mission room (mission_slug metadata rides along), project -> the
+// project room, otherwise the agent's own 1:1 room.
+export function roomTarget(p) {
+  if (p.mission && p.project) return { project: p.project, missionSlug: String(p.mission) };
+  if (p.project) return { project: p.project };
+  return { agent: p.who || 'corner' };
 }
 
 function SectionHeader({ label, count, dim }) {
@@ -154,18 +195,17 @@ function PromiseActions({ promise, worldId, onDismissed }) {
   };
 
   const sendToRoom = (text) => async () => {
-    const r = await authFetch('/api/dashboard/supabase-messages', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(roomPayload(promise, worldId, text)),
-    });
-    return Boolean(r && r.ok);
+    try {
+      const id = await sendRoomMessage({ worldId, ...roomTarget(promise), text, metadata: { interaction_mode: 'work' } });
+      return Boolean(id);
+    } catch { return false; }
   };
   const dismiss = async () => {
-    const r = await authFetch('/api/dashboard/dismiss-followup', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: promise.id, client: worldId }),
-    });
-    return Boolean(r && r.ok);
+    try {
+      const viewer = await convexViewerIdentity().catch(() => ({}));
+      const r = await convexMutation('followups:dismiss', { id: String(promise.id), ...(viewer.userEmail || viewer.userId ? { userId: viewer.userEmail || viewer.userId } : {}) });
+      return Boolean(r && r.ok);
+    } catch { return false; }
   };
 
   if (tapped === 'start' || tapped === 'chase') {
@@ -233,8 +273,8 @@ export default function WorkersShell({ onClose, expanded = false, onToggleWidth 
   const { tasks, promises } = useRunningTasks(null);
   const board = useTaskBoard(worldId);
   const [now, setNow] = useState(() => Date.now());
-  // Dismissed ids the server confirmed, hidden immediately; the hook's next
-  // refetch (realtime on followups fires within seconds) makes it permanent.
+  // Dismissed ids the server confirmed, hidden immediately; the live
+  // followups:listPending subscription makes it permanent moments later.
   const [cleared, setCleared] = useState(() => new Set());
   const livePromises = promises.filter((p) => !cleared.has(p.id));
   const boardTotal = board.needs_input.length + board.queued.length + board.done.length + board.failed.length;

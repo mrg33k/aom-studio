@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getCurrentUser, updatePassword } from '../dashboard/lib/auth.js'
-import { supabase } from '../dashboard/lib/supabase.js'
+import { getCurrentUser, updatePassword, isTempPassword } from '../dashboard/lib/auth.js'
 import { useThemeMode } from '../dashboard/hooks/useThemeMode.js'
 import {
   DARK, LIGHT, FONT,
   MeshBackground, ASCIIBackground, CenterScrim, CornerMarks,
 } from './login-visuals.jsx'
 
-// Forced password change for admin-created accounts (temp_password: true).
-// After success, clears temp_password flag and redirects to dashboard.
-// Visual treatment matches Login.jsx — same emerald-on-navy brand moment,
+// Forced password change for seeded accounts (users.mustChangePassword).
+// corner:retire-supabase R3: auth:changePassword sets the new password without
+// the old one while the flag is set, and clears the flag server-side.
+// Visual treatment matches Login.jsx: same emerald-on-navy brand moment,
 // same animated background, same component language.
 
 export default function ChangePassword() {
@@ -31,8 +31,8 @@ export default function ChangePassword() {
     getCurrentUser().then(user => {
       if (!user) {
         navigate('/login', { replace: true })
-      } else if (user.user_metadata?.temp_password !== true) {
-        // Not a temp-password account -- skip to dashboard
+      } else if (!isTempPassword(user)) {
+        // Not a temp-password account: skip to dashboard
         navigate('/dashboard', { replace: true })
       } else {
         setCheckingSession(false)
@@ -65,12 +65,7 @@ export default function ChangePassword() {
         setLoading(false)
         return
       }
-      // Clear temp_password flag from user_metadata
-      if (supabase) {
-        await supabase.auth.updateUser({
-          data: { temp_password: false }
-        })
-      }
+      // auth:changePassword already cleared mustChangePassword on the server.
       navigate('/dashboard', { replace: true })
     } catch (err) {
       setError('Something went wrong. Try again.')

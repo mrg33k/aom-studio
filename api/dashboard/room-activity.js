@@ -1,77 +1,26 @@
-// GET /api/dashboard/room-activity?client=<world>
+// GET /api/dashboard/room-activity?client=<world>[&recency_only=1]
 //
-// Last-activity + last-line for EVERY room that has seen traffic recently, keyed by
-// project slug and by "<project>:<missionSlug>". One consumer: the front-door composer's
-// router (useIntakeRoute -> /api/dashboard/intake-route), which ranks and disambiguates
-// candidate rooms with exactly these two fields.
+// Last-activity + last-line for every room in the world, keyed by project slug,
+// by "<project>:<missionSlug>" and by agent slug. One consumer: the front-door
+// composer's router (useIntakeRoute -> /api/dashboard/intake-route), which
+// ranks and disambiguates candidate rooms with exactly these two fields, plus
+// the Home screen's recently-active list (recency_only=1).
 //
-// WHY this exists (2026-07-25). The router already ranked candidates by `last_message_at`
-// and read a `hint` per room — but both arrived empty on every request, so neither did
-// anything:
-//
-//   * Recency came from supabase-status's `messages` query, which is `limit=100`. Measured
-//     against the live table, those 100 rows covered ONE project and 3 missions. Every
-//     other candidate reached the router at timestamp 0, so its "18 most recent projects"
-//     sort was a no-op and the cut fell ALPHABETICALLY — every project from CSC to Wolfpack
-//     was invisible and could never be matched, only proposed as a brand-new room. On a
-//     74-message replay of Patrik's real history the correct room was missing from the
-//     prompt 31% of the time.
-//   * With no hint either, the router saw nothing but room NAMES and matched lexically:
-//     "the text is too big on the reel" landed in AZ Tech Council's "Summit Highlight
-//     Reel" at 0.95 confidence and opened it automatically. A shared word, nothing more.
-//
-// Feeding real values in took the right-room rate from 25% to 49% on that replay.
-//
-// The window is deliberately wide (6000 rows ≈ 11 days on this client: 17 projects, 44
-// missions) and deliberately NOT part of the dashboard's hot poll — it is its own endpoint
-// so the frequent supabase-status path stays cheap, and it is edge-cached because "which
-// rooms were active lately" does not need to be second-fresh. Rooms with no traffic in the
-// window are simply absent; the caller leaves them at 0, which is the correct ranking for
-// a dormant room rather than a lie about it.
+// Backend: Convex rooms:listRooms (corner:retire-supabase R2, 2026-09-03).
+// Every room row already carries lastMessageText / lastMessageAt, maintained
+// transactionally on each write, so this is one read instead of a 6000-row
+// page walk. The hint is distilled from the room's last line with the same
+// digest rules as before (file names kept, acknowledgements dropped).
 
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
+import { convexQuery } from '../_lib/reportsStore.js';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-
-const WINDOW_ROWS = 6000;
-const PAGE = 1000;
 const HINT_CHARS = 200;
-// How many recent messages a room's hint may be distilled from. One is a lottery (see below);
-// a handful is a description. 14 rather than 6 because a busy room's newest half-dozen lines
-// are usually acknowledgements ("Picking this up", "Logged.") that the filter drops — at 6 the
-// live digest for aom:socials came back as a single line and never reached the "reel.mp4" /
-// "reel.qa.json" file names that identify it.
-const HINT_SOURCES = 14;
 const HINT_PART_CHARS = 80;
-// Raw rows buffered per room before the pending-route quarantine runs. Wider than
-// HINT_SOURCES so a quarantined exchange costs the digest nothing — it just reaches further
-// down for real material. A pending route OLDER than this buffer is invisible to the walk,
-// which is acceptable: a room with 40 newer messages has already drowned out one bad line.
-const RAW_SOURCES = 40;
 
-async function supabaseGet(params) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/messages?${params}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-  });
-  if (!res.ok) return [];
-  return res.json();
-}
-
-// A hint has to describe what the room is ABOUT, and ONE message is a lottery ticket for that.
-// Measured against the live table: aom:socials — where the Day 3 reel actually lives —
-// advertised itself as "Nudge sent — told it to save the v4 edits first, then run the
-// readability gate", which never says "reel", while the very next message down reads "Day 3
-// profile-audit reel v4 is mid-build". So "tighten the timing on the day 3 reel" had nothing
-// to match on there, and the only line in the entire candidate block containing the word
-// "reel" was AZ Tech Council's "Summit Highlight Reel" — a room name. The router picked it at
-// 0.9 and opened it. That was not the model being careless; given what it was shown, it was
-// the only defensible answer.
-//
-// So the hint is a DIGEST of several recent lines, and file names are kept rather than
-// discarded — "reel.mp4", "reel.qa.json", "story-cut-brief.md" are among the most
-// discriminative things a media room ever says about itself. The old filter threw them away
-// as noise, which is how the room lost the one word that identified it.
+// A hint has to describe what the room is about. File names are among the most
+// discriminative things a room ever says about itself, so they are kept;
+// acknowledgements ("Picking this up", "Logged.") say nothing and are dropped.
 const DROP_RE = /^(<<|\[|picking this up|logged\.?$|got it\b|on it\b|standing by)/i;
 const FILE_RE = /^(?:attached (?:file|\d+ files)|shared a file)\s*:?\s*(.+)$/i;
 
@@ -83,17 +32,13 @@ export function digestOf(texts) {
     let t = String(raw || '').replace(/\s+/g, ' ').trim();
     if (!t || t.startsWith('{')) continue;      // structured payloads describe plumbing
     const f = FILE_RE.exec(t);
-    if (f) t = f[1].trim();                     // keep the FILENAME, drop the wrapper
-    else if (DROP_RE.test(t)) continue;         // acknowledgements say nothing about the work
+    if (f) t = f[1].trim();                     // keep the filename, drop the wrapper
+    else if (DROP_RE.test(t)) continue;
     if (!t) continue;
     t = t.slice(0, HINT_PART_CHARS);
     const key = t.toLowerCase().slice(0, 40);
-    if (seen.has(key)) continue;                // rooms repeat themselves; the hint should not
+    if (seen.has(key)) continue;
     seen.add(key);
-    // continue, NOT break: one long line must not end the digest. That bug is why the live
-    // digest for aom:socials stayed a single sentence — the next candidate overflowed the
-    // budget, the loop exited, and the short high-signal items further down ("reel.mp4",
-    // "reel.qa.json") never got a chance. Skip what does not fit and keep looking.
     if (total + t.length > HINT_CHARS) continue;
     parts.push(t);
     total += t.length + 3;
@@ -101,67 +46,30 @@ export function digestOf(texts) {
   return parts.join(' · ').slice(0, HINT_CHARS);
 }
 
-const bareSlug = (s) => (String(s || '').includes(':') ? String(s).split(':').pop() : String(s || ''));
-
-// ── Pending-route quarantine (corner:front-door R11) ─────────────────────────────────
-//
-// A room's hint is what teaches the router what that room is about. So when the router
-// GUESSES a room and guesses wrong, the misrouted message lands there and — before R11 —
-// went straight into that room's hint, which meant the room now genuinely looked like it
-// was about the thing it never was. On the next identical send the R10 cap correctly did
-// not fire (the room has a description now) and it auto-opened again. R10 measured this
-// live and named it: "the rule protects a room exactly once."
-//
-// So a message the front door routed on its own shapes NOTHING until the user accepts it
-// (taps "Got it", or keeps talking in the room). Rejection needs no handling here —
-// move-message deletes the row outright.
-//
-// The quarantine covers the whole EXCHANGE, not just the user's message. room-activity has
-// no role filter, so the agent's answer is digested with equal weight, and the agent
-// answers a misrouted question in the misrouted question's language. Measured while
-// planning R11: az-tech-council:summit-highlight-reel held exactly one message in the
-// window — an assistant reply — and that single sentence was the room's entire
-// description. Filtering only the user's row would have left the room still advertising
-// itself in the wrong topic's words.
+// Pending-route quarantine: a message the front door routed on its own shapes
+// nothing until the user accepts it. Kept for callers that pass a row list.
 const isPendingRoute = (m) => {
   const r = m?.metadata?.routed;
   return !!(r && r.auto === true && r.accepted !== true);
 };
 
-// rows: newest-first, as they arrive from PostgREST. Returns surviving texts, newest-first.
+// rows: newest-first. Returns surviving texts, newest-first.
 export function acceptedTexts(rows) {
-  // The quarantine window runs FORWARD in time (a pending question, then the replies it
-  // draws), so the walk has to go oldest-first even though everything else here is
-  // newest-first.
   const keep = [];
   let quarantined = false;
   for (const m of rows.slice().reverse()) {
-    // Every user turn opens or closes the window: a pending auto-route opens it, and any
-    // message the user sent themselves closes it — including the one that closes it by
-    // being the accepted version of the same route.
     if (m.role === 'user') quarantined = isPendingRoute(m);
     if (quarantined) continue;
     keep.push(m.text);
   }
-  // A pending exchange at the head of a room can empty its hint completely. That is the
-  // intent, not a bug: an empty hint re-arms undescribedNameMatch in intake-route, so the
-  // next message that matches only this room's NAME gets asked about instead of silently
-  // auto-opened. Failing toward "ask" is the safe direction.
   return keep.reverse();
 }
 
-// The world this request is scoped to. An explicit value wins; otherwise the world is
-// resolved from the VERIFIED JWT — never a hardcoded default.
-//
-// This read `DEFAULT_CLIENT_ID = 'aom'` (2026-07-27 audit): one world hardcoded in place
-// of the one that should be resolved. Invisible to the people most likely to test it —
-// Patrik, Ash and Courtney are all world 'aom' — and silently wrong for every other
-// world, whose world-less request was filed against Patrik's namespace and then refused
-// for the wrong reason. useIntakeRoute already sends ?client=<worldId>, so this only
-// changes a request that omits it.
-//
-// No session → 401. A verified session whose account carries no world → an explicit 400
-// naming the fix, never a silent fallback into another world.
+const slugify = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const iso = (ms) => (Number.isFinite(ms) ? new Date(ms).toISOString() : null);
+
+// The world this request is scoped to. An explicit value wins; otherwise the
+// world is resolved from the verified JWT, never a hardcoded default.
 async function scopeWorld(explicit, req) {
   const given = explicit == null ? '' : String(explicit).trim();
   if (given) return given.toLowerCase();
@@ -171,6 +79,23 @@ async function scopeWorld(explicit, req) {
   return who.world;
 }
 
+// Which bucket and key a room row lands in. mission > project > agent.
+function keyFor(room) {
+  const parts = String(room.legacyRoomId || '').split(':');
+  if (room.kind === 'mission') {
+    const project = room.project || (parts[1] === 'mission' && parts.length >= 4 ? parts[2] : '');
+    const leaf = parts[1] === 'mission' ? (parts.length >= 4 ? parts.slice(3).join(':') : parts.slice(2).join(':')) : '';
+    const mission = leaf || slugify(room.title);
+    return mission ? { bucket: 'missions', key: `${project}:${mission}` } : null;
+  }
+  if (room.kind === 'project') {
+    const project = room.project || (parts[1] === 'project' ? parts.slice(2).join(':') : slugify(room.title));
+    return project ? { bucket: 'projects', key: project } : null;
+  }
+  const agent = room.specialist || (parts[1] === 'agent' ? parts.slice(2).join(':') : '');
+  return agent ? { bucket: 'agents', key: agent } : null;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
@@ -178,16 +103,10 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
-  // Whether the world was named IN THE URL decides whether this response may be edge
-  // cached at all — see the Cache-Control note at the bottom. Read it before touching
-  // either line: they are one mechanism, not two.
+  // Whether the world was named in the URL decides whether this response may
+  // be edge cached at all; see the Cache-Control note at the bottom.
   const fromUrl = (req.query.client || req.query.client_id || '').toString().trim();
-  // smoothness-blitz #8: recency_only=1 uses a 500-row window (one page, ~50ms) and
-  // returns only last_message_at per room (no text digest). The Home screen's recently-
-  // active list only needs recency ordering, not descriptions; the intake router keeps
-  // using the full 6000-row mode for its text matching.
   const recencyOnly = req.query.recency_only === '1';
-  const effectiveWindow = recencyOnly ? 500 : WINDOW_ROWS;
   let clientId;
   try {
     const requested = await scopeWorld(fromUrl, req);
@@ -201,89 +120,28 @@ export default async function handler(req, res) {
   const missions = {};
   const agents   = {};
   try {
-    for (let offset = 0; offset < effectiveWindow; offset += PAGE) {
-      // eslint-disable-next-line no-await-in-loop -- pages must be sequential; PostgREST has no cursor here.
-      const select = recencyOnly
-        ? 'project,agent,metadata,timestamp'  // skip text+role: no digest, no quarantine walk
-        : 'project,agent,metadata,text,timestamp,role';
-      const rows = await supabaseGet(
-        // `role` is here for the quarantine walk: it needs to tell the user's turns from
-        // the agent's to know where a pending exchange ends.
-        // `agent` is added so 1:1 agent threads (no project, no mission) can be keyed.
-        `client_id=eq.${encodeURIComponent(clientId)}&select=${select}`
-        + `&order=timestamp.desc&limit=${PAGE}&offset=${offset}`
-      );
-      if (!Array.isArray(rows) || !rows.length) break;
-      for (const m of rows) {
-        const ts = m?.timestamp;
-        if (!ts) continue;
-        const missionSlug = m?.metadata?.mission_slug || '';
-        const project = m?.project || '';
-        const agentSlug = m?.agent || '';
-        // One message belongs to exactly ONE room, in deriveRoomId's precedence
-        // (mission > project > agent 1:1). A mission reply must not also restamp its
-        // parent project, or the parent inherits recency it never earned and outranks
-        // rooms the user actually opened.
-        let key, bucket;
-        if (missionSlug) {
-          key = `${project}:${bareSlug(missionSlug)}`;
-          bucket = missions;
-        } else if (project) {
-          key = project;
-          bucket = projects;
-        } else if (agentSlug) {
-          // Direct 1:1 agent thread. Key is just the agent slug; the native home
-          // maps this back to the room via activityKey(.agent(slug:)).
-          key = agentSlug;
-          bucket = agents;
-        } else {
-          continue;
-        }
-        if (!key) continue;
-        // Rows arrive newest-first, so the first sighting of a room is its last activity;
-        // the next few supply the material the hint is distilled from.
-        // Buffer more rows than the hint will use. The quarantine drops whole exchanges, so
-        // filtering has to happen BEFORE the HINT_SOURCES cut or one pending question and
-        // its reply could starve the digest of everything real underneath them.
-        const prev = bucket[key] || (bucket[key] = { last_message_at: ts, rows: [] });
-        if (prev.rows.length < RAW_SOURCES) prev.rows.push({ text: m.text, role: m.role, metadata: m.metadata });
-      }
-      if (rows.length < PAGE) break;
-    }
-    for (const bucket of [projects, missions, agents]) {
-      for (const key of Object.keys(bucket)) {
-        const b = bucket[key];
-        // `last_message_at` is deliberately NOT filtered — a pending message still counts as
-        // activity. Recency only affects which rooms make the candidate cut, not what the
-        // router believes a room is about, and the composer prefers Home's own poll for
-        // recency anyway (useIntakeRoute assembleCandidates), so filtering it here would be
-        // half-effective at best. Semantic contamination is the defect; ranking is not.
-        if (recencyOnly) {
-          bucket[key] = { last_message_at: b.last_message_at, last_message_text: '' };
-        } else {
-          bucket[key] = { last_message_at: b.last_message_at, last_message_text: digestOf(acceptedTexts(b.rows).slice(0, HINT_SOURCES)) };
-        }
-      }
+    const rooms = await convexQuery('rooms:listRooms', { worldId: clientId, filter: 'all' });
+    for (const room of Array.isArray(rooms) ? rooms : []) {
+      const last = room.lastMessage;
+      if (!last || !Number.isFinite(last.createdAt)) continue;
+      const where = keyFor(room);
+      if (!where) continue;
+      const bucket = where.bucket === 'missions' ? missions : where.bucket === 'projects' ? projects : agents;
+      const prev = bucket[where.key];
+      if (prev && Date.parse(prev.last_message_at) >= last.createdAt) continue;
+      bucket[where.key] = {
+        last_message_at: iso(last.createdAt),
+        last_message_text: recencyOnly ? '' : digestOf([last.text]),
+      };
     }
   } catch (err) {
-    // Never fail the caller: the composer must still be able to send. An empty map means
-    // the router ranks as it did before, which is degraded but not broken.
+    // Never fail the caller: the composer must still be able to send.
     res.setHeader('Cache-Control', 'no-store');
     return res.status(200).json({ projects: {}, missions: {}, agents: {}, degraded: true, error: String(err?.message || err).slice(0, 160) });
   }
 
-  // Edge-cached: "which rooms were active lately" tolerates minutes of staleness, and this
-  // is read on the send path where latency is felt.
-  //
-  // ONLY when the world was named in the URL. The shared edge cache is keyed by URL and
-  // does NOT include the Authorization header, so a response whose world came from the
-  // JWT would sit at a URL that is byte-identical for every world — and the first
-  // caller's room digests (message text, file names, what each room is about) would be
-  // served to the next caller from a different world for up to 180s. That did not exist
-  // while the fallback was a hardcoded world, because then every world-less request
-  // returned the SAME world's data; making the fallback correct is exactly what makes the
-  // cache key insufficient. The live UI always sends ?client=<worldId>, so it keeps the
-  // full 180s cache; only the param-less request pays, and it pays with correctness.
+  // Edge-cached only when the world was named in the URL: the shared edge cache
+  // is keyed by URL and does not include the Authorization header.
   res.setHeader('Cache-Control', fromUrl
     ? 's-maxage=180, stale-while-revalidate=600'
     : 'private, no-store');

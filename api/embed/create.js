@@ -2,22 +2,28 @@
 //   body: { agent, project, mission_slug, label, host_allowlist[], opening_prompt, accent, font_display, embed_id?, client_id?, created_by? }
 //   resp: { embed_id, script_tag, full_config, live_url }
 //
-// Persists an embed config to Supabase `embed_configs` so the widget can
-// boot against the freshly-created embed_id immediately — no redeploy
-// required. Same validation as /api/embed/preview; this endpoint is what
-// the modal's "Ship it" button calls.
+// Persists an embed config to the Convex `embeds` table (embeds:upsert) so the
+// widget can boot against the freshly-created embed_id immediately — no
+// redeploy required. Same validation as /api/embed/preview; this endpoint is
+// what the modal's "Ship it" button calls.
 //
-// If embed_id already exists in Supabase or in the JSON fallback registry,
+// If embed_id already exists on Convex or in the JSON fallback registry,
 // returns 409. Users can override with a different embed_id via the
 // modal's Advanced field.
+//
+// corner:retire-supabase (2026-09-03): the row used to be inserted into the
+// Supabase embed_configs table through lib/embed-registry.js. The write now
+// goes straight to embeds:upsert; the duplicate check reads through getEmbed
+// in ./messages.js (Convex embeds:get first, bundled _embeds.json fallback),
+// the same lookup chat.js and steps.js use.
 
 // AUTH (corner:identity-attribution, 2026-07-27): creating an embed is an
 // ADMIN action, not a public one — the resulting embed routes live chat into a
 // named EA's room in a named world, and /api/embed/chat writes those turns as
-// role='user' rows that supabase-listener dispatches into that agent's inbox.
+// role='user' rows that the Convex dispatcher hands to that agent.
 // Unauthenticated, anyone could point a widget at any EA in any world. So:
-// a valid JWT is required, the routing world comes from verifyTenant, and the
-// body's client_id / created_by are ignored.
+// a valid session is required, the routing world comes from verifyTenant, and
+// the body's client_id / created_by are ignored.
 //
 // NOTE this is the CREATE door only. /api/embed/chat is the public widget door
 // and keeps its wide CORS; its own origin-allowlist gate is a separate fix.
@@ -26,12 +32,12 @@
 //    WAS NOT ────────────────────────────────────────────────────────────────
 // routing.client_id is overwritten with the verified tenant above. routing.project
 // (and routing.mission_slug) came straight out of buildConfig(body) and were
-// never scope-checked — and api/embed/chat.js:1424 then writes rows carrying
+// never scope-checked — and api/embed/chat.js then writes rows carrying
 // BOTH of them from a PUBLIC, unauthenticated, wildcard-CORS endpoint, with
-// source='corner-dashboard', which supabase-listener.py dispatches to the agent.
+// source='corner-dashboard', which the dispatcher hands to the agent.
 //
 //   KARENS_MEMBER POSTs {agent:'elon', project:'rex', client_id:'karens-world'}
-//   -> embed_configs row created                            (replayed: HTTP 200)
+//   -> embed row created                                    (replayed: HTTP 200)
 //   -> from then on ANY anonymous visitor POSTing to /api/embed/chat with that
 //      embed_id writes messages{client_id:'karens-world', project:'rex'} with
 //      no JWT, forever.
@@ -46,16 +52,19 @@
 // routing.mission_slug. REFUSE rather than degrade: an embed silently created
 // without the routing it was asked for would answer in the wrong room.
 //
-// Create-time only, on purpose — existing embed_configs rows are untouched.
+// Create-time only, on purpose — existing embed rows are untouched.
 
 import {
   validatePayload,
   buildConfig,
   buildScriptTag,
 } from '../../lib/embed-shape.js'
-import { getEmbed, insertEmbed } from '../../lib/embed-registry.js'
+import { getEmbed } from './messages.js'
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
 import { makeProjectScopeAuthorizer } from '../_lib/write-message.js'
+import { convexMutation } from '../_lib/reportsStore.js'
+
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || ''
 
 const ALLOWED_ORIGIN_PATTERNS = [
   /^https:\/\/lab\.aheadofmarket\.com$/i,
@@ -82,6 +91,22 @@ function applyCors(req, res) {
   res.setHeader('Vary', 'Origin')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+}
+
+// The stored config is exactly what the registry hands back to the widget
+// endpoints: the same keys the old embed_configs row carried, plus who made it.
+function storedConfig(config, createdBy) {
+  return {
+    embed_id: config.embed_id,
+    surface_name: config.surface_name,
+    active: config.active !== false,
+    host_allowlist: config.host_allowlist,
+    placement: config.placement,
+    routing: config.routing,
+    ...(config.ai ? { ai: config.ai } : {}),
+    created_by: createdBy,
+    created_at: new Date().toISOString(),
+  }
 }
 
 export default async function handler(req, res) {
@@ -162,7 +187,12 @@ export default async function handler(req, res) {
     // created_by is a server-side fact (RULE 1) — never the body.
     const identity = await callerIdentity(req).catch(() => null)
     const createdBy = identity?.userId || verified.userId || null
-    const row = await insertEmbed(config, createdBy)
+    const row = storedConfig(config, createdBy)
+    await convexMutation('embeds:upsert', {
+      ...(CONVEX_KEY ? { key: CONVEX_KEY } : {}),
+      embedId: row.embed_id,
+      config: row,
+    })
     return res.status(200).json({
       embed_id: row.embed_id,
       script_tag: buildScriptTag(row.embed_id),

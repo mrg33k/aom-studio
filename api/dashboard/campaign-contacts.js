@@ -1,33 +1,58 @@
-// /api/dashboard/campaign-contacts — corner:campaign-tool R3.
-// Pipeline lists + city detail. 19k-row audiences are always paginated;
-// the UI never loads the whole table.
+// /api/dashboard/campaign-contacts
+// Pipeline lists + contact detail. Big audiences are always paginated; the UI
+// never loads the whole table.
 //   GET   ?world=&id=&stage=contacted&limit=50&offset=0&q=springfield
-//   GET   ?world=&id=&contact=<uuid>       — single contact + touch history
+//   GET   ?world=&id=&contact=<id>          - single contact + touch history
 //   PATCH {world, id, contact_id, notes?, follow_up_due_at?}
 // Stage moves go through campaign-actions (op=set_stage) so they're logged.
+//
+// corner:retire-supabase (2026-09-03): contacts come from campaigns:contacts
+// on Convex. Notes and follow-up dates live in keyed state per contact
+// (kind campaign_contact_notes), merged into each row on read.
 
-import { resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js';
-
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { requestedTenantFromCompat, sendTenantContextError } from '../_lib/tenantContext.js';
+import { convexQuery, convexMutation } from '../_lib/reportsStore.js';
 
 const STAGES = new Set(['to_contact', 'contacted', 'replied', 'call_set', 'won', 'lost', 'bounced', 'noise']);
 
-function sb(path, opts = {}) {
-  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...opts,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: opts.prefer || 'return=representation',
-      ...(opts.headers || {}),
-    },
-  });
+// campaigns:addContacts inserts with stage "queued"; the tool speaks in the
+// old pipeline words.
+const STAGE_ALIAS = { queued: 'to_contact', sent: 'contacted', opened: 'contacted', unsubscribed: 'noise' };
+function pipelineStage(stage) {
+  return STAGE_ALIAS[stage] || stage;
 }
 
-function restIn(values) {
-  return (values || []).map(value => encodeURIComponent(String(value))).join(',');
+async function notesFor(contactId) {
+  const row = await convexQuery('state:get', { kind: 'campaign_contact_notes', scopeId: String(contactId) }).catch(() => null);
+  return (row && row.value && typeof row.value === 'object') ? row.value : {};
+}
+
+function shapeContact(c, notes = {}) {
+  return {
+    id: c._id,
+    campaign_id: c.campaignId,
+    name: c.name || null,
+    email: c.email || null,
+    stage: pipelineStage(c.stage),
+    merge_fields: c.fields || {},
+    hygiene_flag: c.fields?.hygiene_flag || null,
+    last_contacted_at: c.fields?.last_contacted_at || null,
+    last_reply_at: c.fields?.last_reply_at || null,
+    reply_thread_id: c.fields?.reply_thread_id || null,
+    follow_up_due_at: notes.follow_up_due_at || null,
+    notes: notes.notes || null,
+    created_at: new Date(c.createdAt).toISOString(),
+    updated_at: new Date(c.updatedAt).toISOString(),
+  };
+}
+
+async function ownedCampaign(id, world) {
+  const campaign = await convexQuery('campaigns:get', { id }).catch(() => null);
+  if (!campaign) return null;
+  const owner = await convexQuery('worlds:getBySlug', { slug: world }).catch(() => null);
+  if (!owner || String(owner._id) !== String(campaign.worldId)) return null;
+  return campaign;
 }
 
 export default async function handler(req, res) {
@@ -36,34 +61,39 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  let tenantContext;
   let world;
   try {
-    tenantContext = await resolveTenantContext(req);
-    world = tenantContext.tenantId;
+    const requested = requestedTenantFromCompat({ query: req.query || {}, body: req.body || {} });
+    ({ tenant: world } = await verifyTenant(requested, req));
   } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ ok: false, error: err.message });
     return sendTenantContextError(res, err);
   }
-  const campaignWorlds = tenantContext.aliases?.length ? tenantContext.aliases : [world];
-  const campaignWorldFilter = `world=in.(${restIn(campaignWorlds)})`;
 
   const id = String(req.query.id || (req.body && req.body.id) || '');
   if (!id) return res.status(400).json({ error: 'id (campaign) required' });
 
   try {
+    const campaign = await ownedCampaign(id, world);
+    if (!campaign) return res.status(404).json({ error: 'campaign not found' });
+
     if (req.method === 'GET' && req.query.contact) {
       const contactId = String(req.query.contact);
-      const [cr, er] = await Promise.all([
-        sb(`campaign_contacts?id=eq.${contactId}&campaign_id=eq.${id}&${campaignWorldFilter}&select=*`),
-        sb(`campaign_events?contact_id=eq.${contactId}&campaign_id=eq.${id}&select=id,kind,summary,details,created_at&order=created_at.desc&limit=50`),
+      const all = await convexQuery('campaigns:contacts', { id: campaign._id, limit: 100000 });
+      const c = (all?.rows || []).find((row) => String(row._id) === contactId);
+      if (!c) return res.status(404).json({ error: 'contact not found' });
+      const [events, notes] = await Promise.all([
+        convexQuery('campaigns:events', { id: campaign._id, limit: 1000 }).catch(() => []),
+        notesFor(c._id),
       ]);
-      if (!cr.ok) return res.status(cr.status).json({ error: await cr.text() });
-      const contacts = await cr.json();
-      if (!contacts.length) return res.status(404).json({ error: 'contact not found' });
-      const events = er.ok ? await er.json() : [];
-      const sr = await sb(`campaign_sends?campaign_id=eq.${id}&contact_id=eq.${contactId}&select=sent_at,thread_id,message_id&order=sent_at.desc`);
-      const sends = sr.ok ? await sr.json() : [];
-      return res.status(200).json({ ok: true, tenant_id: world, contact: contacts[0], events, sends });
+      const mine = (Array.isArray(events) ? events : []).filter((e) => String(e.contactId || '') === contactId);
+      const touches = mine.filter((e) => e.kind !== 'sent').slice(0, 50).map((e) => ({
+        id: e._id, kind: e.kind, summary: e.payload?.summary || e.kind, details: e.payload?.details || {}, created_at: new Date(e.createdAt).toISOString(),
+      }));
+      const sends = mine.filter((e) => e.kind === 'sent').map((e) => ({
+        sent_at: new Date(e.createdAt).toISOString(), thread_id: e.payload?.thread_id || null, message_id: e.payload?.message_id || null,
+      }));
+      return res.status(200).json({ ok: true, tenant_id: world, contact: shapeContact(c, notes), events: touches, sends });
     }
 
     if (req.method === 'GET') {
@@ -72,49 +102,39 @@ export default async function handler(req, res) {
       const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
       const q = String(req.query.q || '').trim();
 
-      let filter = `campaign_id=eq.${id}&${campaignWorldFilter}`;
-      if (stage && STAGES.has(stage)) filter += `&stage=eq.${stage}`;
-      if (req.query.flagged === '1') filter += `&hygiene_flag=not.is.null`;
-      if (q) {
-        const safe = q.replace(/[%,()]/g, '');
-        filter += `&or=(name.ilike.*${safe}*,email.ilike.*${safe}*,merge_fields->>city.ilike.*${safe}*)`;
+      // Read the whole campaign's contacts once; stage aliases mean a Convex
+      // stage filter would miss "queued" rows a caller asks for as to_contact.
+      const all = await convexQuery('campaigns:contacts', { id: campaign._id, limit: 100000, ...(q ? { q } : {}) });
+      let rows = (all?.rows || []);
+      if (stage && STAGES.has(stage)) rows = rows.filter((c) => pipelineStage(c.stage) === stage);
+      if (req.query.flagged === '1') rows = rows.filter((c) => c.fields?.hygiene_flag);
+      if (stage === 'to_contact') {
+        // emailable first, then biggest population
+        rows.sort((a, b) => (b.email ? 1 : 0) - (a.email ? 1 : 0) || (Number(b.fields?.population) || 0) - (Number(a.fields?.population) || 0));
       }
-      // enriched (emailable) first within to_contact, then biggest population
-      const order = stage === 'to_contact'
-        ? 'order=email.desc.nullslast,merge_fields->>population.desc.nullslast'
-        : 'order=updated_at.desc';
-      const r = await sb(
-        `campaign_contacts?${filter}&select=id,name,email,stage,merge_fields,hygiene_flag,last_contacted_at,last_reply_at,follow_up_due_at,reply_thread_id&${order}&limit=${limit}&offset=${offset}`,
-        { prefer: 'count=exact' }
-      );
-      if (!r.ok) return res.status(r.status).json({ error: await r.text() });
-      const contacts = await r.json();
-      const range = r.headers.get('content-range') || '';
-      const total = parseInt(range.split('/')[1], 10);
+      const page = rows.slice(offset, offset + limit);
+      const contacts = await Promise.all(page.map(async (c) => shapeContact(c, await notesFor(c._id))));
       return res.status(200).json({
         ok: true,
         tenant_id: world,
         contacts,
-        total: Number.isFinite(total) ? total : contacts.length,
-        hasMore: Number.isFinite(total) ? offset + contacts.length < total : false,
+        total: rows.length,
+        hasMore: offset + contacts.length < rows.length,
       });
     }
 
     if (req.method === 'PATCH') {
       const b = req.body || {};
       if (!b.contact_id) return res.status(400).json({ error: 'contact_id required' });
-      const patch = { updated_at: new Date().toISOString() };
-      if ('notes' in b) patch.notes = b.notes || null;
-      if ('follow_up_due_at' in b) patch.follow_up_due_at = b.follow_up_due_at || null;
-      if (Object.keys(patch).length === 1) return res.status(400).json({ error: 'nothing to update' });
-      const r = await sb(
-        `campaign_contacts?id=eq.${b.contact_id}&campaign_id=eq.${id}&${campaignWorldFilter}`,
-        { method: 'PATCH', body: JSON.stringify(patch) }
-      );
-      if (!r.ok) return res.status(r.status).json({ error: await r.text() });
-      const rows = await r.json();
-      if (!rows.length) return res.status(404).json({ error: 'contact not found' });
-      return res.status(200).json({ ok: true, tenant_id: world, contact: rows[0] });
+      if (!('notes' in b) && !('follow_up_due_at' in b)) return res.status(400).json({ error: 'nothing to update' });
+      const all = await convexQuery('campaigns:contacts', { id: campaign._id, limit: 100000 });
+      const c = (all?.rows || []).find((row) => String(row._id) === String(b.contact_id));
+      if (!c) return res.status(404).json({ error: 'contact not found' });
+      const value = { ...(await notesFor(c._id)) };
+      if ('notes' in b) value.notes = b.notes || null;
+      if ('follow_up_due_at' in b) value.follow_up_due_at = b.follow_up_due_at || null;
+      await convexMutation('state:put', { kind: 'campaign_contact_notes', scopeId: String(c._id), value, updatedBy: 'campaign-contacts' });
+      return res.status(200).json({ ok: true, tenant_id: world, contact: shapeContact(c, value) });
     }
 
     return res.status(405).json({ error: 'method not allowed' });

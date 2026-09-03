@@ -10,42 +10,41 @@
 // moved. The structural answer is not a better guess: it is showing the user where the
 // message went and letting them correct it in one tap.
 //
-// Correcting has to be a real move, not a second copy. The wrong room must end up looking
-// like the message was never sent there — otherwise "change it" leaves a mess behind and
-// nobody uses it twice.
+// corner:retire-supabase (2026-09-03). The message row lives on Convex, so a move IS a
+// move now: messages:move re-files the row into the destination room (same id, same
+// author, same time) instead of the old copy-then-delete against Supabase. The reply the
+// wrong room's agent drew is re-filed with it, because Convex has no row delete for a
+// client and a reply is honest under the question it answered. Provenance of the move is
+// stamped on the row with messages:patchMetadata.
 //
 // Body:
 //   { client_id, message_id, text, to: { project?, mission_slug?, agent? }, interaction_mode? }
 //
-// Deletes message_id, plus any ASSISTANT rows in that same room that landed after it (the
+// Moves message_id, plus any ASSISTANT rows in that same room that landed after it (the
 // agent's reply to a message that is being retracted, which would otherwise be orphaned).
 // That sweep is bounded: only rows between the moved message and now, only when the move
-// happens within MOVE_WINDOW_MS, and only in that one room — so a slow reply to some
+// happens within MOVE_WINDOW_MS, and only in that one room, so a slow reply to some
 // earlier message in a busy room is never collected.
 
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
-import { writeMessageRow, makeProjectScopeAuthorizer } from '../_lib/write-message.js';
+import { convexQuery, convexMutation } from '../_lib/verifyTenant.js';
+import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' };
+import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js';
 
+const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry);
 const SHARED_PREFIX = 'shared:';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
 // A move is a correction of something the user JUST sent. Past this, the reply sweep is
 // unsafe (the conversation has moved on) so the original is left where it is.
 const MOVE_WINDOW_MS = 15 * 60 * 1000;
+// How far back the original is looked for. A move outside the correction window still
+// happens (without the reply sweep); older than this it is not a correction at all.
+const LOOKBACK_MS = 24 * 60 * 60 * 1000;
 
 // The world this request is scoped to. An explicit value wins; otherwise the world is
-// resolved from the VERIFIED JWT — never a hardcoded default.
+// resolved from the VERIFIED JWT, never a hardcoded default.
 //
-// This read `DEFAULT_CLIENT_ID = 'aom'` (2026-07-27 audit): one world hardcoded in place
-// of the one that should be resolved. Invisible to the people most likely to test it —
-// Patrik, Ash and Courtney are all world 'aom' — and silently wrong for every other
-// world, whose world-less request was filed against Patrik's namespace and then refused
-// for the wrong reason. RoutedHereBar already sends worldId on both the move and the
-// follow-up sweep, so this only changes a request that omits it.
-//
-// No session → 401. A verified session whose account carries no world → an explicit 400
+// No session -> 401. A verified session whose account carries no world -> an explicit 400
 // naming the fix, never a silent fallback into another world.
 async function scopeWorld(explicit, req) {
   const given = explicit == null ? '' : String(explicit).trim();
@@ -56,21 +55,45 @@ async function scopeWorld(explicit, req) {
   return who.world;
 }
 
-async function sb(method, path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const text = await res.text();
-  let json = null;
-  try { json = text ? JSON.parse(text) : null; } catch { json = null; }
-  return { ok: res.ok, status: res.status, json, text };
+// Room key grammar, the same one every Convex writer uses:
+//   <world>:mission:<project>:<leaf> | <world>:project:<slug> | <world>:agent:<slug>
+function destinationFor(world, to) {
+  if (to.mission_slug) {
+    const raw = String(to.mission_slug);
+    const project = String(to.project || raw.split(':')[0]).trim();
+    const canonical = canonicalizeMissionSlug(raw, MISSION_SLUG_LOOKUP, project);
+    const leaf = canonical.includes(':') ? canonical.slice(canonical.indexOf(':') + 1) : canonical;
+    return { roomId: `${world}:mission:${project}:${leaf}`, project, mission_slug: canonical, agent: null };
+  }
+  if (to.project) {
+    const project = String(to.project).trim();
+    return { roomId: `${world}:project:${project}`, project, mission_slug: null, agent: null };
+  }
+  const agent = String(to.agent || 'corner').trim();
+  return { roomId: `${world}:agent:${agent}`, project: null, mission_slug: null, agent };
+}
+
+// May this world file a message under this project? The holder world and any world with
+// a sharing grant may; an unregistered slug (no registry row) crosses nobody's claim.
+async function projectReachable(slug, world) {
+  const held = await convexQuery('projects:lookupBySlug', { slug }).catch(() => null);
+  if (!held) return { ok: true, via: 'unregistered' };
+  if (held.ownerWorld && String(held.ownerWorld).toLowerCase() === world) return { ok: true, via: 'holder-world' };
+  const access = await convexQuery('projects:hasAccess', { slug, worldId: world }).catch(() => null);
+  if (access && access.ok) return { ok: true, via: 'grant' };
+  return { ok: false, reason: `world "${world}" cannot reach project "${slug}"` };
+}
+
+// The rows in `roomId` written after `afterMs` by something other than a person: the
+// replies the moved question drew. A row that names its question (replyTo) must name
+// this one; an unlinked assistant row counts only inside the correction window.
+async function repliesAfter(roomId, afterMs, messageId, withinWindow) {
+  const rows = await convexQuery('messages:list', { roomId, limit: 100 }).catch(() => []);
+  return (Array.isArray(rows) ? rows : [])
+    .filter((r) => Number(r.createdAt) > afterMs && r.role !== 'user')
+    .filter((r) => (r.replyTo ? String(r.replyTo) === String(messageId) : withinWindow))
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .slice(0, 20);
 }
 
 export default async function handler(req, res) {
@@ -80,7 +103,6 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
   const body = req.body || {};
   let clientId;
@@ -94,8 +116,12 @@ export default async function handler(req, res) {
     throw err;
   }
 
-  // Sweep-only pass. The reply sweep below can only remove what EXISTS when the move runs,
-  // and the agent in the wrong room is typically mid-reply at that moment — so its answer
+  // A shared room is not a world; rooms are keyed by the author's own world.
+  const world = clientId.startsWith(SHARED_PREFIX) ? (verified.world || null) : clientId;
+  if (!world) return res.status(400).json({ error: 'this account is not in a world' });
+
+  // Sweep-only pass. The reply sweep below can only collect what EXISTS when the move runs,
+  // and the agent in the wrong room is typically mid-reply at that moment, so its answer
   // lands a second later and survives, leaving an orphan reply under no question. (Found by
   // the Front Door room auditing its own transcript after a live test, 2026-07-25.) The
   // client fires this second pass a little later to collect exactly that straggler.
@@ -103,22 +129,21 @@ export default async function handler(req, res) {
     const s = body.sweep_for;
     const after = String(s.after || '').trim();
     if (!after) return res.status(400).json({ error: 'sweep_for.after required' });
-    if (Date.now() - new Date(after).getTime() > MOVE_WINDOW_MS) {
+    const afterMs = new Date(after).getTime();
+    if (!Number.isFinite(afterMs) || Date.now() - afterMs > MOVE_WINDOW_MS) {
       return res.status(200).json({ ok: true, removed_count: 0, reason: 'outside the correction window' });
     }
-    const filter = s.mission_slug
-      ? `metadata->>mission_slug=eq.${encodeURIComponent(s.mission_slug)}`
-      : s.project
-        ? `project=eq.${encodeURIComponent(s.project)}&metadata->>mission_slug=is.null`
-        : `agent=eq.${encodeURIComponent(s.agent || '')}&project=is.null`;
-    const rows = await sb('GET',
-      `messages?client_id=eq.${encodeURIComponent(clientId)}&${filter}`
-      + `&role=neq.user&timestamp=gt.${encodeURIComponent(after)}&select=id&order=timestamp.asc&limit=20`);
+    const fromRoom = s.from_room || destinationFor(world, { project: s.project, mission_slug: s.mission_slug, agent: s.agent }).roomId;
+    const toRoom = s.to_room;
+    if (!toRoom) return res.status(200).json({ ok: true, removed_count: 0, reason: 'no destination room to sweep into' });
+    if (!String(fromRoom).startsWith(`${world}:`) || !String(toRoom).startsWith(`${world}:`)) {
+      return res.status(403).json({ error: 'rooms outside your world' });
+    }
+    const stragglers = await repliesAfter(fromRoom, afterMs, s.message_id || '', true);
     let n = 0;
-    for (const r of (Array.isArray(rows.json) ? rows.json : [])) {
+    for (const r of stragglers) {
       // eslint-disable-next-line no-await-in-loop -- a handful of rows at most.
-      const d = await sb('DELETE', `messages?id=eq.${encodeURIComponent(r.id)}`);
-      if (d.ok) n += 1;
+      try { await convexMutation('messages:move', { messageId: r._id, roomId: toRoom }); n += 1; } catch { /* leave it */ }
     }
     return res.status(200).json({ ok: true, removed_count: n, sweep_only: true });
   }
@@ -132,109 +157,86 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'to.project, to.mission_slug or to.agent required' });
   }
 
-  // Read the original first: it proves the row belongs to this tenant, and its room +
-  // timestamp are what bound the reply sweep.
-  const found = await sb('GET', `messages?id=eq.${encodeURIComponent(messageId)}&select=id,client_id,project,agent,metadata,timestamp,role&limit=1`);
-  const original = Array.isArray(found.json) ? found.json[0] : null;
+  // Read the original first: it proves the row belongs to this world, and its room +
+  // time are what bound the reply sweep. Recent world rows are scanned because a message
+  // is addressed by id alone here and the room it landed in is exactly what is unknown.
+  const recent = await convexQuery('messages:listSince', {
+    worldSlug: world,
+    since: Date.now() - LOOKBACK_MS,
+    limit: 2000,
+  }).catch(() => []);
+  const original = (Array.isArray(recent) ? recent : []).find((r) => String(r._id) === messageId) || null;
   if (!original) return res.status(404).json({ error: 'message not found' });
-  if (original.client_id !== clientId) return res.status(403).json({ error: 'not your message' });
-  if (original.role !== 'user') return res.status(400).json({ error: 'only a message you sent can be moved' });
-
-  const sentAt = original.timestamp ? new Date(original.timestamp).getTime() : 0;
-  const withinWindow = sentAt > 0 && (Date.now() - sentAt) < MOVE_WINDOW_MS;
-
-  // 1. Write into the destination FIRST. If this fails the user still has their message
-  //    where it was, which is recoverable; deleting first could lose it outright.
-  //
-  // Goes through writeMessageRow, the same writer supabase-messages uses, rather than a
-  // hand-rolled insert: it mints the row id (the table has no default — a direct insert
-  // fails 23502 on a null id), derives room_id, and canonicalizes the mission slug. A
-  // moved message has to be indistinguishable from one sent to that room in the first
-  // place, and reusing the canonical writer is the only way to keep that true as the row
-  // shape changes.
-  //
-  // `to.project` / `to.mission_slug` are DESTINATION slugs typed by the caller —
-  // nothing above validates them, and the tenant gate only proved which world
-  // the caller may act in. So the move door minted exactly the same evidence the
-  // chat door did: move your own message into a project you do not hold, and
-  // `messages.project` (a column with no foreign key, and one of the two the
-  // participation floor reads as proof of belonging) says you were there. Same
-  // authorizer as chat-bridge and supabase-messages, built from the VERIFIED
-  // tenant. A refused destination drops the scope and the message lands in the
-  // agent room — it is never rejected, so a mis-typed slug can't eat the text
-  // this endpoint is about to delete from its old room.
-  const mode = body.interaction_mode === 'plan' ? 'plan' : 'work';
-  const inserted = await writeMessageRow({
-    supabaseUrl: SUPABASE_URL,
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
-    text,
-    role: 'user',
-    source: 'corner-dashboard',
-    agent: to.agent || 'corner',
-    clientId,
-    project: to.mission_slug ? (to.project || String(to.mission_slug).split(':')[0]) : (to.project || null),
-    mission: to.mission_slug ? String(to.mission_slug) : null,
-    authorizeProjectScope: makeProjectScopeAuthorizer({ req, clientId }),
-    // The world that wrote it. Without this the column's DB default stamped
-    // every moved row 'aom', so a move in any other world crossposted into
-    // AOM-granted shared rooms wearing AOM's identity.
-    worldId: clientId.startsWith(SHARED_PREFIX) ? (verified.world || null) : clientId,
-    // The mover is the verified session, and it is the same person whose row is
-    // about to be deleted from the other room. Carrying it across keeps the
-    // moved message attributed instead of silently becoming an authorless row
-    // that downstream code has historically filled in as the founder.
-    userId: verified.userId || null,
-    userName: verified.userName || null,
-    // 'user', not 'human' — messages_sender_role_check allows only
-    // (admin|user|owner|NULL). See the note in dashboard/supabase-messages.js.
-    senderRole: verified.userId ? 'user' : null,
-    metadata: {
-      interaction_mode: mode,
-      // Provenance: this message was re-homed by the user after the router guessed wrong.
-      // Keeps the routing miss auditable instead of silently disappearing.
-      moved_from: { project: original.project || null, mission_slug: original?.metadata?.mission_slug || null, agent: original.agent || null },
-    },
-  });
-  if (!inserted.ok) {
-    return res.status(inserted.status || 500).json({ error: `could not write to the new room: ${String(inserted.error || '').slice(0, 160)}` });
+  if ((original.role || 'user') !== 'user') return res.status(400).json({ error: 'only a message you sent can be moved' });
+  if (original.userId && verified.userId && String(original.userId) !== String(verified.userId) && !verified.isAdmin) {
+    return res.status(403).json({ error: 'not your message' });
   }
 
-  // 2. Remove the original, and the reply it drew, from the room it should never have
-  //    been in. Scoped to that exact room and that exact time slice.
-  const removed = [];
-  const delOriginal = await sb('DELETE', `messages?id=eq.${encodeURIComponent(messageId)}`);
-  if (delOriginal.ok) removed.push(messageId);
+  const sentAt = Number(original.createdAt) || 0;
+  const withinWindow = sentAt > 0 && (Date.now() - sentAt) < MOVE_WINDOW_MS;
+  const fromRoom = original.legacyRoomId || String(original.roomId);
 
+  // `to.project` / `to.mission_slug` are DESTINATION slugs typed by the caller. Nothing
+  // above validates them, and the tenant gate only proved which world the caller may act
+  // in. A refused destination drops the scope and the message lands in the agent room. It
+  // is never rejected, so a mis-typed slug can't strand the text this endpoint is moving.
+  let dest = destinationFor(world, to);
+  if (dest.project) {
+    const verdict = await projectReachable(dest.project, world);
+    if (!verdict.ok) {
+      console.warn(`[move-message] project scope DENIED: world "${world}" project "${dest.project}": ${verdict.reason}; landing in the agent room`);
+      dest = destinationFor(world, { agent: to.agent || 'corner' });
+    }
+  }
+
+  // 1. Re-file the message. Same row, new room: if this fails the user still has their
+  //    message where it was, which is recoverable.
+  try {
+    await convexMutation('messages:move', { messageId, roomId: dest.roomId });
+  } catch (err) {
+    return res.status(500).json({ error: `could not move to the new room: ${String(err.message || err).slice(0, 160)}` });
+  }
+  const mode = body.interaction_mode === 'plan' ? 'plan' : 'work';
+  try {
+    await convexMutation('messages:patchMetadata', {
+      messageId,
+      patch: {
+        interaction_mode: mode,
+        ...(dest.mission_slug ? { mission_slug: dest.mission_slug } : {}),
+        // Provenance: this message was re-homed by the user after the router guessed wrong.
+        // Keeps the routing miss auditable instead of silently disappearing.
+        moved_from: { room: fromRoom, project: original.project || null, mission_slug: original?.metadata?.mission_slug || null },
+        moved_at: new Date().toISOString(),
+      },
+    });
+  } catch { /* the move landed; provenance is best effort */ }
+
+  // 2. Bring the reply it drew along, out of the room it should never have been in.
+  //    Scoped to that exact room and that exact time slice.
+  const moved = [messageId];
   if (withinWindow) {
-    const roomFilter = original?.metadata?.mission_slug
-      ? `metadata->>mission_slug=eq.${encodeURIComponent(original.metadata.mission_slug)}`
-      : original.project
-        ? `project=eq.${encodeURIComponent(original.project)}&metadata->>mission_slug=is.null`
-        : `agent=eq.${encodeURIComponent(original.agent || '')}&project=is.null`;
-    const replies = await sb(
-      'GET',
-      `messages?client_id=eq.${encodeURIComponent(clientId)}&${roomFilter}`
-      + `&role=neq.user&timestamp=gt.${encodeURIComponent(original.timestamp)}&select=id&order=timestamp.asc&limit=20`
-    );
-    for (const r of (Array.isArray(replies.json) ? replies.json : [])) {
+    const replies = await repliesAfter(fromRoom, sentAt, messageId, true);
+    for (const r of replies) {
       // eslint-disable-next-line no-await-in-loop -- a handful of rows at most.
-      const d = await sb('DELETE', `messages?id=eq.${encodeURIComponent(r.id)}`);
-      if (d.ok) removed.push(r.id);
+      try { await convexMutation('messages:move', { messageId: r._id, roomId: dest.roomId }); moved.push(String(r._id)); } catch { /* leave it */ }
     }
   }
 
   return res.status(200).json({
     ok: true,
-    message: inserted.row || null,
-    removed_count: removed.length,
+    message: { _id: messageId, id: messageId, roomId: dest.roomId, room_id: dest.roomId, project: dest.project, mission_slug: dest.mission_slug, text },
+    removed_count: moved.length,
     swept_replies: withinWindow,
     // Everything the client needs to run the follow-up sweep for a reply that was still
     // being written when this pass ran.
     sweep_for: {
+      from_room: fromRoom,
+      to_room: dest.roomId,
+      message_id: messageId,
       project: original.project || null,
       mission_slug: original?.metadata?.mission_slug || null,
-      agent: original.agent || null,
-      after: original.timestamp,
+      agent: null,
+      after: new Date(sentAt || Date.now()).toISOString(),
     },
   });
 }

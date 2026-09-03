@@ -1,11 +1,12 @@
 // GET /api/dashboard/project-narrative?world=<client_id>&scope=all|<slug>
 //
-// R62-writer (session 21) — reads the latest LLM-composed narrative paragraph
-// from the events table (event_type='project_narrative') for a tenant + scope.
+// R62-writer (session 21): reads the latest LLM-composed narrative paragraph
+// from the events ledger (event_type='project_narrative') for a tenant + scope.
 // Composition happens in a background script (scripts/compose-project-narrative.py)
-// triggered on meaningful events by scripts/project-summary-daemon.py. The
-// dashboard subscribes to the same event stream via Supabase realtime to get
-// updates without polling.
+// triggered on meaningful events by scripts/project-summary-daemon.py.
+//
+// corner:retire-supabase (2026-09-03): the events come from the Convex events
+// table (events:find). Was the Supabase events table.
 //
 // Response shape:
 //   {
@@ -21,19 +22,9 @@
 // legacy /api/dashboard/project-paragraph endpoint.
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { convexQuery } from '../_lib/reportsStore.js';
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-_:]{0,64}$/i;
-
-async function supa(path) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-  });
-  if (!resp.ok) return [];
-  return resp.json().catch(() => []);
-}
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -56,15 +47,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const agentFilter = `agent=eq.${encodeURIComponent(scope)}`;
-    const rows = await supa(
-      `events?event_type=eq.project_narrative&${agentFilter}&order=timestamp.desc&limit=1&select=payload,timestamp`
-    );
+    // Newest first for this scope; the tenant match runs on payload.tenant_id
+    // here, so a handful of rows is read rather than exactly one.
+    const rows = await convexQuery('events:find', {
+      event_type: 'project_narrative',
+      agent: scope,
+      order: 'desc',
+      limit: 25,
+    });
 
-    // Match tenant via payload.tenant_id. The server-side JSONB filter
-    // `payload->>tenant_id=eq.<world>` would be cleaner, but Supabase REST's
-    // JSONB filter support varies; filter in JS for reliability.
-    const row = rows.find(r => (r?.payload?.tenant_id || '') === tenant);
+    const row = (Array.isArray(rows) ? rows : []).find(r => (r?.payload?.tenant_id || '') === tenant);
     if (!row) {
       return res.status(200).json({ scope, empty: true });
     }

@@ -1,37 +1,36 @@
 // /api/dashboard/project-update
 //
-// corner:right-click-menu R6 — rename + delete projects from the right-click
+// corner:right-click-menu R6: rename + archive projects from the right-click
 // menu. Display-name only rename (slug/folder stay; see VISION).
 //
-// PATCH { slug, name }
-//   → updates projects.name for the row matching slug + the JWT user's world.
-// PATCH { slug, is_active: false }  (corner:corner-ui-cv6 wd40 DEF-3)
-//   → archives the project: projects.is_active=false + archived_at=now, AND
-//     agent_status.hidden=true for the matching type='project' row (that row
-//     is what feeds the Home room list / pickers via supabase-status.js).
-//     Fully reversible: PATCH { slug, is_active: true } restores both sides
-//     (archived_at back to null, hidden back to false). Disk content is
-//     never touched — archive is a visibility flag, not a delete.
-// DELETE { slug, confirm: "DELETE" }
-//   → deletes the projects row (cascade by Supabase FK rules). Requires the
-//     literal string "DELETE" in `confirm` to prevent single-click destruction.
+// corner:retire-supabase (2026-09-03): writes go to the Convex project
+// registry (projects:update) and the project's room (rooms:setTitle,
+// rooms:archive). Was the Supabase projects and agent_status tables.
 //
-// All writes verify tenant access via verifyTenant + go through the service
-// role so RLS doesn't block. Audit `updated_by` from the JWT user.
+// PATCH { slug, name }
+//   -> updates the project's name for the row matching slug + the JWT user's
+//      world, and retitles the project's chat room to match.
+// PATCH { slug, is_active: false }  (corner:corner-ui-cv6 wd40 DEF-3)
+//   -> archives the project: isActive=false + archived=true on the registry
+//      row, AND archived=true on the project's room (that room is what feeds
+//      the Home room list / pickers). Fully reversible: PATCH { slug,
+//      is_active: true } restores both sides. Disk content is never touched;
+//      archive is a visibility flag, not a delete.
+// DELETE { slug, confirm: "DELETE" }
+//   -> retires the registry row: isActive=false, archived=true, plus the room.
+//      The registry has no hard delete; retiring hides it everywhere and keeps
+//      the sharing grants and rooms consistent. Requires the literal string
+//      "DELETE" in `confirm` to prevent single-click destruction.
+//
+// All writes verify tenant access via verifyTenant. Audit `updated_by` from
+// the JWT user.
 
-import { extractJwt, verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+import { convexQuery, convexMutation } from '../_lib/verifyTenant.js'
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-function sbHeaders(extra = {}) {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-    Prefer: 'return=representation',
-    ...extra,
-  }
+// The project's chat room key, in the same grammar every writer uses.
+function projectRoomId(world, slug) {
+  return `${world}:project:${slug}`
 }
 
 export default async function handler(req, res) {
@@ -66,44 +65,38 @@ export default async function handler(req, res) {
     }
     if (is_active !== undefined) {
       if (typeof is_active !== 'boolean') return res.status(400).json({ error: 'is_active must be a boolean' })
-      patch.is_active = is_active
-      // Real archive timestamp so "when was this archived" is answerable;
-      // cleared on unarchive so the row reads active again everywhere.
-      patch.archived_at = is_active ? null : new Date().toISOString()
+      patch.isActive = is_active
+      patch.archived = !is_active
     }
     if (!Object.keys(patch).length) return res.status(400).json({ error: 'name or is_active required' })
 
-    const url = `${SUPABASE_URL}/rest/v1/projects?slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientId)}`
-    const r = await fetch(url, {
-      method: 'PATCH',
-      headers: sbHeaders(),
-      body: JSON.stringify(patch),
-    })
-    if (!r.ok) {
-      const t = await r.text()
-      return res.status(r.status).json({ error: 'supabase: ' + t })
+    let out
+    try {
+      out = await convexMutation('projects:update', { slug, worldId: clientId, patch })
+    } catch (err) {
+      return res.status(502).json({ error: 'convex: ' + err.message })
     }
-    const rows = await r.json()
-    if (!rows?.length) return res.status(404).json({ error: 'project not found' })
+    if (!out?.ok) return res.status(404).json({ error: 'project not found' })
 
-    // Archive/unarchive must also flip the project's agent_status row —
-    // supabase-status.js builds the Home room list, live dots and pickers
-    // from agent_status (type='project'), where the visibility flag is
-    // `hidden` (migration 028). Without this the archived room keeps showing
-    // with a live dot an hour later (wd40 DEF-4). Best-effort: a project
-    // without an agent_status row is fine (fromDefs already respects is_active).
+    // The room is what the Home rail, live dots and pickers render from, so
+    // it has to move with the registry row. Best effort: a project without a
+    // room yet is fine.
+    const roomId = projectRoomId(clientId, slug)
+    if (patch.name) {
+      try { await convexMutation('rooms:setTitle', { roomId, title: patch.name }) } catch { /* no room yet */ }
+    }
     if (is_active !== undefined) {
-      try {
-        const asUrl = `${SUPABASE_URL}/rest/v1/agent_status?slug=eq.${encodeURIComponent(slug)}&type=eq.project&client_id=eq.${encodeURIComponent(clientId)}`
-        await fetch(asUrl, {
-          method: 'PATCH',
-          headers: sbHeaders({ Prefer: 'return=minimal' }),
-          body: JSON.stringify({ hidden: !is_active, updated_at: new Date().toISOString() }),
-        })
-      } catch { /* non-fatal: projects.is_active is the canonical flag */ }
+      try { await convexMutation('rooms:archive', { roomId, archived: !is_active }) } catch { /* no room yet */ }
     }
 
-    return res.status(200).json({ ok: true, project: rows[0], updated_by: updatedBy })
+    const project = await convexQuery('projects:lookupBySlug', { slug, worldId: clientId }).catch(() => null)
+    return res.status(200).json({
+      ok: true,
+      project: project
+        ? { id: project.projectId, slug: project.slug, name: project.name, client_id: project.ownerWorld, is_active: project.isActive, archived_at: project.archived ? new Date().toISOString() : null }
+        : { slug, ...patch },
+      updated_by: updatedBy,
+    })
   }
 
   if (req.method === 'DELETE') {
@@ -111,13 +104,15 @@ export default async function handler(req, res) {
     if (!slug) return res.status(400).json({ error: 'slug required' })
     if (confirm !== 'DELETE') return res.status(400).json({ error: 'confirm must equal "DELETE" (caps)' })
 
-    const url = `${SUPABASE_URL}/rest/v1/projects?slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientId)}`
-    const r = await fetch(url, { method: 'DELETE', headers: sbHeaders() })
-    if (!r.ok) {
-      const t = await r.text()
-      return res.status(r.status).json({ error: 'supabase: ' + t })
+    let out
+    try {
+      out = await convexMutation('projects:update', { slug, worldId: clientId, patch: { isActive: false, archived: true } })
+    } catch (err) {
+      return res.status(502).json({ error: 'convex: ' + err.message })
     }
-    return res.status(200).json({ ok: true, deleted: slug, deleted_by: updatedBy })
+    if (!out?.ok) return res.status(404).json({ error: 'project not found' })
+    try { await convexMutation('rooms:archive', { roomId: projectRoomId(clientId, slug), archived: true }) } catch { /* no room */ }
+    return res.status(200).json({ ok: true, deleted: slug, deleted_by: updatedBy, retired: true })
   }
 
   return res.status(405).json({ error: 'method not allowed' })

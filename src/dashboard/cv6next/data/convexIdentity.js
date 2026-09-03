@@ -1,9 +1,8 @@
-// The Convex HTTP surface is public, but its rows still need the signed-in
-// person's identity. Supabase owns the dashboard session; Convex owns the chat
-// data. This is the one bridge between them so rail reads, read receipts, and
-// sends all name the same person.
+// Who is sending / reading. The Convex session (users:viewer) owns the identity
+// now; this is the one place the chat code turns it into the send / read args so
+// rail reads, read receipts and sends all name the same person.
 
-import { supabase } from '../../lib/supabase.js';
+import { getViewer, hasSession } from '../../lib/convex.js';
 
 function clean(value) {
   const text = typeof value === 'string' ? value.trim() : '';
@@ -11,24 +10,22 @@ function clean(value) {
 }
 
 export async function convexViewerIdentity() {
-  if (!supabase?.auth?.getSession) return {};
+  if (!hasSession()) return {};
   try {
-    const result = await supabase.auth.getSession();
-    const user = result?.data?.session?.user;
-    if (!user) return {};
-    const meta = user.user_metadata || {};
+    const viewer = await getViewer();
+    if (!viewer) return {};
     return {
-      userId: clean(user.id),
-      userEmail: clean(user.email),
-      userName: clean(meta.full_name || meta.display_name || meta.name || meta.user_name),
+      userId: clean(viewer.userId != null ? String(viewer.userId) : ''),
+      userEmail: clean(viewer.email),
+      userName: clean(viewer.name),
     };
   } catch {
     return {};
   }
 }
 
-// The backend can resolve either a Convex document id or an email. The browser
-// session id is a Supabase UUID, so email is the reliable cross-plane key.
+// The backend resolves either a Convex document id or an email. Email stays the
+// reliable cross-surface key (the phone may hold a device id instead of a user id).
 export function convexReadIdentity(viewer) {
   return clean(viewer?.userEmail) || clean(viewer?.userId) || '';
 }

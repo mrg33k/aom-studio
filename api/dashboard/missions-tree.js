@@ -1,11 +1,18 @@
 // GET /api/dashboard/missions-tree?client=<worldId>
 //
-// corner:task-rooms R5 — three-tier left-rail tree.
+// corner:task-rooms R5: three-tier left-rail tree.
 //
-// Returns the live Project > Mission > Task tree for a given world. Pulls
-// from the in-repo missions registry (src/dashboard/data/missions.json,
-// already used by Drawer.jsx) plus an active-tasks query against Supabase
-// scoped by client_id + shared-project ids (mirrors the useTasks filter).
+// Returns the live Project > Mission tree for a given world. Pulls from the
+// in-repo missions registry (src/dashboard/data/missions.json, already used
+// by Drawer.jsx) plus live Convex reads scoped to the viewer's world.
+//
+// corner:retire-supabase (2026-09-03). The four Supabase reads this made
+// (project_access, projects, messages, agent_status, events) are now:
+//   projects:list     own + shared + archived projects for the world
+//   rooms:listRooms   every room the viewer can see, with its newest message,
+//                     which gives project and mission recency AND the
+//                     drawer-created missions (they are mission rooms)
+//   events:find       mission_created events for CLI-scaffolded missions
 //
 // Response shape:
 //   {
@@ -19,21 +26,17 @@
 //       }
 //     ]
 //   }
-//
-// A task is filed under a mission when:
-//   - metadata.mission_slug matches the mission's <project>:<slug>, OR
-//   - text references `--mission <project>:<slug>` (legacy briefs)
-// Otherwise it lands in unfiled_tasks under the project.
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+import { convexQuery } from '../_lib/reportsStore.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
 const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
 
 // Realtime contract (2026-07-02): prefer the LIVE registry snapshot that the Mac's
 // launchd job (com.aom-ea.missions-registry, 60s interval) writes to
-// corner/users/aom/missions/master-loop/deliverables/missions-registry-live.json — mission renames and status changes reach
-// the tree within ~a minute instead of waiting for a deploy. The deploy-baked import
+// corner/users/aom/missions/master-loop/deliverables/missions-registry-live.json. Mission renames and status changes reach
+// the tree within about a minute instead of waiting for a deploy. The deploy-baked import
 // above stays as the fallback (tunnel down, local dev). Cached for 30s per warm
 // lambda so tree renders don't pay a tunnel round-trip each time. The ghost guard
 // below also benefits: generated_at now advances every minute, so renamed missions
@@ -63,21 +66,7 @@ async function loadRegistry(force) {
   return _registryCache
 }
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
-
-function supabaseHeaders() {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-  }
-}
-
-// Active task statuses: anything not done|failed|dismissed.
-const ACTIVE_STATUSES = ['queued', 'running', 'waiting', 'blocked', 'needs_input']
-
-// corner:left-menu R5 — sort missions by recent activity (newest
+// corner:left-menu R5: sort missions by recent activity (newest
 // last_message_at first), matching the project-level recency sort. Among
 // missions with no recent activity, keep active ahead of done, then alpha.
 function byMissionRecency(a, b) {
@@ -88,6 +77,21 @@ function byMissionRecency(a, b) {
   return (a?.name || '').localeCompare(b?.name || '')
 }
 
+function slugify(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
+// The short mission slug of a mission room. The title is the suffix-free fact
+// (rooms.ts); the room key's leaf is the fallback for a room with no title.
+function missionLeafOf(room) {
+  const fromTitle = slugify(room.title)
+  if (fromTitle) return fromTitle
+  const parts = String(room.legacyRoomId || '').split(':')
+  return parts[1] === 'mission' ? slugify(parts.slice(3).join(':') || parts[2] || '') : ''
+}
+
+const isoOf = (ms) => (Number.isFinite(Number(ms)) && Number(ms) > 0 ? new Date(Number(ms)).toISOString() : null)
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
@@ -96,13 +100,11 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'GET') return res.status(405).json({ error: 'method not allowed' })
-  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' })
 
-  // corner:identity-attribution 2026-07-27 — this used to check only that SOME
+  // corner:identity-attribution 2026-07-27: this used to check only that SOME
   // valid JWT was present and then take the world straight off ?client=, so any
   // signed-in user of any world could enumerate another world's whole project +
-  // mission tree. verifyTenant is the gate that was already imported here but
-  // never called.
+  // mission tree. verifyTenant is the gate.
   const _clientRaw = req.query.client && String(req.query.client).trim()
   if (!_clientRaw) return res.status(401).json({ error: 'Missing client' })
   let clientId
@@ -114,199 +116,118 @@ export default async function handler(req, res) {
   }
 
   // Live-first mission registry (see loadRegistry above). bust=1 skips the 30s
-  // cache — the dashboard sends it on the refetch right after a rename/move so
+  // cache. The dashboard sends it on the refetch right after a rename/move so
   // the change is visible immediately instead of a cache-window later.
   const { registry: liveRegistry, lookup: liveSlugLookup } = await loadRegistry(!!req.query.bust)
 
-  // Load shared project slugs so the tree mirrors the user's task panel.
+  // The world's own projects plus the ones shared into it, archived included so
+  // the archived set below can be built from the same read.
+  let ownProjects = []
   let sharedSlugs = []
-  try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/project_access?select=projects(slug,is_active)&client_id=eq.${encodeURIComponent(clientId)}`,
-      { headers: supabaseHeaders() },
-    )
-    if (r.ok) {
-      const rows = await r.json()
-      sharedSlugs = (rows || [])
-        .map(x => x?.projects?.is_active && x?.projects?.slug)
-        .filter(Boolean)
-    }
-  } catch { /* keep sharedSlugs empty on failure */ }
-
-  // corner:corner-ui-cv6 wd40 DEF-4: archived projects (is_active=false) must
-  // vanish from the tree too. Shared projects are already gated above, but the
-  // own-world path seeds every registry/dynamic/event project unfiltered —
-  // an archived project with a disk home (or lingering agent_status/event
-  // rows) would keep rendering. Collected here, excluded after the merge.
   let archivedProjectSlugs = new Set()
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/projects?is_active=eq.false&select=slug`,
-      { headers: supabaseHeaders() },
-    )
-    if (r.ok) {
-      const rows = await r.json()
-      archivedProjectSlugs = new Set((rows || []).map(x => x?.slug).filter(Boolean))
+    const rows = await convexQuery('projects:list', { worldId: clientId, includeShared: true, includeArchived: true })
+    for (const p of (Array.isArray(rows) ? rows : [])) {
+      if (!p?.slug) continue
+      const archived = p.archived === true || p.isActive === false
+      // corner:corner-ui-cv6 wd40 DEF-4: archived projects must vanish from the
+      // tree too. Collected here, excluded after the merge.
+      if (archived) { archivedProjectSlugs.add(p.slug); continue }
+      if (p.sharedRole) sharedSlugs.push(p.slug)
+      else ownProjects.push(p)
     }
-  } catch { /* on failure archived rooms over-show; safer than hiding live ones */ }
+  } catch { /* keep the lists empty on failure; registry missions still render */ }
 
-  // The message namespaces this viewer may draw recency from: their own world
-  // plus the shared rooms they hold a project_access grant into. A shared room
-  // is ONE room whose rows carry client_id='shared:<slug>' — it belongs to
-  // neither world's namespace, which is why it has to be listed explicitly.
-  //
-  // 2026-07-27: removed `if (clientId === 'aom') clientIds.push('ben')`. Ben has
-  // his OWN world; it reaches an AOM viewer through an explicit project_access
-  // grant (already collected in sharedSlugs above) or not at all. The hardcode
-  // contradicted the world model and it is the same one-liner that still exists
-  // at src/dashboard/hooks/useTasks.js:141.
-  const clientIds = [clientId, ...sharedSlugs.map(s => `shared:${s}`)]
+  // AOM is the super-admin and seeds every registry project; an archived
+  // project in any world stays hidden for it too (that was the old global read).
+  if (clientId === 'aom') {
+    try {
+      const all = await convexQuery('projects:list', { includeArchived: true })
+      for (const p of (Array.isArray(all) ? all : [])) {
+        if (p?.slug && (p.archived === true || p.isActive === false)) archivedProjectSlugs.add(p.slug)
+      }
+    } catch { /* on failure archived rooms over-show; safer than hiding live ones */ }
+  }
 
-  // R3-isolation — build the set of project slugs this client owns so the
-  // registry loop below can skip missions from other worlds. AOM is the
-  // super-admin and sees everything (allowedProjectSlugs stays null).
+  // R3-isolation: the set of project slugs this client owns so the registry
+  // loop below can skip missions from other worlds. AOM is the super-admin and
+  // sees everything (allowedProjectSlugs stays null).
   let allowedProjectSlugs = null
   if (clientId !== 'aom') {
     const ownSlugs = new Set(sharedSlugs)
-    try {
-      const r = await fetch(
-        `${SUPABASE_URL}/rest/v1/projects?client_id=eq.${encodeURIComponent(clientId)}&select=slug`,
-        { headers: supabaseHeaders() },
-      )
-      if (r.ok) {
-        const rows = await r.json()
-        for (const row of (rows || [])) {
-          if (row?.slug) ownSlugs.add(row.slug)
-        }
-      }
-    } catch { /* on failure: allowedProjectSlugs stays null → over-show is safer than hard error */ }
+    for (const p of ownProjects) ownSlugs.add(p.slug)
     allowedProjectSlugs = ownSlugs
   }
 
-  // corner:mission-rooms — tasks retired 2026-05-17 (Patrik). The mission
+  // corner:mission-rooms: tasks retired 2026-05-17 (Patrik). The mission
   // registry + per-mission last_message_at is the only signal now. No more
   // task query, no more "1 in flight" labels, no more unfiled_tasks.
   const tasks = []
 
-  // Fetch the newest message per PROJECT and per MISSION so the drawer can
-  // sort both lists by real recent activity (and light the "active" dot).
-  //
-  // Two design points that matter:
-  //
-  //  1. NO mission_slug filter. Project-level chat (messages with no
-  //     mission_slug) MUST count toward a project's recency — otherwise a
-  //     project the user actively chats in, but not inside a specific
-  //     mission, never floats up. (This was the "I was in Holistic an hour
-  //     ago but it's buried" bug: her recent messages were project-level,
-  //     so the mission-only query missed them and the project sank.) Every
-  //     message carries a `project` field, including mission-tagged ones, so
-  //     one unfiltered query feeds both maps — project recency is the max
-  //     across all of a project's messages, mission recency is per slug.
-  //
-  //  2. `timestamp`, not `created_at`. The messages table's column is
-  //     `timestamp`; querying created_at 400s, the r.ok guard swallows it,
-  //     and every recency value ends up null — silently defeating the sort.
-  //
-  // 60-day window (was 14d — longer so recency reflects more than two weeks)
-  // and a 2000-row cap so quieter projects/missions aren't starved out of
-  // the newest rows by a noisy world.
+  // Newest activity per PROJECT and per MISSION so the drawer can sort both
+  // lists by real recent activity (and light the "active" dot). Every room
+  // carries its newest message, so one rooms read feeds both maps: project
+  // recency is the max across all of a project's rooms (project chat AND its
+  // missions), mission recency is per mission room. Drawer-created missions
+  // are mission rooms too, so the same read is the dynamic-missions source.
   const missionLastSeenAt = new Map()
   const projectLastSeenAt = new Map()
+  const dynamicMissions = []
   try {
-    const sinceIso = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString()
-    // Scope the recency scan to namespaces this viewer is entitled to (own world
-    // + granted shared rooms). It used to read the newest 2000 rows across EVERY
-    // world, which both leaked "which rooms are hot" and let a noisy world starve
-    // a quiet one out of the window. Legacy rows with a null client_id predate
-    // multi-tenancy and stay included so nothing that renders today disappears.
-    const inList = clientIds.map(c => `"${String(c).replace(/"/g, '')}"`).join(',')
-    const recencyScope = `&or=(client_id.in.(${inList}),client_id.is.null)`
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?select=timestamp,project,metadata&timestamp=gte.${encodeURIComponent(sinceIso)}${recencyScope}&order=timestamp.desc&limit=2000`,
-      { headers: supabaseHeaders() },
-    )
-    if (r.ok) {
-      const rows = await r.json()
-      for (const row of (rows || [])) {
-        const at = row?.timestamp
-        if (!at) continue
-        // Project-level recency (first hit per project wins — rows are desc).
-        const proj = row?.project
-        if (proj && !projectLastSeenAt.has(proj)) projectLastSeenAt.set(proj, at)
-        // Mission-level recency (only mission-tagged rows).
-        const rawSlug = row?.metadata?.mission_slug
-        if (rawSlug) {
-          // Canonicalize within the row's own project (Bug 1) so a bare mission
-          // slug lights recency under its true parent, not a foreign project.
-          const slug = canonicalizeMissionSlug(rawSlug, liveSlugLookup, row?.project)
-          if (!missionLastSeenAt.has(slug)) missionLastSeenAt.set(slug, at)
+    const rooms = await convexQuery('rooms:listRooms', { worldId: clientId, filter: 'all' })
+    for (const room of (Array.isArray(rooms) ? rooms : [])) {
+      if (!room || room.archived) continue
+      const proj = room.project ? String(room.project) : null
+      const at = isoOf(room.lastMessage?.createdAt)
+      if (proj && at) {
+        const prev = projectLastSeenAt.get(proj)
+        if (!prev || at > prev) projectLastSeenAt.set(proj, at)
+      }
+      if (room.kind !== 'mission' || !proj) continue
+      const short = missionLeafOf(room)
+      if (!short) continue
+      const fullSlug = `${proj}:${short}`
+      if (at) {
+        // Canonicalize within the room's own project so a bare mission slug
+        // lights recency under its true parent, not a foreign project.
+        for (const key of new Set([canonicalizeMissionSlug(short, liveSlugLookup, proj), fullSlug, short])) {
+          const prev = missionLastSeenAt.get(key)
+          if (!prev || at > prev) missionLastSeenAt.set(key, at)
         }
       }
+      dynamicMissions.push({ projectSlug: proj, missionSlug: short, name: room.title || short, fullSlug })
     }
   } catch { /* dot just won't light; missions still render */ }
 
-  // R78-p9c: fetch dynamically-created missions from agent_status (type='mission').
-  // These are missions created via the drawer that aren't yet in the on-disk
-  // registry (build-missions-registry.cjs runs at build time, not on demand).
-  // Slug format: "<projectSlug>:<missionSlug>", e.g. "corner:imagegen-composer".
-  const dynamicMissions = []
-  try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/agent_status?type=eq.mission&client_id=eq.${encodeURIComponent(clientId)}&select=slug,name,color`,
-      { headers: supabaseHeaders() },
-    )
-    if (r.ok) {
-      const rows = await r.json()
-      for (const row of (rows || [])) {
-        if (!row?.slug || !row.slug.includes(':')) continue
-        const colonIdx = row.slug.indexOf(':')
-        const projectSlug = row.slug.slice(0, colonIdx)
-        const missionSlug = row.slug.slice(colonIdx + 1)
-        dynamicMissions.push({ projectSlug, missionSlug, name: row.name || missionSlug, fullSlug: row.slug })
-      }
-    }
-  } catch { /* swallow — registry missions still render */ }
-
-  // corner:mission-panel — fetch CLI-scaffolded missions from the events store.
-  // missions-tree previously saw missions from only two sources: the static
-  // registry (built at deploy time by build-missions-registry.cjs) and
-  // agent_status (drawer-created). Missions scaffolded via scripts/new-mission.py
-  // write `mission_created` events to the `events` table — a third source the
-  // tree never read, so a CLI-created mission (e.g. corner:billing-june-15)
-  // never appeared until the next build+deploy. This query closes that gap so
-  // new missions show LIVE. Payload mirrors missions-created.js:
+  // corner:mission-panel: CLI-scaffolded missions from the events ledger.
+  // Missions scaffolded via scripts/new-mission.py write `mission_created`
+  // events; without this source a CLI-created mission never appeared until the
+  // next build+deploy. Payload mirrors missions-created.js:
   //   { project, mission|mission_slug, description, file_count }; agent="<project>:<mission>".
   // NOT client-scoped (mission events carry no reliable client_id), so tenant
   // isolation is enforced at merge time via allowedProjectSlugs below.
   const eventMissions = []
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/events?event_type=eq.mission_created&select=agent,payload,timestamp&order=timestamp.desc&limit=500`,
-      { headers: supabaseHeaders() },
-    )
-    if (r.ok) {
-      const rows = await r.json()
-      for (const row of (rows || [])) {
-        const p = row?.payload || {}
-        const projectSlug = (p.project || '').toString()
-        const missionSlug = (p.mission || p.mission_slug || '').toString()
-        if (!projectSlug || !missionSlug) continue
-        eventMissions.push({
-          projectSlug,
-          missionSlug,
-          name: deriveDisplayName(missionSlug),
-          last_updated: row.timestamp || null,
-        })
-      }
+    const rows = await convexQuery('events:find', { event_type: 'mission_created', order: 'desc', limit: 500 })
+    for (const row of (Array.isArray(rows) ? rows : [])) {
+      const p = row?.payload || {}
+      const projectSlug = (p.project || '').toString()
+      const missionSlug = (p.mission || p.mission_slug || '').toString()
+      if (!projectSlug || !missionSlug) continue
+      eventMissions.push({
+        projectSlug,
+        missionSlug,
+        name: deriveDisplayName(missionSlug),
+        last_updated: row.timestamp || null,
+      })
     }
-  } catch { /* swallow — registry + agent_status missions still render */ }
+  } catch { /* swallow; registry + room missions still render */ }
 
   // mission-rooms reframe: the mission is the unit of work, not the task.
   // Seed every project + mission from the on-disk registry (built at
   // build time by scripts/build-missions-registry.cjs from corner/missions
-  // and corner/users/<u>/projects/<p>/missions). Then enrich each mission
-  // with any active tasks queued against it. Missions without active tasks
-  // still surface — their status comes from the mission's CONTEXT.md.
+  // and corner/users/<u>/projects/<p>/missions). Missions without active
+  // tasks still surface; their status comes from the mission's CONTEXT.md.
   const projectMap = new Map()
   function getProject(slug, name) {
     if (!projectMap.has(slug)) {
@@ -326,38 +247,44 @@ export default async function handler(req, res) {
       parent_raw_slug: m.parent_raw_slug || null,
       depth: typeof m.depth === 'number' ? m.depth : 0,
       name: m.name || m.raw_slug || m.slug,
-      // R-MP-3 — workstream grouping (legacy). Null means top-level / Other bucket.
+      // R-MP-3: workstream grouping (legacy). Null means top-level / Other bucket.
       workstream: m.workstream || null,
       status: m.status || null,
       is_done: !!m.is_done,
       last_updated: m.last_updated || null,
-      last_message_at: missionLastSeenAt.get(m.slug) || null,
+      last_message_at: missionLastSeenAt.get(m.slug) || missionLastSeenAt.get(m.raw_slug) || null,
       path: m.path || null,
       tasks: [],
     })
   }
 
+  // Registered projects with no registry missions still need a node so the
+  // rail can show the project itself.
+  for (const p of ownProjects) getProject(p.slug, p.name)
+
   // Registry missions key by full slug ("<project>:<slug>") while dynamic
-  // sources key by the short slug — so a .has() check alone misses the case
+  // sources key by the short slug, so a .has() check alone misses the case
   // where the same mission exists in both (e.g. a drawer-created mission that
-  // landed in the registry on a later deploy, while its agent_status row
-  // lives on forever). Also compare against registry raw_slugs to dedupe.
+  // landed in the registry on a later deploy, while its room lives on).
+  // Also compare against registry raw_slugs to dedupe.
   function projectHasMission(proj, shortSlug, fullSlug) {
     if (proj.missions.has(shortSlug) || proj.missions.has(fullSlug)) return true
     for (const x of proj.missions.values()) {
       if (x.raw_slug && x.raw_slug === shortSlug) return true
-      // corner:corner-ui-cv6 restructure (2026-06-25) — a mission moved into a
+      // corner:corner-ui-cv6 restructure (2026-06-25): a mission moved into a
       // nested home gets a compound raw_slug (corner-ui-cv6-chat-composer) while
-      // its original mission_created event / agent_status row still keys by the
-      // leaf folder name ("composer"). Without this the event re-adds the mission
-      // as a FLAT root, duplicating the nested registry copy. Dedupe by folder.
+      // its original mission_created event / room still keys by the leaf folder
+      // name ("composer"). Without this the event re-adds the mission as a FLAT
+      // root, duplicating the nested registry copy. Dedupe by folder.
       if (x.folder_name && x.folder_name === shortSlug) return true
+      if (x.name && slugify(x.name) === shortSlug) return true
     }
     return false
   }
 
-  // Add dynamic missions (drawer-created) if not already in the registry.
+  // Add dynamic missions (mission rooms) if not already in the registry.
   for (const dm of dynamicMissions) {
+    if (allowedProjectSlugs !== null && !allowedProjectSlugs.has(dm.projectSlug)) continue
     const proj = getProject(dm.projectSlug)
     if (!projectHasMission(proj, dm.missionSlug, dm.fullSlug)) {
       proj.missions.set(dm.missionSlug, {
@@ -372,7 +299,7 @@ export default async function handler(req, res) {
   }
 
   // Add events-store missions (CLI-scaffolded via new-mission.py) if not
-  // already present from the registry or agent_status. Tenant isolation is
+  // already present from the registry or the rooms. Tenant isolation is
   // enforced HERE because the events query above is not client-scoped.
   //
   // Ghost guard (2026-06-26): a mission_created event lives forever, but a
@@ -381,10 +308,10 @@ export default async function handler(req, res) {
   // then has no registry match and re-surfaces as a FLAT root, polluting the tree.
   // The registry build timestamp (generated_at) is the cutoff: if the build saw
   // the disk AFTER this event fired and still did not include the mission, the
-  // mission was deliberately removed/renamed — drop the ghost. An event NEWER than
-  // the last build is a genuinely-new mission not yet baked in — keep it (the
-  // original reason this merge exists). Null/unparseable timestamps fall through
-  // to the old keep-it behaviour so a missing date never hides a real mission.
+  // mission was deliberately removed/renamed, so drop the ghost. An event NEWER
+  // than the last build is a genuinely-new mission not yet baked in; keep it
+  // (the original reason this merge exists). Null/unparseable timestamps fall
+  // through to the old keep-it behaviour so a missing date never hides a real mission.
   const registryBuiltAt = Date.parse(liveRegistry?.generated_at || '') || 0
   for (const em of eventMissions) {
     if (allowedProjectSlugs !== null && !allowedProjectSlugs.has(em.projectSlug)) continue
@@ -427,9 +354,6 @@ export default async function handler(req, res) {
     }
     if (missionSlug) {
       if (!proj.missions.has(missionSlug)) {
-        // Mission tagged on a task but not in the registry (legacy slug or
-        // freshly-scaffolded since the last build). Surface it anyway so
-        // the user can follow up.
         const display = missionSlug.startsWith(projectSlug + ':')
           ? missionSlug.slice(projectSlug.length + 1)
           : missionSlug
@@ -449,8 +373,8 @@ export default async function handler(req, res) {
   }
 
   // wd40 DEF-4: strip archived projects after every merge source has run
-  // (registry, agent_status, mission_created events, tasks) so none of them
-  // can resurrect an archived room.
+  // (registry, rooms, mission_created events) so none of them can resurrect
+  // an archived room.
   for (const slug of archivedProjectSlugs) projectMap.delete(slug)
 
   const projects = []
@@ -459,7 +383,7 @@ export default async function handler(req, res) {
     for (const m of proj.missions.values()) missions.push(m)
     missions.sort(byMissionRecency)
 
-    // R-MP-3 — group by workstream. Missions with workstream:null fall
+    // R-MP-3: group by workstream. Missions with workstream:null fall
     // into the "Other" bucket. Workstream order: alphabetical by name,
     // with "Other" last so explicit workstreams render at the top.
     const workstreamMap = new Map()
@@ -482,21 +406,16 @@ export default async function handler(req, res) {
       return (a.name || '').localeCompare(b.name || '')
     })
 
-    // R-MP-2 — nested tree. Build a parent → children mapping using
+    // R-MP-2: nested tree. Build a parent -> children mapping using
     // raw_slug + parent_raw_slug from the registry. Missions whose
     // parent_raw_slug is null become tree roots. Children attach to
-    // their parents recursively. Sort siblings by is_done then name.
+    // their parents recursively. Sort siblings by recency.
     const childrenByParent = new Map()
     const knownRawSlugs = new Set(missions.map(m => m.raw_slug).filter(Boolean))
     for (const m of missions) {
-      // corner:left-menu — non-registry missions (drawer-created via
-      // agent_status, CLI-scaffolded via mission_created events, or derived
-      // from a tagged task) carry no raw_slug. They used to be skipped here,
-      // which dropped them from `tree` entirely — and since Drawer.jsx
-      // prefers `tree` over the flat list whenever the tree is non-empty,
-      // any NEW mission added to a project that already had registry
-      // missions was invisible until the next deploy rebuilt the registry.
-      // Treat their slug as the raw key so they render as tree roots.
+      // corner:left-menu: non-registry missions (room-created or CLI-scaffolded)
+      // carry no raw_slug. They used to be skipped here, which dropped them from
+      // `tree` entirely. Treat their slug as the raw key so they render as roots.
       const parentKey = (m.parent_raw_slug && knownRawSlugs.has(m.parent_raw_slug))
         ? m.parent_raw_slug
         : null
@@ -511,8 +430,7 @@ export default async function handler(req, res) {
     const tree = buildSubtree(null)
 
     // Project-level recency = newest message anywhere in the project
-    // (project chat OR any mission). Falls back to the max mission timestamp
-    // if the project field wasn't on the rows for some reason.
+    // (project chat OR any mission). Falls back to the max mission timestamp.
     let projectLastMessageAt = projectLastSeenAt.get(proj.slug) || null
     for (const m of missions) {
       if (m.last_message_at && (!projectLastMessageAt || m.last_message_at > projectLastMessageAt)) {
@@ -523,7 +441,7 @@ export default async function handler(req, res) {
     projects.push({
       slug: proj.slug,
       name: proj.name,
-      // Newest activity anywhere in the project — drives the project-list
+      // Newest activity anywhere in the project. Drives the project-list
       // recency sort in Drawer.jsx. Includes project-level chat, not just
       // mission-tagged messages.
       last_message_at: projectLastMessageAt,

@@ -1,89 +1,113 @@
-// POST /api/dashboard/foreman-pause — write /tmp/foreman-pause signal (pause)
-// DELETE /api/dashboard/foreman-pause — delete signal + re-queue foreman (resume)
+// POST /api/dashboard/foreman-pause    write /tmp/foreman-pause signal (pause)
+// DELETE /api/dashboard/foreman-pause  delete signal + re-queue foreman (resume)
 //
 // Body: { taskId: string, missionSlug: string }
 // Foreman checks Path("/tmp/foreman-pause") after each round and exits cleanly if present.
 //
-// AUTH + INPUT (r7:open-agent-surface, 2026-07-27). This endpoint was
-// unauthenticated with `Access-Control-Allow-Origin: *` and it was the worst
-// door in the open surface, for two independent reasons:
+// AUTH + INPUT (r7:open-agent-surface, 2026-07-27). This endpoint used to be
+// unauthenticated and was the worst door in the open surface:
 //
-//   1. TASK INJECTION -> AGENT EXECUTION. The DELETE branch INSERTS a
-//      `status:'queued'` tasks row whose `text` was built by interpolating the
+//   1. TASK INJECTION -> AGENT EXECUTION. The DELETE branch inserts a
+//      `status:'queued'` task whose `text` was built by interpolating the
 //      caller's `missionSlug` straight into a command string. task-runner.sh
-//      claims queued rows and write_brief() drops that `text` verbatim into the
-//      brief a live Claude Code worker then executes (scripts/task-runner.sh
-//      line 646). So an unauthenticated POST could put arbitrary instructions
-//      in front of an agent holding this repo's credentials. `taskId` was the
-//      only required field and a random UUID satisfied it — the row did not
-//      even have to exist, because every field falls back to a default.
+//      claims queued rows and a live Claude Code worker then executes them.
 //   2. A FILESYSTEM WRITE + a DoS. POST wrote /tmp/foreman-pause, which halts
-//      every foreman loop on the box; anyone could freeze all autonomous work.
+//      every foreman loop on the box.
 //
-// Both are now gated on the TASK'S OWN client_id — resolved from the row first,
-// then verifyTenant against it, exactly the shape retry-task.js uses for the
-// same "re-queue a brief a worker will execute" hazard. And missionSlug is
-// validated against the mission-path grammar so it can no longer smuggle
-// anything into the command string even from inside the world.
+// Both are gated on the TASK'S OWN client_id: the row is resolved first, then
+// verifyTenant runs against it. missionSlug is validated against the
+// mission-path grammar so it cannot smuggle anything into the command string.
+//
+// corner:retire-supabase (2026-09-03): the task row is read with tasks:get,
+// patched with tasks:update and re-queued with tasks:queue on Convex.
 
 import { promises as fs } from 'fs'
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
-import { applyCors, sendAuthError } from '../_lib/originAllowlist.js'
+import { applyCors } from '../_lib/originAllowlist.js'
+
+// ---------------------------------------------------------------------------
+// Convex is the only backend (corner:retire-supabase, 2026-09-03). The signed
+// in person's Convex Auth token arrives as Authorization: Bearer and the
+// deployment checks it in users:verifyToken. This block is repeated in each
+// route on purpose until a shared helper lands in api/_lib.
+// ---------------------------------------------------------------------------
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || undefined
+
+async function convexCall(kind, path, args, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+  const r = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  })
+  if (!r.ok) throw new Error(`convex ${kind} ${path}: HTTP ${r.status}`)
+  const data = await r.json()
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex ${kind} ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`)
+  }
+  return data.value
+}
+const convexQuery = (path, args, token) => convexCall('query', path, args, token)
+const convexMutation = (path, args, token) => convexCall('mutation', path, args, token)
+
+class AuthError extends Error {
+  constructor(message, status = 403) { super(message); this.name = 'AuthError'; this.status = status }
+}
+
+function bearerToken(req) {
+  const auth = req.headers?.authorization || req.headers?.Authorization
+  if (typeof auth === 'string' && /^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, '').trim() || null
+  return null
+}
+
+// Who is calling. Throws 401 when the request carries no valid session.
+async function requireCaller(req) {
+  const token = bearerToken(req)
+  if (!token) throw new AuthError('sign-in required', 401)
+  let who = null
+  try { who = await convexQuery('users:verifyToken', {}, token) } catch { who = null }
+  if (!who || !who.userId) throw new AuthError('invalid session', 401)
+  const world = who.world ? String(who.world).toLowerCase() : null
+  let superAdmin = false
+  try { superAdmin = !!(await convexQuery('worlds:isAdmin', { worldId: 'aom' }, token)) } catch { superAdmin = false }
+  return { userId: who.userId, email: who.email || null, userName: who.name || null, world, worldId: who.worldId || null, isAdmin: !!who.isAdmin, superAdmin, token }
+}
+
+// May the caller act inside `tenant`? A world slug admits an aom admin
+// (Patrik) everywhere and any member of that world. "shared:<project>" admits
+// a world that holds the project or a grant on it.
+async function verifyTenant(tenant, req) {
+  const t = String(tenant || '').trim().toLowerCase()
+  if (!t) throw new AuthError('tenant required', 400)
+  const who = await requireCaller(req)
+  if (who.superAdmin) return { ok: true, tenant: t, ...who, isAdmin: true }
+  if (t.startsWith('shared:')) {
+    const slug = t.slice('shared:'.length)
+    const access = who.world ? await convexQuery('projects:hasAccess', { slug, worldId: who.world }, who.token).catch(() => null) : null
+    if (access && access.ok) return { ok: true, tenant: t, ...who, isAdmin: false }
+  } else {
+    const m = await convexQuery('worlds:membership', { worldId: t }, who.token).catch(() => null)
+    if (m && m.role) return { ok: true, tenant: t, ...who, isAdmin: m.role === 'owner' || m.role === 'admin' }
+    if (who.world === t) return { ok: true, tenant: t, ...who }
+  }
+  throw new AuthError(`forbidden: caller world "${who.world || '(none)'}" cannot access "${t}"`, 403)
+}
+
+function sendAuthError(res, err) {
+  return res.status(err?.status || 403).json({ error: err?.message || 'forbidden' })
+}
 
 const SIGNAL_PATH = '/tmp/foreman-pause'
 
 // Mission paths are colon-joined lowercase slugs (`corner:launch-readiness`).
-// Anything else — whitespace, quotes, `;`, `&&`, `$(`, newlines, a leading dash
-// that would read as a flag — is refused before it can reach a command string.
+// Anything else (whitespace, quotes, `;`, `&&`, `$(`, newlines, a leading dash
+// that would read as a flag) is refused before it can reach a command string.
 const MISSION_SLUG_RE = /^[a-z0-9][a-z0-9-]*(:[a-z0-9][a-z0-9-]*)*$/
 
 function validMissionSlug(value) {
   const s = String(value || '').trim()
   return s.length > 0 && s.length <= 120 && MISSION_SLUG_RE.test(s)
-}
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-async function sbPost(path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method: 'POST',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
-    body: JSON.stringify(body),
-  })
-  const text = await res.text()
-  if (!res.ok) throw new Error(`Supabase POST ${path} → ${res.status}: ${text.slice(0, 300)}`)
-  try { return JSON.parse(text) } catch { return null }
-}
-
-async function sbPatch(path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method: 'PATCH',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Supabase PATCH ${path} → ${res.status}: ${text.slice(0, 300)}`)
-  }
-}
-
-async function sbGet(path) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-  })
-  const text = await res.text()
-  if (!res.ok) throw new Error(`Supabase GET ${path} → ${res.status}: ${text.slice(0, 300)}`)
-  try { return JSON.parse(text) } catch { return null }
 }
 
 export default async function handler(req, res) {
@@ -94,10 +118,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'POST or DELETE only' })
   }
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' })
-  }
-
   const body = req.body || {}
   const { taskId, missionSlug } = body
 
@@ -105,17 +125,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'valid taskId required' })
   }
 
-  // ── Gate on the task's OWN world ────────────────────────────────────────
-  // Resolve the row before deciding anything, so the tenant compared against is
-  // the one that owns the work rather than one the caller named. A taskId that
-  // matches no row is refused outright: the old code happily invented a whole
-  // task from defaults for an unknown UUID, and that was the injection vector.
+  // Gate on the task's OWN world. Resolve the row before deciding anything, so
+  // the tenant compared against is the one that owns the work rather than one
+  // the caller named. A taskId that matches no row is refused outright.
   let original = null
   try {
-    const rows = await sbGet(
-      `tasks?id=eq.${encodeURIComponent(taskId)}&select=title,text,description,project,project_path,client_id,source,metadata&limit=1`,
-    )
-    original = Array.isArray(rows) ? rows[0] : null
+    original = await convexQuery('tasks:get', { id: taskId })
   } catch (err) {
     return res.status(502).json({ error: `task lookup failed: ${err.message}` })
   }
@@ -123,22 +138,19 @@ export default async function handler(req, res) {
 
   const taskWorld = String(original.client_id || '').trim().toLowerCase()
   if (!taskWorld) {
-    // A task with no tenancy cannot be authorized against anything. Refuse
-    // rather than fall back to a default world — a default is what let this
-    // endpoint act as though every task belonged to the same tenant.
     return res.status(409).json({ error: 'task has no client_id; cannot authorize' })
   }
 
+  let verified
   try {
-    await verifyTenant(taskWorld, req)
+    verified = await verifyTenant(taskWorld, req)
   } catch (err) {
-    if (err instanceof TenantAuthError) return sendAuthError(res, err)
+    if (err instanceof AuthError) return sendAuthError(res, err)
     return res.status(500).json({ error: err?.message || 'auth check failed' })
   }
 
-  // Input validation runs AFTER the gate: an unauthenticated prober should get
-  // a flat 401 rather than a validation message that tells them the field name,
-  // the grammar, and that they were close.
+  // Input validation runs AFTER the gate: an unauthenticated prober gets a
+  // flat 401 rather than a validation message.
   if (missionSlug !== undefined && missionSlug !== null && missionSlug !== '' && !validMissionSlug(missionSlug)) {
     return res.status(400).json({ error: 'invalid missionSlug' })
   }
@@ -148,18 +160,18 @@ export default async function handler(req, res) {
       // Pause: write signal file + mark task metadata
       await fs.writeFile(SIGNAL_PATH, `paused by dashboard ${new Date().toISOString()}\n`)
 
-      // Update task metadata to record pause intent
-      await sbPatch(`tasks?id=eq.${encodeURIComponent(taskId)}`, {
-        metadata: { foreman_pausing: true, mission: missionSlug || null },
-      }).catch(() => { /* non-fatal — metadata patch is advisory */ })
+      // Record pause intent on the task (metadata is merged server-side).
+      await convexMutation('tasks:update', {
+        key: CONVEX_KEY,
+        id: taskId,
+        patch: { metadata: { foreman_pausing: true, mission: missionSlug || null } },
+      }, verified.token).catch(() => { /* non-fatal: advisory */ })
 
       return res.status(200).json({ ok: true, action: 'paused', signal: SIGNAL_PATH })
     }
 
     if (req.method === 'DELETE') {
       // Resume: delete signal file + re-queue the foreman task.
-      // `original` was already fetched (and authorized) above — re-fetching it
-      // here is what let the unauthorized path build a task out of defaults.
       await fs.unlink(SIGNAL_PATH).catch(() => { /* ok if already gone */ })
 
       const prevMeta = (original?.metadata && typeof original.metadata === 'object') ? original.metadata : {}
@@ -168,32 +180,26 @@ export default async function handler(req, res) {
       if (!mission) {
         return res.status(400).json({ error: 'missionSlug required to restart foreman' })
       }
-      // The stored metadata.mission is re-validated too. It is not caller input
-      // on THIS request, but it was caller input on some earlier one, and a
-      // value that reaches a command string has to clear the grammar every time
-      // rather than only on the hop that happened to introduce it.
+      // The stored metadata.mission is re-validated too: a value that reaches
+      // a command string has to clear the grammar every time.
       if (!validMissionSlug(mission)) {
         return res.status(400).json({ error: 'invalid mission slug on task' })
       }
 
-      const { randomUUID } = await import('crypto')
       const now = new Date().toISOString()
-
       const newTask = {
-        id: randomUUID(),
         title: original?.title || `Foreman: drive ${mission}`,
         text: `python3 scripts/foreman-orchestrate.py --mission ${mission} --loop`,
         description: `python3 scripts/foreman-orchestrate.py --mission ${mission} --loop`,
         status: 'queued',
         source: 'dashboard-foreman-resume',
-        // The authorized task's own tenancy. No default: taskWorld is non-empty
-        // by the time we get here (checked above), so the re-queued row can only
-        // ever land in the world the original belonged to.
+        // The authorized task's own tenancy. No default.
         client_id: taskWorld,
         project: original?.project || 'corner',
         project_path: original?.project_path || '',
         priority: 0,
         created_at: now,
+        created_by: verified.userId ? String(verified.userId) : undefined,
         metadata: {
           repo: 'corner',
           created_via: 'foreman-resume',
@@ -204,9 +210,7 @@ export default async function handler(req, res) {
         },
       }
 
-      const inserted = await sbPost('tasks', newTask)
-      const task = Array.isArray(inserted) ? inserted[0] : inserted
-
+      const task = await convexMutation('tasks:queue', { key: CONVEX_KEY, row: newTask }, verified.token)
       return res.status(200).json({ ok: true, action: 'resumed', newTaskId: task?.id || null })
     }
   } catch (err) {

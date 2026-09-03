@@ -6,7 +6,8 @@
 // No fake data.
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { supabase } from '../../lib/supabase';
+import { hasSession, getViewer, convexQuery, convexMutation, convexWorldId, subscribeConvexQuery } from '../../lib/convex.js';
+import { convexViewerIdentity } from './convexIdentity.js';
 import { authFetch } from '../../lib/authFetch';
 import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
 import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
@@ -50,14 +51,14 @@ function relTime(ts) {
 // source-tagged (you vs agent).
 //
 // Truth sources (merged, board wins):
-//   1. state board  — Supabase board_latest, one row per entity (goal + latest
+//   1. state board  — Convex records (records:recent), one row per entity (latest
 //      state line, hook-stamped). Decision 2026-07-05, corner:state-board.
 //   2. room-goals   — the master loop's per-room goal memory (room-goals.json via
 //      /api/dashboard/room-goals; same file the /cvg CommandTracker reads).
 //   3. room-goal-steps — the per-room plan checklist (same store the Chat goal
 //      thread reads/writes; plan-propose.py writes it).
 //   4. active-agents — live Claude sessions (heartbeat-backed) for LIVE NOW/WORKING.
-//   5. supabase-status messages — each room's latest line + last-activity time.
+//   5. status feed messages — each room's latest line + last-activity time (Convex).
 // A room with no goal anywhere shows an honest "No goal set" — never a fake.
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WORKING_WINDOW_MS = 30 * 60 * 1000; // activity in the last 30m = working
@@ -144,7 +145,42 @@ const hasOpenQuestion = (r) => {
   return Boolean(q) && q.toLowerCase() !== 'none' && q.toLowerCase() !== 'null';
 };
 
-// ── Real loops (Supabase routines) ── the scheduled instructions that actually run
+// Flat routine row for the loop shapes below, from a Convex routines:list row.
+// Mirrors api/dashboard/routines.js: the run configuration the daemon needs
+// (interval, model, project and mission slug, next run, error state) travels
+// as a JSON string in `schedule`.
+function parseRoutineSchedule(raw) {
+  if (!raw) return {};
+  if (typeof raw === 'object') return raw;
+  try { return JSON.parse(raw) || {}; } catch { return {}; }
+}
+const routineIso = (ms) => (Number.isFinite(ms) ? new Date(ms).toISOString() : null);
+function shapeRoutineRow(row, clientId) {
+  const cfg = parseRoutineSchedule(row.schedule);
+  return {
+    id: String(row._id),
+    client_id: clientId,
+    kind: 'user',
+    name: row.name,
+    prompt: row.prompt || '',
+    room_type: row.roomType || cfg.room_type || null,
+    project_slug: cfg.project_slug || null,
+    mission_slug: cfg.mission_slug || null,
+    agent_slug: row.agentSlug || null,
+    model: cfg.model || 'sonnet',
+    interval_minutes: cfg.interval_minutes ?? null,
+    status: row.enabled === false ? 'paused' : (cfg.status || 'running'),
+    tokens_day_est: cfg.tokens_day_est ?? (cfg.interval_minutes ? Math.round(8000 * (1440 / cfg.interval_minutes)) : null),
+    next_run_at: cfg.next_run_at || null,
+    last_run_at: routineIso(row.lastRanAt) || cfg.last_run_at || null,
+    last_error: cfg.last_error || null,
+    last_status: cfg.last_status || null,
+    created_at: routineIso(row.createdAt) || null,
+    updated_at: routineIso(row.updatedAt) || null,
+  };
+}
+
+// ── Real loops (Convex routines) ── the scheduled instructions that actually run
 // in a room: routine-daemon.py polls the routines table every 30s and posts a due
 // routine's prompt into its room as a message. This is THE loop the ledger's Loop
 // column reflects. The master-loop watcher (autopilot) is a different thing — a
@@ -231,7 +267,7 @@ function shapeCommand({
   // Before: only heartbeat-live sessions, every card stamped LIVE — Patrik:
   // "Command center doesn't know what's in progress vs proposed vs done."
   // Now: live sessions (heartbeat truth, always in-progress) PLUS the tasks
-  // table's real lifecycle from the supabase-status feed, classified by the
+  // table's real lifecycle from the status feed, classified by the
   // ONE shared status map (api/_lib/commandWorkStatus.js — the API stamps
   // `bucket`, this shape renders it). job.kind = the bucket, driving the
   // is-<bucket> chip on .ad-ico/.ad-badge; job.live marks heartbeat-backed
@@ -659,11 +695,11 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // Resolve the viewer + world the same way Home does so we ride the auth-derived world.
   useEffect(() => {
     if (worldIdArg) setWorldId(worldIdArg);
-    if (!supabase) return undefined;
+    if (!hasSession()) return undefined;
     let alive = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!alive || !data?.user) return;
-      setClientIdFromUser(data.user); setCurrentUser(data.user); setWorldId(getClientId());
+    getViewer().then((viewer) => {
+      if (!alive || !viewer) return;
+      setClientIdFromUser(viewer); setCurrentUser(viewer); setWorldId(getClientId());
     }).catch(() => {});
     return () => { alive = false; };
   }, [worldIdArg]);
@@ -674,114 +710,130 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
 
   // Live agent sessions — poll the heartbeat-backed active-processes endpoint.
   useEffect(() => {
-    if (!worldId || !supabase) return undefined;
+    if (!worldId || !hasSession()) return undefined;
     let alive = true;
-    const load = () => authFetch('/api/dashboard/active-agents?client=' + encodeURIComponent(worldId))
-      .then((r) => (r && r.ok ? r.json() : null))
-      .then((d) => {
-        if (!alive || !d) return;
-        const next = Array.isArray(d.active) ? d.active : [];
-        const sig = JSON.stringify(next);
-        if (sig === sessionsSig.current) return; // unchanged — skip the re-render
-        sessionsSig.current = sig; setSessions(next);
-      })
-      .catch(() => {});
-    load();
-    const id = setInterval(load, 5000);
-    return () => { alive = false; clearInterval(id); };
+    // agents:listStatus is the roster with the status each agent's own hooks
+    // stamped (idle | working | blocked) and the task in hand. Anything not idle
+    // and stamped in the last 15 minutes is a live session; older stamps are a
+    // session that died without stamping idle. The websocket pushes changes.
+    const STATUS_TTL_MS = 15 * 60 * 1000;
+    const unsub = subscribeConvexQuery('agents:listStatus', { worldId: convexWorldId(worldId) }, (rows) => {
+      if (!alive) return;
+      const now = Date.now();
+      const next = (Array.isArray(rows) ? rows : [])
+        .filter((a) => a && a.slug && a.status && a.status !== 'idle' && a.status !== 'offline' && a.updatedAt && (now - a.updatedAt) < STATUS_TTL_MS)
+        .map((a) => ({
+          agent: a.slug, pid: null, task_id: null, task_text: a.currentTask || '',
+          spawned_at: new Date(a.updatedAt).toISOString(), heartbeat: new Date(a.updatedAt).toISOString(),
+          age_seconds: Math.max(0, Math.round((now - a.updatedAt) / 1000)), status: a.status,
+        }));
+      const sig = JSON.stringify(next);
+      if (sig === sessionsSig.current) return; // unchanged — skip the re-render
+      sessionsSig.current = sig; setSessions(next);
+    }, () => { /* keep the last roster */ });
+    return () => { alive = false; unsub(); };
   }, [worldId]);
 
-  // Latest line + who, per room, from the recent-messages feed (for the ledger rows).
+  // Task lifecycle rows for the activity dock (proposed / in-progress / done),
+  // live from the Convex queue. The bucket the old status feed stamped is
+  // derived here from the status the same way (commandWorkStatus reads it).
   useEffect(() => {
-    if (!worldId || !supabase) return undefined;
+    if (!worldId || !hasSession()) return undefined;
     let alive = true;
-    const load = () => authFetch('/api/dashboard/supabase-status?client=' + encodeURIComponent(worldId))
-      .then((r) => (r && r.ok ? r.json() : null))
-      .then((d) => {
-        if (!alive || !d) return;
-        // R-CMD-BUCKETS (2026-07-18): keep the task lifecycle rows this feed
-        // already carries (bucket-stamped by supabase-status) — they are the
-        // activity dock's proposed / in-progress / done truth. Slimmed to the
-        // fields the shape reads so the change-detection sig stays cheap.
-        const rawWork = [...(Array.isArray(d.tasksV2) ? d.tasksV2 : []), ...(Array.isArray(d.tasks) ? d.tasks : [])];
-        const work = rawWork.map((t) => (t && typeof t === 'object' ? {
-          id: t.id, status: t.status, bucket: t.bucket, title: t.title, text: t.text,
-          agent_identity: t.agent_identity, agent: t.agent, project: t.project,
-          metadata: (t.metadata && typeof t.metadata === 'object') ? { project: t.metadata.project } : undefined,
-          created_at: t.created_at, updated_at: t.updated_at, completed_at: t.completed_at,
-          result: t.result, error: t.error,
-        } : t));
-        const wsig = JSON.stringify(work);
-        if (wsig !== workTasksSig.current) { workTasksSig.current = wsig; setWorkTasks(work); }
-        if (!Array.isArray(d.messages)) return;
-        const map = {};
-        for (const m of d.messages) {
-          if (!m.timestamp) continue;
-          const t = new Date(m.timestamp).getTime();
-          // Mission messages ALSO key under their bare mission slug so mission
-          // rows (and their loop outcome lines) resolve their own latest line,
-          // not just the parent project's.
-          const meta = m.metadata || {};
-          const missionKey = meta.mission_slug ? String(meta.mission_slug).split(':').pop() : '';
-          for (const key of [m.project, missionKey]) {
-            if (!key) continue;
-            if (!map[key] || t > map[key].t) map[key] = { t, text: m.text || '', agent: m.agent || '', role: m.role || '' };
-          }
+    const bucketOf = (st) => {
+      const v = String(st || '').toLowerCase();
+      if (v === 'done' || v === 'failed' || v === 'cancelled') return 'done';
+      if (v === 'running' || v === 'building') return 'in_progress';
+      return 'proposed';
+    };
+    const unsub = subscribeConvexQuery('tasks:find', { client_id: convexWorldId(worldId), order: 'created_at.desc', limit: 200 }, (rows) => {
+      if (!alive) return;
+      const work = (Array.isArray(rows) ? rows : []).map((t) => (t && typeof t === 'object' ? {
+        id: t.id, status: t.status, bucket: t.bucket || bucketOf(t.status), title: t.title, text: t.text,
+        agent_identity: t.agent_identity, agent: t.agent, project: t.project,
+        metadata: (t.metadata && typeof t.metadata === 'object') ? { project: t.metadata.project } : undefined,
+        created_at: t.created_at, updated_at: t.updated_at, completed_at: t.completed_at,
+        result: t.result, error: t.error,
+      } : t));
+      const wsig = JSON.stringify(work);
+      if (wsig !== workTasksSig.current) { workTasksSig.current = wsig; setWorkTasks(work); }
+    }, () => { /* keep the last list */ });
+    return () => { alive = false; unsub(); };
+  }, [worldId]);
+
+  // Latest line + who, per room, for the ledger rows: the world's recent messages
+  // (messages:listSince, last 7 days), live over the websocket. Mission messages
+  // ALSO key under their bare mission slug so mission rows (and their loop
+  // outcome lines) resolve their own latest line, not just the parent project's.
+  useEffect(() => {
+    if (!worldId || !hasSession()) return undefined;
+    let alive = true;
+    const since = Date.now() - 7 * DAY_MS;
+    const unsub = subscribeConvexQuery('messages:listSince', { worldSlug: convexWorldId(worldId), since, limit: 400 }, (rows) => {
+      if (!alive || !Array.isArray(rows)) return;
+      const map = {};
+      for (const m of rows) {
+        if (!m || !m.createdAt) continue;
+        const t = m.createdAt;
+        const meta = m.metadata || {};
+        const legacy = String(m.legacyRoomId || '');
+        const parts = legacy.split(':');
+        // "<world>:mission:<project>:<slug>" carries the mission's bare slug last.
+        const missionFromKey = parts[1] === 'mission' ? parts[parts.length - 1] : '';
+        const missionKey = meta.mission_slug ? String(meta.mission_slug).split(':').pop() : missionFromKey;
+        const projectKey = m.project || (parts[1] === 'project' ? parts.slice(2).join(':') : '');
+        for (const key of [projectKey, missionKey]) {
+          if (!key) continue;
+          if (!map[key] || t > map[key].t) map[key] = { t, text: m.text || '', agent: m.agentSlug || '', role: m.role || '' };
         }
-        const sig = JSON.stringify(map);
-        if (sig === lastByRoomSig.current) return; // unchanged — skip the re-render
-        lastByRoomSig.current = sig; setLastByRoom(map);
-      })
-      .catch(() => {});
-    load();
-    // corner:corner-ui-cv6 (2026-06-24): this poll pulls the FULL supabase-status
-    // payload (agents/projects/tasks/messages) only to derive the latest line per
-    // room for the ledger. That does not need 15s freshness — 60s matches useDataPipe
-    // and cuts this heavy fetch 4x. Combined with the unchanged-data bailout above,
-    // the command surface now re-renders only on a real change. Part of the load fix.
-    const id = setInterval(load, 60000);
-    return () => { alive = false; clearInterval(id); };
+      }
+      const sig = JSON.stringify(map);
+      if (sig === lastByRoomSig.current) return; // unchanged — skip the re-render
+      lastByRoomSig.current = sig; setLastByRoom(map);
+    }, () => { /* keep the last map */ });
+    return () => { alive = false; unsub(); };
   }, [worldId]);
 
   // The loop's per-room goal memory (goal ledger) — 60s cadence like the ledger feed.
   const [goalRooms, setGoalRooms] = useState({});
   const goalRoomsSig = useRef('');
   useEffect(() => {
-    if (!worldId || !supabase) return undefined;
+    if (!worldId || !hasSession()) return undefined;
     let alive = true;
-    const load = () => authFetch('/api/dashboard/room-goals?world=' + encodeURIComponent(worldId))
-      .then((r) => (r && r.ok ? r.json() : null))
-      .then((d) => {
-        if (!alive || !d || typeof d.rooms !== 'object') return;
-        const sig = JSON.stringify(d.rooms);
-        if (sig === goalRoomsSig.current) return;
-        goalRoomsSig.current = sig; setGoalRooms(d.rooms || {});
-      })
-      .catch(() => {});
-    load();
-    const id = setInterval(load, 60000);
-    return () => { alive = false; clearInterval(id); };
+    // The loop's goal memory lives in the state store (kind dash_room_goals,
+    // scope 'all', one row per world; value { rooms, generated }). The daemon and
+    // command-deck-action write it; this is a live read.
+    const unsub = subscribeConvexQuery('state:get', { kind: 'dash_room_goals', scopeId: 'all', worldSlug: convexWorldId(worldId) }, (row) => {
+      if (!alive) return;
+      const value = row && row.value && typeof row.value === 'object' ? row.value : null;
+      const rooms = value && typeof value.rooms === 'object' && value.rooms ? value.rooms : {};
+      const sig = JSON.stringify(rooms);
+      if (sig === goalRoomsSig.current) return;
+      goalRoomsSig.current = sig; setGoalRooms(rooms);
+    }, () => { /* keep the last goals */ });
+    return () => { alive = false; unsub(); };
   }, [worldId]);
 
-  // The state board (Supabase board_latest, corner:state-board) — goal + latest
-  // state line per entity. Source of truth for GOAL NOW when a row has one.
+  // The state board (Convex records, corner:state-board) — the latest state
+  // line per entity. Source of truth for GOAL NOW when a row has one.
   const [boardRows, setBoardRows] = useState([]);
   const boardSig = useRef('');
   useEffect(() => {
-    if (!worldId || !supabase) return undefined;
+    if (!worldId || !hasSession()) return undefined;
     let alive = true;
-    const load = () => authFetch('/api/dashboard/state-board?world=' + encodeURIComponent(worldId))
-      .then((r) => (r && r.ok ? r.json() : null))
-      .then((d) => {
-        if (!alive || !d || !Array.isArray(d.rows)) return;
-        const sig = JSON.stringify(d.rows);
-        if (sig === boardSig.current) return;
-        boardSig.current = sig; setBoardRows(d.rows);
-      })
-      .catch(() => {});
-    load();
-    const id = setInterval(load, 60000);
-    return () => { alive = false; clearInterval(id); };
+    // records:recent is the state board on Convex. It carries no goal column, so
+    // `goal` is null here and the ledger falls back to room-goals for it.
+    const unsub = subscribeConvexQuery('records:recent', { limit: 60 }, (rows) => {
+      if (!alive || !Array.isArray(rows)) return;
+      const shaped = rows.map((r) => ({
+        entity: r.entity, kind: r.kind, goal: null, state_line: r.line,
+        updated_by: r.updatedBy || null, updated_at: r.updatedAt ? new Date(r.updatedAt).toISOString() : null,
+      }));
+      const sig = JSON.stringify(shaped);
+      if (sig === boardSig.current) return;
+      boardSig.current = sig; setBoardRows(shaped);
+    }, () => { /* keep the last board */ });
+    return () => { alive = false; unsub(); };
   }, [worldId]);
 
   // Every room's plan checklist in one read (the same store the Chat goal thread
@@ -792,20 +844,19 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   const [stepsReload, setStepsReload] = useState(0);
   const stepsSig = useRef('');
   useEffect(() => {
-    if (!worldId || !supabase) return undefined;
+    if (!worldId || !hasSession()) return undefined;
     let alive = true;
-    const load = () => authFetch(`/api/dashboard/room-goal-steps?world=${encodeURIComponent(worldId)}`)
-      .then((r) => (r && r.ok ? r.json() : null))
-      .then((d) => {
-        if (!alive || !d || typeof d.items !== 'object' || !d.items) return;
-        const sig = JSON.stringify(d.items);
-        if (sig === stepsSig.current) return;
-        stepsSig.current = sig; setStepsByRoom(d.items);
-      })
-      .catch(() => {});
-    load();
-    const id = setInterval(load, 30000);
-    return () => { alive = false; clearInterval(id); };
+    // Same state row the Chat goal thread and plan-propose.py use
+    // (kind dash_room_goal_steps, scope 'all', value { items: { roomKey: [...] } }).
+    const unsub = subscribeConvexQuery('state:get', { kind: 'dash_room_goal_steps', scopeId: 'all', worldSlug: convexWorldId(worldId) }, (row) => {
+      if (!alive) return;
+      const value = row && row.value && typeof row.value === 'object' ? row.value : null;
+      const items = value && typeof value.items === 'object' && value.items ? value.items : {};
+      const sig = JSON.stringify(items);
+      if (sig === stepsSig.current) return;
+      stepsSig.current = sig; setStepsByRoom(items);
+    }, () => { /* keep the last checklist */ });
+    return () => { alive = false; unsub(); };
   }, [worldId, stepsReload]);
 
   // Real loops — the routines the daemon executes (corner:routines). 30s cadence
@@ -815,25 +866,21 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   const [loopsReload, setLoopsReload] = useState(0);
   const routinesSig = useRef('');
   useEffect(() => {
-    if (!worldId || !supabase) return undefined;
+    if (!worldId || !hasSession()) return undefined;
     let alive = true;
-    const load = () => authFetch('/api/dashboard/routines?client_id=' + encodeURIComponent(worldId))
-      .then((r) => (r && r.ok ? r.json() : null))
-      .then((d) => {
-        if (!alive || !d || !Array.isArray(d.routines)) return;
-        const sig = JSON.stringify(d.routines);
-        if (sig === routinesSig.current) return;
-        routinesSig.current = sig; setRoutines(d.routines);
-      })
-      .catch(() => {});
-    load();
-    const id = setInterval(load, 30000);
-    return () => { alive = false; clearInterval(id); };
+    const unsub = subscribeConvexQuery('routines:list', { worldId: convexWorldId(worldId) }, (rows) => {
+      if (!alive || !Array.isArray(rows)) return;
+      const shaped = rows.map((r) => shapeRoutineRow(r, worldId));
+      const sig = JSON.stringify(shaped);
+      if (sig === routinesSig.current) return;
+      routinesSig.current = sig; setRoutines(shaped);
+    }, () => { /* keep the last loops */ });
+    return () => { alive = false; unsub(); };
   }, [worldId, loopsReload]);
 
   // One write path for every loop control; always reconcile to server truth after.
   const loopWrite = useCallback(async (method, body) => {
-    if (!worldId || !supabase) return;
+    if (!worldId || !hasSession()) return;
     try {
       await authFetch('/api/dashboard/routines', {
         method,
@@ -900,7 +947,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // canonical — resolve which stored key (canonical or legacy project:mission)
   // actually holds this room's record so the write lands on the real entry.
   const toggleWatcher = useCallback(async (key) => {
-    if (!worldId || !supabase || !key) return;
+    if (!worldId || !hasSession() || !key) return;
     let storeKey = key;
     let cur = goalRooms[key];
     if (!cur) {
@@ -925,7 +972,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // refetch reconciles to server truth.
   const stepToggle = useCallback(async (act) => {
     const [room, id] = String(act || '').split('|');
-    if (!worldId || !supabase || !room || !id) return;
+    if (!worldId || !hasSession() || !room || !id) return;
     const wasProposed = Boolean((stepsByRoom[room] || []).find((s) => s.id === id)?.proposed);
     setStepsByRoom((prev) => {
       const cur = prev[room] || [];
@@ -952,7 +999,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // step becomes yours and stays on the plan as a next step. No-op on non-proposals.
   const stepAccept = useCallback(async (act) => {
     const [room, id] = String(act || '').split('|');
-    if (!worldId || !supabase || !room || !id) return;
+    if (!worldId || !hasSession() || !room || !id) return;
     const it = (stepsByRoom[room] || []).find((s) => s.id === id);
     if (!it || !it.proposed) return;
     setStepsByRoom((prev) => {
@@ -975,7 +1022,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // agent proposal is dismissed). Optimistic; forced refetch reconciles.
   const stepDelete = useCallback(async (act) => {
     const [room, id] = String(act || '').split('|');
-    if (!worldId || !supabase || !room || !id) return;
+    if (!worldId || !hasSession() || !room || !id) return;
     setStepsByRoom((prev) => {
       const cur = prev[room] || [];
       const out = { ...prev, [room]: cur.filter((x) => x.id !== id) };
@@ -994,7 +1041,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
 
   const stepAdd = useCallback(async (room, text) => {
     const t = String(text || '').replace(/\s+/g, ' ').trim();
-    if (!worldId || !supabase || !room || !t) return;
+    if (!worldId || !hasSession() || !room || !t) return;
     setStepsByRoom((prev) => {
       const cur = prev[room] || [];
       const out = { ...prev, [room]: [...cur, { id: 'tmp-' + Date.now().toString(36), text: t, done: false, source: 'user', proposed: false }] };
@@ -1011,16 +1058,26 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
     }
   }, [worldId]);
 
-  // Shape a supabase-messages payload for a ledger room key — the same shapes the
-  // Chat composer sends (agent thread / mission thread / project chat). Mission
-  // sends carry the room's TRUE mission slug when the goal memory knows it —
-  // a bare slug for a prefix-canonical room ('corner:bridge') lands the message
-  // in a same-named empty room instead of the real one.
-  const roomSendPayload = (world, key, projectSlug, body, missionSlug = '') => (key.startsWith('agent:')
-    ? { client_id: world, agent: key.slice(6), text: body, role: 'user', source: 'corner-dashboard' }
-    : projectSlug
-      ? { client_id: world, agent: 'corner', project: projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: missionSlug || key } }
-      : { client_id: world, agent: 'corner', project: key, text: body, role: 'user', source: 'corner-dashboard' });
+  // Send a line into a ledger room through messages:send, the same write the
+  // Chat composer makes. The room key grammar is the one Convex mints:
+  // <world>:agent:<slug>, <world>:project:<slug>, <world>:mission:<project>:<slug>.
+  // Mission sends carry the room's TRUE mission slug when the goal memory knows
+  // it, so the line lands in the real room and not a same-named empty one.
+  const roomSend = async (world, key, projectSlug, body, missionSlug = '') => {
+    const w = convexWorldId(world);
+    let roomId;
+    if (key.startsWith('agent:')) roomId = `${w}:agent:${key.slice(6)}`;
+    else if (projectSlug) {
+      const ms = String(missionSlug || key);
+      roomId = ms.includes(':') ? `${w}:mission:${ms}` : `${w}:mission:${projectSlug}:${ms}`;
+    } else roomId = `${w}:project:${key}`;
+    const viewer = await convexViewerIdentity();
+    return convexMutation('messages:send', {
+      roomId, text: body, role: 'user', clientId: w, source: 'corner-dashboard',
+      userId: viewer.userId, userEmail: viewer.userEmail, userName: viewer.userName,
+      ...(projectSlug ? { metadata: { mission_slug: missionSlug || key } } : {}),
+    });
+  };
 
   // ── Hand the next unchecked step to the room's agent (wd40 R3) ── one tap
   // dispatches the plan's first not-done step into the room's conversation through
@@ -1029,29 +1086,26 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   const [handed, setHanded] = useState({});
   const handNextStep = useCallback(async ({ key, projectSlug = '', missionSlug = '', stepText = '', act = '' } = {}) => {
     const t = String(stepText || '').replace(/\s+/g, ' ').trim();
-    if (!worldId || !supabase || !key || !t) return;
+    if (!worldId || !hasSession() || !key || !t) return;
     if (handed[key] && handed[key].act === act) return; // this exact step already sent
     setHanded((h) => ({ ...h, [key]: { act, ts: Date.now() } }));
     const body = `Please take the next step on this room's plan and report back when it's done: "${t.slice(0, 240)}"`;
     try {
-      await authFetch('/api/dashboard/supabase-messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(roomSendPayload(worldId, key, projectSlug, body, missionSlug)),
-      });
+      await roomSend(worldId, key, projectSlug, body, missionSlug);
     } catch {
       setHanded((h) => { const n = { ...h }; delete n[key]; return n; }); // send failed — allow retry
     }
   }, [worldId, handed]);
 
   // ── Answer a blocked room right on the ledger (wd40 R2) ── two real writes:
-  // 1) the answer goes INTO the room's conversation via the same supabase-messages
-  //    send path the Chat composer uses, so the room's agent actually receives it;
+  // 1) the answer goes INTO the room's conversation via the same messages:send
+  //    path the Chat composer uses, so the room's agent actually receives it;
   // 2) the loop's goal memory clears its open_question (command-deck-action
   //    clear_question — non-destructive, unlike the CommandDeck-era answer_question).
   // Optimistic: the row unblocks immediately; the 60s goal poll reconciles.
   const answerRoomQuestion = useCallback(async ({ key, projectSlug = '', missionSlug = '', question = '' } = {}, text) => {
     const t = String(text || '').trim();
-    if (!worldId || !supabase || !key || !t) return;
+    if (!worldId || !hasSession() || !key || !t) return;
     // Resolve which stored key (canonical or legacy project:mission) holds this
     // room's goal record, same as toggleWatcher.
     let storeKey = key;
@@ -1067,12 +1121,9 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
     });
     const q = String(question || '').replace(/\s+/g, ' ').trim().slice(0, 140);
     const body = q ? `Answering your question ("${q}"): ${t}` : t;
-    const payload = roomSendPayload(worldId, key, projectSlug, body, missionSlug);
     try {
-      await authFetch('/api/dashboard/supabase-messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-      });
-    } catch { /* delivery failed; the un-cleared server question resurfaces on the next poll */ }
+      await roomSend(worldId, key, projectSlug, body, missionSlug);
+    } catch { /* delivery failed; the un-cleared server question resurfaces on the next push */ }
     try {
       await authFetch('/api/dashboard/command-deck-action', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1087,7 +1138,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // canon-sync both respect it). Optimistic; the 60s goal poll reconciles.
   const setRoomGoal = useCallback(async (key, text) => {
     const t = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 280);
-    if (!worldId || !supabase || !key || !t) return;
+    if (!worldId || !hasSession() || !key || !t) return;
     let storeKey = key;
     if (!goalRooms[storeKey]) {
       for (const k of Object.keys(goalRooms)) {
@@ -1113,7 +1164,7 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoa
   // the 60s goal poll reconciles. Reversible — fresh room activity newer than
   // the stamp re-adds the row, and the room itself is untouched.
   const setRoomStatus = useCallback(async (key, status, note = '') => {
-    if (!worldId || !supabase || !key || !['active', 'parked', 'done'].includes(status)) return;
+    if (!worldId || !hasSession() || !key || !['active', 'parked', 'done'].includes(status)) return;
     let storeKey = key;
     if (!goalRooms[storeKey]) {
       for (const k of Object.keys(goalRooms)) {
@@ -1180,9 +1231,9 @@ function trackerShape(t, activeId) {
 // this hook from owning a duplicate one.
 export function useTrackerBugs(worldId, sharedPipe = null) {
   const [bugs, setBugs] = useState([]);
-  const [status, setStatus] = useState(() => (supabase ? 'loading' : 'empty'));
+  const [status, setStatus] = useState(() => (hasSession() ? 'loading' : 'empty'));
   const [spaceTickets, setSpaceTickets] = useState([]);
-  const [spaceStatus, setSpaceStatus] = useState(() => (supabase ? 'loading' : 'empty'));
+  const [spaceStatus, setSpaceStatus] = useState(() => (hasSession() ? 'loading' : 'empty'));
   const [customTrackers, setCustomTrackers] = useState([]);
   const [activeId, setActiveId] = useState(CV6_BOARD_ID);
   const [reloadKey, setReloadKey] = useState(0);
@@ -1190,10 +1241,10 @@ export function useTrackerBugs(worldId, sharedPipe = null) {
 
   // Resolve the viewer for the data pipe (gives us the assignable-agents list).
   useEffect(() => {
-    if (!supabase) return undefined;
+    if (!hasSession()) return undefined;
     let alive = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (alive && data?.user) { setClientIdFromUser(data.user); setCurrentUser(data.user); }
+    getViewer().then((viewer) => {
+      if (alive && viewer) { setClientIdFromUser(viewer); setCurrentUser(viewer); }
     }).catch(() => {});
     return () => { alive = false; };
   }, []);
@@ -1203,7 +1254,7 @@ export function useTrackerBugs(worldId, sharedPipe = null) {
 
   // CV6 bug board.
   useEffect(() => {
-    if (!worldId || !supabase) {
+    if (!worldId || !hasSession()) {
       setBugs([]);
       setStatus('empty');
       return undefined;
@@ -1238,7 +1289,7 @@ export function useTrackerBugs(worldId, sharedPipe = null) {
 
   // Space Rising ticket board (read-only, behind admin-tickets).
   useEffect(() => {
-    if (!worldId || !supabase) {
+    if (!worldId || !hasSession()) {
       setSpaceTickets([]);
       setSpaceStatus('empty');
       return undefined;
@@ -1270,7 +1321,7 @@ export function useTrackerBugs(worldId, sharedPipe = null) {
 
   // User-created custom trackers (persisted). Refetched after a create.
   useEffect(() => {
-    if (!worldId || !supabase) {
+    if (!worldId || !hasSession()) {
       setCustomTrackers([]);
       return undefined;
     }
@@ -1287,7 +1338,7 @@ export function useTrackerBugs(worldId, sharedPipe = null) {
   // Create a tracker for real, then refetch + switch to it. The new-tracker form is
   // uncontrolled in the component (so typing isn't wiped on a re-bind); kind is passed in.
   const createTracker = async ({ name, scope, kind }) => {
-    if (!supabase) return null;
+    if (!hasSession()) return null;
     const k = kind === 'mission' ? 'mission' : 'project';
     try {
       const r = await authFetch('/api/dashboard/trackers', {
@@ -1313,7 +1364,7 @@ export function useTrackerBugs(worldId, sharedPipe = null) {
   // Space Rising is read-only (the "+" never opens there). Then refetch.
   const SEVERITY = { high: 'high', med: 'medium', low: 'low' };
   const createBug = async ({ title, description, priority, status, assigneeId }) => {
-    if (!supabase || !title || showingSpace) return null;
+    if (!hasSession() || !title || showingSpace) return null;
     const owner = assigneeId ? (agentNameById[assigneeId] || '') : '';
     const st = STATUS_LABELS[status] || 'Open';
     try {
@@ -1339,7 +1390,7 @@ export function useTrackerBugs(worldId, sharedPipe = null) {
   // CV6 board only (Space Rising is read-only).
   const STATUS_LABELS = { Open: 'Open', 'In progress': 'In progress', Done: 'Done' };
   const updateBug = async ({ id, status, owner }) => {
-    if (!supabase || !id || !showingCv6) return null;
+    if (!hasSession() || !id || !showingCv6) return null;
     const label = status != null ? STATUS_LABELS[status] : null;
     if (status != null && !label) return null;
     if (label == null && owner == null) return null;
@@ -1423,5 +1474,5 @@ export function useTrackerBugs(worldId, sharedPipe = null) {
     empty: { title: 'No bugs in this tracker', body: 'Nothing logged yet. New issues land here.', actionLabel: '' },
     error: { title: "Couldn't load the tracker", body: 'Your connection dropped. Nothing was lost.', code: 'tracker · retry' },
   };
-  return { state: listState, data, switchTracker, createTracker, createBug, updateBug, canCreate: !showingSpace && !!supabase };
+  return { state: listState, data, switchTracker, createTracker, createBug, updateBug, canCreate: !showingSpace && hasSession() };
 }

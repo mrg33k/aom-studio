@@ -1,60 +1,38 @@
-// rexTaskClient.js -- Direct task insert (post-Haiku R5 rewire)
+// rexTaskClient.js -- create a task from the dashboard.
 //
-// BEFORE: sent the text to /api/dashboard/haiku-chat which interpreted it,
-//   picked a repo, and called write_task. Unreliable because Haiku couldn't
-//   understand task references in context.
-// AFTER: inserts a row directly into the Supabase `tasks` table with a
-//   minimal payload. Project + repo are resolved from an optional slug the
-//   caller passes (TasksPanel already knows the selected project pill).
-//
-// Elon-side tasks are created by scripts/queue-task.py in AOM-EA; this
-// function is the browser-side equivalent so the dashboard's task creator
-// doesn't need a router.
+// Queues a row on the Convex task queue (tasks:queue, corner:retire-supabase R1),
+// the same contract scripts/queue-task.py uses. The task runner resolves the
+// repo path from the project slug (its resolve_repo_path map), so the browser
+// does not look projects up first.
 
-import { supabase } from './supabase.js'
+import { convexMutation } from './convex.js';
 
 function cleanTitle(raw) {
-  const s = (raw || '').trim().replace(/\s+/g, ' ')
-  if (!s) return 'Untitled task'
-  return s.length > 140 ? s.slice(0, 137) + '…' : s
+  const s = (raw || '').trim().replace(/\s+/g, ' ');
+  if (!s) return 'Untitled task';
+  return s.length > 140 ? s.slice(0, 137) + '…' : s;
 }
 
 /**
- * Create a task directly. Used by TasksPanel's task creation UI.
+ * Create a task. Used by the task creation UI and the chat context menu.
  *
  * @param {string} text         - Natural language task description (used as title + text body).
  * @param {string} [userId]     - Forwarded as created_by.
- * @param {string} [userName]   - Ignored for now; kept in the signature for call-site compat.
+ * @param {string} [userName]   - Kept in the signature for call-site compat.
  * @param {object} [options]
  * @param {string} [options.projectSlug] - Project slug to attach (e.g. 'corner', 'ambition').
- *                                          When set, project_path is filled from the projects table.
- * @param {string} [options.clientId]    - Supabase client_id, defaults to 'aom'.
+ * @param {string} [options.clientId]    - World slug, defaults to 'aom'.
  * @returns {Promise<{ reply: string, task: object|null, toolCalls: Array }>}
- *   reply     -- short confirmation string ("Task queued: <title>")
- *   task      -- the created task row summary
- *   toolCalls -- always [] (kept for compat with TasksPanel's old return shape)
- * @throws {Error} if the insert fails.
+ * @throws {Error} if the queue write fails.
  */
 export async function createTaskWithRex(text, userId, userName, options = {}) {
   if (!text || typeof text !== 'string' || !text.trim()) {
-    throw new Error('text is required')
+    throw new Error('text is required');
   }
 
-  const title = cleanTitle(text)
-  const clientId = options.clientId || 'aom'
-  const projectSlug = (options.projectSlug || '').trim().toLowerCase() || null
-
-  // Resolve project -> repo_path if a slug was provided. Missing project is
-  // fine; runner will fall back to AOM-EA or whatever metadata.repo says.
-  let repoPath = null
-  if (projectSlug) {
-    const { data: proj } = await supabase
-      .from('projects')
-      .select('slug,repo_path')
-      .eq('slug', projectSlug)
-      .maybeSingle()
-    repoPath = proj?.repo_path || null
-  }
+  const title = cleanTitle(text);
+  const clientId = options.clientId || 'aom';
+  const projectSlug = (options.projectSlug || '').trim().toLowerCase() || null;
 
   const row = {
     title,
@@ -65,34 +43,33 @@ export async function createTaskWithRex(text, userId, userName, options = {}) {
     client_id: clientId,
     created_by: userId || null,
     project: projectSlug,
-    project_path: repoPath || '',
+    project_path: '',
     metadata: {
       repo: projectSlug || null,
       created_via: 'dashboard-direct-insert',
+      created_by_name: userName || null,
       model: 'sonnet',
     },
+  };
+
+  let created;
+  try {
+    created = await convexMutation('tasks:queue', { row });
+  } catch (err) {
+    throw new Error((err && err.message) || 'Failed to create task');
   }
 
-  const { data, error } = await supabase
-    .from('tasks')
-    .insert(row)
-    .select('id,title,status,project')
-    .maybeSingle()
-
-  if (error) {
-    throw new Error(error.message || 'Failed to create task')
-  }
-
-  const task = data ? {
-    id: data.id,
-    status: data.status,
+  const id = created && typeof created === 'object' ? (created.id || created._id || null) : (created || null);
+  const task = {
+    id: id ? String(id) : null,
+    status: (created && created.status) || 'queued',
     repo: projectSlug || undefined,
-    title: data.title,
-  } : null
+    title: (created && created.title) || title,
+  };
 
   return {
-    reply: task ? `Task queued: ${task.title}` : 'Task queued.',
+    reply: `Task queued: ${task.title}`,
     task,
     toolCalls: [],
-  }
+  };
 }

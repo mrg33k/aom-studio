@@ -13,7 +13,8 @@
 // during transient tunnel outages.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { authFetch } from '../../../lib/authFetch.js'
-import { supabase } from '../../../lib/supabase.js'
+import { ensureFreshToken, convexMutation, convexWorldId } from '../../../lib/convex.js'
+import { convexViewerIdentity } from '../../../cv6next/data/convexIdentity.js'
 import { useSystemToast } from '../../../SystemToast.jsx'
 
 const TUNNEL_BASE = 'https://rag.aheadofmarket.com'
@@ -70,18 +71,25 @@ async function maybeCompressImage(file) {
   return { blob, mime: 'image/jpeg' }
 }
 
+// The Convex room key for the open chat, built from the { selectedAgent,
+// selectedProject } pair the CV4 hooks receive. Same strings as
+// RoomThreadEngine.canonicalRoomKey / roomKeyFor: mission, project, or agent.
+function canonicalRoomKeyFor(worldId, selectedAgent, selectedProject) {
+  const world = convexWorldId(worldId)
+  if (selectedProject?.missionSlug) return `${world}:mission:${String(selectedProject.missionSlug)}`
+  if (selectedProject?.slug) return `${world}:project:${String(selectedProject.slug)}`
+  return `${world}:agent:${String(selectedAgent?.slug || '')}`
+}
+
 async function uploadViaTunnel(file, world, mime, scope) {
-  // The rag-server validates the Supabase JWT directly -- no Vercel signing
-  // endpoint needed. The user's logged-in session already proves authorization.
+  // The bearer is the Convex Auth session token (corner:retire-supabase R3).
+  // The rag-server checks it against the deployment's JWKS
+  // (https://neat-pony-216.convex.site/.well-known/jwks.json). The signed-in
+  // session already proves who is uploading; no Vercel signing step.
   let jwt = null
-  if (supabase) {
-    try {
-      const { data } = await supabase.auth.getSession()
-      jwt = data?.session?.access_token || null
-    } catch (_) { jwt = null }
-  }
+  try { jwt = await ensureFreshToken() } catch (_) { jwt = null }
   if (!jwt) {
-    const e = new Error('not signed in (no Supabase session)')
+    const e = new Error('not signed in (no session)')
     e.status = 401
     throw e
   }
@@ -148,7 +156,11 @@ async function uploadOneFile(file, world, scope) {
     result = await uploadViaTunnel(wrapped, world, mime, scope)
   } catch (err) {
     if (err.status === 413) throw err
-    if (err.status === 401 || err.status === 403) throw err
+    // No session at all: nothing downstream can help, stop here.
+    if (err.status === 401 && !(await ensureFreshToken().catch(() => null))) throw err
+    // A 401/403 WITH a session means the tunnel did not accept the Convex token
+    // (it used to check the old Supabase one). The Vercel proxy below verifies
+    // the same token itself, so let small files take that road instead of failing.
     if (wrapped.size > 20 * 1024 * 1024) {
       console.error('[ChatPanel] tunnel upload failed for large file, no fallback:', err)
       throw err
@@ -360,38 +372,44 @@ export default function useChatAttachments({
       metadata,
     }])
 
-    authFetch('/api/dashboard/supabase-messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        agent: agentKey,
+    // Announce the file in the room on Convex (messages:send). The server reads
+    // metadata.attachment / metadata.attachments into the row's attachments[]
+    // and schedules the agent dispatch, same as a typed message. The room key
+    // mirrors RoomThreadEngine.canonicalRoomKey so the row lands in the thread
+    // that is open. Project rooms keep the project slug in metadata so the
+    // Files panel filter still finds the row.
+    const roomId = canonicalRoomKeyFor(worldId, selectedAgent, selectedProject)
+    const sendMeta = {
+      ...metadata,
+      ...(selectedProject?.slug ? { project_slug: selectedProject.slug } : {}),
+    }
+    ;(async () => {
+      const viewer = await convexViewerIdentity()
+      const id = await convexMutation('messages:send', {
+        roomId,
         text: attachText,
         role: 'user',
+        clientId: convexWorldId(worldId),
         source: 'corner-dashboard',
-        client_id: clientId,
-        // 2026-05-29 R79-f22: explicitly send the project slug so the row's
-        // `project` column gets populated. Without this, detectProjectFromText
-        // ran on text like "Attached N files: name1.xlsx…" — no project tag,
-        // no slug match — and stamped project=NULL. The Files panel's
-        // `project=eq.<slug>` filter then dropped the row entirely.
-        ...(selectedProject?.slug ? { project: selectedProject.slug } : {}),
-        metadata,
-        ...userIdentity,
-      }),
-    })
-      .then(r => r.json())
-      .then(data => {
-        if (data?.message?.id) {
-          setMessages(prev => prev.map(m => m.id === tempId ? { ...data.message } : m))
-        }
+        userId: viewer.userId || (userIdentity?.user_id ? String(userIdentity.user_id) : undefined),
+        userEmail: viewer.userEmail,
+        userName: viewer.userName || userIdentity?.user_name || undefined,
+        agentSlug: selectedAgent?.slug || undefined,
+        metadata: sendMeta,
       })
-      .catch(() => {})
+      if (id) {
+        setMessages(prev => prev.map(m => m.id === tempId ? { ...m, id: String(id), metadata: sendMeta } : m))
+      }
+    })().catch((err) => {
+      console.error('[ChatPanel] attachment message failed to send:', err)
+      try { showToast('File uploaded, but the message did not post. Send a note about it.', 'warning', 6000) } catch (_) {}
+    })
 
     // (RANK 19b) The former delayed second "I just uploaded X, can you confirm…"
     // send was removed — its ask is now folded into attachText above, so the upload
     // is exactly ONE row / ONE dispatch. sendProjectTextRef is retained on the hook's
     // signature for API compatibility but is no longer used here.
-  }, [selectedAgent, selectedProject, worldId, userIdentity, setMessages, sendProjectTextRef, surfaceUploadError])
+  }, [selectedAgent, selectedProject, worldId, userIdentity, setMessages, sendProjectTextRef, surfaceUploadError, showToast])
 
   return {
     pendingAttachments, setPendingAttachments,

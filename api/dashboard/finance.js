@@ -1,57 +1,96 @@
-// GET  /api/dashboard/finance         — Returns all finance_transactions, ordered by date desc
-// POST /api/dashboard/finance         — Actions: upsert, update-owner, setup
-//
-// Supabase REST proxy for finance. Same pattern as supabase-messages.js.
+// GET  /api/dashboard/finance         Returns all transactions, newest date first
+// POST /api/dashboard/finance         Actions: upsert, update-owner, delete-all, setup
 //
 // SECURITY (corner:tenant-isolation R1): finance holds Patrik's PERSONAL bank
 // transactions and is NOT world-scoped. Every method requires the super-admin's
-// verified JWT (requireSuperAdmin). This endpoint was previously fully public —
-// an unauthenticated GET returned all rows. Do not relax this gate.
+// verified session (an aom admin). Do not relax this gate.
+//
+// corner:retire-supabase (2026-09-03): rows live in the Convex
+// financeTransactions table (finance:list / upsert / remove). Column mapping,
+// because the Convex row has fewer fields than the old table:
+//   owner  -> source      (who reviews it: Review, Patrik, ...)
+//   notes  -> vendor      (free text; the page only ever shows it back)
+//   the old unique key (date, description, amount) -> externalId, so a CSV
+//   re-upload updates instead of duplicating.
+// The page reads { id, date, description, amount, category, owner, notes }.
 
-import { requireSuperAdmin, TenantAuthError } from '../_lib/verifyTenant.js'
+// ---------------------------------------------------------------------------
+// Convex is the only backend (corner:retire-supabase, 2026-09-03). The signed
+// in person's Convex Auth token arrives as Authorization: Bearer and the
+// deployment checks it in users:verifyToken. This block is repeated in each
+// route on purpose until a shared helper lands in api/_lib.
+// ---------------------------------------------------------------------------
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || undefined
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
-
-const TABLE = 'finance_transactions'
-
-const SETUP_SQL = `
-CREATE TABLE IF NOT EXISTS finance_transactions (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  date text NOT NULL,
-  description text NOT NULL,
-  amount numeric NOT NULL,
-  category text DEFAULT '',
-  owner text DEFAULT 'Review',
-  notes text DEFAULT '',
-  created_at timestamptz DEFAULT now()
-);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_finance_txn_unique ON finance_transactions (date, description, amount);
-ALTER TABLE finance_transactions ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='finance_transactions' AND policyname='Allow anon select') THEN
-    CREATE POLICY "Allow anon select" ON finance_transactions FOR SELECT TO anon USING (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='finance_transactions' AND policyname='Allow anon insert') THEN
-    CREATE POLICY "Allow anon insert" ON finance_transactions FOR INSERT TO anon WITH CHECK (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='finance_transactions' AND policyname='Allow anon update') THEN
-    CREATE POLICY "Allow anon update" ON finance_transactions FOR UPDATE TO anon USING (true) WITH CHECK (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='finance_transactions' AND policyname='Allow service role all') THEN
-    CREATE POLICY "Allow service role all" ON finance_transactions FOR ALL TO service_role USING (true) WITH CHECK (true);
-  END IF;
-END $$;
-`.trim()
-
-function supabaseHeaders(extra = {}) {
-  return {
-    'apikey': SUPABASE_KEY,
-    'Authorization': `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation',
-    ...extra,
+async function convexCall(kind, path, args, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+  const r = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  })
+  if (!r.ok) throw new Error(`convex ${kind} ${path}: HTTP ${r.status}`)
+  const data = await r.json()
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex ${kind} ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`)
   }
+  return data.value
+}
+const convexQuery = (path, args, token) => convexCall('query', path, args, token)
+const convexMutation = (path, args, token) => convexCall('mutation', path, args, token)
+
+class AuthError extends Error {
+  constructor(message, status = 403) { super(message); this.name = 'AuthError'; this.status = status }
+}
+
+function bearerToken(req) {
+  const auth = req.headers?.authorization || req.headers?.Authorization
+  if (typeof auth === 'string' && /^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, '').trim() || null
+  return null
+}
+
+// Who is calling. Throws 401 when the request carries no valid session.
+async function requireCaller(req) {
+  const token = bearerToken(req)
+  if (!token) throw new AuthError('sign-in required', 401)
+  let who = null
+  try { who = await convexQuery('users:verifyToken', {}, token) } catch { who = null }
+  if (!who || !who.userId) throw new AuthError('invalid session', 401)
+  const world = who.world ? String(who.world).toLowerCase() : null
+  let superAdmin = false
+  try { superAdmin = !!(await convexQuery('worlds:isAdmin', { worldId: 'aom' }, token)) } catch { superAdmin = false }
+  return { userId: who.userId, email: who.email || null, userName: who.name || null, world, worldId: who.worldId || null, isAdmin: !!who.isAdmin, superAdmin, token }
+}
+
+// Require the caller be the SUPER-ADMIN (an aom admin, Patrik).
+async function requireSuperAdmin(req) {
+  const who = await requireCaller(req)
+  if (!who.superAdmin) throw new AuthError('forbidden: super-admin only', 403)
+  return who
+}
+
+function externalIdFor(t) {
+  return `${t.date}|${t.description}|${t.amount}`
+}
+
+function shapeRow(r) {
+  return {
+    id: r._id,
+    date: r.date,
+    description: r.description || '',
+    amount: r.amount,
+    category: r.category || '',
+    owner: r.source || 'Review',
+    notes: r.vendor || '',
+    created_at: typeof r.createdAt === 'number' ? new Date(r.createdAt).toISOString() : null,
+  }
+}
+
+async function listAll(token) {
+  const rows = await convexQuery('finance:list', { limit: 2000 }, token)
+  return (Array.isArray(rows) ? rows : []).map(shapeRow)
 }
 
 export default async function handler(req, res) {
@@ -62,55 +101,36 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end()
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' })
-  }
-
-  // Every method is super-admin-only — finance is Patrik-personal, never shared.
+  // Every method is super-admin-only. Finance is Patrik-personal, never shared.
+  let caller
   try {
-    await requireSuperAdmin(req)
+    caller = await requireSuperAdmin(req)
   } catch (err) {
-    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    if (err instanceof AuthError) return res.status(err.status).json({ error: err.message })
     return res.status(500).json({ error: 'Auth verification failed' })
   }
+  const token = caller.token
 
   // ---- GET: load all transactions, ordered by date desc ----------------------
   if (req.method === 'GET') {
-    const url = `${SUPABASE_URL}/rest/v1/${TABLE}?select=*&order=date.desc`
-    const sbRes = await fetch(url, { headers: supabaseHeaders() })
-    if (!sbRes.ok) {
-      const err = await sbRes.text()
-      return res.status(sbRes.status).json({ error: err })
+    try {
+      const transactions = await listAll(token)
+      return res.status(200).json({ transactions })
+    } catch (err) {
+      return res.status(502).json({ error: err.message })
     }
-    const transactions = await sbRes.json()
-    return res.status(200).json({ transactions })
   }
 
   // ---- POST: action-based dispatch -------------------------------------------
   if (req.method === 'POST') {
     const { action } = req.body || {}
 
-    // -- setup: check if table exists, return SQL if not -----------------------
+    // -- setup: the Convex table always exists ---------------------------------
     if (action === 'setup') {
-      try {
-        const checkResp = await fetch(
-          `${SUPABASE_URL}/rest/v1/${TABLE}?limit=0`,
-          { headers: supabaseHeaders() }
-        )
-        if (checkResp.ok) {
-          return res.status(200).json({
-            status: 'already_exists',
-            message: 'finance_transactions table already exists',
-          })
-        }
-        return res.status(200).json({
-          status: 'needs_creation',
-          message: 'Table does not exist. Run the SQL below in Supabase SQL Editor.',
-          sql: SETUP_SQL,
-        })
-      } catch (err) {
-        return res.status(500).json({ error: err.message })
-      }
+      return res.status(200).json({
+        status: 'already_exists',
+        message: 'financeTransactions lives on Convex; nothing to set up',
+      })
     }
 
     // -- upsert: bulk upsert transactions (CSV upload) -------------------------
@@ -128,32 +148,36 @@ export default async function handler(req, res) {
         if (seen.has(key)) continue
         seen.add(key)
         rows.push({
-          date: t.date,
-          description: t.description,
-          amount: t.amount,
-          category: t.category || '',
-          owner: t.owner || 'Review',
-          notes: t.notes || '',
+          date: String(t.date || ''),
+          description: String(t.description || ''),
+          amount: Number(t.amount),
+          category: String(t.category || ''),
+          source: String(t.owner || 'Review'),
+          vendor: String(t.notes || ''),
+          kind: Number(t.amount) >= 0 ? 'income' : 'expense',
+          externalId: key,
         })
       }
 
-      const url = `${SUPABASE_URL}/rest/v1/${TABLE}?on_conflict=date,description,amount`
-      const sbRes = await fetch(url, {
-        method: 'POST',
-        headers: supabaseHeaders({ 'Prefer': 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify(rows),
-      })
-
-      if (!sbRes.ok) {
-        const err = await sbRes.text()
-        return res.status(sbRes.status).json({ error: err })
+      let inserted = 0
+      const errors = []
+      for (const row of rows) {
+        if (!Number.isFinite(row.amount)) { errors.push(`${row.description}: bad amount`); continue }
+        try {
+          await convexMutation('finance:upsert', { key: CONVEX_KEY, row }, token)
+          inserted += 1
+        } catch (err) {
+          errors.push(`${row.description}: ${err.message}`)
+        }
       }
-
-      const inserted = await sbRes.json()
+      if (inserted === 0 && errors.length) {
+        return res.status(502).json({ error: errors.slice(0, 5).join('; ') })
+      }
       return res.status(200).json({
         ok: true,
-        inserted: inserted.length,
+        inserted,
         total: transactions.length,
+        errors: errors.length ? errors : undefined,
       })
     }
 
@@ -163,37 +187,43 @@ export default async function handler(req, res) {
       if (!id || !owner) {
         return res.status(400).json({ error: 'id and owner required' })
       }
-
-      const url = `${SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(id)}`
-      const sbRes = await fetch(url, {
-        method: 'PATCH',
-        headers: supabaseHeaders(),
-        body: JSON.stringify({ owner }),
-      })
-
-      if (!sbRes.ok) {
-        const err = await sbRes.text()
-        return res.status(sbRes.status).json({ error: err })
+      try {
+        const all = await convexQuery('finance:list', { limit: 2000 }, token)
+        const row = (Array.isArray(all) ? all : []).find(r => String(r._id) === String(id))
+        if (!row) return res.status(404).json({ error: 'transaction not found' })
+        await convexMutation('finance:upsert', {
+          key: CONVEX_KEY,
+          id: row._id,
+          row: {
+            date: row.date,
+            amount: row.amount,
+            kind: row.kind,
+            category: row.category,
+            description: row.description,
+            vendor: row.vendor,
+            source: String(owner),
+            externalId: row.externalId || externalIdFor(row),
+          },
+        }, token)
+        return res.status(200).json({ ok: true, transaction: shapeRow({ ...row, source: String(owner) }) })
+      } catch (err) {
+        return res.status(502).json({ error: err.message })
       }
-
-      const updated = await sbRes.json()
-      return res.status(200).json({ ok: true, transaction: updated[0] || null })
     }
 
     // -- delete-all: clear all rows (for reset) --------------------------------
     if (action === 'delete-all') {
-      const url = `${SUPABASE_URL}/rest/v1/${TABLE}?created_at=gte.1970-01-01`
-      const sbRes = await fetch(url, {
-        method: 'DELETE',
-        headers: supabaseHeaders(),
-      })
-
-      if (!sbRes.ok) {
-        const err = await sbRes.text()
-        return res.status(sbRes.status).json({ error: err })
+      try {
+        const all = await convexQuery('finance:list', { limit: 2000 }, token)
+        let deleted = 0
+        for (const row of (Array.isArray(all) ? all : [])) {
+          await convexMutation('finance:remove', { key: CONVEX_KEY, id: row._id }, token)
+          deleted += 1
+        }
+        return res.status(200).json({ ok: true, message: 'All transactions deleted', deleted })
+      } catch (err) {
+        return res.status(502).json({ error: err.message })
       }
-
-      return res.status(200).json({ ok: true, message: 'All transactions deleted' })
     }
 
     return res.status(400).json({ error: `Unknown action: ${action}` })

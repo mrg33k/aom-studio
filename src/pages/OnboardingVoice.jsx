@@ -1,11 +1,14 @@
-// OB1: 3-question voice onboarding — state machine + EA narration + real scaffolding.
-// LR-2 (2026-05-05): Q1 persists workspace_name, Q2 persists work_areas (recipe flask
-// seeds), Q3 inserts a projects row + fires /api/dashboard/scaffold-project, DONE flips
-// has_completed_onboarding=true. All writes are best-effort: a failed write never traps
-// the user — localStorage still flips on DONE and the next session can self-heal.
+// OB1: 3-question voice onboarding: state machine + EA narration + real scaffolding.
+// LR-2 (2026-05-05): Q1 persists workspaceName, Q2 persists workAreas (recipe flask
+// seeds), Q3 creates a project row + fires /api/dashboard/scaffold-project, DONE flips
+// onboarded=true. All writes are best-effort: a failed write never traps the user;
+// localStorage still flips on DONE and the next session can self-heal.
+// corner:retire-supabase R3: identity and preferences come from Convex
+// (users:viewer / users:setPrefs via lib/auth.js); the project row is projects:upsert.
 import React, { useReducer, useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { supabase } from '../dashboard/lib/supabase.js'
+import { getCurrentUser, updateUserPreferences } from '../dashboard/lib/auth.js'
+import { convexMutation, hasSession } from '../dashboard/lib/convex.js'
 import { authFetch } from '../dashboard/lib/authFetch.js'
 import StepThread from '../dashboard/components/cv3/shared/StepThread.jsx'
 
@@ -35,37 +38,34 @@ function slugify(text) {
 }
 
 function persistWorkspaceName(workspaceName) {
-  if (!supabase || !workspaceName) return
-  supabase.auth.updateUser({ data: { workspace_name: workspaceName } }).catch(() => {})
+  if (!hasSession() || !workspaceName) return
+  updateUserPreferences({ workspaceName, workspace_name: workspaceName }).catch(() => {})
 }
 
 function persistWorkAreas(domains) {
-  if (!supabase || !Array.isArray(domains) || !domains.length) return
+  if (!hasSession() || !Array.isArray(domains) || !domains.length) return
   const tags = domains.map(d => d.domain).filter(Boolean)
   if (!tags.length) return
-  supabase.auth.updateUser({ data: { work_areas: tags } }).catch(() => {})
+  updateUserPreferences({ workAreas: tags, work_areas: tags }).catch(() => {})
 }
 
 async function scaffoldFirstProject({ firstThing, workspaceName, worldSlug }) {
-  if (!supabase || !worldSlug || !firstThing) return { ok: false }
+  if (!hasSession() || !worldSlug || !firstThing) return { ok: false }
   const name = firstThing.trim().slice(0, 80) || 'First project'
   const slug = slugify(name)
   const description = workspaceName
  ? `${workspaceName}'s first project, created during voice onboarding.`
  : 'First project, created during voice onboarding.'
   try {
-    const { error: insertErr } = await supabase
-      .from('projects')
-      .insert({
-        name,
-        slug,
-        color: '#E85D26',
-        is_active: true,
-        client_id: worldSlug,
-      })
-    if (insertErr && !/duplicate|already exists/i.test(insertErr.message || '')) {
-      // Non-duplicate insert failures still let scaffold attempt; events table is the gate.
-    }
+    // projects:upsert is an upsert by slug inside the world, so a repeat is harmless.
+    await convexMutation('projects:upsert', {
+      slug,
+      name,
+      color: '#E85D26',
+      isActive: true,
+      worldSlug,
+      clientId: worldSlug,
+    })
   } catch (_) { /* best-effort */ }
   try {
     await authFetch('/api/dashboard/scaffold-project', {
@@ -78,10 +78,8 @@ async function scaffoldFirstProject({ firstThing, workspaceName, worldSlug }) {
 }
 
 function markOnboardingComplete() {
-  if (!supabase) return
-  supabase.auth.updateUser({
-    data: { onboarded: true, has_completed_onboarding: true },
-  }).catch(() => {})
+  if (!hasSession()) return
+  updateUserPreferences({ onboarded: true, has_completed_onboarding: true }).catch(() => {})
 }
 
 // --- State machine ---
@@ -170,8 +168,8 @@ export default function OnboardingVoice() {
 
   // Skip onboarding if user already has a world (skip in resume mode)
   useEffect(() => {
-    if (!supabase || isQaMode || isResumeMode) return
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    if (!hasSession() || isQaMode || isResumeMode) return
+    getCurrentUser().then((user) => {
       const meta = user?.user_metadata || {}
       if (meta.world || meta.onboarded || localStorage.getItem('corner-onboarded') === 'true') {
         navigate('/dashboard', { replace: true })
@@ -238,7 +236,7 @@ export default function OnboardingVoice() {
     if (phase === 'Q1_CONFIRMED') {
       const line = `Setting up ${workspace} as your home base.`
       setNarrationLine(line); narrate(line)
-      // LR-2: persist workspace name to user_metadata so dashboard + recipes flask read it.
+      // LR-2: persist workspace name to the person's preferences so dashboard + recipes flask read it.
       persistWorkspaceName(workspace)
       const t = setTimeout(() => dispatch({ type: 'TO_Q2' }), 2400)
       return () => clearTimeout(t)
@@ -273,7 +271,7 @@ export default function OnboardingVoice() {
       let cancelled = false
       ;(async () => {
         try {
-          const { data: { user } } = await supabase.auth.getUser()
+          const user = await getCurrentUser()
           const worldSlug = user?.user_metadata?.world || ''
           if (worldSlug) {
             await scaffoldFirstProject({ firstThing, workspaceName: workspace, worldSlug })
@@ -302,7 +300,7 @@ export default function OnboardingVoice() {
       }
     }
     if (phase === 'DONE') {
-      // LR-2: flip the persistent onboarding flag in user_metadata so AuthGuard's
+      // LR-2: flip the persistent onboarding flag in preferences so AuthGuard's
       // DB-side check passes on the next login / new device. localStorage stays as
       // a fast-path signal for the same session.
       markOnboardingComplete()

@@ -1,27 +1,37 @@
-import {
-  createDeviceToken,
-  createPairingCode,
-  hashRunnerSecret,
-  normalizePairingCode,
-  runnerConfigAvailable,
-  runnerServiceHeaders,
-  runnerSupabaseUrl,
-} from '../_lib/runnerAuth.js'
-import { callerIdentity, TenantAuthError, verifyTenant } from '../_lib/verifyTenant.js'
+// /api/runner/pair: pairing a Corner Runner (a Mac running corner-runner.mjs)
+// with the signed-in person's world.
+//
+//   POST { action: 'claim', code, name }   from the runner: trade the code for a device token
+//   GET  ?client=<world>                   from the dashboard: this person's runners
+//   POST { client_id, name }               from the dashboard: mint a pairing code
+//   DELETE { client_id, device_id }        from the dashboard: disconnect a runner
+//
+// corner:retire-supabase (2026-09-03): corner_runner_pairings / _devices are
+// gone. The code comes from runner:createPairing (6 characters, 10 minute
+// life, minted AS the caller so the device is owned by them), the runner
+// redeems it with runner:redeemPairing and gets a hex device token back once,
+// and the device list is runner:listDevices. There is no revoke mutation on
+// the deployment yet, so DELETE answers 501 until runner:revokeDevice exists.
 
-const PAIRING_TTL_MS = 10 * 60 * 1000
+import { hashRunnerSecret, normalizePairingCode, runnerConfigAvailable } from '../_lib/runnerAuth.js'
+import { callerIdentity, TenantAuthError, verifyTenant, extractJwt, convexQuery, convexMutation, convexMutationAs } from '../_lib/verifyTenant.js'
+
+const RUNNER_ONLINE_MS = 75_000
 
 function apiBase(req) {
   const proto = String(req.headers?.['x-forwarded-proto'] || 'https').split(',')[0]
   const host = String(req.headers?.['x-forwarded-host'] || req.headers?.host || 'aheadofmarket.com').split(',')[0]
   return `${proto}://${host}`
 }
+
 async function browserIdentity(req, clientId) {
   const { tenant } = await verifyTenant(clientId || 'aom', req)
   const identity = await callerIdentity(req)
   if (!identity?.userId) throw new TenantAuthError('Authenticated user required', 401)
   return { tenant, identity }
 }
+
+const iso = (ms) => (typeof ms === 'number' && Number.isFinite(ms) ? new Date(ms).toISOString() : null)
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -33,26 +43,28 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST' && req.body?.action === 'claim') {
     const normalized = normalizePairingCode(req.body?.code)
-    if (normalized.length !== 16) return res.status(400).json({ error: 'Pairing code is invalid' })
-    const token = createDeviceToken()
-    const response = await fetch(runnerSupabaseUrl('/rest/v1/rpc/claim_corner_runner_pairing'), {
-      method: 'POST',
-      headers: runnerServiceHeaders(),
-      body: JSON.stringify({
-        p_code_hash: hashRunnerSecret(normalized),
-        p_token_hash: hashRunnerSecret(token),
-        p_name: String(req.body?.name || 'My computer').slice(0, 80),
-        p_platform: String(req.body?.platform || '').slice(0, 80) || null,
-      }),
-    })
-    if (!response.ok) return res.status(400).json({ error: 'Pairing code is invalid or expired' })
-    const rows = await response.json()
-    const device = rows?.[0]
-    if (!device?.id) return res.status(500).json({ error: 'Runner pairing did not return a device' })
+    if (normalized.length < 6 || normalized.length > 16) return res.status(400).json({ error: 'Pairing code is invalid' })
+    let redeemed
+    try {
+      redeemed = await convexMutation('runner:redeemPairing', {
+        code: normalized,
+        name: String(req.body?.name || 'My computer').slice(0, 80),
+      })
+    } catch {
+      return res.status(400).json({ error: 'Pairing code is invalid or expired' })
+    }
+    if (!redeemed?.deviceId || !redeemed?.token) return res.status(500).json({ error: 'Runner pairing did not return a device' })
+    let clientId = null
+    try {
+      const d = await convexQuery('runner:authenticateDevice', { tokenHash: hashRunnerSecret(redeemed.token) })
+      clientId = d?.worldSlug || null
+    } catch {
+      clientId = null
+    }
     return res.status(200).json({
       ok: true,
-      device: { id: device.id, name: device.name, clientId: device.client_id },
-      token,
+      device: { id: String(redeemed.deviceId), name: String(req.body?.name || 'My computer').slice(0, 80), clientId },
+      token: redeemed.token,
       server: apiBase(req),
     })
   }
@@ -68,44 +80,45 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    const response = await fetch(
-      runnerSupabaseUrl(
-        `/rest/v1/corner_runner_devices?user_id=eq.${encodeURIComponent(identity.userId)}`
-        + `&client_id=eq.${encodeURIComponent(tenant)}&revoked_at=is.null`
-        + '&select=id,name,platform,status,last_seen_at,created_at&order=last_seen_at.desc.nullslast,created_at.desc',
-      ),
-      { headers: runnerServiceHeaders() },
-    )
-    if (!response.ok) return res.status(502).json({ error: 'Could not load runners' })
-    const rows = await response.json()
+    let rows
+    try {
+      rows = await convexQuery('runner:listDevices', { worldId: tenant })
+    } catch {
+      return res.status(502).json({ error: 'Could not load runners' })
+    }
     const now = Date.now()
-    const devices = (Array.isArray(rows) ? rows : []).map((device) => {
-      const lastSeen = device.last_seen_at ? Date.parse(device.last_seen_at) : 0
-      const online = lastSeen > 0 && now - lastSeen < 75_000
-      return { ...device, online, status: online ? device.status : 'offline' }
-    })
+    const devices = (Array.isArray(rows) ? rows : [])
+      // Only this person's runners (a device paired before ownership was
+      // recorded has no userId and stays visible).
+      .filter((d) => !d.userId || String(d.userId) === String(identity.userId))
+      .sort((a, b) => (Number(b.lastSeenAt || 0) - Number(a.lastSeenAt || 0)) || (Number(b.createdAt || 0) - Number(a.createdAt || 0)))
+      .map((d) => {
+        const lastSeen = Number(d.lastSeenAt || 0)
+        const online = lastSeen > 0 && now - lastSeen < RUNNER_ONLINE_MS
+        return {
+          id: String(d._id),
+          name: d.name || null,
+          platform: 'mac',
+          status: online ? 'online' : 'offline',
+          last_seen_at: iso(lastSeen),
+          created_at: iso(Number(d.createdAt || 0)),
+          online,
+        }
+      })
     return res.status(200).json({ devices })
   }
 
   if (req.method === 'POST') {
-    const code = createPairingCode()
-    const normalized = normalizePairingCode(code)
-    const expiresAt = new Date(Date.now() + PAIRING_TTL_MS).toISOString()
-    const response = await fetch(runnerSupabaseUrl('/rest/v1/corner_runner_pairings'), {
-      method: 'POST',
-      headers: runnerServiceHeaders('return=representation'),
-      body: JSON.stringify({
-        user_id: identity.userId,
-        client_id: tenant,
-        code_hash: hashRunnerSecret(normalized),
-        requested_name: String(req.body?.name || 'My computer').slice(0, 80),
-        expires_at: expiresAt,
-      }),
-    })
-    if (!response.ok) return res.status(502).json({ error: 'Could not create pairing code' })
+    let pairing
+    try {
+      pairing = await convexMutationAs(extractJwt(req), 'runner:createPairing', { userId: identity.userId, worldId: tenant })
+    } catch {
+      return res.status(502).json({ error: 'Could not create pairing code' })
+    }
+    if (!pairing?.code) return res.status(502).json({ error: 'Could not create pairing code' })
     return res.status(200).json({
-      code,
-      expiresAt,
+      code: pairing.code,
+      expiresAt: iso(pairing.expiresAt) || new Date(Date.now() + 10 * 60 * 1000).toISOString(),
       downloadUrl: `${apiBase(req)}/downloads/corner-runner.mjs`,
     })
   }
@@ -113,19 +126,9 @@ export default async function handler(req, res) {
   if (req.method === 'DELETE') {
     const deviceId = String(req.body?.device_id || '')
     if (!deviceId) return res.status(400).json({ error: 'device_id required' })
-    const response = await fetch(
-      runnerSupabaseUrl(
-        `/rest/v1/corner_runner_devices?id=eq.${encodeURIComponent(deviceId)}`
-        + `&user_id=eq.${encodeURIComponent(identity.userId)}&client_id=eq.${encodeURIComponent(tenant)}`,
-      ),
-      {
-        method: 'PATCH',
-        headers: runnerServiceHeaders('return=minimal'),
-        body: JSON.stringify({ revoked_at: new Date().toISOString(), status: 'offline', updated_at: new Date().toISOString() }),
-      },
-    )
-    if (!response.ok) return res.status(502).json({ error: 'Could not disconnect runner' })
-    return res.status(200).json({ ok: true })
+    // No runner:revokeDevice on the deployment yet. Say so plainly instead of
+    // pretending the runner was disconnected.
+    return res.status(501).json({ error: 'Disconnecting a runner is not available yet. Stop the runner on that computer for now.' })
   }
 
   return res.status(405).json({ error: 'GET, POST, or DELETE only' })

@@ -1,23 +1,19 @@
-import { extractJwt } from './verifyTenant.js'
+// Sign-in helper for the /api/worlds/* family. corner:retire-supabase R3: the
+// session check and the membership lookup now go through the same Convex
+// identity verifyTenant.js uses (users:verifyToken, worlds:membership), so
+// there is one gate, not two.
+//
+// worldDbHeaders() is gone: it built Supabase service headers for the routes'
+// own table reads. Those routes read Convex directly now (worlds:getBySlug,
+// worlds:membersOf, worlds:forViewer).
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const SUPER_ADMIN_USER_ID = process.env.SUPER_ADMIN_USER_ID || '833f6828-1dae-409c-a24b-1438f46544d0'
+import { extractJwt, getUserFromJwt, requireSuperAdmin, convexQuery } from './verifyTenant.js'
 
 export class WorldAuthError extends Error {
   constructor(message, status = 403) {
     super(message)
     this.name = 'WorldAuthError'
     this.status = status
-  }
-}
-
-export function worldDbHeaders(extra = {}) {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-    ...extra,
   }
 }
 
@@ -32,44 +28,39 @@ export function setWorldCors(req, res, methods) {
   res.setHeader('Cache-Control', 'private, no-store')
 }
 
+// Returns { user, userId, isSuperAdmin, token }. Throws WorldAuthError.
 export async function authenticateWorldRequest(req) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    throw new WorldAuthError('Supabase not configured', 500)
-  }
-
   const jwt = extractJwt(req)
   if (!jwt) throw new WorldAuthError('Authentication required', 401)
-
-  const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${jwt}`,
-    },
-  })
-  if (!response.ok) throw new WorldAuthError('Invalid session', 401)
-
-  const user = await response.json()
+  const user = await getUserFromJwt(jwt)
   if (!user?.id) throw new WorldAuthError('Invalid session', 401)
-
+  let isSuperAdmin = false
+  try {
+    await requireSuperAdmin(req)
+    isSuperAdmin = true
+  } catch {
+    isSuperAdmin = false
+  }
   return {
     user,
     userId: user.id,
-    isSuperAdmin: user.id === SUPER_ADMIN_USER_ID,
+    isSuperAdmin,
+    token: jwt,
   }
 }
 
+// The caller's membership row in a world (by slug or id): { role } or null.
+// `allowedRoles` narrows the answer the way the old role=in.(...) filter did.
 export async function getWorldMembership(worldId, userId, allowedRoles = null) {
-  const roleFilter = Array.isArray(allowedRoles) && allowedRoles.length
-    ? `&role=in.(${allowedRoles.map(encodeURIComponent).join(',')})`
-    : ''
-  const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/world_members?world_id=eq.${encodeURIComponent(worldId)}` +
-      `&user_id=eq.${encodeURIComponent(userId)}${roleFilter}&select=role&limit=1`,
-    { headers: worldDbHeaders() },
-  )
-  if (!response.ok) throw new WorldAuthError('Could not verify world membership', 502)
-  const rows = await response.json()
-  return Array.isArray(rows) && rows.length ? rows[0] : null
+  let row = null
+  try {
+    row = await convexQuery('worlds:membership', { worldId: String(worldId), userId })
+  } catch {
+    throw new WorldAuthError('Could not verify world membership', 502)
+  }
+  if (!row || !row.role) return null
+  if (Array.isArray(allowedRoles) && allowedRoles.length && !allowedRoles.includes(row.role)) return null
+  return { role: row.role, worldId: row.worldId ? String(row.worldId) : null, slug: row.slug || null }
 }
 
 export function sendWorldAuthError(res, error) {

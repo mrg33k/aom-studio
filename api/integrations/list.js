@@ -1,19 +1,39 @@
 // GET /api/integrations/list
-// Returns the integrations registry merged with the caller's account_integrations rows.
+// Returns the integrations registry merged with the caller's connected rows.
 // Used by IntegrationsModal to render Available vs Connected per account.
+//
+// corner:retire-supabase (2026-09-03): the caller and their world come from the
+// Convex Auth token (users:verifyToken, which reads the memberships table) and
+// the per-user rows come from the Convex integrations table
+// (integrations:listForUser). No Supabase.
 
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { extractJwt } from '../_lib/verifyTenant.js'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+
+async function convex(kind, path, args, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+  const res = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  })
+  if (!res.ok) throw new Error(`convex ${kind} ${path}: HTTP ${res.status}`)
+  const data = await res.json()
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex ${kind} ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`)
+  }
+  return data.value
+}
 
 // System integrations that should remain visible to TENANT users (non-AOM
 // worlds: Karen, Tim, Taryn, every future tester). Anthropic powers the EA
 // itself and is shown as "connected (system)" so tenants understand where
 // the agent runs. Everything else marked system:true is AOM-internal
-// infrastructure (Vercel, Supabase, Dropbox, Apollo, Postiz, GitHub,
+// infrastructure (Vercel, Convex, Dropbox, Apollo, Postiz, GitHub,
 // OpenAI, ElevenLabs, Google Calendar) -- those stay functional under the
 // hood but get hidden from tenant integration lists so they aren't surfaced
 // as "available" platforms or shown as "AOM is connected to them".
@@ -32,41 +52,22 @@ function loadRegistry() {
 
 const REGISTRY = loadRegistry()
 
-async function getUserId(req) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null
-  const jwt = extractJwt(req)
-  if (!jwt) return null
+// The signed-in person plus their home world slug, or null.
+async function getUser(req) {
+  const token = extractJwt(req)
+  if (!token) return null
   try {
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${jwt}` },
-    })
-    if (!r.ok) return null
-    const user = await r.json()
-    return user?.id || null
+    const who = await convex('query', 'users:verifyToken', {}, token)
+    return who && who.userId ? { ...who, token } : null
   } catch {
     return null
   }
 }
 
-// Returns the caller's primary tenant id (e.g. "aom", "karens-world",
-// "arsenal"). Falls back to null on lookup error -- caller treats null as
-// "non-aom" by default, the safer side for AOM-internal integrations.
-async function getUserTenant(userId) {
-  if (!userId || !SUPABASE_URL || !SUPABASE_KEY) return null
-  try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/tenant_users?user_id=eq.${userId}&select=tenant_id&limit=5`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
-    )
-    if (!r.ok) return null
-    const rows = await r.json()
-    if (!Array.isArray(rows) || rows.length === 0) return null
-    // Prefer "aom" if present (user is on the AOM team), else first row.
-    const aom = rows.find(x => x.tenant_id === 'aom')
-    return (aom || rows[0]).tenant_id || null
-  } catch {
-    return null
-  }
+function toIso(ms) {
+  if (!ms) return null
+  const d = new Date(ms)
+  return Number.isNaN(d.getTime()) ? null : d.toISOString()
 }
 
 export default async function handler(req, res) {
@@ -77,39 +78,36 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' })
 
-  const userId = await getUserId(req)
+  const user = await getUser(req)
 
   // If we can't identify the user (anonymous or stale session), return the registry
   // with no connected state — the client falls back to localStorage.
-  if (!userId || !SUPABASE_URL || !SUPABASE_KEY) {
+  if (!user) {
     return res.status(200).json({
       integrations: REGISTRY.map(i => ({ ...i, status: 'available', connected_at: null })),
       mode: 'anonymous',
     })
   }
 
-  // Resolve tenant so we can hide AOM-internal system integrations from
-  // every other tenant. Patrik 2026-05-25: "the only connected platforms
-  // users get by default are anthropic". AOM-internal system platforms
-  // (Vercel, Supabase, Dropbox, Apollo, Postiz, GitHub, OpenAI,
-  // ElevenLabs, Google Calendar) stay functional under the hood — they
-  // just don't surface to tenants as connected or as available.
-  const callerTenant = await getUserTenant(userId)
-  const isAomTeam = callerTenant === 'aom' 
+  // Hide AOM-internal system integrations from every other tenant. Patrik
+  // 2026-05-25: "the only connected platforms users get by default are
+  // anthropic". The caller's world is their home world on Convex.
+  const isAomTeam = (user.world || user.worldSlug || '') === 'aom'
 
-  // Best-effort fetch of per-user rows. If the table doesn't exist yet (migration
-  // pending), we degrade gracefully to the registry-only view.
+  // Best-effort fetch of per-user rows. On any failure we degrade to the
+  // registry-only view.
   let rowsBySlug = {}
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&select=integration_slug,status,connected_at`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
-    )
-    if (r.ok) {
-      const rows = await r.json()
-      if (Array.isArray(rows)) {
-        rows.forEach(row => { rowsBySlug[row.integration_slug] = row })
-      }
+    const rows = await convex('query', 'integrations:listForUser', { userId: user.userId }, user.token)
+    if (Array.isArray(rows)) {
+      rows.forEach(row => {
+        rowsBySlug[row.service] = {
+          integration_slug: row.service,
+          // A disconnected row reads as available: the row is history, not a state.
+          status: row.status === 'disconnected' ? 'available' : (row.status || 'available'),
+          connected_at: toIso(row.connectedAt),
+        }
+      })
     }
   } catch {
     // ignore; degrade gracefully
@@ -130,8 +128,8 @@ export default async function handler(req, res) {
     .map(i => {
       const row = rowsBySlug[i.slug]
       // System integrations are platform-level -- always connected for the
-      // authed user. The user's account_integrations row, if any, can still
-      // override (e.g. user explicitly disconnected).
+      // authed user. The user's own row, if any, can still override (e.g.
+      // the user explicitly disconnected).
       if (i.system && (!row || row.status !== 'available')) {
         return {
           ...i,

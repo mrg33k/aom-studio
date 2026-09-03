@@ -112,7 +112,7 @@ final class TrackerStore: ObservableObject {
             tickets = try await ticketsTask
             ticketsFailure = nil
         } catch {
-            // The bridge answers 503 when SOURCING_SUPABASE_SERVICE_KEY is unset on the
+            // The bridge answers 503 when the sourcing backend is not configured on the
             // deployment. That is a configuration fact, not a user error, and the board
             // says so instead of showing an empty list that reads as "no tickets".
             ticketsFailure = (error as? LocalizedError)?.errorDescription ?? "The client ticket board is not reachable."

@@ -1,7 +1,7 @@
-// /api/dashboard/campaign-health — corner:campaign-tool R3.
+// /api/dashboard/campaign-health
 // The 5-second poll behind the health strip. Light payload, structured so the
 // UI can compose the plain-words line and render exactly ONE fix action.
-//   GET ?world=ben&id=<uuid>
+//   GET ?world=ben&id=<id>
 //
 // Status resolution (first match wins):
 //   paused         campaign.status = paused                     -> action resume
@@ -11,13 +11,13 @@
 //   waiting        today's batch awaiting_approval               -> action approve_batch
 //   running        otherwise
 //
-// The engine writes health_problem_code/user_action/message; this endpoint is
-// read-only and additionally catches "engine went silent" on its own.
+// corner:retire-supabase (2026-09-03): the campaign and its batches come from
+// campaigns:get on Convex. The engine writes health_* and run fields into the
+// campaign's `settings` blob; this endpoint is read-only.
 
-import { resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js';
-
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { requestedTenantFromCompat, sendTenantContextError } from '../_lib/tenantContext.js';
+import { convexQuery } from '../_lib/reportsStore.js';
 
 const OVERDUE_MS = 30 * 60 * 1000;
 
@@ -30,17 +30,18 @@ const ACTION_LABELS = {
   review_flagged: 'Review',
 };
 
-function sb(path) {
-  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-    },
-  });
-}
-
-function restIn(values) {
-  return (values || []).map(value => encodeURIComponent(String(value))).join(',');
+function shapeBatch(batch) {
+  if (!batch) return null;
+  return {
+    id: batch._id,
+    status: batch.status,
+    batch_date: batch.scheduledFor ? new Date(batch.scheduledFor).toISOString().slice(0, 10) : null,
+    contact_count: batch.size,
+    sent_count: batch.sent_count ?? null,
+    failed_count: batch.failed_count ?? null,
+    held_count: batch.held_count ?? null,
+    created_at: new Date(batch.createdAt).toISOString(),
+  };
 }
 
 export default async function handler(req, res) {
@@ -50,65 +51,51 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
-  let tenantContext;
   let world;
   try {
-    tenantContext = await resolveTenantContext(req);
-    world = tenantContext.tenantId;
+    const requested = requestedTenantFromCompat({ query: req.query || {}, body: req.body || {} });
+    ({ tenant: world } = await verifyTenant(requested, req));
   } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ ok: false, error: err.message });
     return sendTenantContextError(res, err);
   }
-  const campaignWorlds = tenantContext.aliases?.length ? tenantContext.aliases : [world];
 
   const id = String(req.query.id || '');
   if (!id) return res.status(400).json({ error: 'id required' });
 
   try {
-    const r = await sb(
-      `campaigns?id=eq.${id}&world=in.(${restIn(campaignWorlds)})` +
-      `&select=id,status,autopilot,daily_cap,health_status,health_problem_code,health_user_action,health_message,health_checked_at,last_run_at,last_result,next_run_at`
-    );
-    if (!r.ok) return res.status(r.status).json({ error: await r.text() });
-    const rows = await r.json();
-    if (!rows.length) return res.status(404).json({ error: 'campaign not found' });
-    const c = rows[0];
+    const c = await convexQuery('campaigns:get', { id }).catch(() => null);
+    const owner = c ? await convexQuery('worlds:getBySlug', { slug: world }).catch(() => null) : null;
+    if (!c || !owner || String(owner._id) !== String(c.worldId)) return res.status(404).json({ error: 'campaign not found' });
 
-    const br = await sb(
-      `campaign_batches?campaign_id=eq.${id}&select=id,status,batch_date,contact_count,sent_count,failed_count,held_count,created_at&order=created_at.desc&limit=1`
-    );
-    const batch = br.ok ? (await br.json())[0] || null : null;
+    const s = (c.settings && typeof c.settings === 'object') ? c.settings : {};
+    const batch = shapeBatch((Array.isArray(c.batches) ? c.batches : [])[0] || null);
 
     const now = Date.now();
     let status = 'running';
     let problem = null;
     let action = null;
 
-    if (c.status === 'paused' || c.status === 'draft' || c.status === 'closed') {
+    if (c.status === 'paused' || c.status === 'draft' || c.status === 'closed' || c.status === 'done') {
       status = 'paused';
       action = c.status === 'paused' ? { type: 'resume', label: ACTION_LABELS.resume } : null;
       problem = c.status === 'paused'
         ? { code: 'paused', label: 'Paused. Nothing will send until you resume.' }
         : { code: c.status, label: c.status === 'draft' ? 'Draft. Not launched yet.' : 'Campaign closed.' };
-    } else if (c.health_status === 'problem' && c.health_problem_code) {
+    } else if (s.health_status === 'problem' && s.health_problem_code) {
       status = 'problem';
-      problem = { code: c.health_problem_code, label: c.health_message || 'Something needs attention.' };
-      const t = c.health_user_action;
+      problem = { code: s.health_problem_code, label: s.health_message || 'Something needs attention.' };
+      const t = s.health_user_action;
       action = t ? { type: t, label: ACTION_LABELS[t] || 'Fix' } : null;
-    } else if (c.next_run_at && now - new Date(c.next_run_at).getTime() > OVERDUE_MS &&
+    } else if (s.next_run_at && now - new Date(s.next_run_at).getTime() > OVERDUE_MS &&
                !(batch && (batch.status === 'sending' || batch.status === 'awaiting_approval'))) {
       // engine silent past its slot and no batch in flight/waiting: surface it
       status = 'problem';
-      problem = {
-        code: 'missed_run',
-        label: 'Nothing went out at the scheduled time.',
-      };
+      problem = { code: 'missed_run', label: 'Nothing went out at the scheduled time.' };
       action = { type: 'run_now', label: ACTION_LABELS.run_now };
     } else if (batch && batch.status === 'awaiting_approval') {
       status = 'waiting';
-      problem = {
-        code: 'batch_waiting_approval',
-        label: `Today's batch of ${batch.contact_count} is ready and waiting on you.`,
-      };
+      problem = { code: 'batch_waiting_approval', label: `Today's batch of ${batch.contact_count} is ready and waiting on you.` };
       action = { type: 'approve_batch', label: ACTION_LABELS.approve_batch };
     }
 
@@ -117,11 +104,11 @@ export default async function handler(req, res) {
       tenant_id: world,
       health: {
         status,
-        autopilot: !!c.autopilot,
-        lastRun: c.last_run_at
-          ? { at: c.last_run_at, result: c.last_result, sent: batch && batch.status === 'completed' ? batch.sent_count : null }
+        autopilot: !!s.autopilot,
+        lastRun: s.last_run_at
+          ? { at: s.last_run_at, result: s.last_result || null, sent: batch && batch.status === 'completed' ? batch.sent_count : null }
           : null,
-        nextRun: c.next_run_at ? { at: c.next_run_at } : null,
+        nextRun: s.next_run_at ? { at: s.next_run_at } : null,
         batch,
         problem,
         action,

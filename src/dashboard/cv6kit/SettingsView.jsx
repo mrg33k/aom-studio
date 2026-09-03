@@ -8,8 +8,8 @@ import React, { useState } from 'react';
  *
  * Props (all required for real wiring; defaults provided for CV6KitTest sample preview):
  *   theme: 'dark' | 'light' | 'glass' — the active theme
- *   user: the signed-in person. Accepts either a plain { full_name, email } or the raw
- *         Supabase auth user (name on user_metadata.full_name) — see accountName below.
+ *   user: the signed-in person. Accepts either a plain { full_name, email } or the
+ *         legacy-shaped auth user (name on user_metadata.full_name) — see accountName below.
  *         Whoever is signed in is who renders; no person is ever a fallback.
  *   agents: [ { id, role, initials, toneBg }, ... ] — agents + their autonomy toggles
  *   connections: { [name]: boolean } — Email, GitHub, Calendar, Slack, Drive connect state
@@ -75,8 +75,8 @@ const ICONS = {
  *
  * Why these exist: the aom world holds three humans (Patrik, Ash, Courtney),
  * each with their own login, and Ben/Karen have worlds of their own. The old
- * `user?.full_name || 'Patrik'` was wrong twice over — CornerVG passes the raw
- * Supabase auth user, whose display name lives on `user_metadata.full_name`,
+ * `user?.full_name || 'Patrik'` was wrong twice over — the old shell passed the
+ * legacy-shaped auth user, whose display name lives on `user_metadata.full_name`,
  * NOT on `full_name`, so the fallback fired for everyone. Ash opened Settings
  * and read Patrik's name and Patrik's email as her own account.
  *

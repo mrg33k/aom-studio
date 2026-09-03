@@ -1,7 +1,8 @@
 // GET /api/dashboard/missions-created?project=corner[&limit=20]
 //
-// R75-h2: returns recent mission_created events for a project. Same
-// service-role proxy pattern as /api/dashboard/doc-updates.
+// R75-h2: returns recent mission_created events for a project.
+// corner:retire-supabase (2026-09-03): reads the Convex events table through
+// events:find. Was a service-role proxy onto the Supabase events table.
 //
 // Response shape:
 //   { missions: [{ id, agent, project, mission, description,
@@ -9,20 +10,10 @@
 
 // SECURITY (corner:tenant-isolation R1): the events table has no client_id, so
 // this feed was reading mission_created events across ALL worlds with no auth.
-// Now ?project is required and gated by verifyProjectAccess(project) — the caller
+// Now ?project is required and gated by verifyProjectAccess(project). The caller
 // must prove access to that project, and only that project's rows are returned.
 import { verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js'
-
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-function headers() {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-  }
-}
+import { convexQuery } from '../_lib/reportsStore.js'
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -30,9 +21,6 @@ export default async function handler(req, res) {
 
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
-  }
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' })
   }
 
   const project = (req.query.project || '').toString().toLowerCase()
@@ -45,17 +33,16 @@ export default async function handler(req, res) {
   }
   const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100)
 
-  const qs = [
-    'select=id,agent,payload,timestamp',
-    'event_type=eq.mission_created',
-    'order=timestamp.desc',
-    `limit=${limit}`,
-  ].join('&')
-
+  // The project filter runs here, not in the query: payload.project casing has
+  // drifted in old rows, so an exact server-side match would drop some.
   let rows = []
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${qs}`, { headers: headers() })
-    if (r.ok) rows = await r.json()
+    const found = await convexQuery('events:find', {
+      event_type: 'mission_created',
+      order: 'desc',
+      limit: Math.min(limit * 5, 500),
+    })
+    if (Array.isArray(found)) rows = found
   } catch (_) {}
 
   const missions = []
@@ -71,6 +58,7 @@ export default async function handler(req, res) {
       file_count: p.file_count || 0,
       timestamp: row.timestamp,
     })
+    if (missions.length >= limit) break
   }
   return res.status(200).json({ missions })
 }

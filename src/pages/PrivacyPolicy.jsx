@@ -100,7 +100,7 @@ export default function PrivacyPolicy() {
         <p style={para}>
           We do not sell your personal information, and we do not share it with
           advertisers. We share data only with the service providers that run the
-          product — hosting (Vercel), data storage (Supabase), AI processing
+          product — hosting (Vercel), data storage (Convex), AI processing
           (Anthropic), and push notifications (Apple) — and only as needed to provide
           the service. We may also disclose information if the law requires it.
         </p>

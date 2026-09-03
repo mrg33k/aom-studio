@@ -1,7 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../dashboard/lib/supabase.js'
 import { authFetch } from '../dashboard/lib/authFetch.js'
+import { getViewer, hasSession } from '../dashboard/lib/convex.js'
+import { updateUserPreferences } from '../dashboard/lib/auth.js'
+
+// corner:retire-supabase (2026-09-03). Who is signed in comes from users:viewer on
+// Convex (getViewer). The onboarded flag and the who/age answers are merged into
+// users.preferences (users:setPrefs via updateUserPreferences). The world and the
+// agent rows are created by /api/onboarding/create-agents, which already writes
+// to Convex (users:ensureWorld, worlds:addMember, agents:upsert).
+
+// Every account gets a personal "user-<id>" world at sign-up. Only a world that
+// is not the personal one counts as "already onboarded".
+function hasSharedWorld(viewer) {
+  const slug = String(viewer?.worldSlug || '').trim()
+  return !!slug && !slug.startsWith('user-')
+}
 
 // Ordered list of integrations the new-user onboarding walks through, one card
 // at a time. R1 ships Google (gmail) only; later rounds extend this list.
@@ -242,24 +256,23 @@ export default function Onboarding() {
 
   const isQaMode = sessionStorage.getItem('corner-qa-active') === 'true'
 
-  // On mount: check if user already has a world
+  // On mount: check if the person already has a world
   useEffect(() => {
     async function checkExistingWorld() {
-      if (!supabase) return
+      if (!hasSession()) return
       if (isQaMode) return
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        const meta = user?.user_metadata || {}
-        if (meta.world && meta.world.trim()) {
+        const viewer = await getViewer()
+        if (!viewer) return
+        if (viewer.onboarded) {
           localStorage.setItem('corner-onboarded', 'true')
           navigate('/dashboard', { replace: true })
           return
         }
-        const { data } = await supabase.from('agent_status').select('id, client_id').limit(1)
-        if (data && data.length > 0) {
-          await supabase.auth.updateUser({
-            data: { onboarded: true, has_completed_onboarding: true, world: data[0].client_id }
-          }).catch(() => {})
+        if (hasSharedWorld(viewer)) {
+          // A membership in a real world already exists (invited, or seeded by a
+          // script). Mark the person onboarded so this page stops showing up.
+          await updateUserPreferences({ onboarded: true, has_completed_onboarding: true, world: viewer.worldSlug }).catch(() => {})
           localStorage.setItem('corner-onboarded', 'true')
           navigate('/dashboard', { replace: true })
         }
@@ -308,11 +321,15 @@ export default function Onboarding() {
   async function runCreateAgents() {
     setCreatingError('')
     try {
-      // Get client ID from Supabase auth
+      // The world this person's team lands in. Their personal "user-<id>"
+      // world (minted at sign-up) becomes the workspace; the route reuses it
+      // through users:ensureWorld and makes them its owner.
       let clientId = null
+      let viewer = null
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        clientId = user?.id || null
+        viewer = await getViewer()
+        const own = String(viewer?.worldSlug || '')
+        clientId = own.startsWith('user-') ? own : (viewer?.userId ? String(viewer.userId) : null)
       } catch {}
 
       const worldSlug = toSlug(
@@ -320,12 +337,12 @@ export default function Onboarding() {
         architectPlan.user_profile?.name ||
         'my-world'
       )
-      if (!clientId) clientId = isQaMode ? `qa-${worldSlug}` : worldSlug
+      if (isQaMode) clientId = `qa-${worldSlug}`
+      if (!clientId) clientId = worldSlug
 
       // r7:open-agent-surface — /api/onboarding/create-agents requires a
-      // verified session now (it writes agent rows and queues a Mac-side plan).
-      // The user is already signed in at this point — getUser() above depends
-      // on it — so authFetch just carries the token that was always there.
+      // verified session (it writes agent rows and queues a Mac-side plan).
+      // authFetch carries the Convex Auth token.
       const res = await authFetch('/api/onboarding/create-agents', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -339,16 +356,14 @@ export default function Onboarding() {
         return
       }
 
-      // Update Supabase user metadata
-      if (supabase && !isQaMode) {
-        await supabase.auth.updateUser({
-          data: {
-            world: clientId,
-            has_completed_onboarding: true,
-            onboarded: true,
-            who_type: whoType,
-            age_range: ageRange,
-          }
+      // Remember the answers and the onboarded flag on the person's preferences.
+      if (!isQaMode) {
+        await updateUserPreferences({
+          world: data.world || clientId,
+          has_completed_onboarding: true,
+          onboarded: true,
+          who_type: whoType,
+          age_range: ageRange,
         }).catch(() => {})
       }
 
@@ -442,8 +457,8 @@ export default function Onboarding() {
     // AOM guard
     let currentWorld = null
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      currentWorld = user?.user_metadata?.world
+      const viewer = await getViewer()
+      currentWorld = viewer?.worldSlug || null
     } catch {}
     if (currentWorld === 'aom' && !isQaMode) {
       setError('AOM world is protected. Use QA mode to test onboarding.')

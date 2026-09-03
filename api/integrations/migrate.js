@@ -1,27 +1,47 @@
 // POST /api/integrations/migrate
-// Body: { connection_id, workspace_id }
-// Caller must (a) own the connection (user_id === auth.uid()), AND
-//             (b) be a member of the target workspace.
-// Effect: nulls user_id, sets workspace_id on the row. Tokens stay valid.
+// Body: { connection_id, workspace_id, slug? }
+// Caller must (a) own the connection, AND
+//             (b) be a member of the target workspace (world).
+// Effect: stamps workspace_id on the connection row. Tokens stay valid.
+//
+// corner:retire-supabase (2026-09-03): the caller comes from the Convex Auth
+// token (users:verifyToken), the workspace check is worlds:membership, the
+// row lookup is integrations:getOAuthTokens and the flip is
+// integrations:setOwner. Ownership: getOAuthTokens refuses a caller who is
+// not the row's owner whenever the deployment has TASKS_KEY set; with no key
+// set the deployment does not gate reads, so the membership check is the
+// wall that remains.
 
 import { extractJwt } from '../_lib/verifyTenant.js'
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || ''
 
-function svcHeaders() {
-  return { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+async function convex(kind, path, args, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+  const res = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  })
+  if (!res.ok) throw new Error(`convex ${kind} ${path}: HTTP ${res.status}`)
+  const data = await res.json()
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex ${kind} ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`)
+  }
+  return data.value
 }
 
-async function getUserId(req) {
-  const jwt = extractJwt(req)
-  if (!jwt) return null
-  const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${jwt}` },
-  })
-  if (!r.ok) return null
-  const user = await r.json()
-  return user?.id || null
+async function getUser(req) {
+  const token = extractJwt(req)
+  if (!token) return null
+  try {
+    const who = await convex('query', 'users:verifyToken', {}, token)
+    return who && who.userId ? { ...who, token } : null
+  } catch {
+    return null
+  }
 }
 
 export default async function handler(req, res) {
@@ -31,57 +51,47 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
-  const userId = await getUserId(req)
-  if (!userId) return res.status(401).json({ error: 'not-authenticated' })
+  const user = await getUser(req)
+  if (!user) return res.status(401).json({ error: 'not-authenticated' })
 
-  const { connection_id, workspace_id } = req.body || {}
+  const { connection_id, workspace_id, slug } = req.body || {}
   if (!connection_id || !workspace_id) {
     return res.status(400).json({ error: 'connection_id + workspace_id required' })
   }
 
-  // (a) caller owns the connection
-  const ownCheck = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?id=eq.${connection_id}&select=id,user_id,workspace_id,integration_slug,config&limit=1`,
-    { headers: svcHeaders() },
-  )
-  const ownRow = ownCheck.ok ? (await ownCheck.json())[0] : null
+  // (a) the row exists and the caller may read it (owner gate lives in Convex)
+  let ownRow = null
+  try {
+    ownRow = await convex('query', 'integrations:getOAuthTokens', {
+      connectionId: String(connection_id),
+      slug: String(slug || 'gmail'),
+    }, user.token)
+  } catch (err) {
+    if (/not allowed/i.test(err.message || '')) return res.status(403).json({ error: 'not-owner' })
+    return res.status(502).json({ error: 'lookup-failed', detail: String(err.message || '').slice(0, 200) })
+  }
   if (!ownRow) return res.status(404).json({ error: 'connection-not-found' })
-  if (ownRow.user_id !== userId) return res.status(403).json({ error: 'not-owner' })
-  if (ownRow.workspace_id) return res.status(400).json({ error: 'already-workspace-owned' })
+  if (ownRow.workspaceId) return res.status(400).json({ error: 'already-workspace-owned' })
 
   // (b) caller is a member of the workspace
-  const memCheck = await fetch(
-    `${SUPABASE_URL}/rest/v1/tenant_users?user_id=eq.${userId}&tenant_id=eq.${workspace_id}&select=tenant_id&limit=1`,
-    { headers: svcHeaders() },
-  )
-  const memRow = memCheck.ok ? (await memCheck.json())[0] : null
-  if (!memRow) return res.status(403).json({ error: 'not-workspace-member' })
+  let membership = null
+  try {
+    membership = await convex('query', 'worlds:membership', { worldId: String(workspace_id), userId: user.userId }, user.token)
+  } catch {
+    membership = null
+  }
+  if (!membership) return res.status(403).json({ error: 'not-workspace-member' })
 
-  // Detect collision: another row already owns this (workspace, slug, email).
-  const accountEmail = ownRow.config?.account_email || ''
-  const collisionCheck = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?workspace_id=eq.${workspace_id}&integration_slug=eq.${ownRow.integration_slug}&config->>account_email=eq.${encodeURIComponent(accountEmail)}&select=id&limit=1`,
-    { headers: svcHeaders() },
-  )
-  const collision = collisionCheck.ok ? (await collisionCheck.json())[0] : null
-  if (collision) return res.status(409).json({ error: 'workspace-already-has-this-account' })
-
-  // Flip ownership: user_id -> null, workspace_id -> set.
-  const patch = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?id=eq.${connection_id}`,
-    {
-      method: 'PATCH',
-      headers: { ...svcHeaders(), 'Content-Type': 'application/json', Prefer: 'return=representation' },
-      body: JSON.stringify({
-        user_id: null,
-        workspace_id,
-        config: { ...(ownRow.config || {}), migrated_at: new Date().toISOString(), migrated_by: userId },
-      }),
-    },
-  )
-  if (!patch.ok) {
-    const text = await patch.text().catch(() => '')
-    return res.status(502).json({ error: 'migrate-failed', detail: text.slice(0, 200) })
+  // Flip ownership: workspace_id -> set.
+  try {
+    const out = await convex('mutation', 'integrations:setOwner', {
+      ...(CONVEX_KEY ? { key: CONVEX_KEY } : {}),
+      connectionId: String(connection_id),
+      workspaceId: membership.slug || String(workspace_id),
+    }, user.token)
+    if (!out || !out.ok) return res.status(404).json({ error: 'connection-not-found' })
+  } catch (err) {
+    return res.status(502).json({ error: 'migrate-failed', detail: String(err.message || '').slice(0, 200) })
   }
   return res.status(200).json({ ok: true })
 }

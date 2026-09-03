@@ -9,8 +9,6 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { authFetch } from '../lib/authFetch';
-import { supabase } from '../lib/supabase.js';
-import { convexPlaneActive } from './data/convexClient.js';
 import { useRoomThread, useGoalThread, rowAttachments } from './data/useRoomThread.js';
 import { titleForAgent } from './data/agentTitles.js';
 import { buildChecklistRoomOptions } from './data/roomKeys.js';
@@ -415,85 +413,18 @@ export function useRoomCrossings(worldId, room) {
   const [items, setItems] = useState([]);
   const [status, setStatus] = useState('loading');
   const [windowFull, setWindowFull] = useState(false);
-  // Constant for the whole page load (convexClient caches the flag), so this hook
-  // pair never changes shape mid-session. Off the Convex plane the engine call is
-  // handed no room and resolves to the null engine: no fetch, no socket, no timer
-  // — the Supabase path below is byte-for-byte what it always was.
-  const convex = convexPlaneActive();
-  const convexThread = useRoomThread(convex ? worldId : null, convex ? room : null);
+  // The open room's thread engine is the one source for the files panel too:
+  // both read the same Convex rows (corner:retire-supabase 2026-09-03; the
+  // second fetch over the old messages API is gone).
+  const convexThread = useRoomThread(worldId, room);
   useEffect(() => {
     const fixture = demoRoomCrossings(room);
     if (fixture) { setItems(fixture); setWindowFull(false); setStatus('ready'); return undefined; }
-    if (convex) return undefined; // the engine below is the source on this plane
-    if (!worldId || !room?.id) { setItems([]); setStatus('loading'); return undefined; }
-    let alive = true;
-    setItems([]);
-    setStatus('loading');
-    const params = new URLSearchParams();
-    params.set('client', worldId);
-    if (room.isMission) {
-      params.set('mission_slug', String(room.missionSlug || room.id || '').split(':').pop());
-      // Project so the reader canonicalizes the bare slug within the right project
-      // (Bug 1) — otherwise a correctly-canonicalized mission's crossings are missed.
-      if (room.projectSlug) params.set('project', room.projectSlug);
-    }
-    else if (room.isProject) { params.set('project', room.id); params.set('project_only', '1'); }
-    else params.set('agent', room.id);
-    params.set('attachments', '1');
-    params.set('limit', '2000');
-    const load = () => authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!alive) return;
-        const rows = Array.isArray(d?.messages) ? d.messages : [];
-        const out = [];
-        for (const m of rows) {
-          const isUser = m.role === 'user' || !!m.user_name;
-          const who = isUser ? 'You' : titleForAgent(m.agent || room.name);
-          for (const att of rowAttachments(m).attachments) {
-            if (!att?.url || !att?.name) continue;
-            // gateStatus rides on the attachment (share-file.py stamps it there,
-            // not on the parent row) so a file delivered without its critic pass
-            // can say so on the card. Patrik 2026-07-27: always deliver, mark it
-            // — the gate annotates the work now instead of silently eating it.
-            out.push({ type: 'file', kind: fileKind(att.name, att.mime), name: att.name, url: att.url, mime: att.mime || '', ts: m.timestamp || null, who, size: att.size || 0, isUser, messageId: m.id || '', gateStatus: att.gate_status || '' });
-          }
-        }
-        out.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
-        // Same file announced twice (re-share, retry) → keep the newest card only.
-        const seen = new Set();
-        const deduped = out.filter((it) => {
-          const key = `${it.isUser ? 'u' : 'a'}|${it.url || ''}|${it.name}`;
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
-        setItems(deduped);
-        setWindowFull(rows.length >= 2000);
-        setStatus(deduped.length ? 'ready' : 'empty');
-      })
-      .catch(() => { if (alive) setStatus((s) => (s === 'ready' ? s : 'error')); });
-    load();
-    // Progressive polling: 5s for the first 3 polls (a file that takes half a
-    // minute to show up reads as a lie), then 30s to ease off once the room is
-    // warm. setTimeout recursive so each poll decides the next interval.
-    const pollRef = { current: null };
-    const pollCountRef = { current: 0 };
-    const scheduleNext = () => {
-      const delay = pollCountRef.current < 3 ? 5000 : 30000;
-      pollRef.current = setTimeout(() => {
-        if (!alive) return;
-        load();
-        pollCountRef.current += 1;
-        scheduleNext();
-      }, delay);
-    };
-    scheduleNext();
-    return () => { alive = false; if (pollRef.current) clearTimeout(pollRef.current); };
-  }, [convex, worldId, room?.id, room?.isMission, room?.isProject, room?.missionSlug]); // eslint-disable-line react-hooks/exhaustive-deps
+    return undefined;
+  }, [worldId, room?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const convexItems = useMemo(
-    () => (convex ? convexCrossingsFrom(convexThread.messages, room) : null),
-    [convex, convexThread.messages, room?.name], // eslint-disable-line react-hooks/exhaustive-deps
+    () => (demoRoomCrossings(room) ? null : convexCrossingsFrom(convexThread.messages, room)),
+    [convexThread.messages, room?.name], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const live = convexItems || items;
   // Honest status: the panel is loading exactly while its thread is, and 'empty'
@@ -1177,7 +1108,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         ("start the conversation"). It renders now, with a retry. */}
                     {threadStatus === 'error' && !messages?.length
                       ? <RoomThreadError onRetry={reloadThread} />
-                      : <PlainThread messages={messages} onSend={handleThreadAction} localReadOnly={!supabase && !convexPlaneActive()} />}
+                      : <PlainThread messages={messages} onSend={handleThreadAction} localReadOnly={false} />}
                     {/* Background work came BACK to the thread (Patrik 2026-08-06). Sending it
                         to a separate window meant a busy room looked idle, and only ever showed
                         dispatched sub-agent jobs. This lists both kinds, per room, short, with a

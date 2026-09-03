@@ -1,35 +1,38 @@
 // api/dashboard/cleo-workspaces.js
 // GET  /api/dashboard/cleo-workspaces            -- list all workspaces
 // GET  /api/dashboard/cleo-workspaces?slug=X     -- get workspace detail by slug
-// Optional: ?client=X (ilike), ?status=X (exact)
+// Optional: ?client=X (substring match), ?status=X (exact)
+//
+// corner:retire-supabase (2026-09-03): workspaces are rows in the Convex
+// cleoWorkspaces table (cleoWorkspaces:list / cleoWorkspaces:get). They used
+// to be the latest video_workspace event per slug in the Supabase events table.
+// The payload shape is kept: each workspace is the stored `data` blob with
+// slug, title and status on top.
 
 import { requireSuperAdmin, TenantAuthError } from '../_lib/verifyTenant.js'
+import { convexQuery } from '../_lib/reportsStore.js'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-function dbHeaders() {
+function shapeWorkspace(row) {
+  const data = row && row.data && typeof row.data === 'object' ? row.data : {}
   return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
+    ...data,
+    id: row._id,
+    slug: row.slug,
+    title: row.title ?? data.title ?? row.slug,
+    status: row.status ?? data.status ?? null,
+    updated_at: row.updatedAt ? new Date(row.updatedAt).toISOString() : (data.updated_at ?? null),
   }
 }
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' })
-  }
-
-  // Lists every video_workspace across all clients (no per-world scoping exists
-  // in the payloads), so this is global internal production data — super-admin
-  // only. Was fully unauthenticated.
+  // Lists every workspace across all clients (no per-world scoping exists in
+  // the payloads), so this is global internal production data: super-admin only.
   try {
     await requireSuperAdmin(req)
   } catch (err) {
@@ -41,39 +44,26 @@ export default async function handler(req, res) {
 
   try {
     if (slug) {
-      const url = `${SUPABASE_URL}/rest/v1/events?event_type=eq.video_workspace&payload->>slug=eq.${encodeURIComponent(slug)}&order=timestamp.desc&limit=1`
-      const r = await fetch(url, { headers: dbHeaders() })
-      if (!r.ok) {
-        const text = await r.text()
-        return res.status(r.status).json({ error: text })
-      }
-      const rows = await r.json()
-      if (!rows.length) return res.status(404).json({ error: 'Workspace not found' })
-      return res.status(200).json({ workspace: rows[0].payload })
+      const row = await convexQuery('cleoWorkspaces:get', { slug: String(slug) })
+      if (!row) return res.status(404).json({ error: 'Workspace not found' })
+      return res.status(200).json({ workspace: shapeWorkspace(row) })
     }
 
-    // List: fetch latest 500 events, group by slug, keep latest per slug
-    const url = `${SUPABASE_URL}/rest/v1/events?event_type=eq.video_workspace&order=timestamp.desc&limit=500`
-    const r = await fetch(url, { headers: dbHeaders() })
-    if (!r.ok) {
-      const text = await r.text()
-      return res.status(r.status).json({ error: text })
-    }
-    const events = await r.json()
+    // The list query returns slug/title/status only; pull the data blob per
+    // slug so the client and status filters below see the same fields the
+    // old event payloads carried.
+    const summaries = await convexQuery('cleoWorkspaces:list', {})
+    const rows = await Promise.all(
+      (Array.isArray(summaries) ? summaries : []).map(async (s) => {
+        try { return (await convexQuery('cleoWorkspaces:get', { slug: s.slug })) || s } catch { return s }
+      })
+    )
 
-    // Deduplicate: keep latest event per slug
-    const seen = new Set()
-    let workspaces = []
-    for (const event of events) {
-      const p = event.payload || {}
-      if (!p.slug || seen.has(p.slug)) continue
-      seen.add(p.slug)
-      workspaces.push(p)
-    }
+    let workspaces = rows.map(shapeWorkspace)
 
     if (clientFilter) {
-      const q = clientFilter.toLowerCase()
-      workspaces = workspaces.filter(w => w.client && w.client.toLowerCase().includes(q))
+      const q = String(clientFilter).toLowerCase()
+      workspaces = workspaces.filter(w => w.client && String(w.client).toLowerCase().includes(q))
     }
     if (statusFilter) {
       workspaces = workspaces.filter(w => w.status === statusFilter)

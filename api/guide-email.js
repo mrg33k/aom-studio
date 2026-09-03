@@ -5,14 +5,16 @@
 //   1. Validates the email
 //   2. Turnstile verification (Cloudflare) — stubbed for dev, enforced when TURNSTILE_SECRET_KEY set
 //   3. Rate limit: 5/min per IP (in-memory stub; production uses Upstash/Redis)
-//   4. Stores the lead in Supabase `guide_leads` (skipped silently if table missing)
+//   4. Stores the lead on Convex (leads:capture). A store failure never blocks the send.
 //   5. Emails the prompts to the user via Resend
 //
 // Required env:
 //   RESEND_API_KEY            — Resend API key
-//   SUPABASE_URL              — Supabase project URL
-//   SUPABASE_SERVICE_ROLE_KEY — Supabase service role key
 //   TURNSTILE_SECRET_KEY      — Cloudflare Turnstile secret (optional in dev; required in prod)
+//   REPORTS_CONVEX_URL        — optional; defaults to the canonical Convex deployment
+//
+// corner:retire-supabase (2026-09-03): the lead row used to go to the Supabase
+// guide_leads table. It now goes to the Convex leads table through leads:capture.
 //
 // NOTE on FROM address (2026-06-04):
 //   Resend plan only allows 1 verified domain. `sourcing.directory` is the active one.
@@ -23,7 +25,7 @@
 //   TO FIX PROPERLY: upgrade Resend plan and add aheadofmarket.com domain.
 
 import { Resend } from 'resend';
-import { createClient } from '@supabase/supabase-js';
+import { convexMutation } from './_lib/reportsStore.js';
 
 function escapeHtml(s) {
   return String(s || '')
@@ -112,25 +114,20 @@ export default async function handler(req, res) {
 
   const cleanEmail = email.trim().toLowerCase();
   const safeCategory = (category && typeof category === 'string') ? category : 'unknown';
+  const promptList = Array.isArray(prompts) ? prompts : [];
 
-  // Store lead in Supabase — fire-and-forget; missing table doesn't block send.
+  // Store the lead on Convex. Best effort: a store failure must not block the send.
   try {
-    if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      const supabase = createClient(
-        process.env.SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
-      );
-      const { error } = await supabase.from('guide_leads').insert({
-        email: cleanEmail,
-        category: safeCategory,
-      });
-      if (error) console.warn('Lead store warning:', error.message);
-    }
+    await convexMutation('leads:capture', {
+      email: cleanEmail,
+      category: safeCategory,
+      prompts: promptList.slice(0, 50),
+      source: 'ai-guide',
+    });
   } catch (e) {
-    console.warn('Lead store failed (table may not exist yet):', e.message);
+    console.warn('Lead store failed:', e.message);
   }
 
-  const promptList = Array.isArray(prompts) ? prompts : [];
   const promptsHtml = promptList.map((p) => `
     <div style="margin-bottom:24px; padding:20px; background:#f9f9f9; border-radius:10px; border:1px solid #eee;">
       <div style="font-weight:700; font-size:15px; color:#0C0C0C; margin-bottom:8px;">${escapeHtml(p.label)}</div>

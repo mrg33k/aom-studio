@@ -1,183 +1,162 @@
-// Fake Supabase client backed by JSON fixtures.
+// Fake Convex backend backed by JSON fixtures.
 //
-// Activated when VITE_USE_FIXTURES === '1' (see ./supabase.js).
-// Run `npm run snapshot` to refresh the fixtures from prod.
+// Activated when VITE_USE_FIXTURES === '1' (see ./convex.js). Run `npm run
+// snapshot` to refresh the fixtures. Each JSON file under __fixtures__/latest is
+// keyed by its table name (rooms.json, messages.json, tasks.json, state.json ...).
 //
-// Implements just enough of @supabase/supabase-js for the dashboard's
-// read path: `.from(table).select(cols).eq/in/order/limit/range/single/maybeSingle`.
-// Mutations are no-ops; realtime is a no-op; auth returns a synthetic user.
+// convex.js routes every convexQuery / convexMutation / subscribeConvexQuery
+// through fixtureConvexCall when the flag is on. Reads answer from the JSON;
+// writes are no-ops that return a plausible value. The dynamic import in
+// convex.js keeps this module (and the JSON) out of the prod bundle.
 
-// eager: true so JSON is inlined at build time; conditional gate in supabase.js
-// keeps this module out of the prod bundle.
+// eager: true so JSON is inlined at build time.
 const fixtureMap = import.meta.glob('../__fixtures__/latest/*.json', {
   eager: true,
   import: 'default',
-})
+});
 
-const fixtures = {}
+const fixtures = {};
 for (const [path, data] of Object.entries(fixtureMap)) {
-  const m = path.match(/\/([a-z_]+)\.json$/)
-  if (!m) continue
-  fixtures[m[1]] = Array.isArray(data) ? data : []
+  const m = path.match(/\/([a-z_]+)\.json$/);
+  if (!m) continue;
+  fixtures[m[1]] = Array.isArray(data) ? data : [];
 }
 
-function passesFilter(row, f) {
-  const v = row[f.col]
-  switch (f.op) {
-    case 'eq': return v === f.val
-    case 'neq': return v !== f.val
-    case 'in': return f.vals.includes(v)
-    case 'gt': return v > f.val
-    case 'gte': return v >= f.val
-    case 'lt': return v < f.val
-    case 'lte': return v <= f.val
-    case 'is': return f.val === null ? v == null : v === f.val
-    case 'like': return typeof v === 'string' && new RegExp(f.val.replace(/%/g, '.*')).test(v)
-    case 'ilike': return typeof v === 'string' && new RegExp(f.val.replace(/%/g, '.*'), 'i').test(v)
-    default: return true
-  }
-}
+const table = (name) => fixtures[name] || [];
 
-function makeQuery(table) {
-  const state = {
-    filters: [],
-    orderBy: null,
-    limit: null,
-    range: null,
-    single: false,
-    maybeSingle: false,
-  }
-  const resolve = () => {
-    let rows = (fixtures[table] || []).slice()
-    rows = rows.filter(r => state.filters.every(f => passesFilter(r, f)))
-    if (state.orderBy) {
-      const { col, asc } = state.orderBy
-      rows.sort((a, b) => {
-        if (a[col] === b[col]) return 0
-        if (a[col] == null) return asc ? -1 : 1
-        if (b[col] == null) return asc ? 1 : -1
-        return (a[col] < b[col] ? -1 : 1) * (asc ? 1 : -1)
-      })
-    }
-    if (state.range) {
-      const [a, b] = state.range
-      rows = rows.slice(a, b + 1)
-    }
-    if (state.limit != null) rows = rows.slice(0, state.limit)
-    if (state.single) {
-      if (rows.length === 0) return { data: null, error: { message: 'No rows', code: 'PGRST116' } }
-      return { data: rows[0], error: null }
-    }
-    if (state.maybeSingle) return { data: rows[0] || null, error: null }
-    return { data: rows, error: null, count: rows.length }
-  }
-  const q = {
-    select() { return q },
-    eq(col, val) { state.filters.push({ op: 'eq', col, val }); return q },
-    neq(col, val) { state.filters.push({ op: 'neq', col, val }); return q },
-    in(col, vals) { state.filters.push({ op: 'in', col, vals }); return q },
-    gt(col, val) { state.filters.push({ op: 'gt', col, val }); return q },
-    gte(col, val) { state.filters.push({ op: 'gte', col, val }); return q },
-    lt(col, val) { state.filters.push({ op: 'lt', col, val }); return q },
-    lte(col, val) { state.filters.push({ op: 'lte', col, val }); return q },
-    is(col, val) { state.filters.push({ op: 'is', col, val }); return q },
-    like(col, val) { state.filters.push({ op: 'like', col, val }); return q },
-    ilike(col, val) { state.filters.push({ op: 'ilike', col, val }); return q },
-    not() { return q },
-    or() { return q },
-    order(col, opts) { state.orderBy = { col, asc: opts?.ascending !== false }; return q },
-    limit(n) { state.limit = n; return q },
-    range(a, b) { state.range = [a, b]; return q },
-    single() { state.single = true; return q },
-    maybeSingle() { state.maybeSingle = true; return q },
-    then(onFulfilled, onRejected) {
-      try { return Promise.resolve(resolve()).then(onFulfilled, onRejected) }
-      catch (e) { return Promise.reject(e).catch(onRejected) }
-    },
-  }
-  // Mutations: no-op but keep the chain alive
-  const noopChain = {
-    select() { return Promise.resolve({ data: null, error: null }) },
-    eq() { return noopChain },
-    match() { return noopChain },
-    then(r) { return Promise.resolve({ data: null, error: null }).then(r) },
-  }
-  q.insert = () => Promise.resolve({ data: null, error: null })
-  q.update = () => noopChain
-  q.delete = () => noopChain
-  q.upsert = () => Promise.resolve({ data: null, error: null })
-  return q
-}
+let seq = 0;
+function fakeId(prefix) { seq += 1; return `${prefix}_fixture_${seq}`; }
 
-function syntheticUser() {
-  const tu = fixtures.tenant_users || []
-  const patrik = tu.find(u => u.slug === 'patrik') || tu[0]
+export function fixtureViewer() {
+  const users = table('users');
+  const u = users.find((x) => x && x.email === 'hello@aom-inhouse.com') || users[0] || null;
   return {
-    id: patrik?.auth_user_id || patrik?.user_id || '00000000-0000-0000-0000-000000000000',
-    email: patrik?.email || 'hello@aom-inhouse.com',
-    user_metadata: {
-      full_name: patrik?.name || 'Patrik Matheson',
-      world: 'aom',
-      onboarded: true,
-      has_completed_onboarding: true,
-    },
-    app_metadata: {},
+    userId: u?._id || 'fixture-user',
+    email: u?.email || 'hello@aom-inhouse.com',
+    name: u?.name || 'Patrik Matheson',
+    color: u?.color || '#3B82F6',
+    initials: 'PM',
+    avatarUrl: null,
+    worldId: 'fixture-world',
+    worldSlug: 'aom',
+    worldName: 'AOM',
+    role: 'owner',
+    isAdmin: true,
+    mustChangePassword: false,
+    preferences: { onboarded: true },
+    onboarded: true,
+  };
+}
+
+function roomMatches(room, roomId) {
+  if (!room || !roomId) return false;
+  return room.legacyRoomId === roomId || String(room._id) === String(roomId);
+}
+
+export async function fixtureConvexCall(kind, path, args = {}) {
+  switch (path) {
+    case 'users:viewer':
+    case 'users:verifyToken':
+      return fixtureViewer();
+    case 'worlds:resolveForSession':
+      return { worldId: 'fixture-world', slug: 'aom', healed: false };
+    case 'worlds:getBySlug':
+      return { _id: 'fixture-world', slug: args.slug || 'aom', name: 'AOM' };
+    case 'worlds:forViewer':
+      return [{ worldId: 'fixture-world', slug: 'aom', name: 'AOM', role: 'owner', planTier: null }];
+    case 'rooms:listRooms': {
+      const rows = table('rooms').filter((r) => !args.filter || args.filter === 'all' || r.kind === args.filter);
+      return rows.sort((a, b) => ((b.lastMessage?.createdAt || b.createdAt || 0) - (a.lastMessage?.createdAt || a.createdAt || 0)));
+    }
+    case 'messages:list': {
+      const room = table('rooms').find((r) => roomMatches(r, args.roomId));
+      const rows = table('messages').filter((m) => !args.roomId || (room && String(m.roomId) === String(room._id)) || m.legacyRoomId === args.roomId);
+      return rows.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).slice(-(args.limit || 100));
+    }
+    case 'messages:listSince':
+      return table('messages').filter((m) => (m.createdAt || 0) >= (args.since || 0)).slice(0, args.limit || 500);
+    case 'messages:send':
+      return fakeId('message');
+    case 'reads:markRead':
+      return { ok: true };
+    case 'reads:readState':
+      return { baselineAt: null, familySize: 1, lastReadAt: Date.now() };
+    case 'reviews:list':
+      return table('reviews');
+    case 'reviews:history':
+      return table('review_history');
+    case 'reviews:count':
+      return table('reviews').length;
+    case 'reviews:decide':
+      return { ok: true };
+    case 'tasks:find': {
+      let rows = table('tasks');
+      if (args.status) rows = rows.filter((t) => t.status === args.status);
+      if (args.status_in) rows = rows.filter((t) => args.status_in.includes(t.status));
+      if (args.client_id) rows = rows.filter((t) => t.client_id === args.client_id);
+      if (args.project) rows = rows.filter((t) => t.project === args.project);
+      return rows.slice(args.offset || 0, (args.offset || 0) + (args.limit || rows.length));
+    }
+    case 'tasks:queue':
+      return { id: fakeId('task'), status: 'queued', title: args.row?.title || '' };
+    case 'followups:listPending':
+      return table('followups');
+    case 'state:get': {
+      if (args.key && !args.kind) {
+        const row = table('state').find((r) => r.kind === args.key && !r.scopeId);
+        return row ? row.value : null;
+      }
+      const rows = table('state').filter((r) => !args.kind || r.kind === args.kind);
+      if (args.scopeId !== undefined) return rows.find((r) => String(r.scopeId || '') === String(args.scopeId || '')) || null;
+      return rows;
+    }
+    case 'state:put':
+    case 'state:set':
+      return { ok: true, created: false };
+    case 'projects:list':
+      return table('projects');
+    case 'agents:listStatus':
+    case 'agents:list':
+      return table('agents');
+    case 'records:recent':
+      return table('records').slice(0, args.limit || 12);
+    case 'routines:list':
+      return table('routines');
+    case 'routines:create':
+      return fakeId('routine');
+    case 'routines:update':
+    case 'routines:remove':
+      return { ok: true };
+    case 'rooms:createRoom':
+      return fakeId('room');
+    case 'rooms:getRoom':
+      return table('rooms').find((r) => String(r._id) === String(args.roomId)) || null;
+    case 'users:saveProfile':
+      return { ...fixtureViewer(), ...(args.initials ? { initials: args.initials } : {}), ...(args.color ? { color: args.color } : {}) };
+    case 'users:setPrefs':
+      return { ...fixtureViewer().preferences, ...(args.patch || {}) };
+    case 'files:generateUploadUrl':
+      return 'about:blank';
+    case 'auth:signIn':
+      return { tokens: { token: 'fixture-token', refreshToken: 'fixture-refresh' } };
+    case 'auth:signOut':
+    case 'auth:changePassword':
+      return { ok: true };
+    default: {
+      if (kind === 'query') return table(String(path).split(':')[0]);
+      return { ok: true, fixture: true };
+    }
   }
-}
-
-const syntheticSession = () => ({
-  user: syntheticUser(),
-  access_token: 'fixture-token',
-  refresh_token: 'fixture-refresh',
-})
-
-const fakeChannel = {
-  on() { return fakeChannel },
-  subscribe(cb) {
-    if (typeof cb === 'function') queueMicrotask(() => cb('SUBSCRIBED'))
-    return fakeChannel
-  },
-  unsubscribe() { return Promise.resolve({ error: null }) },
-}
-
-export const fixtureClient = {
-  from: makeQuery,
-  channel: () => fakeChannel,
-  removeChannel: () => Promise.resolve({ error: null }),
-  removeAllChannels: () => Promise.resolve(),
-  rpc: () => Promise.resolve({ data: null, error: null }),
-  auth: {
-    async getSession() {
-      return { data: { session: syntheticSession() }, error: null }
-    },
-    async getUser() {
-      return { data: { user: syntheticUser() }, error: null }
-    },
-    onAuthStateChange(cb) {
-      queueMicrotask(() => cb('SIGNED_IN', syntheticSession()))
-      return { data: { subscription: { unsubscribe: () => {} } } }
-    },
-    async signOut() { return { error: null } },
-    async updateUser() { return { data: { user: syntheticUser() }, error: null } },
-    async signInWithOAuth() { return { data: { url: null }, error: null } },
-  },
-  storage: {
-    from: () => ({
-      upload: async () => ({ data: null, error: { message: 'Mutations disabled in fixture mode' } }),
-      download: async () => ({ data: null, error: null }),
-      getPublicUrl: () => ({ data: { publicUrl: '' } }),
-    }),
-  },
 }
 
 export function fixtureSummary() {
-  return Object.fromEntries(Object.entries(fixtures).map(([t, rows]) => [t, rows.length]))
+  return Object.fromEntries(Object.entries(fixtures).map(([t, rows]) => [t, rows.length]));
 }
 
 // True when an explicit ?demo=<fixture> browser-test surface is mounted. Demo fixtures
 // route their network through Playwright intercepts, so data hooks may keep fetching and
-// sends stay exercisable there; real local no-Supabase mode must stay read-only instead.
+// sends stay exercisable there; a real signed-out page must stay read-only instead.
 export function demoFixtureActive() {
-  try { return !!new URLSearchParams(window.location.search).get('demo') }
-  catch { return false }
+  try { return !!new URLSearchParams(window.location.search).get('demo'); }
+  catch { return false; }
 }

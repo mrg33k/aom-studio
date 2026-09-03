@@ -1,17 +1,16 @@
 // GET /api/dashboard/project-summary?slug=corner
 //
 // Returns the current project summary for a given project slug.
-// Written by scripts/project-summary-daemon.py into the `cm_state` table
-// with kind='project_summary', scope_id=<slug>. As of chat-perf-finishing
-// R3 (2026-05-11), state-shape writes use cm_state (upsert-in-place)
-// instead of events (append-only) to keep the events table bounded.
+// Written by scripts/project-summary-daemon.py as one keyed row with
+// kind='project_summary', scopeId=<slug> (upsert-in-place, never append-only).
 //
-// Uses the service role key because cm_state has RLS on.
+// corner:retire-supabase (2026-09-03): the row lives in the Convex state
+// table and is read with state:get. It used to be the Supabase cm_state table.
 //
 // Response shape (preserved from the events-era for frontend compatibility):
 // {
 //   event: {
-//     timestamp: "2026-05-11T20:57:00Z",  // mapped from cm_state.updated_at
+//     timestamp: "2026-05-11T20:57:00Z",  // mapped from the row's updatedAt
 //     payload: {
 //       summary_md, open_task_count, recent_completions,
 //       last_human_intent, reasons, updated_at, revision,
@@ -20,9 +19,9 @@
 // }
 
 import { verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js';
+import { convexQuery } from '../_lib/reportsStore.js';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const STATE_KIND = 'project_summary';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -32,10 +31,6 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' });
-  }
-
   const rawSlug = (req.query.slug || '').toString().trim().toLowerCase();
   if (!rawSlug) return res.status(400).json({ error: 'slug required' });
   if (!/^[a-z0-9][a-z0-9-_]{0,64}$/.test(rawSlug)) {
@@ -44,46 +39,31 @@ export default async function handler(req, res) {
 
   // GET was unauthenticated and honored any ?slug=, returning that project's
   // summary narrative/event data. Require the caller prove access to the
-  // project — same gate as missions.js / missions-created.js.
+  // project, same gate as missions.js / missions-created.js.
+  let access;
   try {
-    await verifyProjectAccess(rawSlug, req);
+    access = await verifyProjectAccess(rawSlug, req);
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     return res.status(500).json({ error: 'Auth verification failed' });
   }
 
   try {
-    const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/cm_state` +
-      `?kind=eq.project_summary` +
-      `&scope_id=eq.${encodeURIComponent(rawSlug)}` +
-      `&client_id=eq.aom` +
-      `&select=payload,updated_at` +
-      `&limit=1`,
-      {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-        },
-      }
-    );
-
-    if (!resp.ok) {
-      const errText = await resp.text().catch(() => '');
-      return res.status(502).json({
-        error: 'Supabase read failed',
-        status: resp.status,
-        detail: errText.slice(0, 200),
-      });
+    // The daemon files the row under the project's holder world. Try that
+    // first, then a world-less row (the daemon's pre-tenancy shape).
+    const worldSlug = access?.tenant || null;
+    let stateRow = null;
+    if (worldSlug) {
+      stateRow = await convexQuery('state:get', { kind: STATE_KIND, scopeId: rawSlug, worldId: worldSlug });
+    }
+    if (!stateRow) {
+      stateRow = await convexQuery('state:get', { kind: STATE_KIND, scopeId: rawSlug });
     }
 
-    const rows = await resp.json();
-    const stateRow = Array.isArray(rows) && rows.length ? rows[0] : null;
-
-    // Map cm_state shape → events-era response shape so the frontend
-    // (TasksPanel) doesn't need to change. timestamp = updated_at.
+    // Map the state row to the events-era response shape so the frontend
+    // (TasksPanel) doesn't need to change. timestamp = updatedAt.
     const event = stateRow
-      ? { timestamp: stateRow.updated_at, payload: stateRow.payload }
+      ? { timestamp: new Date(stateRow.updatedAt || Date.now()).toISOString(), payload: stateRow.value ?? null }
       : null;
 
     res.setHeader('Cache-Control', 'no-store');

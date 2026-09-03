@@ -1,35 +1,38 @@
 // GET /api/dashboard/active-agents?client=aom
 //
-// cage-match contender A: PID-based active agents via Supabase sync table.
+// Which agents are working right now, from the Convex agents roster
+// (corner:retire-supabase, 2026-09-03; was the Supabase active_processes
+// sync table that a Mac script wrote PIDs into).
 //
-// The Mac's queue-runner writes real process liveness into the `active_processes`
-// table every 60s. This endpoint reads that table -- no inference from task status,
-// no guessing. If the PID is alive, the row is there. If the PID is dead, the row
-// is gone (deleted by sync-active-processes.py).
+// Each agent's own hooks stamp status (idle | working | blocked) and the task in
+// hand through agents:setStatus. This endpoint reads agents:listStatus and
+// reports every agent that is not idle and was stamped recently. There are no
+// PIDs any more: a stamp is a fact the agent's own session wrote, not a
+// process probe. `pid` stays in the shape as null so callers that read it keep
+// working.
 //
-// Safety net: any row with heartbeat older than 90s is treated as stale and
-// excluded, in case queue-runner stops running.
+// Safety net: a stamp older than STATUS_TTL_SECONDS is treated as stale and
+// excluded, in case a session died without stamping idle.
 //
-// World scoping: ?client=<world_slug> filters to that world's processes.
-// Defaults to 'aom'. Non-AOM worlds only see their own active agents.
+// World scoping: ?client=<world_slug> filters to that world's roster.
 //
 // Returns:
 // {
 //   active: [
 //     { agent, pid, task_id, task_text, spawned_at, heartbeat, age_seconds }
 //   ],
-//   source: "active_processes",
+//   source: "agents:listStatus",
 //   staleCutoff: "<iso timestamp>",
 //   lastUpdated: "<iso timestamp>"
 // }
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { convexQuery } from '../_lib/reportsStore.js';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// Rows with heartbeat older than this are excluded (queue-runner must have died)
-const HEARTBEAT_TTL_SECONDS = 90;
+// Status stamps land on Stop and PostToolUse hooks, so a working agent can be
+// quiet for a few minutes between stamps. 15 minutes keeps a live session on
+// the board without letting a dead one linger all day.
+const STATUS_TTL_SECONDS = 15 * 60;
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -39,12 +42,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' });
-  }
-
   // Resolve + verify tenant. JWT must prove the caller can access this world.
-  // Fail-closed: no default client — caller must present JWT or explicit ?client that verifyTenant can authorize.
+  // Fail-closed: no default client.
   const requested = (req.query.client && req.query.client.trim())
     ? req.query.client.trim().toLowerCase()
     : '';
@@ -57,60 +56,31 @@ export default async function handler(req, res) {
     throw err;
   }
 
-  // Compute stale cutoff -- any row with heartbeat older than TTL is excluded
-  const staleCutoff = new Date(Date.now() - HEARTBEAT_TTL_SECONDS * 1000).toISOString();
-
-  // World-scope the query: only return active processes for the requested world.
-  const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`;
+  const now = Date.now();
+  const staleCutoffMs = now - STATUS_TTL_SECONDS * 1000;
+  const staleCutoff = new Date(staleCutoffMs).toISOString();
 
   try {
-    const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/active_processes` +
-      `?heartbeat=gt.${encodeURIComponent(staleCutoff)}` +
-      clientFilter +
-      `&order=agent.asc`,
-      {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-        },
-      }
-    );
+    const rows = await convexQuery('agents:listStatus', { worldId: clientId });
 
-    if (!resp.ok) {
-      const errText = await resp.text();
-      // If the table doesn't exist yet, return empty rather than crashing
-      if (resp.status === 404 || errText.includes('does not exist')) {
-        return res.status(200).json({
-          active: [],
-          source: 'active_processes',
-          tableExists: false,
-          staleCutoff,
-          lastUpdated: new Date().toISOString(),
-        });
-      }
-      return res.status(resp.status).json({ error: errText });
-    }
-
-    const rows = await resp.json();
-    const now = Date.now();
-
-    const active = rows.map(row => ({
-      agent:      row.agent,
-      pid:        row.pid,
-      task_id:    row.task_id || null,
-      task_text:  row.task_text || '',
-      spawned_at: row.spawned_at || null,
-      heartbeat:  row.heartbeat,
-      // How many seconds ago was the last heartbeat?
-      age_seconds: row.heartbeat
-        ? Math.round((now - new Date(row.heartbeat).getTime()) / 1000)
-        : null,
-    }));
+    const active = (Array.isArray(rows) ? rows : [])
+      .filter((row) => row.status && row.status !== 'idle' && row.status !== 'offline')
+      .filter((row) => typeof row.updatedAt === 'number' && row.updatedAt >= staleCutoffMs)
+      .sort((a, b) => String(a.slug).localeCompare(String(b.slug)))
+      .map((row) => ({
+        agent: row.slug,
+        pid: null,
+        task_id: null,
+        task_text: row.currentTask || row.lastRecord || '',
+        spawned_at: null,
+        heartbeat: new Date(row.updatedAt).toISOString(),
+        age_seconds: Math.round((now - row.updatedAt) / 1000),
+        status: row.status,
+      }));
 
     return res.status(200).json({
       active,
-      source: 'active_processes',
+      source: 'agents:listStatus',
       tableExists: true,
       staleCutoff,
       lastUpdated: new Date().toISOString(),

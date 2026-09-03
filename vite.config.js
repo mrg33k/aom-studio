@@ -7,11 +7,29 @@ import os from 'os'
 import { execFile, spawn } from 'child_process'
 import { WebSocketServer } from 'ws'
 import { watch } from 'chokidar'
-import https from 'https'
-import http from 'http'
 
 // AOM-EA local filesystem root for localhost dashboard mode
 const AOM_EA_ROOT = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA'
+
+// Convex is the only backend (corner:retire-supabase). The local dev helpers
+// below call the deployment's public HTTP API with plain fetch, the same way
+// the Vercel routes do. TASKS_KEY is passed when the shell has it (the
+// deployment only checks it when it is set there too).
+const CONVEX_URL = process.env.VITE_CONVEX_URL || process.env.CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+async function convexCall(kind, path, args = {}) {
+  const key = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || ''
+  const body = { path, args: key ? { key, ...args } : args, format: 'json' }
+  const r = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await r.json().catch(() => null)
+  if (!r.ok || !data || data.status !== 'success') {
+    throw new Error((data && data.errorMessage) || `convex ${kind} ${path}: HTTP ${r.status}`)
+  }
+  return data.value
+}
 
 // Relay files: prefer Application Support path (where launchd relay + relay-respond.py write)
 // Falls back to repo path if App Support doesn't exist.
@@ -426,7 +444,7 @@ function localDashboardPlugin() {
 
         // ?all=true -- AOM Team Room: aggregate messages from ALL agent JSONL files
         if (all) {
-          // Static agent -> project_path mapping (local dev doesn't have Supabase project_path column)
+          // Static agent -> project_path mapping (local dev reads no project registry)
           const AGENT_PROJECT_PATH = {
             bobby: 'AOM -> Corner', colton: 'AOM -> Corner',
             elon: 'AOM -> Corner', steffen: 'AOM -> Corner',
@@ -1202,110 +1220,6 @@ function localDashboardPlugin() {
         })
       })
 
-      // ---- CORNER FAST CHAT (Scout-style) --------
-      // POST: Write message to corner_chat_messages (Supabase) for fast processing
-      // GET: Poll for response by message ID
-      server.middlewares.use('/api/local/corner-chat', async (req, res) => {
-        res.setHeader('Access-Control-Allow-Origin', '*')
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-        if (req.method === 'OPTIONS') { res.statusCode = 204; res.end(); return }
-
-        // Load Supabase creds
-        let sbUrl = '', sbKey = ''
-        try {
-          const envPath = resolve(os.homedir(), '.config/supabase/corner.env')
-          const envContent = fs.readFileSync(envPath, 'utf-8')
-          for (const line of envContent.split('\n')) {
-            if (line.includes('=') && !line.startsWith('#')) {
-              const [k, ...v] = line.split('=')
-              if (k.trim() === 'SUPABASE_URL') sbUrl = v.join('=').trim()
-              if (k.trim() === 'SUPABASE_SERVICE_ROLE_KEY') sbKey = v.join('=').trim()
-            }
-          }
-        } catch {}
-        if (!sbUrl || !sbKey) {
-          res.statusCode = 500
-          res.end(JSON.stringify({ error: 'No Supabase credentials' }))
-          return
-        }
-
-        const sbHeaders = {
-          'apikey': sbKey,
-          'Authorization': `Bearer ${sbKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation',
-        }
-
-        if (req.method === 'POST') {
-          // Write new message to corner_chat_messages
-          let body = ''
-          req.on('data', chunk => { body += chunk })
-          req.on('end', async () => {
-            try {
-              const data = JSON.parse(body)
-              const { agent, message, client_id } = data
-              if (!agent || !message) {
-                res.statusCode = 400
-                res.end(JSON.stringify({ error: 'Missing agent or message' }))
-                return
-              }
-              const sbRes = await fetch(`${sbUrl}/rest/v1/corner_chat_messages`, {
-                method: 'POST',
-                headers: sbHeaders,
-                body: JSON.stringify({
-                  agent,
-                  message,
-                  client_id: client_id || 'aom',
-                  status: 'pending',
-                  source: 'corner-dashboard',
-                }),
-              })
-              if (sbRes.ok) {
-                const rows = await sbRes.json()
-                res.setHeader('Content-Type', 'application/json')
-                res.end(JSON.stringify({ ok: true, id: rows[0]?.id }))
-              } else {
-                res.statusCode = 500
-                res.end(JSON.stringify({ error: `Supabase error: ${sbRes.status}` }))
-              }
-            } catch (err) {
-              res.statusCode = 500
-              res.end(JSON.stringify({ error: err.message }))
-            }
-          })
-        } else if (req.method === 'GET') {
-          // Poll for response by message ID
-          const url = new URL(req.url, 'http://localhost')
-          const msgId = url.searchParams.get('id')
-          if (!msgId) {
-            res.statusCode = 400
-            res.end(JSON.stringify({ error: 'Missing id parameter' }))
-            return
-          }
-          try {
-            const sbRes = await fetch(
-              `${sbUrl}/rest/v1/corner_chat_messages?id=eq.${msgId}&select=id,status,response,completed_at`,
-              { headers: sbHeaders }
-            )
-            if (sbRes.ok) {
-              const rows = await sbRes.json()
-              res.setHeader('Content-Type', 'application/json')
-              res.end(JSON.stringify(rows[0] || { status: 'not_found' }))
-            } else {
-              res.statusCode = 500
-              res.end(JSON.stringify({ error: `Supabase error: ${sbRes.status}` }))
-            }
-          } catch (err) {
-            res.statusCode = 500
-            res.end(JSON.stringify({ error: err.message }))
-          }
-        } else {
-          res.statusCode = 405
-          res.end(JSON.stringify({ error: 'GET or POST only' }))
-        }
-      })
-
       // ---- AGENT QUEUES (List Tab) --------
       // Returns all agents with their queued tasks parsed from incoming-tasks.md.
       // Each task gets: text, done, id (slug-index), addedAt (parsed from "From agent (date)" headers or file mtime)
@@ -1762,17 +1676,6 @@ function localDashboardPlugin() {
 
         const STUDIO_ROOT = process.cwd() // vite always runs from the studio directory
         const AOM_EA_SCRIPTS = resolve(AOM_EA_ROOT, 'scripts')
-        // Load Supabase credentials from ~/.config/supabase/corner.env (same source as Python scripts)
-        function loadSupabaseCreds() {
-          const envPath = resolve(os.homedir(), '.config', 'supabase', 'corner.env')
-          if (!fs.existsSync(envPath)) return {}
-          const creds = {}
-          for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
-            const m = line.match(/^([A-Z_]+)=(.+)$/)
-            if (m) creds[m[1]] = m[2].trim()
-          }
-          return creds
-        }
 
         const report = {
           timestamp: new Date().toISOString(),
@@ -1976,15 +1879,14 @@ function localDashboardPlugin() {
               report.taskStatus = { count: 0, ghostsCleared: 0, entries: [], error: e.message }
             }
 
-            // 6. RELAY RESET: kill supabase-listener (launchd auto-restarts) + check tmux session
+            // 6. RELAY RESET: check the tmux relay session and refresh its lock.
+            // (The old 6a step killed the database listener daemon; that daemon is
+            // retired with the Supabase backend, so there is nothing to restart.)
             const TMUX_RELAY_SESSION = 'relay'
             const TMUX_RELAY_ALT = 'claude-relay' // Legacy session name (pre-Mar 2026)
             const LOCK_FILE_PATH = resolve(AOM_EA_ROOT, 'context', '.relay-session-lock')
             try {
-              // 6a. Kill supabase-listener.py (launchd com.aom-ea.supabase-listener restarts it)
-              const killResult = await runScript('pkill', ['-f', 'supabase-listener.py'], {})
-              // pkill exits 0 if it killed something, 1 if nothing matched
-              const listenerWasRunning = killResult.code === 0
+              const listenerWasRunning = false
 
               // 6b. Check tmux relay session (check both known names: 'relay' and legacy 'claude-relay')
               // If either exists the relay is alive -- only restart if BOTH are dead.
@@ -2025,7 +1927,7 @@ function localDashboardPlugin() {
 
               report.relayReset = {
                 listenerRestarted: listenerWasRunning,
-                listenerNote: listenerWasRunning ? 'launchd restarting' : 'was already stopped',
+                listenerNote: 'listener daemon retired; the task queue lives on Convex',
                 tmux: tmuxStatus,
                 lockRefreshed,
               }
@@ -2053,33 +1955,15 @@ function localDashboardPlugin() {
                   // Kill existing session
                   await runScript('tmux', ['kill-session', '-t', sessionName], {})
                 }
-                // Get last 3 unread messages for this agent from Supabase
-                const sbCreds2 = loadSupabaseCreds()
+                // Last 3 things Patrik said in this agent's 1:1 room, from Convex.
                 let lastMessages = ''
-                if (sbCreds2.SUPABASE_URL && sbCreds2.SUPABASE_SERVICE_ROLE_KEY) {
-                  try {
-                    const msgResp = await new Promise((resolveP) => {
-                      const url = new URL(`${sbCreds2.SUPABASE_URL}/rest/v1/messages?agent=eq.${agent}&role=eq.user&order=timestamp.desc&limit=3&select=text,timestamp`)
-                      https.get({
-                        hostname: url.hostname,
-                        path: url.pathname + url.search,
-                        headers: {
-                          'apikey': sbCreds2.SUPABASE_SERVICE_ROLE_KEY,
-                          'Authorization': `Bearer ${sbCreds2.SUPABASE_SERVICE_ROLE_KEY}`,
-                        },
-                      }, (resp) => {
-                        let data = ''
-                        resp.on('data', d => data += d)
-                        resp.on('end', () => {
-                          try { resolveP(JSON.parse(data)) } catch { resolveP([]) }
-                        })
-                      }).on('error', () => resolveP([]))
-                    })
-                    if (Array.isArray(msgResp) && msgResp.length > 0) {
-                      lastMessages = msgResp.reverse().map(m => m.text).join('\n\n')
-                    }
-                  } catch {}
-                }
+                try {
+                  const rows = await convexCall('query', 'messages:list', { roomId: `aom:agent:${agent}`, limit: 40 })
+                  const mine = (Array.isArray(rows) ? rows : [])
+                    .filter(m => m && (m.role || (m.agentSlug ? 'assistant' : 'user')) === 'user' && m.text)
+                    .slice(-3)
+                  if (mine.length) lastMessages = mine.map(m => m.text).join('\n\n')
+                } catch {}
                 // Respawn via spawn-agent.sh with last messages as context
                 const prompt = lastMessages
                   ? `You are ${agent}. Read projects/${agent === 'elon' ? 'sys' : agent}/last-conversation.md for context. These are the last messages from Patrik that need your attention:\n\n${lastMessages}`
@@ -2097,57 +1981,30 @@ function localDashboardPlugin() {
             }
             report.agentRestarts = agentRestarts
 
-            // 7. SUPABASE CLEANUP: clear active tasks + reset stuck agents
-            // Runs on localhost using creds from ~/.config/supabase/corner.env
-            // (Production uses /api/dashboard/unstuck Vercel function instead)
-            const sbCreds = loadSupabaseCreds()
-            const SB_URL = sbCreds.SUPABASE_URL
-            const SB_KEY = sbCreds.SUPABASE_SERVICE_ROLE_KEY
-            if (SB_URL && SB_KEY) {
-              try {
-                const sbHeaders = {
-                  'apikey': SB_KEY,
-                  'Authorization': `Bearer ${SB_KEY}`,
-                  'Content-Type': 'application/json',
-                  'Prefer': 'return=representation',
-                }
-                // Helper: HTTPS request to Supabase REST API
-                function sbRequest(path, method, body) {
-                  return new Promise((resolveP) => {
-                    const url = new URL(`${SB_URL}/rest/v1/${path}`)
-                    const postData = JSON.stringify(body)
-                    const reqOpts = {
-                      hostname: url.hostname,
-                      path: url.pathname + url.search,
-                      method,
-                      headers: { ...sbHeaders, 'Content-Length': Buffer.byteLength(postData) },
-                    }
-                    const req = https.request(reqOpts, (res) => {
-                      let data = ''
-                      res.on('data', d => { data += d })
-                      res.on('end', () => {
-                        try { resolveP({ ok: res.statusCode < 400, data: JSON.parse(data) }) }
-                        catch { resolveP({ ok: res.statusCode < 400, data: [] }) }
-                      })
-                    })
-                    req.on('error', err => resolveP({ ok: false, error: err.message }))
-                    req.write(postData)
-                    req.end()
-                  })
-                }
-                const [taskResp, agentResp] = await Promise.all([
-                  sbRequest(`tasks?status=eq.active`, 'PATCH', { status: 'done', completed_at: new Date().toISOString() }),
-                  sbRequest(`agent_status?status=in.(working,stuck)`, 'PATCH', { status: 'idle', current_task: null }),
-                ])
-                report.supabaseCleanup = {
-                  cleared: Array.isArray(taskResp.data) ? taskResp.data.length : 0,
-                  reset: Array.isArray(agentResp.data) ? agentResp.data.length : 0,
-                }
-              } catch (e) {
-                report.supabaseCleanup = { error: e.message }
+            // 7. QUEUE CLEANUP on Convex: close tasks still marked running and set
+            // agents stuck on working/blocked back to idle (tasks:find, tasks:update,
+            // agents:listStatus, agents:setStatus).
+            try {
+              const running = await convexCall('query', 'tasks:find', { status: 'running' })
+              let cleared = 0
+              for (const t of (Array.isArray(running) ? running : [])) {
+                if (!t || !t.id) continue
+                const done = await convexCall('mutation', 'tasks:update', {
+                  id: String(t.id), require_status: 'running',
+                  patch: { status: 'done', completed_at: new Date().toISOString(), metadata: { closed_by: 'unstuck-button' } },
+                })
+                if (Array.isArray(done) && done.length) cleared += 1
               }
-            } else {
-              report.supabaseCleanup = { skipped: 'no credentials' }
+              const roster = await convexCall('query', 'agents:listStatus', { includeInactive: false })
+              let reset = 0
+              for (const a of (Array.isArray(roster) ? roster : [])) {
+                if (!a || !a.slug || !['working', 'blocked'].includes(String(a.status || ''))) continue
+                const r = await convexCall('mutation', 'agents:setStatus', { slug: a.slug, status: 'idle', currentTask: null })
+                if (r && r.ok) reset += 1
+              }
+              report.queueCleanup = { cleared, reset }
+            } catch (e) {
+              report.queueCleanup = { error: e.message }
             }
 
             res.setHeader('Content-Type', 'application/json')
@@ -2236,229 +2093,6 @@ function localDashboardPlugin() {
         })
       })
 
-      // ---- LOCAL FINANCE PROXY ----
-      // GET/POST /api/dashboard/finance
-      // On localhost, vite has no serverless function runner, so this proxy
-      // talks to Supabase directly using creds from ~/.config/supabase/corner.env.
-      // Mirrors the production finance.js handler logic exactly.
-      server.middlewares.use('/api/dashboard/finance', async (req, res) => {
-        res.setHeader('Access-Control-Allow-Origin', '*')
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS')
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-        res.setHeader('Cache-Control', 'no-store, no-cache')
-        res.setHeader('Content-Type', 'application/json')
-
-        if (req.method === 'OPTIONS') { res.statusCode = 200; res.end(); return }
-
-        // Load Supabase creds from local env file
-        function loadFinanceCreds() {
-          const envPath = resolve(os.homedir(), '.config', 'supabase', 'corner.env')
-          if (!fs.existsSync(envPath)) return {}
-          const creds = {}
-          for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
-            const m = line.match(/^([A-Z_]+)=(.+)$/)
-            if (m) creds[m[1]] = m[2].trim()
-          }
-          return creds
-        }
-        const creds = loadFinanceCreds()
-        const SB_URL = creds.SUPABASE_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-        const SB_KEY = creds.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
-
-        if (!SB_URL || !SB_KEY) {
-          res.statusCode = 500
-          res.end(JSON.stringify({ error: 'Supabase not configured for local dev. Add creds to ~/.config/supabase/corner.env' }))
-          return
-        }
-
-        const sbHeaders = {
-          'apikey': SB_KEY,
-          'Authorization': `Bearer ${SB_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation',
-        }
-        const TABLE = 'finance_transactions'
-
-        try {
-          if (req.method === 'GET') {
-            const sbRes = await fetch(`${SB_URL}/rest/v1/${TABLE}?select=*&order=date.desc`, { headers: sbHeaders })
-            if (!sbRes.ok) { const err = await sbRes.text(); res.statusCode = sbRes.status; res.end(JSON.stringify({ error: err })); return }
-            const transactions = await sbRes.json()
-            res.end(JSON.stringify({ transactions }))
-            return
-          }
-
-          if (req.method === 'POST') {
-            // Parse body
-            let body = ''
-            await new Promise(r => { req.on('data', d => { body += d }); req.on('end', r) })
-            const parsed = JSON.parse(body || '{}')
-            const { action } = parsed
-
-            if (action === 'upsert') {
-              const { transactions } = parsed
-              if (!transactions || !Array.isArray(transactions) || transactions.length === 0) {
-                res.statusCode = 400; res.end(JSON.stringify({ error: 'transactions array required' })); return
-              }
-              const seen = new Set()
-              const rows = []
-              for (const t of transactions) {
-                const key = `${t.date}|${t.description}|${t.amount}`
-                if (seen.has(key)) continue
-                seen.add(key)
-                rows.push({ date: t.date, description: t.description, amount: t.amount, category: t.category || '', owner: t.owner || 'Review', notes: t.notes || '' })
-              }
-              const sbRes = await fetch(`${SB_URL}/rest/v1/${TABLE}?on_conflict=date,description,amount`, {
-                method: 'POST',
-                headers: { ...sbHeaders, 'Prefer': 'resolution=merge-duplicates,return=representation' },
-                body: JSON.stringify(rows),
-              })
-              if (!sbRes.ok) { const err = await sbRes.text(); res.statusCode = sbRes.status; res.end(JSON.stringify({ error: err })); return }
-              const inserted = await sbRes.json()
-              res.end(JSON.stringify({ ok: true, inserted: inserted.length, total: transactions.length }))
-              return
-            }
-
-            if (action === 'update-owner') {
-              const { id, owner } = parsed
-              if (!id || !owner) { res.statusCode = 400; res.end(JSON.stringify({ error: 'id and owner required' })); return }
-              const sbRes = await fetch(`${SB_URL}/rest/v1/${TABLE}?id=eq.${encodeURIComponent(id)}`, {
-                method: 'PATCH', headers: sbHeaders, body: JSON.stringify({ owner }),
-              })
-              if (!sbRes.ok) { const err = await sbRes.text(); res.statusCode = sbRes.status; res.end(JSON.stringify({ error: err })); return }
-              const updated = await sbRes.json()
-              res.end(JSON.stringify({ ok: true, transaction: updated[0] || null }))
-              return
-            }
-
-            if (action === 'delete-all') {
-              const sbRes = await fetch(`${SB_URL}/rest/v1/${TABLE}?created_at=gte.1970-01-01`, { method: 'DELETE', headers: sbHeaders })
-              if (!sbRes.ok) { const err = await sbRes.text(); res.statusCode = sbRes.status; res.end(JSON.stringify({ error: err })); return }
-              res.end(JSON.stringify({ ok: true, message: 'All transactions deleted' }))
-              return
-            }
-
-            res.statusCode = 400
-            res.end(JSON.stringify({ error: `Unknown action: ${action}` }))
-            return
-          }
-
-          res.statusCode = 405
-          res.end(JSON.stringify({ error: 'Method not allowed' }))
-        } catch (err) {
-          res.statusCode = 500
-          res.end(JSON.stringify({ error: err.message }))
-        }
-      })
-
-      // ---- LOCAL CREATE-PROJECT-TASK PROXY ----
-      // POST /api/dashboard/create-project-task (R21c)
-      // Mirrors the production handler. Reads Supabase service-role key from
-      // ~/.config/supabase/corner.env so local dev can create tasks in the real DB.
-      server.middlewares.use('/api/dashboard/create-project-task', async (req, res) => {
-        res.setHeader('Access-Control-Allow-Origin', '*')
-        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-        res.setHeader('Content-Type', 'application/json')
-
-        if (req.method === 'OPTIONS') { res.statusCode = 200; res.end(); return }
-        if (req.method !== 'POST') { res.statusCode = 405; res.end(JSON.stringify({ error: 'POST only' })); return }
-
-        function loadCreds() {
-          const envPath = resolve(os.homedir(), '.config', 'supabase', 'corner.env')
-          if (!fs.existsSync(envPath)) return {}
-          const creds = {}
-          for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
-            const m = line.match(/^([A-Z_]+)=(.+)$/)
-            if (m) creds[m[1]] = m[2].trim()
-          }
-          return creds
-        }
-        const creds = loadCreds()
-        const SB_URL = creds.SUPABASE_URL || process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-        const SB_KEY = creds.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
-
-        if (!SB_URL || !SB_KEY) {
-          res.statusCode = 500
-          res.end(JSON.stringify({ error: 'Supabase not configured for local dev. Add creds to ~/.config/supabase/corner.env' }))
-          return
-        }
-
-        let body = ''
-        req.on('data', chunk => { body += chunk })
-        req.on('end', async () => {
-          try {
-            let parsed = {}
-            try { parsed = JSON.parse(body) } catch { }
-            const { text, projectSlug, clientId, userId } = parsed
-
-            if (!text || typeof text !== 'string' || !text.trim()) {
-              res.statusCode = 400
-              res.end(JSON.stringify({ error: 'text is required' }))
-              return
-            }
-            const slug = (projectSlug || '').toString().trim().toLowerCase() || null
-            if (!slug) {
-              res.statusCode = 400
-              res.end(JSON.stringify({ error: 'projectSlug is required' }))
-              return
-            }
-            if (!/^[a-z0-9][a-z0-9-_]{0,64}$/.test(slug)) {
-              res.statusCode = 400
-              res.end(JSON.stringify({ error: 'invalid projectSlug' }))
-              return
-            }
-
-            const rawTitle = text.trim().replace(/\s+/g, ' ')
-            const title = rawTitle.length > 140 ? rawTitle.slice(0, 137) + '…' : rawTitle
-            const client = clientId && /^[a-z0-9][a-z0-9-_:]{0,64}$/i.test(clientId) ? clientId : 'aom'
-
-            let repoPath = ''
-            try {
-              const r = await fetch(
-                `${SB_URL}/rest/v1/projects?slug=eq.${encodeURIComponent(slug)}&select=repo_path&limit=1`,
-                { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } },
-              )
-              if (r.ok) {
-                const rows = await r.json()
-                repoPath = (Array.isArray(rows) && rows[0] && rows[0].repo_path) || ''
-              }
-            } catch (_) { /* best effort */ }
-
-            const row = {
-              title, text: text.trim(), description: text.trim(),
-              status: 'queued', source: 'corner-dashboard-task',
-              client_id: client, created_by: userId || null,
-              project: slug, project_path: repoPath,
-              metadata: { repo: slug, created_via: 'r21c-in-chat', model: 'sonnet' },
-            }
-            const resp = await fetch(`${SB_URL}/rest/v1/tasks`, {
-              method: 'POST',
-              headers: {
-                apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`,
-                'Content-Type': 'application/json', Prefer: 'return=representation',
-              },
-              body: JSON.stringify(row),
-            })
-            if (!resp.ok) {
-              const t = await resp.text().catch(() => '')
-              res.statusCode = 502
-              res.end(JSON.stringify({ error: `Supabase insert failed: ${t.slice(0, 200)}` }))
-              return
-            }
-            const inserted = await resp.json()
-            const task = (Array.isArray(inserted) && inserted[0]) || null
-            res.statusCode = 200
-            res.end(JSON.stringify({
-              ok: true,
-              task: task ? { id: task.id, title: task.title, status: task.status, project: task.project } : null,
-            }))
-          } catch (err) {
-            res.statusCode = 500
-            res.end(JSON.stringify({ error: err?.message || 'unknown error' }))
-          }
-        })
-      })
     },
   }
 }
@@ -2693,12 +2327,12 @@ export default defineConfig({
       output: {
         // Split heavy vendor libs into their own chunks so main stays under
         // Vite's 500 kB warning threshold. Without this, firebase + framer-motion +
-        // supabase + react-router all roll into main and push it past 2.7 MB.
+        // convex + react-router all roll into main and push it past 2.7 MB.
         manualChunks(id) {
           if (!id.includes('node_modules')) return
           if (id.includes('/firebase/') || id.includes('/@firebase/')) return 'vendor-firebase'
           if (id.includes('/framer-motion/')) return 'vendor-framer'
-          if (id.includes('/@supabase/')) return 'vendor-supabase'
+          if (id.includes('/convex/')) return 'vendor-convex'
           if (id.includes('/react-router')) return 'vendor-router'
           if (id.includes('/react-dom/') || id.includes('/scheduler/') || id.match(/\/react\/(?!.*node_modules)/)) return 'vendor-react'
           // 3D stack rides the lazy ActGear3D chunk — forcing it into shared

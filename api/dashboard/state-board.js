@@ -1,22 +1,25 @@
 // GET /api/dashboard/state-board?world=<world>
 //
-// Read-only view of the state board (Supabase `board_latest`) for the Command
-// tool's goal ledger — corner:state-board (decision 2026-07-05): one row per
-// entity (agent / room) holding the entity's GOAL plus its latest state line,
-// auto-stamped by the Stop hook (scripts/state-board-stamp.py). This is the
-// designated source of truth for "what is this room's goal right now"; the
+// Read-only view of the state board for the Command tool's goal ledger
+// (corner:state-board, decision 2026-07-05): one row per entity (agent / room)
+// holding the entity's latest state line, stamped by the Stop hook. The
 // legacy room-goals.json (see room-goals.js) stays as the loop's goal memory
-// and the ledger merges both (board wins when it has a goal).
+// and the ledger merges both.
+//
+// Backend: Convex records:recent (corner:retire-supabase R2, 2026-09-03).
+// The Convex record carries entity, kind, line, updatedAt and updatedBy; it
+// has no goal column, so `goal` is null here and the ledger falls back to
+// room-goals for it.
 //
 // Returns: { rows: [ { entity, kind, goal, state_line, updated_by, updated_at } ],
 //            source: 'live' | 'none' }
-// Fails open to an empty list — the ledger renders honest fallbacks, never fakes.
+// Fails open to an empty list.
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
 import { normalizeTenantSlug } from '../_lib/tenantContext.js';
+import { convexQuery } from '../_lib/reportsStore.js';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const iso = (ms) => (Number.isFinite(ms) ? new Date(ms).toISOString() : null);
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -30,8 +33,6 @@ export default async function handler(req, res) {
   const requested = normalizeTenantSlug(req.query.world || req.query.client || req.query.client_id || envTenant);
   if (!requested) return res.status(400).json({ error: 'world required' });
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(200).json({ rows: [], source: 'none' });
-
   let tenantId = requested;
   try {
     ({ tenant: tenantId } = await verifyTenant(requested, req));
@@ -41,15 +42,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/board_latest` +
-      `?select=entity,kind,goal,state_line,updated_by,updated_at` +
-      `&order=updated_at.desc&limit=200`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
-    );
-    if (!r.ok) return res.status(200).json({ rows: [], source: 'none' });
-    const rows = await r.json();
-    return res.status(200).json({ rows: Array.isArray(rows) ? rows : [], source: 'live', tenant_id: tenantId });
+    const records = await convexQuery('records:recent', { limit: 60 });
+    const rows = (Array.isArray(records) ? records : []).map((r) => ({
+      entity: r.entity,
+      kind: r.kind,
+      goal: null,
+      state_line: r.line,
+      updated_by: r.updatedBy || null,
+      updated_at: iso(r.updatedAt),
+    }));
+    return res.status(200).json({ rows, source: 'live', tenant_id: tenantId });
   } catch (_) {
     return res.status(200).json({ rows: [], source: 'none' });
   }

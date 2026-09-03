@@ -4,9 +4,9 @@
 // Returns structured JSON for the R79-f2 reader UI to consume.
 //
 // Tenant-gated: JWT must prove the caller can access the project's world.
-// The world is derived server-side from the Supabase projects table (client_id
-// column = world slug, e.g. "aom" or "ben"). The caller never supplies the
-// world — it is looked up and verified, not trusted.
+// The world is derived server-side from the Convex project registry (the
+// project's owner world slug, e.g. "aom" or "ben"). The caller never supplies
+// the world; it is looked up and verified, not trusted.
 //
 // Hidden files: the ONE shared hide-list (api/_lib/hideList.js — Python twin
 // AOM-EA/scripts/lib/files_hide_list.py). System junk only; nothing
@@ -40,8 +40,7 @@ const AOM_EA_HARDCODED = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA';
 const AOM_EA_SIBLING = path.resolve(process.cwd(), '..', 'AOM-EA');
 const AOM_EA_ROOT = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARDCODED : AOM_EA_SIBLING);
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { convexQuery } from '../_lib/reportsStore.js';
 const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
 
 // ── Hidden-file list: the ONE shared module (api/_lib/hideList.js) ───────────
@@ -265,22 +264,13 @@ function resolveLocalMissionDir(slug, worldHint = null) {
   return null;
 }
 
-// Look up the world (client_id) for a project slug from Supabase.
-// Returns null if not found or DB is unavailable.
+// Look up the holding world for a project slug in the Convex project registry
+// (corner:retire-supabase, 2026-09-03; was the Supabase projects table).
+// Returns null if not found or the registry is unavailable.
 async function resolveProjectWorld(slug) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null;
   try {
-    const url = `${SUPABASE_URL}/rest/v1/projects?slug=eq.${encodeURIComponent(slug)}&select=slug,client_id&limit=1`;
-    const r = await fetch(url, {
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-      },
-    });
-    if (!r.ok) return null;
-    const rows = await r.json();
-    if (!Array.isArray(rows) || !rows[0]) return null;
-    return rows[0].client_id || null; // client_id = world slug
+    const row = await convexQuery('projects:lookupBySlug', { slug });
+    return row?.ownerWorld ? String(row.ownerWorld).toLowerCase() : null;
   } catch {
     return null;
   }

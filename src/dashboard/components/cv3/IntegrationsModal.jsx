@@ -1,11 +1,11 @@
 // IntegrationsModal — per-account integrations browser.
 // Opened by the /integrations slash command. Shows Available + Connected
-// integrations from the static registry merged with the user's account_integrations rows.
+// integrations from the static registry merged with the person's connected rows (Convex integrations table).
 // R1: Connect button stubs out as status='connected' (no real OAuth yet).
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import integrationsData from '../../../data/integrations.json'
 import { C } from '../../lib/cv3Colors.js'
-import { supabase } from '../../lib/supabase.js'
+import { ensureFreshToken } from '../../lib/convex.js'
 
 const REGISTRY = integrationsData.integrations
 const STORAGE_KEY = 'corner.integrations.connected.v1'
@@ -25,14 +25,15 @@ function saveLocalConnected(map) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(map)) } catch {}
 }
 
+// The bearer is the Convex Auth session token (corner:retire-supabase R3).
+// /api/integrations/* verifies it against the deployment's JWKS, the same way
+// every other /api/dashboard route does. With no session the request goes out
+// without a header and the route answers 401.
 async function authedFetch(url, init = {}) {
   const headers = { ...(init.headers || {}) }
   try {
-    if (supabase) {
-      const { data } = await supabase.auth.getSession()
-      const token = data?.session?.access_token
-      if (token) headers.Authorization = `Bearer ${token}`
-    }
+    const token = await ensureFreshToken()
+    if (token) headers.Authorization = `Bearer ${token}`
   } catch {}
   return fetch(url, { ...init, credentials: 'include', headers })
 }

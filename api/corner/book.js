@@ -20,32 +20,17 @@
 //   meetLink: "https://meet.google.com/...",
 //   confirmationEmail: "john@example.com"
 // }
+//
+// corner:retire-supabase (2026-09-03): calendar and Gmail tokens live on Convex
+// (integrations table) and are read through calendarClient / gmailClient. The
+// owner of the booking calendar is resolved the same way availability.js does it.
 
-import { getCalendarToken, calendarFetch } from '../_lib/calendarClient.js'
+import { calendarFetch } from '../_lib/calendarClient.js'
 import { getGmailToken, gmailFetch } from '../_lib/gmailClient.js'
-import { extractJwt } from '../_lib/verifyTenant.js'
+import { resolveCalendarOwner } from './availability.js'
 
 const ARIZONA_TZ = 'America/Phoenix'
 const PATRIK_EMAIL = 'patrik@aheadofmarket.com'
-
-// Utility: get Patrik's user ID (same logic as availability.js)
-async function getPatrikUserId() {
-  // Resolve to whoever connected the google-calendar integration (the single connected row).
-  // No workspace lookup needed; optional PATRIK_USER_ID env overrides if ever required.
-  if (process.env.PATRIK_USER_ID) return process.env.PATRIK_USER_ID
-
-  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null
-
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?integration_slug=eq.google-calendar&order=connected_at.desc&limit=1&select=user_id`,
-    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
-  )
-  if (!r.ok) return null
-  const rows = await r.json()
-  return (Array.isArray(rows) && rows.length) ? rows[0].user_id : null
-}
 
 // Utility: parse date + time into UTC ISO string
 function parseBookingTime(dateLabel, timeStr, timezone) {
@@ -101,20 +86,20 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { name, email, company, dateLabel, time, display, timezone } = req.body
+  const { name, email, company, dateLabel, time, display, timezone } = req.body || {}
 
   if (!name || !email || !dateLabel || !time) {
     return res.status(400).json({ error: 'Missing required fields' })
   }
 
   try {
-    const patrikUserId = await getPatrikUserId()
-    const calToken = patrikUserId ? await getCalendarToken(patrikUserId) : null
-    if (!calToken) {
-      // Calendar not connected yet — signal cleanly so the frontend shows the
+    const owner = await resolveCalendarOwner()
+    if (!owner) {
+      // Calendar not connected yet. Signal cleanly so the frontend shows the
       // (mock) confirmation rather than an error. Real events resume once connected.
       return res.status(200).json({ connected: false })
     }
+    const calToken = owner.token
 
     // Parse the booking time
     const startISO = parseBookingTime(dateLabel, time, timezone || ARIZONA_TZ)
@@ -124,7 +109,7 @@ export default async function handler(req, res) {
     // Create the calendar event
     const eventBody = {
       summary: 'Corner Intro Call',
-      description: `Free 20–30 minute discovery call.\n\nVisitor: ${name}${company ? ` (${company})` : ''}\nEmail: ${email}`,
+      description: `Free 20 to 30 minute discovery call.\n\nVisitor: ${name}${company ? ` (${company})` : ''}\nEmail: ${email}`,
       start: { dateTime: startISO, timeZone: timezone || ARIZONA_TZ },
       end: { dateTime: endISO, timeZone: timezone || ARIZONA_TZ },
       attendees: [
@@ -156,8 +141,9 @@ export default async function handler(req, res) {
     const event = await eventRes.json()
     const meetLink = event.conferenceData?.entryPoints?.find(ep => ep.entryPointType === 'video')?.uri || ''
 
-    // Send confirmation email via Gmail
-    const gmailToken = await getGmailToken(patrikUserId)
+    // Send confirmation email via Gmail (same owner account as the calendar)
+    let gmailToken = null
+    try { gmailToken = await getGmailToken(owner.userId) } catch { gmailToken = null }
     if (gmailToken) {
       const emailSubject = 'Your Corner Intro Call Confirmed'
       const emailBody = `Hi ${name},
@@ -165,13 +151,12 @@ export default async function handler(req, res) {
 Your Corner intro call has been scheduled!
 
 Date & Time: ${dateLabel} at ${display} MST
-Duration: 20–30 minutes${meetLink ? `\nVideo Link: ${meetLink}` : ''}
+Duration: 20 to 30 minutes${meetLink ? `\nVideo Link: ${meetLink}` : ''}
 
 We'll walk through how Corner helps your business. No sales pitch, no obligation.
 
 See you then!
 
-—
 corner team`
 
       const emailReq = {
@@ -181,8 +166,9 @@ corner team`
       }
 
       try {
-        await gmailFetch(gmailToken.accessToken, '/send', {
+        await gmailFetch(gmailToken.accessToken, '/messages/send', {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(emailReq),
         })
       } catch (emailErr) {

@@ -1,7 +1,7 @@
 // useRoomSwipeArchive — TOP-20 #8 swipe-to-clean
 // ArchiveRoom exists (RoomSettingsDialog + TreeContextMenu archiveNode) but had no gesture.
 // This hook adds a left-swipe reveal on the Home rail's room rows (recent + project/mission)
-// that drives the same PATCH /api/dashboard/project-update is_active false (and
+// that drives the same projects:update isActive false (and
 // mission-update for missions). After the PATCH, filteredRooms in useHomeData
 // hides the room because activeProjectSlugs no longer contains it, plus an
 // optimistic collapse + undo toast so the action feels instant.
@@ -19,7 +19,7 @@
 // does. The swipe threshold is 56px to snap open, 110px far-swipe to auto-archive.
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { authFetch } from '../lib/authFetch';
+import { convexMutation, convexWorldId } from './data/convexClient.js';
 
 const PANEL_W = 88;
 const OPEN_THRESH = 56;
@@ -101,15 +101,9 @@ export function useRoomSwipeArchive({ wrapRef, worldId, resolveHit, refetch, set
     const wid = t.worldId || worldRef.current;
     try {
       if (t.kind === 'project' || t.kind === 'mission') {
-        await authFetch('/api/dashboard/project-update', {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug: t.projectSlug, is_active: true, client_id: wid }),
-        });
+        await convexMutation('projects:update', { slug: t.projectSlug, worldId: convexWorldId(wid), patch: { isActive: true } });
       } else {
-        await authFetch('/api/dashboard/room-title', {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ client_id: wid, agent: t.slug, hidden: false }),
-        });
+        await convexMutation('rooms:archive', { roomId: `${convexWorldId(wid)}:agent:${t.slug}`, archived: false });
       }
       try { localStorage.removeItem('cv6.archivedAt.' + t.key); } catch {}
       window.dispatchEvent(new CustomEvent('cv6:room-archived', { detail: { roomId: t.key, undo: true } }));
@@ -135,7 +129,7 @@ export function useRoomSwipeArchive({ wrapRef, worldId, resolveHit, refetch, set
 
     // Optimistic UI: collapse the wrap so the row vanishes before the poll returns.
     // filteredRooms in useHomeData will keep it hidden afterwards because
-    // activeProjectSlugs is derived from projectRooms (supabase-status drops
+    // activeProjectSlugs is derived from projectRooms (the data pipe drops
     // is_active=false). The collapse is purely for snappiness.
     if (ctx && ctx.wrap) {
       ctx.wrap.classList.add('is-archiving');
@@ -161,27 +155,18 @@ export function useRoomSwipeArchive({ wrapRef, worldId, resolveHit, refetch, set
     try {
       if (isProj || isMission) {
         // TOP-20 #8 spec + TreeContextMenu contract: swipe-to-clean archives the
-        // PROJECT via PATCH /api/dashboard/project-update is_active false.
-        // The same row can represent a mission recent (m:tail) but its archive
-        // is still the parent project (the only lifecycle flag filteredRooms +
-        // activeProjectSlugs + supabase-status respect). RoomSettingsDialog's
-        // mission branch once tried PATCH mission-update is_active, but that
-        // endpoint only handles rename (name required) — so the project path
-        // is the one that actually hides the row.
-        const r = await authFetch('/api/dashboard/project-update', {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug: target.projectSlug, is_active: false, client_id: wid }),
-        });
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok || d.ok === false) throw new Error(d?.error || 'Could not archive');
+        // PROJECT (projects:update isActive false). The same row can represent a
+        // mission recent (m:tail) but its archive is still the parent project
+        // (the only lifecycle flag filteredRooms + activeProjectSlugs + the data
+        // pipe respect). RoomSettingsDialog's mission branch once tried a
+        // mission-level flag, but only the project path actually hides the row.
+        const d = await convexMutation('projects:update', { slug: target.projectSlug, worldId: convexWorldId(wid), patch: { isActive: false } });
+        if (!d || d.ok === false) throw new Error(d?.reason || 'Could not archive');
         ok = true;
       } else {
-        const r = await authFetch('/api/dashboard/room-title', {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ client_id: wid, agent: target.slug || target.projectSlug, hidden: true }),
-        });
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok || d.ok === false) throw new Error(d?.error || 'Could not archive');
+        // An agent 1:1 room: rooms:archive on its canonical key hides it from the rail.
+        const d = await convexMutation('rooms:archive', { roomId: `${convexWorldId(wid)}:agent:${target.slug || target.projectSlug}`, archived: true });
+        if (!d || d.ok === false) throw new Error('Could not archive');
         ok = true;
       }
     } catch (e) {

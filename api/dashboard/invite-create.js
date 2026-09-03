@@ -1,32 +1,97 @@
 // POST /api/dashboard/invite-create
-// Generate a signed, email-scoped, single-use invite token with a 48h TTL.
-// The super-agent calls this when onboarding someone new; the returned invite_url
-// is what the EA sends by email/text/whatever channel it owns.
+// Generate a single-use invite token for a world. The super-agent calls this
+// when onboarding someone new; the returned invite_url is what the EA sends by
+// email/text/whatever channel it owns.
 //
 // Body: { email, world_slug, role?, expires_hours? }
 //
 // Returns: { ok, invite_id, invite_url, token, email, world_slug, role, expires_at }
-//   token is the plaintext — returned exactly once (the caller must deliver it and
-//   will never see it again; only its sha256 hash lives in the DB).
+//   token is the plaintext, returned exactly once (only its sha256 hash is
+//   stored on Convex).
 //
 // AUTH (corner:identity-attribution, 2026-07-27). This endpoint mints the
-// credential that creates a Supabase auth user carrying user_metadata.world —
-// i.e. it manufactures world membership. Unauthenticated it was an open door to
-// every world at any role (accept-invite is also unauthenticated by design: the
-// TOKEN is the credential). So the gate lives here:
-//   - a valid JWT is required,
+// credential that creates world membership. So the gate lives here:
+//   - a valid session is required,
 //   - the caller must pass verifyTenant() for the world they are inviting INTO,
-//   - `invited_by` is the verified JWT user id, never the body,
 //   - owner/admin roles may only be granted by a world admin.
+//
+// corner:retire-supabase (2026-09-03): invites:create on Convex, called with
+// the caller's token so createdBy is the verified person. The Convex invite
+// TTL is fixed at 14 days; expires_hours is accepted for compatibility and
+// reported back as the Convex expiry.
 
-import crypto from 'node:crypto'
-import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
-
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+// ---------------------------------------------------------------------------
+// Convex is the only backend (corner:retire-supabase, 2026-09-03). The signed
+// in person's Convex Auth token arrives as Authorization: Bearer and the
+// deployment checks it in users:verifyToken. This block is repeated in each
+// route on purpose until a shared helper lands in api/_lib.
+// ---------------------------------------------------------------------------
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || undefined
 const APP_ORIGIN = process.env.APP_ORIGIN || 'https://aheadofmarket.com'
 
-// Same allowlist shape as api/dashboard/voice-handoff.js — the dashboard
+async function convexCall(kind, path, args, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+  const r = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  })
+  if (!r.ok) throw new Error(`convex ${kind} ${path}: HTTP ${r.status}`)
+  const data = await r.json()
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex ${kind} ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`)
+  }
+  return data.value
+}
+const convexQuery = (path, args, token) => convexCall('query', path, args, token)
+const convexMutation = (path, args, token) => convexCall('mutation', path, args, token)
+
+class AuthError extends Error {
+  constructor(message, status = 403) { super(message); this.name = 'AuthError'; this.status = status }
+}
+
+function bearerToken(req) {
+  const auth = req.headers?.authorization || req.headers?.Authorization
+  if (typeof auth === 'string' && /^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, '').trim() || null
+  return null
+}
+
+// Who is calling. Throws 401 when the request carries no valid session.
+async function requireCaller(req) {
+  const token = bearerToken(req)
+  if (!token) throw new AuthError('sign-in required', 401)
+  let who = null
+  try { who = await convexQuery('users:verifyToken', {}, token) } catch { who = null }
+  if (!who || !who.userId) throw new AuthError('invalid session', 401)
+  const world = who.world ? String(who.world).toLowerCase() : null
+  let superAdmin = false
+  try { superAdmin = !!(await convexQuery('worlds:isAdmin', { worldId: 'aom' }, token)) } catch { superAdmin = false }
+  return { userId: who.userId, email: who.email || null, userName: who.name || null, world, worldId: who.worldId || null, isAdmin: !!who.isAdmin, superAdmin, token }
+}
+
+// May the caller act inside `tenant`? A world slug admits an aom admin
+// (Patrik) everywhere and any member of that world. "shared:<project>" admits
+// a world that holds the project or a grant on it.
+async function verifyTenant(tenant, req) {
+  const t = String(tenant || '').trim().toLowerCase()
+  if (!t) throw new AuthError('tenant required', 400)
+  const who = await requireCaller(req)
+  if (who.superAdmin) return { ok: true, tenant: t, ...who, isAdmin: true }
+  if (t.startsWith('shared:')) {
+    const slug = t.slice('shared:'.length)
+    const access = who.world ? await convexQuery('projects:hasAccess', { slug, worldId: who.world }, who.token).catch(() => null) : null
+    if (access && access.ok) return { ok: true, tenant: t, ...who, isAdmin: false }
+  } else {
+    const m = await convexQuery('worlds:membership', { worldId: t }, who.token).catch(() => null)
+    if (m && m.role) return { ok: true, tenant: t, ...who, isAdmin: m.role === 'owner' || m.role === 'admin' }
+    if (who.world === t) return { ok: true, tenant: t, ...who }
+  }
+  throw new AuthError(`forbidden: caller world "${who.world || '(none)'}" cannot access "${t}"`, 403)
+}
+
+// Same allowlist shape as api/dashboard/voice-handoff.js: the dashboard
 // origins and nothing else. `*` on a credential-minting endpoint let any page
 // on the internet drive it from a logged-in browser.
 const ALLOWED_ORIGIN_PATTERNS = [
@@ -57,34 +122,16 @@ function applyCors(req, res) {
   res.setHeader('Cache-Control', 'private, no-store')
 }
 
-function sbHeaders(extra) {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-    ...extra,
-  }
-}
-
-function sha256(s) {
-  return crypto.createHash('sha256').update(s).digest('hex')
-}
-
 export default async function handler(req, res) {
   applyCors(req, res)
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' })
-  }
-
   const { email, world_slug, role, expires_hours } = req.body || {}
   if (!email || typeof email !== 'string') {
     return res.status(400).json({ error: 'email required' })
   }
-  // world_slug is now REQUIRED: an invite with no world is an invite we cannot
-  // authorize, and a null world_slug used to sail straight past any check.
+  // world_slug is REQUIRED: an invite with no world is an invite we cannot authorize.
   if (!world_slug || typeof world_slug !== 'string' || !world_slug.trim()) {
     return res.status(400).json({ error: 'world_slug required' })
   }
@@ -93,7 +140,7 @@ export default async function handler(req, res) {
   try {
     verified = await verifyTenant(world_slug, req)
   } catch (err) {
-    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    if (err instanceof AuthError) return res.status(err.status).json({ error: err.message })
     throw err
   }
 
@@ -102,59 +149,42 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invalid email' })
   }
 
-  const normalizedRole = role && ['owner','admin','member'].includes(role) ? role : 'member'
+  const normalizedRole = role && ['owner', 'admin', 'member'].includes(role) ? role : 'member'
   // Privilege ceiling: only a verified world admin can hand out owner/admin.
   // A plain member of the world can still invite teammates, but only as members.
   if ((normalizedRole === 'owner' || normalizedRole === 'admin') && !verified.isAdmin) {
     return res.status(403).json({ error: 'only a world admin can invite at owner or admin role' })
   }
   const ttlHours = Number.isFinite(Number(expires_hours)) ? Math.max(1, Math.min(168, Number(expires_hours))) : 48
-  const expiresAt = new Date(Date.now() + ttlHours * 3600 * 1000).toISOString()
+  void ttlHours // the Convex invite keeps its own expiry; reported below
 
-  // Who is doing the inviting is a server-side fact, not a body field.
-  const identity = await callerIdentity(req).catch(() => null)
-  const invitedBy = identity?.userId || verified.userId || null
-
-  // 32 random bytes → 43 url-safe chars. Unique across ~2^128 possibilities.
-  const token = crypto.randomBytes(32).toString('base64url')
-  const tokenHash = sha256(token)
-
-  const body = {
-    id: crypto.randomUUID(),
-    token_hash: tokenHash,
-    email: normalizedEmail,
-    world_slug: verified.tenant,
-    role: normalizedRole,
-    invited_by: invitedBy,
-    expires_at: expiresAt,
-    metadata: {
-      invited_by_name: identity?.userName || null,
-      invited_by_email: identity?.email || null,
-    },
+  let created
+  try {
+    created = await convexMutation('invites:create', {
+      key: CONVEX_KEY,
+      worldId: verified.tenant,
+      email: normalizedEmail,
+      role: normalizedRole,
+      baseUrl: APP_ORIGIN,
+    }, verified.token)
+  } catch (err) {
+    return res.status(502).json({ error: 'Failed to create invite', detail: err?.message || String(err) })
+  }
+  if (!created || !created.token) {
+    return res.status(502).json({ error: 'Failed to create invite' })
   }
 
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/invites`, {
-    method: 'POST',
-    headers: sbHeaders({ Prefer: 'return=representation' }),
-    body: JSON.stringify(body),
-  })
-
-  if (!r.ok) {
-    const detail = await r.text()
-    return res.status(502).json({ error: 'Failed to create invite', detail })
-  }
-
-  const [row] = await r.json()
-  const inviteUrl = `${APP_ORIGIN}/accept-invite?token=${encodeURIComponent(token)}`
+  const inviteUrl = `${APP_ORIGIN}/accept-invite?token=${encodeURIComponent(created.token)}`
 
   return res.status(200).json({
     ok: true,
-    invite_id: row.id,
+    invite_id: created.id,
     invite_url: inviteUrl,
-    token,
-    email: row.email,
-    world_slug: row.world_slug,
-    role: row.role,
-    expires_at: row.expires_at,
+    token: created.token,
+    email: created.email || normalizedEmail,
+    world_slug: created.worldSlug || verified.tenant,
+    role: normalizedRole,
+    expires_at: typeof created.expiresAt === 'number' ? new Date(created.expiresAt).toISOString() : null,
+    invited_by: verified.userId,
   })
 }

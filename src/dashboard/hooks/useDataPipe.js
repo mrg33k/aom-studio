@@ -1,24 +1,49 @@
-// Realtime subscriptions: agent_status, messages, events, tasks -- unique channel IDs per instance
-// useDataPipe -- ONE hook, ONE poll, ONE truth.
-// Bobby2: Replaces useRightNowLiveTasks, useCompletedFeed, useAutoCheckFromNotifications,
-// usePatrikTodos, useCheckingInTasks, and usePunchListData across GameHUD + ChecklistMode.
+// useDataPipe -- ONE hook, ONE data source, ONE truth.
 //
-// BEFORE: 6+ hooks polling 3 files at different intervals (3s, 5s, 8s).
-//   - agent-notifications.md polled 3 separate times per cycle
-//   - punch-list.md polled at 5s, re-derived in PatrikTodos/CheckingIn
-//   - active-missions.md polled at 3s
-//   Total: ~7 fetch calls per cycle. Data arrives at different times. Pills lag behind activity feed.
+// corner:retire-supabase (2026-09-03): the whole pipe reads Convex now. What
+// used to be one /api/dashboard/supabase-status poll plus four Supabase Realtime
+// channels is four Convex queries, each held open as a live subscription over
+// the Convex websocket client, so a new message, a task status change, an agent
+// status stamp or a project edit reaches the screen without any polling:
 //
-// AFTER: 1 poll every 3s. 3 parallel fetches (one per file). All data computed in the same tick.
-//   Total: 3 fetch calls per 3s window. Everything updates together. Pill counts match activity feed.
+//   rooms:listRooms    the rail (room previews, unread state) - was messages + agent_status project rows
+//   tasks:find         the task queue                          - was tasks (legacy + v2)
+//   agents:listStatus  the roster with idle/working dots       - was agent_status
+//   projects:list      the project registry                    - was projects
 //
-// Rule: If the activity feed updates and the pill count doesn't, something is polling separately. Kill it.
+// Rule from before still holds: if the activity feed updates and the pill count
+// does not, something is reading separately. Kill it.
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { supabase } from '../lib/supabase'
 import { authFetch } from '../lib/authFetch'
 import { getClientId } from '../lib/clientConfig'
 import { isRoomActivityNoise, isMachinePreview } from '../cv6next/data/presentationClean.js'
+import { convexQuery, convexWorldId, subscribeConvexQuery, getConvexReactClient } from '../cv6next/data/convexClient.js'
+import { convexViewerIdentity, convexReadIdentity } from '../cv6next/data/convexIdentity.js'
+
+// The page's one live Convex socket (src/dashboard/lib/convex.js). It carries
+// the signed-in person's token, so world-scoped queries answer for them.
+export function liveConvexClient() {
+  if (typeof window === 'undefined') return null
+  try { return getConvexReactClient() } catch { return null }
+}
+
+// Subscribe to a Convex query by its "module:function" path. The callback runs
+// with the first value and again every time the server says it changed.
+// Returns a stop function. A subscription that cannot start returns a no-op
+// stop, so callers keep their one-shot read and simply lose liveness, never
+// the data.
+export function subscribeConvex(path, args, onValue, onError) {
+  try {
+    return subscribeConvexQuery(path, args || {}, onValue, (err) => {
+      console.warn(`[Corner Convex] ${path} subscription error:`, err)
+      if (onError) onError(err)
+    })
+  } catch (err) {
+    console.warn(`[Corner Convex] could not subscribe to ${path}:`, err)
+    return () => {}
+  }
+}
 
 // Catch Up = ONLY the things where Patrik is the bottleneck to respond (his words,
 // 2026-06-26). The raw "unread agent message" feed is far too broad: it's full of
@@ -183,8 +208,82 @@ function deriveProjectProgress(punchData) {
   return progress
 }
 
+// ---- CONVEX ROW SHAPING ------------------------------------------------------
+// The four reads, and how each is folded into the shape the derivation below
+// has always consumed (agents, projects, projectDefs, tasks, tasksV2, rooms).
+
+// Statuses the two task views used to be split on. The legacy list is what the
+// pills and the done-awaiting-approval inbox read; the v2 list is what the
+// Right Now bar and the completed feed read. Same rows, two lenses, exactly as
+// the two Supabase queries overlapped before.
+const LEGACY_TASK_STATUSES = new Set(['queued', 'active', 'todo', 'working', 'needs_input', 'completed'])
+const V2_TASK_STATUSES = new Set(['queued', 'classifying', 'planning', 'building', 'running', 'qa', 'done', 'failed'])
+const TASK_TEXT_MAX = 280
+const TASK_FETCH_LIMIT = 300
+
+function slimMeta(md) {
+  if (!md || typeof md !== 'object' || Array.isArray(md)) return md
+  const out = {}
+  for (const [k, v] of Object.entries(md)) {
+    if (v == null || typeof v === 'object') continue
+    out[k] = (typeof v === 'string' && v.length > TASK_TEXT_MAX) ? v.slice(0, TASK_TEXT_MAX) : v
+  }
+  return out
+}
+
+// One task row, the way both lenses read it: `text` and `agent` filled from the
+// v2 columns when the legacy ones are empty, long fields cut to a display length.
+function normalizeTask(t) {
+  if (!t || typeof t !== 'object') return t
+  const out = { ...t }
+  out.text = out.text || out.title || ''
+  out.agent = out.agent || out.agent_identity || null
+  for (const f of ['text', 'description', 'result', 'error']) {
+    if (typeof out[f] === 'string' && out[f].length > TASK_TEXT_MAX) out[f] = out[f].slice(0, TASK_TEXT_MAX)
+  }
+  if (out.metadata && typeof out.metadata === 'object') out.metadata = slimMeta(out.metadata)
+  return out
+}
+
+// Infrastructure project slugs never reach a rail (same list the old status
+// route kept server-side).
+function isInfraSlug(slug) {
+  if (!slug) return false
+  const s = String(slug).toLowerCase()
+  return s === 'bridge-smoke' || s.startsWith('lab-') || s.startsWith('qa-') || s.startsWith('smoke-') || s.startsWith('proj-tool-') || s.startsWith('loop-test-') || s === 'daily-research'
+}
+
+// "aom:project:wolfpack" -> "wolfpack"; "aom:mission:corner:x" -> "corner:x".
+function legacyTail(room, worldId) {
+  const legacy = String(room?.legacyRoomId || '')
+  if (!legacy) return ''
+  const prefix = `${worldId}:${room.kind}:`
+  if (legacy.startsWith(prefix)) return legacy.slice(prefix.length)
+  const idx = legacy.indexOf(`:${room.kind}:`)
+  return idx >= 0 ? legacy.slice(idx + room.kind.length + 2) : ''
+}
+
+function toIso(ms) {
+  const n = Number(ms)
+  if (!Number.isFinite(n) || n <= 0) return null
+  try { return new Date(n).toISOString() } catch { return null }
+}
+
+// Read the four Convex sources once over plain fetch. Used on mount, on a world
+// change, on cv6:data-refresh and by refetch(); the live subscriptions carry
+// every change after that.
+async function readConvexSnapshot(cxWorld, userId) {
+  const [rooms, tasks, agents, projects] = await Promise.all([
+    convexQuery('rooms:listRooms', { worldId: cxWorld, ...(userId ? { userId } : {}) }).catch(() => []),
+    convexQuery('tasks:find', { client_id: cxWorld, order: 'created_at.desc', limit: TASK_FETCH_LIMIT }).catch(() => []),
+    convexQuery('agents:listStatus', { worldId: cxWorld }).catch(() => []),
+    convexQuery('projects:list', { worldId: cxWorld, includeShared: true }).catch(() => []),
+  ])
+  return { rooms, tasks, agents, projects }
+}
+
 // =============================================================================
-// useDataPipe -- THE hook. One poll. All data. Every 3 seconds.
+// useDataPipe -- THE hook. One read, four live subscriptions. All data.
 //
 // Parameters:
 //   parsePunchList: function(markdown) => { projects: [], todayTasks: [] }
@@ -194,8 +293,8 @@ function deriveProjectProgress(punchData) {
 // Returns: { rightNow, completedFeed, yourTodos, finishThese, schedule, projectProgress,
 //            pillCounts, isAutoChecked, punchData, punchLoading, lastUpdated, refetch }
 // =============================================================================
-// options.enabled=false renders the hook inert (no fetch, no poll, no realtime
-// channels) while keeping the hook call unconditional for the rules of hooks.
+// options.enabled=false renders the hook inert (no fetch, no subscriptions)
+// while keeping the hook call unconditional for the rules of hooks.
 // Used by consumers that receive the shared DataContext pipe instead of owning
 // one — qa-sweep 2026-07-17 found FOUR live pipes on one /dashboard load
 // (DataProvider + useCommand + useTrackerBugs + ActivityDock's useCommand),
@@ -212,28 +311,20 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
   const [punchData, setPunchData] = useState(null)
   const [punchLoading, setPunchLoading] = useState(IS_LOCAL)
   const [lastUpdated, setLastUpdated] = useState(null)
-  // Supabase-sourced agent list for the current world (replaces hardcoded ALL_AGENT_SLUGS)
-  const [supabaseAgents, setSupabaseAgents] = useState([])
-  // Project rooms from agent_status (type=project) — used for non-AOM worlds where
-  // the projects table may be empty but agent_status has project room entries.
-  const [supabaseProjectRooms, setSupabaseProjectRooms] = useState([])
-  // Mission rooms: missions with last_message_at computed from messages, so Recently Active
+  // Agent roster for the current world, from agents:listStatus (replaces hardcoded ALL_AGENT_SLUGS)
+  const [liveAgents, setLiveAgents] = useState([])
+  // Project rooms: rooms:listRooms kind=project merged with the projects registry.
+  const [liveProjectRooms, setLiveProjectRooms] = useState([])
+  // Mission rooms: missions with last_message_at from the room preview, so Recently Active
   // on Home can surface missions the user actively worked in (not only inbox-pinged ones).
   const [missionRooms, setMissionRooms] = useState([])
   // Direct 1:1 agent threads with computed last activity, for Recently Active.
   const [agentThreadRooms, setAgentThreadRooms] = useState([])
-  // Unique channel ID per hook instance -- prevents duplicate channel name conflicts when
-  // useDataPipe is mounted in multiple components (GameDashboard, UnifiedPanel, ChecklistMode, GameHUD)
-  const channelIdRef = useRef(`pipe-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
 
   // Liveness detection -- toast when agents go silent or tasks stall
   const { showToast } = useSystemToast()
   const showToastRef = useRef(showToast)
   showToastRef.current = showToast
-  // slug -> ms timestamp of last "stuck" toast (dedup: re-toast only after 5min cooldown)
-  const stuckAgentToastsRef = useRef(new Map())
-  // Set of task_ids already toasted for timeout (one toast per task, ever)
-  const stuckTaskToastsRef = useRef(new Set())
 
   // Auto-check keywords stored in ref for stable callback
   const keywordsRef = useRef(new Set())
@@ -241,700 +332,495 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
   // Store parsePunchList in a ref so the callback doesn't re-create on every render
   const parseFnRef = useRef(parsePunchList)
   parseFnRef.current = parsePunchList
-  // R14e-4: currentUserSlug is a prop that resolves asynchronously (async
-  // tenant_users fetch). fetchAll is a useCallback with empty deps so it
-  // stays stable across renders; without a ref, the closure would capture
-  // the initial null value forever and personal-todos would never populate.
+  // R14e-4: currentUserSlug is a prop that resolves asynchronously. applyData is
+  // stable across renders; without a ref, the closure would capture the initial
+  // null value forever and personal-todos would never populate.
   const currentUserSlugRef = useRef(currentUserSlug)
   currentUserSlugRef.current = currentUserSlug
 
   // corner:corner-ui-cv6 (2026-06-24): the project-room list (84 rooms Patrik waits
-  // on) is rebuilt and re-set on every 60s poll AND every 2.5s realtime debounce. When
-  // nothing changed, that re-renders the whole list for no reason — the "waiting for
-  // projects" churn. Keep the last serialized list and skip the setter when identical.
-  // A real change (new room, new message → recency reorder) still serializes differently
-  // and re-renders normally.
+  // on) is rebuilt on every change. When nothing changed, that re-renders the whole
+  // list for no reason. Keep the last serialized list and skip the setter when identical.
   const projectRoomsSigRef = useRef('')
 
-  const fetchAll = useCallback(async () => {
-    if (IS_LOCAL) {
-      // LOCAL: read from filesystem APIs (punch-list only -- status comes from Supabase)
-      try {
-        // r7:open-agent-surface — /api/local/file requires a session now (it
-        // reads straight off the AOM-EA repo), so send one.
-        const punchRes = await authFetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null)
-        const punchContent = punchRes?.content || ''
+  // The latest value of each source. Live subscriptions patch one key at a time;
+  // the derivation always runs over the whole set.
+  const dataRef = useRef({ rooms: null, tasks: null, agents: null, projects: null })
+  // Local dev: the punch-list markdown read off disk, parsed by the consumer.
+  const punchContentRef = useRef('')
 
-        // Right Now: Supabase is the ONLY source of truth.
-        // task-status.jsonl, agent-notifications.md, active-missions.md are NOT read.
-        const mergedTasks = []
+  // ---- THE DERIVATION: Convex rows in, every list the screens read out ----
+  const applyData = useCallback((data) => {
+    try {
+      const clientId = getClientId()
+      const cxWorld = convexWorldId(clientId)
+      const roomRows = Array.isArray(data.rooms) ? data.rooms.filter((r) => r && !r.archived) : []
+      const taskRows = (Array.isArray(data.tasks) ? data.tasks : []).map(normalizeTask)
+      const agentRows = Array.isArray(data.agents) ? data.agents : []
+      const projectRows = Array.isArray(data.projects) ? data.projects : []
 
-        try {
-          const clientId = getClientId()
-          const sbRes = await authFetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
-          if (sbRes.ok) {
-            const sbData = await sbRes.json()
-            // R14e-4: read the freshest viewer slug from the ref -- this
-            // fetchAll closure was captured on mount with slug=null.
-            const slug = currentUserSlugRef.current
-            if (sbData.tasks) {
-              // Done tasks awaiting approval (exclude viewer's own tasks; agents review theirs elsewhere)
-              const doneEntries = sbData.tasks
-                .filter(t => t.status === 'done' && t.agent !== slug)
-                .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
-              mergedTasks.push(...doneEntries)
+      // Two lenses on the one task table (see LEGACY_TASK_STATUSES).
+      const tasks = taskRows.filter((t) => LEGACY_TASK_STATUSES.has(t.status))
+      const tasksV2 = taskRows.filter((t) => V2_TASK_STATUSES.has(t.status))
 
-              // Todo tasks for To Do pill (exclude viewer's own tasks; those render in Personal Todos)
-              const todoEntries = sbData.tasks
-                .filter(t => t.status === 'todo' && t.agent !== slug)
-                .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
-              setTodoItems(todoEntries)
-
-              // Viewer's personal tasks (null-safe: empty when slug is unknown)
-              const ownerEntries = slug
-                ? sbData.tasks
-                    .filter(t => t.agent === slug && t.status !== 'completed' && t.status !== 'done')
-                    .map(t => ({ text: t.text || '', agent: slug, taskId: t.id, done: false, project: t.project }))
-                : []
-              setPersonalTodos(ownerEntries)
-            }
-
-            // Architecture v2: task-runner tasks (source of truth for Right Now bar).
-            // Right Now = status building | running | qa. running is set by task-runner.sh claim.
-            // Tasks clear on completion (status -> done/failed), NOT on timeout.
-            if (sbData.tasksV2 && sbData.tasksV2.length > 0) {
-              const v2RightNow = sbData.tasksV2.filter(t => t.status === 'building' || t.status === 'running' || t.status === 'qa')
-              for (const t of v2RightNow) {
-                mergedTasks.push({
-                  agent:   t.agent_identity || 'system',
-                  text:    t.title || t.description || 'Working...',
-                  isLive:  t.status === 'building',
-                  isQA:    t.status === 'qa',
-                  isQueued: false,
-                  taskId:  t.id,
-                  fromTasksV2: true,
-                })
-              }
-            }
-
-            // Completed feed from Supabase tasks (same as production path)
-            {
-              const completed = []
-              if (sbData.tasks) {
-                completed.push(...sbData.tasks
-                  .filter(t => t.status === 'completed')
-                  .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false })))
-              }
-              if (sbData.tasksV2) {
-                completed.push(...sbData.tasksV2
-                  .filter(t => t.status === 'done')
-                  .map(t => ({
-                    agent:     t.agent_identity || 'system',
-                    text:      t.title || t.description || '',
-                    done:      true,
-                    isLive:    false,
-                    result:    t.result || null,
-                    qaScore:   t.qa_score || null,
-                    timestamp: t.completed_at || t.created_at,
-                    isV2Task:  true,
-                  })))
-              }
-              setCompletedFeed(completed)
-            }
-
-            // Supabase agents for status dots
-            if (sbData.agents && sbData.agents.length > 0) {
-              setSupabaseAgents(sbData.agents)
-            }
-          }
-        } catch {
-          // Supabase unavailable in local dev
-        }
-
-        setRightNow(mergedTasks)
-
-        if (punchContent && parseFnRef.current) {
-          setPunchData(parseFnRef.current(punchContent))
-        } else {
-          setPunchData(null)
-        }
-        setPunchLoading(false)
-        setLastUpdated(Date.now())
-      } catch {
-        setPunchLoading(false)
-      }
-    } else {
-      // PRODUCTION: read from Supabase via API
-      try {
-        const clientId = getClientId()
-
-        // Primary source: agent_status table (status, current_task, status_source, status_set_at)
-        // Right Now = agent_status rows where status='working' AND current_task is non-empty.
-        const res = await authFetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(clientId)}`)
-        if (!res.ok) return
-        const data = await res.json()
-        const activeAgentsData = null // active_processes table dependency removed
-
-        // Map Supabase data to Right Now format
-        // Primary source: agent_status table (status='working' + current_task non-empty).
-        // Tasks table status is NEVER used for Right Now (it drifts). Only used for
-        // queued/todo/done task pills.
-        {
-          const active = []
-
-          // Queued tasks shown -- no events emitted for queued state.
-          if (data.tasks) {
-            const queuedEntries = data.tasks
-              .filter(t => t.status === 'queued')
-              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task queued`, isLive: true, isQueued: true, taskId: t.id }))
-            active.push(...queuedEntries)
-          }
-
-          // ALWAYS: Done tasks awaiting approval -> Inbox pill (not Right Now)
-          // R14e-4: read fresh slug from ref (fetchAll closure captured mount-time value).
-          const slug = currentUserSlugRef.current
-          if (data.tasks) {
-            const doneEntries = data.tasks
-              .filter(t => t.status === 'done' && t.agent !== slug)
-              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
-            active.push(...doneEntries)
-
-            // Todo tasks for To Do pill (never shown in Right Now)
-            const todoEntries = data.tasks
-              .filter(t => t.status === 'todo' && t.agent !== slug)
-              .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
-            setTodoItems(todoEntries)
-
-            // Viewer's personal tasks (null-safe: empty when slug is unknown)
-            const ownerEntries = slug
-              ? data.tasks
-                  .filter(t => t.agent === slug && t.status !== 'completed' && t.status !== 'done')
-                  .map(t => ({ text: t.text || '', agent: slug, taskId: t.id, done: false, project: t.project }))
-              : []
-            setPersonalTodos(ownerEntries)
-          }
-
-          // Architecture v2: task-runner tasks (source of truth for Right Now bar).
-          // Right Now = status building | running | qa. running is set by task-runner.sh claim.
-          // Tasks clear on completion (status -> done/failed), NOT on timeout.
-          // Only add tasks not already present from events table (events take priority).
-          if (data.tasksV2 && data.tasksV2.length > 0) {
-            const v2RightNow = data.tasksV2.filter(t => t.status === 'building' || t.status === 'running' || t.status === 'qa')
-            const alreadyInActive = new Set(active.map(t => t.taskId).filter(Boolean))
-            for (const t of v2RightNow) {
-              if (!alreadyInActive.has(t.id)) {
-                active.push({
-                  agent:   t.agent_identity || 'system',
-                  text:    t.title || t.description || 'Working...',
-                  isLive:  t.status === 'building' || t.status === 'running',
-                  isQA:    t.status === 'qa',
-                  isQueued: false,
-                  taskId:  t.id,
-                  fromTasksV2: true,
-                })
-              }
-            }
-          }
-
-          setRightNow(active)
-        }
-
-        // Store Supabase agent list for world-scoped rooms (replaces hardcoded ALL_AGENT_SLUGS)
-        if (data.agents && data.agents.length > 0) {
-          setSupabaseAgents(data.agents)
-        }
-
-        // Store project rooms — MERGES two sources so CV4's middle switcher
-        // + left drawer match what CV3's home page shows:
-        //   1) agent_status rows with type='project' (have status, color, etc.)
-        //   2) projects table rows (data.projectDefs) — the canonical list
-        //      from supabase, which may include projects that don't yet have
-        //      an agent_status row (e.g. Nancy and other newer rooms). Without
-        //      this merge CV4 silently drops them.
-        const fromAgents = (data.projects || []).map(p => ({
-          id: p.id || p.slug,
+      // The registry rows the pills and pickers read as projectDefs.
+      const projectDefs = projectRows
+        .filter((p) => p && p.slug && !p.archived && !isInfraSlug(p.slug))
+        .map((p) => ({
+          id: p._id || p.slug,
           slug: p.slug,
           name: p.name || p.slug,
-          color: p.color || '#6B8AB0',
+          color: p.color || null,
+          icon: 'project',
+          is_active: p.isActive !== false,
+          is_shared: !!p.sharedRole,
+        }))
+
+      // Right Now + queued + done-awaiting-approval + todo + personal.
+      {
+        const active = []
+        const queuedEntries = tasks
+          .filter(t => t.status === 'queued')
+          .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task queued`, isLive: true, isQueued: true, taskId: t.id }))
+        active.push(...queuedEntries)
+
+        // ALWAYS: Done tasks awaiting approval -> Inbox pill (not Right Now)
+        // R14e-4: read fresh slug from ref (the closure captured the mount-time value).
+        const slug = currentUserSlugRef.current
+        const doneEntries = tasks
+          .filter(t => t.status === 'done' && t.agent !== slug)
+          .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task needs review`, isLive: false, isQueued: false, isDoneAwaitingApproval: true, taskId: t.id }))
+        active.push(...doneEntries)
+
+        // Todo tasks for To Do pill (never shown in Right Now)
+        const todoEntries = tasks
+          .filter(t => t.status === 'todo' && t.agent !== slug)
+          .map(t => ({ agent: t.agent || 'system', text: t.text || `${t.agent} task`, taskId: t.id, done: false, project: t.project }))
+        setTodoItems(todoEntries)
+
+        // Viewer's personal tasks (null-safe: empty when slug is unknown)
+        const ownerEntries = slug
+          ? tasks
+              .filter(t => t.agent === slug && t.status !== 'completed' && t.status !== 'done')
+              .map(t => ({ text: t.text || '', agent: slug, taskId: t.id, done: false, project: t.project }))
+          : []
+        setPersonalTodos(ownerEntries)
+
+        // Architecture v2: task-runner tasks (source of truth for Right Now bar).
+        // Right Now = status building | running | qa. running is set by task-runner.sh claim.
+        // Tasks clear on completion (status -> done/failed), NOT on timeout.
+        const v2RightNow = tasksV2.filter(t => t.status === 'building' || t.status === 'running' || t.status === 'qa')
+        const alreadyInActive = new Set(active.map(t => t.taskId).filter(Boolean))
+        for (const t of v2RightNow) {
+          if (!alreadyInActive.has(t.id)) {
+            active.push({
+              agent:   t.agent_identity || t.agent || 'system',
+              text:    t.title || t.description || 'Working...',
+              isLive:  t.status === 'building' || t.status === 'running',
+              isQA:    t.status === 'qa',
+              isQueued: false,
+              taskId:  t.id,
+              fromTasksV2: true,
+            })
+          }
+        }
+        setRightNow(active)
+      }
+
+      // Agent roster for status dots (agents:listStatus).
+      setLiveAgents(agentRows.map((a) => ({
+        slug: a.slug,
+        name: a.title || a.slug,
+        display_name: null,
+        role: a.subtitle || '',
+        chatTitle: null,
+        status: a.status || 'idle',
+        currentTask: a.currentTask || '',
+        color: a.color || null,
+        updatedAt: toIso(a.updatedAt),
+        statusSource: null,
+        statusSetAt: toIso(a.updatedAt),
+        last_naming_nudge_at: null,
+        is_super: false,
+        is_ea: false,
+        is_terminal: false,
+        is_owner: false,
+      })))
+
+      // Project rooms — MERGES two sources so every switcher matches Home:
+      //   1) rooms:listRooms kind=project (the chat rooms, with previews)
+      //   2) projects:list (the registry), which may hold projects with no
+      //      room yet. Without this merge those are silently dropped.
+      const fromRooms = []
+      const roomSlugs = new Set()
+      for (const r of roomRows) {
+        if (r.kind !== 'project') continue
+        const slug = legacyTail(r, cxWorld) || r.project || ''
+        if (!slug || isInfraSlug(slug) || roomSlugs.has(slug)) continue
+        roomSlugs.add(slug)
+        fromRooms.push({
+          id: slug,
+          slug,
+          name: r.title || slug,
+          color: '#6B8AB0',
           is_active: true,
           isShared: false,
           section: 'general',
           tasks: [],
           isClient: false,
-          status: p.status ? p.status.toUpperCase() : 'IDLE',
-          status_set_at: p.status_set_at || p.updated_at || null,
+          status: 'IDLE',
+          status_set_at: toIso(r.lastMessage?.createdAt),
+        })
+      }
+      const fromDefs = projectDefs
+        .filter(p => !roomSlugs.has(p.slug))
+        .map(p => ({
+          id: p.id,
+          slug: p.slug,
+          name: p.name,
+          color: p.color || '#6B8AB0',
+          is_active: p.is_active !== false,
+          isShared: p.is_shared,
+          section: 'general',
+          tasks: [],
+          isClient: false,
+          status: 'IDLE',
         }))
-        const fromAgentsSlugs = new Set(fromAgents.map(p => p.slug))
-        const fromDefs = (data.projectDefs || [])
-          .filter(p => p?.slug && !fromAgentsSlugs.has(p.slug))
-          .map(p => ({
-            id: p.id || p.slug,
-            slug: p.slug,
-            name: p.name || p.slug,
-            color: p.color || '#6B8AB0',
-            is_active: p.is_active !== false,
-            isShared: !!p.is_shared,
-            section: 'general',
-            tasks: [],
-            isClient: false,
-            status: 'IDLE',
-          }))
-        const merged = [...fromAgents, ...fromDefs]
-        // corner:corner-ui-cv6 — order project rooms by recent activity so the
-        // Home room list leads with what the user touched last. Recency = the
-        // latest message in the project; every message carries a `project` field
-        // (mission-tagged ones included), matching the missions-tree recency rule.
-        // Projects with no recent activity fall to the bottom, then alphabetical.
-        // Also compute per-mission recency so Recently Active can surface missions
-        // the user actively worked in (not only ones with an inbox-ping).
-        {
-          const projRecency = {}
-          // Rollup keeps mission activity in the project FOLDER ordering (the intent
-          // in the comment above), but the SURFACED last_message/preview a project
-          // exposes to Recently Active excludes mission rows — see the loop below.
-          const projRollup = {}
-          const missionRecency = {}
-          // Per-agent recency for 1:1 chats: a direct agent thread is a message
-          // carrying an agent but NO project and NO mission (those belong to the
-          // project/mission room, not the agent). Lets Recently Active surface an
-          // agent you actually talked to, the same way missions/projects surface —
-          // without an agent ever masquerading as a project (Patrik 2026-07-21).
-          const agentRecency = {}
-          // Preview text rides with recency (Home resting digest, loop R5): the room's last
-          // message, whitespace-collapsed. Structured payloads (raw JSON) never preview.
-          // ARTIFACT_GUARD — skip QA/screenshot paths, round-labelled filenames (r7-*),
-          // census-*, *-shot-* captures, *-critique-* slugs, and dotfiles so agent
-          // housekeeping noise never surfaces in "pick up where you left off".
-          const ARTIFACT_RE = /^(?:qa\/|screenshots?\/|r\d+[-.]|census-|\.)|([-_]shot[-_]|[-_]critique[-_])/i
-          const previewOf = (m) => {
-            const t = String(m.text || '').replace(/\s+/g, ' ').trim()
-            if (!t || t.startsWith('{') || t.startsWith('[')) return ''
-            if (ARTIFACT_RE.test(t)) return ''
-            // Room-row contract §3: transport never previews as conversation. A bridge
-            // delivery ack ("Received — … reached the dispatcher"), dispatch plumbing or
-            // a probe is an assistant row on the normal chat path — only its SHAPE gives
-            // it away. Blanks the line; the room itself still ranks by this message.
-            if (isMachinePreview(t, m)) return ''
-            return t.slice(0, 160)
+      const merged = [...fromRooms, ...fromDefs]
+
+      // Recency + previews from the room rows. A room belongs to exactly ONE
+      // bucket (mission > project > agent), same precedence deriveRoomId uses.
+      // Mission activity still rolls up into the parent project's ORDER (the
+      // folder leads the list while you work inside one of its missions), but
+      // the project's own surfaced preview excludes missions (corner:front-door Bug 2).
+      {
+        const ARTIFACT_RE = /^(?:qa\/|screenshots?\/|r\d+[-.]|census-|\.)|([-_]shot[-_]|[-_]critique[-_])/i
+        const previewOf = (text, lm) => {
+          const t = String(text || '').replace(/\s+/g, ' ').trim()
+          if (!t || t.startsWith('{') || t.startsWith('[')) return ''
+          if (ARTIFACT_RE.test(t)) return ''
+          if (isMachinePreview(t, lm)) return ''
+          return t.slice(0, 160)
+        }
+        const projRecency = {}
+        const projRollup = {}
+        const missionRecency = {}
+        const agentRecency = {}
+        for (const r of roomRows) {
+          const lm = r.lastMessage
+          if (!lm || !lm.createdAt) continue
+          const msgLike = { text: lm.text || '', metadata: {} }
+          if (isRoomActivityNoise(msgLike)) continue
+          const t = Number(lm.createdAt)
+          if (!Number.isFinite(t)) continue
+          const preview = previewOf(lm.text, msgLike)
+          if (r.kind === 'mission') {
+            const ms = legacyTail(r, cxWorld) || (r.project ? `${r.project}:${r._id}` : String(r._id))
+            const projectSlug = r.project || (ms.includes(':') ? ms.split(':')[0] : '')
+            if (projectSlug && (!projRollup[projectSlug] || t > projRollup[projectSlug])) projRollup[projectSlug] = t
+            if (!missionRecency[ms] || t > missionRecency[ms].ts) missionRecency[ms] = { ts: t, project: projectSlug, text: preview }
+          } else if (r.kind === 'project') {
+            const slug = legacyTail(r, cxWorld) || r.project || ''
+            if (!slug) continue
+            if (!projRollup[slug] || t > projRollup[slug]) projRollup[slug] = t
+            if (!projRecency[slug] || t > projRecency[slug].t) projRecency[slug] = { t, text: preview }
+          } else {
+            const slug = legacyTail(r, cxWorld) || r.specialist || ''
+            if (!slug) continue
+            if (!agentRecency[slug] || t > agentRecency[slug].ts) agentRecency[slug] = { ts: t, text: preview }
           }
-          for (const m of (data.messages || [])) {
-            if (!m.timestamp) continue
-            // Home is a human activity digest, not an infrastructure log. Supervisor
-            // health alerts remain available in their room but never become recents.
-            if (isRoomActivityNoise(m)) continue
-            const t = new Date(m.timestamp).getTime()
-            if (Number.isNaN(t)) continue
-            // A message belongs to exactly ONE recency bucket, in the same
-            // precedence deriveRoomId uses: mission > project > agent. Previously a
-            // mission-tagged message ALSO bumped its parent project's SURFACED
-            // recency, so a child mission's reply floated the parent project into
-            // Recently Active wearing the child's preview — while the parent row's
-            // click-target (its project_only thread) opened the parent's own, older
-            // last message. Preview and destination disagreed (Patrik 2026-07-22,
-            // corner:front-door Bug 2). Rollup still tracks mission activity for the
-            // folder ORDERING; the surfaced last_message excludes missions.
-            const ms = m.metadata && m.metadata.mission_slug
-            if (m.project && (!projRollup[m.project] || t > projRollup[m.project])) projRollup[m.project] = t
-            if (m.project && !ms && (!projRecency[m.project] || t > projRecency[m.project].t)) projRecency[m.project] = { t, text: previewOf(m) }
-            if (ms) {
-              if (!missionRecency[ms] || t > missionRecency[ms].ts) missionRecency[ms] = { ts: t, project: m.project || '', text: previewOf(m) }
-            }
-            if (m.agent && !m.project && !ms) {
-              if (!agentRecency[m.agent] || t > agentRecency[m.agent].ts) agentRecency[m.agent] = { ts: t, text: previewOf(m) }
-            }
+        }
+        for (const p of merged) { const rec = projRecency[p.slug]; p.last_message_at = rec ? rec.t : 0; p.last_message_text = rec ? rec.text : '' }
+        merged.sort((a, b) => ((projRollup[b.slug] || b.last_message_at || 0) - (projRollup[a.slug] || a.last_message_at || 0)) || (a.name || '').localeCompare(b.name || ''))
+        setMissionRooms(Object.entries(missionRecency).map(([slug, v]) => ({ slug, project: v.project, last_message_at: v.ts, last_message_text: v.text || '' })))
+        // Direct agent threads accumulate rather than replace, pruned at 24h, so
+        // a thread does not vanish from recents between two answers.
+        const agentThreadList = Object.entries(agentRecency).map(([agent, v]) => ({ agent, last_message_at: v.ts, last_message_text: v.text || '' }))
+        const cutoff = Date.now() - 24 * 60 * 60 * 1000
+        setAgentThreadRooms(prev => {
+          const map = {}
+          for (const a of (prev || [])) { if (a.last_message_at >= cutoff) map[a.agent] = a }
+          for (const a of agentThreadList) { if (!map[a.agent] || a.last_message_at > map[a.agent].last_message_at) map[a.agent] = a }
+          return Object.values(map)
+        })
+      }
+      if (merged.length > 0) {
+        const sig = JSON.stringify(merged)
+        if (sig !== projectRoomsSigRef.current) { projectRoomsSigRef.current = sig; setLiveProjectRooms(merged) }
+      }
+      // The set of project rooms that still exist. Anything absent is archived
+      // (or deleted) and must not keep spawning catch-up cards. Guarded on a
+      // non-empty merge so a transient empty payload never blanks catch-up.
+      const activeProjectSlugs = merged.length > 0 ? new Set(merged.map(p => p.slug)) : null
+
+      // Completed feed (only fully approved/completed, not pending-approval 'done')
+      {
+        const completed = []
+        completed.push(...tasks
+          .filter(t => t.status === 'completed')
+          .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false })))
+        completed.push(...tasksV2
+          .filter(t => t.status === 'done')
+          .map(t => ({
+            agent:     t.agent_identity || t.agent || 'system',
+            text:      t.title || t.description || '',
+            done:      true,
+            isLive:    false,
+            result:    t.result || null,
+            qaScore:   t.qa_score || null,
+            timestamp: t.completed_at || t.created_at,
+            isV2Task:  true,
+          })))
+        setCompletedFeed(completed)
+      }
+
+      // Unread inbox items: one card per room where the agent spoke last and the
+      // person has not caught up. rooms:listRooms authors the read state when it
+      // knows the viewer (hasUnread / unreadCount); when it does not, "the last
+      // message is the agent's" is the same test the old digest ran by hand.
+      {
+        const unread = []
+        const freshRooms = []
+        for (const r of roomRows) {
+          const lm = r.lastMessage
+          if (!lm || !lm.agentSlug) continue
+          const known = typeof r.unreadCount === 'number'
+          const isFresh = r.hasUnread === true || (!known && !!lm.agentSlug)
+          if (!isFresh) continue
+          const missionSlug = r.kind === 'mission' ? (legacyTail(r, cxWorld) || null) : null
+          const project = r.kind === 'agent' ? null : (r.project || (r.kind === 'project' ? (legacyTail(r, cxWorld) || null) : null))
+          if (activeProjectSlugs && project && !activeProjectSlugs.has(project)) continue
+          const agentSlug = r.kind === 'agent' ? (legacyTail(r, cxWorld) || r.specialist || lm.agentSlug) : lm.agentSlug
+          const k = missionSlug || project || (agentSlug ? `agent:${agentSlug}` : null)
+          if (!k) continue
+          const msg = { text: lm.text || '', metadata: {} }
+          const timestamp = toIso(lm.createdAt)
+          if (unreadIsRealMessage(msg)) {
+            freshRooms.push({ agent: lm.agentSlug, project, missionSlug, roomKey: k, timestamp })
           }
-          for (const p of merged) { const r = projRecency[p.slug]; p.last_message_at = r ? r.t : 0; p.last_message_text = r ? r.text : '' }
-          // Order by rollup recency (mission activity counts here, so a project the
-          // user is actively working inside a mission of still leads the folder list),
-          // then by the project's own surfaced recency, then alphabetical.
-          merged.sort((a, b) => ((projRollup[b.slug] || b.last_message_at || 0) - (projRollup[a.slug] || a.last_message_at || 0)) || (a.name || '').localeCompare(b.name || ''))
-          // Expose mission recency so useHome can populate Recently Active without
-          // waiting for an inbox ping. Stored as { slug, project, last_message_at }.
-          const missionList = Object.entries(missionRecency).map(([slug, v]) => ({ slug, project: v.project, last_message_at: v.ts, last_message_text: v.text || '' }))
-          setMissionRooms(missionList)
-          // Same for direct agent threads — { agent, last_message_at, last_message_text }.
-          // Merge with previous state rather than replacing: the 100-message fetch window
-          // may not include an older agent thread on a busy client, which would wipe it
-          // from recents on the next poll. Accumulate seen agents; prune entries older
-          // than 24 h so stale threads don't linger forever.
-          const agentThreadList = Object.entries(agentRecency).map(([agent, v]) => ({ agent, last_message_at: v.ts, last_message_text: v.text || '' }))
-          const cutoff = Date.now() - 24 * 60 * 60 * 1000
-          setAgentThreadRooms(prev => {
-            const merged = {}
-            for (const a of (prev || [])) {
-              if (a.last_message_at >= cutoff) merged[a.agent] = a
-            }
-            for (const a of agentThreadList) {
-              if (!merged[a.agent] || a.last_message_at > merged[a.agent].last_message_at) merged[a.agent] = a
-            }
-            return Object.values(merged)
+          if (!inboxNeedsResponse(msg)) continue
+          unread.push({
+            agent: lm.agentSlug,
+            project,
+            missionSlug,
+            roomKey: k,
+            text: summarizeAsk(lm.text),
+            timestamp,
+            id: r._id,
           })
         }
-        if (merged.length > 0) {
-          const sig = JSON.stringify(merged)
-          if (sig !== projectRoomsSigRef.current) { projectRoomsSigRef.current = sig; setSupabaseProjectRooms(merged) }
-        }
-
-        // corner:corner-ui-cv6 wd40 DEF-4: the set of project rooms that still
-        // exist. supabase-status.js now excludes archived projects from both
-        // sources, so anything absent here is archived (or deleted) — its old
-        // messages must not keep spawning catch-up cards. Guarded on a
-        // non-empty merge so a transient empty payload never blanks catch-up.
-        const activeProjectSlugs = merged.length > 0 ? new Set(merged.map(p => p.slug)) : null
-
-        // Map tasks to completed feed (only fully approved/completed, not pending-approval 'done')
-        {
-          const completed = []
-          if (data.tasks) {
-            const legacyCompleted = data.tasks
-              .filter(t => t.status === 'completed')
-              .map(t => ({ agent: t.agent || 'system', text: t.text, done: true, isLive: false }))
-            completed.push(...legacyCompleted)
-          }
-          // Architecture v2: add task-runner completed tasks to the feed
-          if (data.tasksV2) {
-            const v2Completed = data.tasksV2
-              .filter(t => t.status === 'done')
-              .map(t => ({
-                agent:     t.agent_identity || 'system',
-                text:      t.title || t.description || '',
-                done:      true,
-                isLive:    false,
-                result:    t.result || null,
-                qaScore:   t.qa_score || null,
-                timestamp: t.completed_at || t.created_at,
-                isV2Task:  true,
-              }))
-            completed.push(...v2Completed)
-          }
-          setCompletedFeed(completed)
-        }
-
-        // Compute unread inbox items: assistant messages newer than the user's
-        // last message IN THAT ROOM. corner:notifications R1 — a notification
-        // points to the ROOM, not the agent. Every message row already carries
-        // `project` and `metadata.mission_slug` (verified live DB 2026-05-22);
-        // the old builder discarded both and de-duped one-card-per-agent, which
-        // collapsed multiple rooms into a single agent card. Now: one card per
-        // room (mission room > project room > 1:1 agent thread).
-        if (data.messages) {
-          // Messages arrive oldest-first (reversed in supabase-status.js).
-          // roomKey identifies the room a message belongs to. It must resolve
-          // identically for the user message and the assistant reply in the
-          // same room: mission rooms key on mission_slug, project rooms on
-          // project, 1:1 agent threads on `agent:<slug>`.
-          const roomKey = (m) =>
-            (m.metadata && m.metadata.mission_slug) ||
-            m.project ||
-            (m.agent ? `agent:${m.agent}` : null)
-          const roomLastSeen = {} // roomKey -> timestamp of last dashboard user message
-          for (const msg of data.messages) {
-            if (msg.role === 'user' && msg.source === 'corner-dashboard') {
-              const k = roomKey(msg)
-              if (k) roomLastSeen[k] = msg.timestamp
-            }
-          }
-          const unread = []
-          const freshRooms = [] // broad feed: any new agent message, update or question
-          const seenRooms = new Set() // one card per room max
-          for (const msg of [...data.messages].reverse()) { // newest first
-            if (msg.role !== 'assistant' || !msg.agent) continue
-            // wd40 DEF-4: skip messages from archived project rooms (mission
-            // messages carry the project too, so archived missions go with it).
-            // 1:1 agent threads have no project field and are unaffected.
-            if (activeProjectSlugs && msg.project && !activeProjectSlugs.has(msg.project)) continue
-            const k = roomKey(msg)
-            if (!k || seenRooms.has(k)) continue
-            const lastSeen = roomLastSeen[k]
-            if (!lastSeen || msg.timestamp > lastSeen) {
-              seenRooms.add(k) // this room's newest unread is now decided (handled either way)
-              // Green dot first: it fires on ANY new agent message in the room.
-              if (unreadIsRealMessage(msg)) {
-                freshRooms.push({
-                  agent: msg.agent,
-                  project: msg.project || null,
-                  missionSlug: (msg.metadata && msg.metadata.mission_slug) || null,
-                  roomKey: k,
-                  timestamp: msg.timestamp,
-                })
-              }
-              // Only surface rooms where the agent is actually waiting on Patrik.
-              if (!inboxNeedsResponse(msg)) continue
-              const preview = summarizeAsk(msg.text)
-              unread.push({
-                agent: msg.agent,
-                project: msg.project || null,
-                missionSlug: (msg.metadata && msg.metadata.mission_slug) || null,
-                roomKey: k,
-                text: preview,
-                timestamp: msg.timestamp,
-                id: msg.id,
-              })
-            }
-          }
-          setInboxItems(unread)
-          setUnreadRooms(freshRooms)
-        }
-
-        // Build punchData from Supabase tasks so pills render on production.
-        // Group tasks by project into the { projects: [], todayTasks: [] } format.
-        // S3 FIX: DEFAULT_PROJECTS is AOM-only. Every other client sees only their
-        // own Supabase tasks as project pills -- no AOM client data leaks.
-        {
-          const projectMap = new Map()
-          const todayTasks = []
-
-          // Color palette for known projects + dynamic hash for new ones
-          const PROD_COLORS = {
-            'rightnow': '#FF6B3D', 'your-todos': '#EF4444', 'schedule': '#FF6B3D',
-            'finish-these': '#6B8AB0', 'corner': '#3B9EFF', 'ambition': '#F59E0B',
-            'outreach': '#EF4444', 'infra': '#4CAF50', 'content': '#FF7043',
-            'multi-tenant': '#7C3AED',
-          }
-          // Auto-generate a color for any project not in PROD_COLORS
-          const AUTO_COLORS = ['#7C3AED','#06B6D4','#F97316','#EC4899','#10B981','#8B5CF6','#F43F5E','#14B8A6','#E11D48','#0EA5E9']
-          function hashColor(name) {
-            let h = 0; for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0
-            return AUTO_COLORS[Math.abs(h) % AUTO_COLORS.length]
-          }
-          const getColor = (slug) => PROD_COLORS[slug] || hashColor(slug)
-
-          if (data.tasks && data.tasks.length > 0) {
-            for (const task of data.tasks) {
-              const projectKey = task.project || task.section || 'general'
-              const slug = projectKey.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-
-            if (!projectMap.has(slug)) {
-              projectMap.set(slug, {
-                name: task.project || projectKey.charAt(0).toUpperCase() + projectKey.slice(1),
-                section: slug,
-                color: getColor(slug),
-                icon: 'project',
-                tasks: [],
-              })
-            }
-
-            const proj = projectMap.get(slug)
-            const isDone = task.status === 'completed' || task.status === 'done'
-            const taskObj = {
-              id: task.id || null,
-              text: task.text || '',
-              done: isDone,
-              agent: task.agent || null,
-              raw: '',
-              projectSource: proj.name,
-              projectSection: slug,
-              projectColor: proj.color,
-            }
-            proj.tasks.push(taskObj)
-
-              if (slug === 'schedule' && !isDone) {
-                todayTasks.push({ ...taskObj, project: 'Schedule' })
-              }
-            }
-          }
-
-          // Architecture v2: add task-runner tasks (queued pipeline) to project pills.
-          // These tasks use `title` + `agent_identity` (v2 schema) instead of `text` + `agent`.
-          // Only include non-terminal tasks: queued/classifying/planning/building/qa.
-          if (data.tasksV2 && data.tasksV2.length > 0) {
-            for (const task of data.tasksV2) {
-              if (task.status === 'done' || task.status === 'failed') continue
-              const projectKey = task.metadata?.project || 'queue'
-              const slug = projectKey.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-              if (!projectMap.has(slug)) {
-                projectMap.set(slug, {
-                  name: projectKey === 'queue' ? 'Task Queue' : (projectKey.charAt(0).toUpperCase() + projectKey.slice(1)),
-                  section: slug,
-                  color: getColor(slug),
-                  icon: 'project',
-                  tasks: [],
-                })
-              }
-              const proj = projectMap.get(slug)
-              const isDone = task.status === 'done' || task.status === 'failed'
-              proj.tasks.push({
-                id:             task.id || null,
-                text:           task.title || task.description || '',
-                done:           isDone,
-                agent:          task.agent_identity || null,
-                status:         task.status,
-                priority:       task.priority,
-                sort_order:     task.sort_order,
-                raw:            '',
-                projectSource:  proj.name,
-                projectSection: slug,
-                projectColor:   proj.color,
-                isV2Task:       true,
-              })
-            }
-          }
-
-          // S3 FIX: Default project pills are AOM-only.
-          // Primary source: Supabase projects table (live, editable without a deploy).
-          // Fallback: hardcoded list, but ONLY for AOM account.
-          // Prospects and new accounts see only their own data.
-          if (clientId === 'aom') {
-            const AOM_DEFAULT_PROJECTS_FALLBACK = [
-              { name: 'Corner', section: 'corner', color: '#3B9EFF', icon: 'project' },
-              { name: 'Ambition', section: 'ambition-mechanical', color: '#F59E0B', icon: 'project' },
-              { name: 'KOHRS', section: 'kohrs', color: '#EF4444', icon: 'project' },
-              { name: 'ISA Energy', section: 'isa-energy', color: '#F97316', icon: 'project' },
-              { name: 'Skylar', section: 'skylar', color: '#EC4899', icon: 'project' },
-              { name: 'Outreach', section: 'outreach', color: '#EF4444', icon: 'project' },
-              { name: 'Included Health', section: 'included-health', color: '#EF4444', icon: 'project' },
-              { name: 'Brandon Wiley', section: 'brandon-wiley', color: '#9C27B0', icon: 'project' },
-              { name: 'NABI', section: 'nabi', color: '#F97316', icon: 'project' },
-              { name: 'LBX', section: 'lbx', color: '#9C27B0', icon: 'project' },
-            ]
-            const liveProjectDefs = (data.projectDefs || [])
-              .map(p => ({ name: p.name, section: p.slug, color: p.color || '#888', icon: p.icon || 'project' }))
-            const defaultsToApply = liveProjectDefs.length > 0 ? liveProjectDefs : AOM_DEFAULT_PROJECTS_FALLBACK
-            for (const dp of defaultsToApply) {
-              if (!projectMap.has(dp.section)) {
-                projectMap.set(dp.section, { ...dp, tasks: [] })
-              }
-            }
-          }
-
-          setPunchData({ projects: Array.from(projectMap.values()), todayTasks })
-        }
-
-        // ── LIVENESS DETECTION (disabled) ──────────────────────────────────
-        // Heartbeat + task timeout toasts removed. They fire inaccurately
-        // when agents work as sub-agents (Bobby for Gary, etc.) and make
-        // users uneasy. RNB pills are the source of truth for task state.
-        // ─────────────────────────────────────────────────────────────────────
-
-        setPunchLoading(false)
-        setLastUpdated(Date.now())
-      } catch {
-        setPunchLoading(false)
+        setInboxItems(unread)
+        setUnreadRooms(freshRooms)
       }
+
+      // punchData: local dev parses the punch-list markdown when the consumer
+      // gave a parser; everyone else builds the pills from the task queue.
+      const punchContent = punchContentRef.current
+      if (IS_LOCAL && punchContent && parseFnRef.current) {
+        setPunchData(parseFnRef.current(punchContent))
+      } else {
+        const projectMap = new Map()
+        const todayTasks = []
+
+        const PROD_COLORS = {
+          'rightnow': '#FF6B3D', 'your-todos': '#EF4444', 'schedule': '#FF6B3D',
+          'finish-these': '#6B8AB0', 'corner': '#3B9EFF', 'ambition': '#F59E0B',
+          'outreach': '#EF4444', 'infra': '#4CAF50', 'content': '#FF7043',
+          'multi-tenant': '#7C3AED',
+        }
+        const AUTO_COLORS = ['#7C3AED','#06B6D4','#F97316','#EC4899','#10B981','#8B5CF6','#F43F5E','#14B8A6','#E11D48','#0EA5E9']
+        function hashColor(name) {
+          let h = 0; for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0
+          return AUTO_COLORS[Math.abs(h) % AUTO_COLORS.length]
+        }
+        const getColor = (slug) => PROD_COLORS[slug] || hashColor(slug)
+
+        for (const task of tasks) {
+          const projectKey = task.project || task.section || 'general'
+          const slug = projectKey.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          if (!projectMap.has(slug)) {
+            projectMap.set(slug, {
+              name: task.project || projectKey.charAt(0).toUpperCase() + projectKey.slice(1),
+              section: slug,
+              color: getColor(slug),
+              icon: 'project',
+              tasks: [],
+            })
+          }
+          const proj = projectMap.get(slug)
+          const isDone = task.status === 'completed' || task.status === 'done'
+          const taskObj = {
+            id: task.id || null,
+            text: task.text || '',
+            done: isDone,
+            agent: task.agent || null,
+            raw: '',
+            projectSource: proj.name,
+            projectSection: slug,
+            projectColor: proj.color,
+          }
+          proj.tasks.push(taskObj)
+          if (slug === 'schedule' && !isDone) todayTasks.push({ ...taskObj, project: 'Schedule' })
+        }
+
+        // Architecture v2: task-runner tasks (queued pipeline) as project pills.
+        for (const task of tasksV2) {
+          if (task.status === 'done' || task.status === 'failed') continue
+          const projectKey = task.metadata?.project || task.project || 'queue'
+          const slug = projectKey.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          if (!projectMap.has(slug)) {
+            projectMap.set(slug, {
+              name: projectKey === 'queue' ? 'Task Queue' : (projectKey.charAt(0).toUpperCase() + projectKey.slice(1)),
+              section: slug,
+              color: getColor(slug),
+              icon: 'project',
+              tasks: [],
+            })
+          }
+          const proj = projectMap.get(slug)
+          proj.tasks.push({
+            id:             task.id || null,
+            text:           task.title || task.description || '',
+            done:           false,
+            agent:          task.agent_identity || task.agent || null,
+            status:         task.status,
+            priority:       task.priority,
+            sort_order:     task.sort_order,
+            raw:            '',
+            projectSource:  proj.name,
+            projectSection: slug,
+            projectColor:   proj.color,
+            isV2Task:       true,
+          })
+        }
+
+        // S3 FIX: Default project pills are AOM-only. Primary source: the live
+        // registry. Fallback: hardcoded list, but ONLY for the AOM account.
+        if (clientId === 'aom') {
+          const AOM_DEFAULT_PROJECTS_FALLBACK = [
+            { name: 'Corner', section: 'corner', color: '#3B9EFF', icon: 'project' },
+            { name: 'Ambition', section: 'ambition-mechanical', color: '#F59E0B', icon: 'project' },
+            { name: 'KOHRS', section: 'kohrs', color: '#EF4444', icon: 'project' },
+            { name: 'ISA Energy', section: 'isa-energy', color: '#F97316', icon: 'project' },
+            { name: 'Skylar', section: 'skylar', color: '#EC4899', icon: 'project' },
+            { name: 'Outreach', section: 'outreach', color: '#EF4444', icon: 'project' },
+            { name: 'Included Health', section: 'included-health', color: '#EF4444', icon: 'project' },
+            { name: 'Brandon Wiley', section: 'brandon-wiley', color: '#9C27B0', icon: 'project' },
+            { name: 'NABI', section: 'nabi', color: '#F97316', icon: 'project' },
+            { name: 'LBX', section: 'lbx', color: '#9C27B0', icon: 'project' },
+          ]
+          const liveProjectDefs = projectDefs.map(p => ({ name: p.name, section: p.slug, color: p.color || '#888', icon: p.icon || 'project' }))
+          const defaultsToApply = liveProjectDefs.length > 0 ? liveProjectDefs : AOM_DEFAULT_PROJECTS_FALLBACK
+          for (const dp of defaultsToApply) {
+            if (!projectMap.has(dp.section)) projectMap.set(dp.section, { ...dp, tasks: [] })
+          }
+        }
+        setPunchData({ projects: Array.from(projectMap.values()), todayTasks })
+      }
+
+      // ── LIVENESS DETECTION (disabled) ──────────────────────────────────
+      // Heartbeat + task timeout toasts removed. They fire inaccurately
+      // when agents work as sub-agents (Bobby for Gary, etc.) and make
+      // users uneasy. RNB pills are the source of truth for task state.
+      // ─────────────────────────────────────────────────────────────────────
+
+      setPunchLoading(false)
+      setLastUpdated(Date.now())
+    } catch (err) {
+      console.warn('[useDataPipe] derive failed:', err)
+      setPunchLoading(false)
     }
   }, [])
 
+  // One-shot read of everything, then derive. The live subscriptions keep the
+  // screen current after this; refetch() and cv6:data-refresh call it again.
+  const fetchAll = useCallback(async () => {
+    try {
+      const clientId = getClientId()
+      const cxWorld = convexWorldId(clientId)
+      if (IS_LOCAL) {
+        // r7:open-agent-surface — /api/local/file requires a session now (it
+        // reads straight off the AOM-EA repo), so send one.
+        const punchRes = await authFetch('/api/local/file?path=punch-list.md').then(r => r.ok ? r.json() : null).catch(() => null)
+        punchContentRef.current = punchRes?.content || ''
+      }
+      let userId = ''
+      try { userId = convexReadIdentity(await convexViewerIdentity()) } catch { userId = '' }
+      const snapshot = await readConvexSnapshot(cxWorld, userId)
+      dataRef.current = { ...dataRef.current, ...snapshot }
+      applyData(dataRef.current)
+    } catch {
+      setPunchLoading(false)
+    }
+  }, [applyData])
+
   // When the active world changes (e.g. auth resolves and sets client_id from "aom" to
   // the user's actual world), clear stale agent data and immediately refetch so the
-  // correct agents/rooms appear without waiting for the next poll interval.
+  // correct agents/rooms appear without waiting on the subscriptions to re-open.
   const prevWorldRef = useRef(worldId)
   useEffect(() => {
     if (!enabled) return
     if (worldId && worldId !== prevWorldRef.current) {
       prevWorldRef.current = worldId
-      setSupabaseAgents([])
-      setSupabaseProjectRooms([])
+      setLiveAgents([])
+      setLiveProjectRooms([])
+      dataRef.current = { rooms: null, tasks: null, agents: null, projects: null }
       fetchAll()
     }
   }, [worldId, fetchAll, enabled])
 
   useEffect(() => {
-    // Inert instance (shared-pipe consumer) — no fetch, no poll, no channels.
+    // Inert instance (shared-pipe consumer) — no fetch, no subscriptions.
     if (!enabled) return
-    // ISOLATION FIX 2026-05-24: Only fetch after worldId is known.
-    // If worldId is null (auth still resolving), skip fetch to prevent
+    // ISOLATION FIX 2026-05-24: Only read after worldId is known.
+    // If worldId is null (auth still resolving), skip to prevent
     // cross-tenant data leak (Ben/Karen/Tim seeing AOM world).
     if (!worldId) {
       return
     }
     fetchAll()
-    // Poll is a fallback only. Supabase Realtime below does the heavy lifting;
-    // this catches state after a dropped subscription. 60s keeps the bill sane.
-    const timer = setInterval(fetchAll, 60000)
 
-    // corner:dashboard-speed (2026-06-02): kill the re-download storm.
-    // Each realtime event used to call fetchAll() immediately, so a burst of
-    // agent_status / task / message changes (constant during active use)
-    // fired N full ~225KB downloads back-to-back — the dashboard felt slow /
-    // "still struggling" while agents worked. Coalesce realtime triggers into
-    // ONE fetch per window. Mount + 60s poll stay immediate; only the
-    // event-driven refetches are debounced.
-    // smoothness-blitz #9: messages use a fast 500ms debounce so agent responses
-    // appear in <500ms instead of up to 2.5s. Status/task/project changes keep
-    // the slower 2.5s window (they batch well and are less latency-sensitive).
-    let realtimeDebounce = null
-    let messageDebounce = null
-    const scheduleFetch = () => {
-      if (realtimeDebounce) clearTimeout(realtimeDebounce)
-      realtimeDebounce = setTimeout(() => { realtimeDebounce = null; fetchAll() }, 2500)
+    // Live subscriptions. Each callback patches its own source and the
+    // derivation re-runs once per short window, so a burst of changes (an
+    // agent answering while a task flips status) is one re-render, not four.
+    let cancelled = false
+    let stops = []
+    let deriveTimer = null
+    const scheduleDerive = () => {
+      if (deriveTimer) clearTimeout(deriveTimer)
+      deriveTimer = setTimeout(() => { deriveTimer = null; if (!cancelled) applyData(dataRef.current) }, 300)
     }
-    const scheduleMessageFetch = () => {
-      if (messageDebounce) clearTimeout(messageDebounce)
-      messageDebounce = setTimeout(() => { messageDebounce = null; fetchAll() }, 500)
+    const onLive = (key) => (value) => {
+      if (cancelled) return
+      dataRef.current = { ...dataRef.current, [key]: value }
+      scheduleDerive()
     }
-
-    // Supabase Realtime subscriptions -- instant updates without waiting for poll.
-    // Only active where supabase client is configured (production + local with env vars).
-    let agentStatusChannel = null
-    let tasksChannel = null
-    let messagesChannel = null
-    let projectsChannel = null
-    if (supabase) {
-      const cid = channelIdRef.current
-      console.log('[Corner Realtime] Subscribing to agent_status, tasks, messages... id:', cid)
-
-      // agent_status table: any change triggers a (debounced) refresh (RNB, alive dots, agent status)
-      agentStatusChannel = supabase
-        .channel(`agent-status-changes-${cid}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status' }, () => {
-          console.log('[Corner Realtime] agent_status changed')
-          scheduleFetch()
-        })
-        .subscribe((status) => console.log('[Corner Realtime] agent_status sub:', status))
-
-      // tasks table: any change triggers (debounced) refresh (new tasks, status changes -> pills + RNB)
-      tasksChannel = supabase
-        .channel(`tasks-changes-${cid}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
-          console.log('[Corner Realtime] tasks changed')
-          scheduleFetch()
-        })
-        .subscribe((status) => console.log('[Corner Realtime] tasks sub:', status))
-
-      // messages table: INSERT triggers fast (500ms) refresh so agent responses appear quickly
-      messagesChannel = supabase
-        .channel(`messages-inserts-${cid}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
-          console.log('[Corner Realtime] messages INSERT')
-          scheduleMessageFetch()
-        })
-        .subscribe((status) => console.log('[Corner Realtime] messages sub:', status))
-
-      // projects table: any change triggers (debounced) refresh. Realtime contract
-      // (2026-07-02): the project-registry reconciler auto-inserts a row when a new
-      // project folder lands on disk — without this channel that row waited on the
-      // 60s poll to reach the screen.
-      projectsChannel = supabase
-        .channel(`projects-changes-${cid}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
-          console.log('[Corner Realtime] projects changed')
-          scheduleFetch()
-        })
-        .subscribe((status) => console.log('[Corner Realtime] projects sub:', status))
-    } else {
-      console.log('[Corner Realtime] supabase client is null -- no Realtime subscriptions')
-    }
+    const cxWorld = convexWorldId(worldId)
+    convexViewerIdentity().catch(() => ({})).then((viewer) => {
+      if (cancelled) return
+      const userId = convexReadIdentity(viewer)
+      stops = [
+        subscribeConvex('rooms:listRooms', { worldId: cxWorld, ...(userId ? { userId } : {}) }, onLive('rooms')),
+        subscribeConvex('tasks:find', { client_id: cxWorld, order: 'created_at.desc', limit: TASK_FETCH_LIMIT }, onLive('tasks')),
+        subscribeConvex('agents:listStatus', { worldId: cxWorld }, onLive('agents')),
+        subscribeConvex('projects:list', { worldId: cxWorld, includeShared: true }, onLive('projects')),
+      ]
+    })
 
     // O3 (corner-ui-cv6 census): a same-tab signal for structural registry changes
-    // (project/mission rename/move/create/archive from Organize). The `projects` table
-    // realtime channel above only fires when that table is in Supabase's realtime
-    // publication — which isn't guaranteed — so a rename could sit stale on the sidebar
-    // + composer picker until the 60s poll. This listener refetches immediately when
-    // Organize broadcasts, so the new name propagates to every surface at once.
+    // (project/mission rename/move/create/archive from Organize). The subscriptions
+    // catch a registry write on their own; this keeps the immediate refetch other
+    // surfaces already rely on.
     const onExternalRefresh = () => { fetchAll() }
     if (typeof window !== 'undefined') window.addEventListener('cv6:data-refresh', onExternalRefresh)
 
     return () => {
-      clearInterval(timer)
-      if (realtimeDebounce) clearTimeout(realtimeDebounce)
-      if (messageDebounce) clearTimeout(messageDebounce)
-      if (agentStatusChannel) supabase.removeChannel(agentStatusChannel)
-      if (tasksChannel) supabase.removeChannel(tasksChannel)
-      if (messagesChannel) supabase.removeChannel(messagesChannel)
-      if (projectsChannel) supabase.removeChannel(projectsChannel)
+      cancelled = true
+      if (deriveTimer) clearTimeout(deriveTimer)
+      for (const stop of stops) { try { stop() } catch { /* closed */ } }
       if (typeof window !== 'undefined') window.removeEventListener('cv6:data-refresh', onExternalRefresh)
     }
-  }, [worldId, fetchAll, enabled])
+  }, [worldId, fetchAll, applyData, enabled])
 
   // Stable isAutoChecked function -- reads from ref, never causes re-renders
   const isAutoChecked = useCallback((taskText) => {
@@ -974,10 +860,10 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
   }
 
   // Build agents status map for CanvasOffice room states.
-  // Source of truth: agent_status table only (set by task_runner or system).
+  // Source of truth: agents:listStatus only (stamped by the agents' own hooks).
   //
   // Post-rewire (Apr 14): AOM terminal rooms. Rex added Apr 15 (chat was not wired).
-  // The picker reads this array, so the guaranteed set here prevents a stale Supabase
+  // The picker reads this array, so the guaranteed set here prevents a stale
   // row from leaking a ghost room back into the UI.
   // Order matters: the first is_ea+is_terminal agent in this list becomes
   // the default landing room for AOM users (see CornerV4 landing effect).
@@ -986,30 +872,30 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
 
   let agents
   if (clientId === 'aom') {
-    const sbMap = Object.fromEntries(supabaseAgents.map(a => [a.slug, a]))
+    const liveMap = Object.fromEntries(liveAgents.map(a => [a.slug, a]))
     const gridMap = Object.fromEntries(GRID_AGENTS.map(a => [a.slug, a]))
     agents = AOM_TERMINAL_SLUGS.map(slug => {
-      const sb = sbMap[slug]
+      const live = liveMap[slug]
       const grid = gridMap[slug]
-      const status = sb?.status ? sb.status.toUpperCase() : 'IDLE'
+      const status = live?.status ? live.status.toUpperCase() : 'IDLE'
       return {
         slug,
-        name: sb?.name || grid?.name || slug.charAt(0).toUpperCase() + slug.slice(1),
-        display_name: sb?.display_name || null,
-        role: sb?.role || grid?.role || '',
+        name: live?.name || grid?.name || slug.charAt(0).toUpperCase() + slug.slice(1),
+        display_name: live?.display_name || null,
+        role: live?.role || grid?.role || '',
         status,
-        color: sb?.color || grid?.color || '#60A5FA',
-        updatedAt: sb?.updatedAt || null,
-        last_naming_nudge_at: sb?.last_naming_nudge_at || null,
-        is_super: sb?.is_super || false,
-        is_ea: sb?.is_ea || false,
-        is_terminal: sb?.is_terminal || false,
-        is_owner: sb?.is_owner || false,
+        color: live?.color || grid?.color || '#60A5FA',
+        updatedAt: live?.updatedAt || null,
+        last_naming_nudge_at: live?.last_naming_nudge_at || null,
+        is_super: live?.is_super || false,
+        is_ea: live?.is_ea || false,
+        is_terminal: live?.is_terminal || false,
+        is_owner: live?.is_owner || false,
       }
     })
   } else {
-    // World-scoped: only agents from Supabase agent_status for this client_id
-    agents = (supabaseAgents.length > 0 ? supabaseAgents : []).map(a => ({
+    // World-scoped: only agents the roster lists for this world
+    agents = (liveAgents.length > 0 ? liveAgents : []).map(a => ({
       slug: a.slug,
       name: a.name || a.slug.charAt(0).toUpperCase() + a.slug.slice(1),
       display_name: a.display_name || null,
@@ -1026,9 +912,8 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
   }
 
   // Immediate recency bump for direct agent threads: called right after the user
-  // sends a message so Recently Active reflects the send without waiting for the
-  // next poll cycle (which could take 3s, or miss the thread entirely if the
-  // 100-message window is full of more-recent project/mission messages).
+  // sends a message so Recently Active reflects the send before the room
+  // subscription delivers the new preview.
   const bumpAgentThread = useCallback((agentSlug, text) => {
     if (!agentSlug) return
     const ts = Date.now()
@@ -1058,7 +943,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null, opt
     punchLoading,
     lastUpdated,
     agents,
-    projectRooms: supabaseProjectRooms,
+    projectRooms: liveProjectRooms,
     missionRooms,
     agentThreadRooms,
     bumpAgentThread,

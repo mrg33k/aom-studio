@@ -1,15 +1,21 @@
 // GET /api/worlds/:slug
 // Get world details for an authenticated member or the super-admin.
+//
+// corner:retire-supabase (2026-09-03): the world row comes from
+// worlds:getBySlug, the caller's role from worlds:membership (via worldAuth),
+// the roster from agents:listStatus and the members from worlds:membersOf.
+// The response keeps the old shape: { world: { id, name, slug, client_id,
+// status, config, created_at, role }, agents, members }.
 
 import {
   authenticateWorldRequest,
   getWorldMembership,
   sendWorldAuthError,
   setWorldCors,
-  worldDbHeaders,
 } from '../_lib/worldAuth.js'
+import { convexQuery } from '../_lib/verifyTenant.js'
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+const iso = (ms) => (typeof ms === 'number' && Number.isFinite(ms) ? new Date(ms).toISOString() : null)
 
 export default async function handler(req, res) {
   setWorldCors(req, res, 'GET')
@@ -21,15 +27,23 @@ export default async function handler(req, res) {
 
   try {
     const { userId, isSuperAdmin } = await authenticateWorldRequest(req)
-    const worldResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/worlds?slug=eq.${encodeURIComponent(slug)}&select=id,name,slug,client_id,status,config,created_at&limit=1`,
-      { headers: worldDbHeaders() },
-    )
-    if (!worldResponse.ok) return res.status(worldResponse.status).json({ error: await worldResponse.text() })
-    const worlds = await worldResponse.json()
-    if (!worlds.length) return res.status(404).json({ error: 'World not found' })
+    let row = null
+    try {
+      row = await convexQuery('worlds:getBySlug', { slug: String(slug).trim().toLowerCase() })
+    } catch (e) {
+      return res.status(502).json({ error: `world lookup failed: ${e?.message || e}` })
+    }
+    if (!row) return res.status(404).json({ error: 'World not found' })
 
-    const world = worlds[0]
+    const world = {
+      id: String(row._id),
+      name: row.name,
+      slug: row.slug,
+      client_id: row.slug,
+      status: 'active',
+      config: { planTier: row.planTier || null },
+      created_at: iso(row._creationTime),
+    }
     if (isSuperAdmin) {
       world.role = 'owner'
     } else {
@@ -39,23 +53,37 @@ export default async function handler(req, res) {
     }
 
     let agents = []
-    if (world.slug) {
-      const agentsResponse = await fetch(
-        // Columns are slug/name — agent_slug/agent_name have never existed, so this
-        // query returned HTTP 400 ("column agent_status.agent_slug does not exist")
-        // on every call and `agents` was silently always []. Also scoped to real
-        // agent rows: agent_status holds project and mission rows in the same table.
-        `${SUPABASE_URL}/rest/v1/agent_status?client_id=eq.${encodeURIComponent(world.slug)}&type=eq.agent&hidden=eq.false&select=slug,name,role,status,current_task,color&order=name.asc`,
-        { headers: worldDbHeaders() },
-      )
-      if (agentsResponse.ok) agents = await agentsResponse.json()
+    try {
+      const rows = await convexQuery('agents:listStatus', { worldId: world.id })
+      agents = (Array.isArray(rows) ? rows : [])
+        .map((a) => ({
+          slug: a.slug,
+          name: a.title,
+          role: a.subtitle || null,
+          status: a.status || 'idle',
+          current_task: a.currentTask ?? null,
+          color: a.color || null,
+        }))
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
+    } catch {
+      agents = []
     }
 
-    const membersResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/world_members?world_id=eq.${encodeURIComponent(world.id)}&select=user_id,role,created_at&order=created_at.asc`,
-      { headers: worldDbHeaders() },
-    )
-    const members = membersResponse.ok ? await membersResponse.json() : []
+    let members = []
+    try {
+      const rows = await convexQuery('worlds:membersOf', { worldId: world.id })
+      members = (Array.isArray(rows) ? rows : [])
+        .map((m) => ({
+          user_id: String(m.userId),
+          role: m.role,
+          created_at: iso(m.createdAt),
+          email: m.email || null,
+          name: m.name || null,
+        }))
+        .sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')))
+    } catch {
+      members = []
+    }
     return res.status(200).json({ world, agents, members })
   } catch (error) {
     return sendWorldAuthError(res, error)

@@ -15,7 +15,6 @@ import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
 import ActivityDock from './ActivityDock.jsx';
-import RateLimitBanner from './RateLimitBanner.jsx';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop, { FilesShelf, useRoomCrossings } from './ChatDesktop.jsx';
@@ -49,8 +48,8 @@ import { useRoomSwipeArchive } from './useRoomSwipeArchive.js';
 import { registerPushWorker } from './pushNotifications.js';
 import IntakeConfirm from './IntakeConfirm.jsx';
 import { useIntakeRoute } from './data/useIntakeRoute.js';
-import { supabase } from '../lib/supabase.js';
-import { convexPlaneActive } from './data/convexClient.js';
+import { hasSession } from '../lib/convex.js';
+import { sendRoomMessage } from './WorkersShell.jsx';
 import { demoFixtureActive } from '../lib/fixtureClient.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
@@ -472,11 +471,11 @@ function CatchUpModal({ card, worldId, idx, total, onPrev, onNext, onClose, onGo
         <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '6px 18px 14px' }}>
           {caughtUp ? <div style={{ color: 'var(--muted)', fontSize: 13.5, textAlign: 'center', padding: '40px 0' }}>You're all caught up. New things that need you will show here.</div> : <InlineBubbleThread messages={messages} />}
         </div>
-        {!caughtUp && !supabase && !demoFixtureActive() ? (
-          /* Real local no-Supabase mode: sends are read-only, so no live-looking input. */
+        {!caughtUp && !hasSession() && !demoFixtureActive() ? (
+          /* Nobody signed in on this browser: sends are read-only, so no live-looking input. */
           <div style={{ padding: '14px 16px', borderTop: '1px solid var(--divider)', color: 'var(--muted)', fontSize: 12.5, textAlign: 'center' }}>Read-only here. Connect a workspace to reply.</div>
         ) : null}
-        {!caughtUp && (supabase || demoFixtureActive()) ? (
+        {!caughtUp && (hasSession() || demoFixtureActive()) ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 16px', borderTop: '1px solid var(--divider)', position: 'relative' }}>
             {sendError ? <div role="status" style={{ position: 'absolute', left: 16, bottom: 57, color: '#e6a14b', fontSize: 11.5 }}>{sendError}</div> : null}
             {total > 1 ? <div className="ib" onClick={onPrev} style={{ cursor: 'pointer', width: 38, height: 38 }} title="Previous"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg></div> : null}
@@ -620,7 +619,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     },
     // wd40 DEF-3: archive from the Home tree too — same confirm dialog as
     // Organize. The room list itself refreshes on the next data-pipe tick
-    // (supabase-status.js drops archived rooms server-side).
+    // (the data pipe drops archived rooms before they reach the rail).
     onArchive: async (target) => {
       await archiveNode(authFetch, target, worldId);
       setMissionReload((k) => k + 1);
@@ -764,7 +763,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
 
   // Inline "Draft reply" on a catch-up card (Patrik): the reply composer replaces the action
   // buttons in place, with a Send button that posts the reply into that room (the same
-  // supabase-messages path the Chat composer uses). curCardRef holds the latest current card
+  // messages:send path the Chat composer uses). curCardRef holds the latest current card
   // so the Send handler reads the right room without churning the actions memo.
   const [replyOpen, setReplyOpen] = useState(false);
   // After a Home quick-reply sends, the card shows "working" feedback (parity with the
@@ -777,21 +776,19 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     const body = String(text || '').trim();
     const card = curCardRef.current;
     if (!worldId || !body || !card) return false;
-    const payload = card.missionSlug
-      ? { client_id: worldId, agent: 'corner', project: card.project, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: card.missionSlug } }
+    const target = card.missionSlug
+      ? { project: card.project, missionSlug: card.missionSlug }
       : card.project
-        ? { client_id: worldId, agent: 'corner', project: card.project, text: body, role: 'user', source: 'corner-dashboard' }
-        : { client_id: worldId, agent: card.agent || card.id, text: body, role: 'user', source: 'corner-dashboard' };
+        ? { project: card.project }
+        : { agent: card.agent || card.id };
     // Show "working" the instant you send (parity with the chat tool's WorkingTurn).
     const pname = card.project ? String(card.project).replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '';
     const who = card.agentName || pname || 'Your agent';
     setReplyOpen(false);
     setReplyWorking({ label: `${who} is on it…` });
     try {
-      const r = await authFetch('/api/dashboard/supabase-messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-      });
-      const ok = !!(r && r.ok);
+      let ok = false;
+      try { ok = !!(await sendRoomMessage({ worldId, ...target, text: body })); } catch { ok = false; }
       if (!ok) { setReplyWorking(null); return false; }
       // Hold the working state briefly so you SEE it landed, then advance the deck
       // (the reply itself shows in the chat tool; the card is handled on this device).
@@ -1828,7 +1825,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         awaiting={quickThread && quickThread.awaiting}
         liveSteps={quickThread && quickThread.liveSteps}
         room={displayedRoom}
-        localReadOnly={!supabase && !convexPlaneActive()}
+        localReadOnly={false}
         onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('organize', files?.length ? { files, project: roomProjectSlug(displayedRoom), missionSlug: roomMissionSlug(displayedRoom), needsReview: true } : null); }}
       />
       <Cv6FullComposer
@@ -3357,11 +3354,14 @@ function DemoMobileChatLifecycle() {
           } catch { return false; }
         }}
         onSend={async (text, options = {}) => {
-          // Demo fixture: the send must be awaitable + interceptable so specs can
-          // assert the composer contract; Playwright owns this POST.
+          // Demo fixture: the send must be awaitable so specs can assert the
+          // composer contract. It writes nothing anywhere (there is no backend
+          // behind a fixture); the payload it would have sent is announced on
+          // the window so a spec can still inspect it.
           try {
-            const r = await fetch('/api/dashboard/supabase-messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_id: 'local-render', agent: 'renderer-room', text, role: 'user', source: 'demo-fixture', metadata: { interaction_mode: options.interactionMode === 'plan' ? 'plan' : 'work' } }) });
-            return r.ok;
+            const payload = { client_id: 'local-render', agent: 'renderer-room', text, role: 'user', source: 'demo-fixture', metadata: { interaction_mode: options.interactionMode === 'plan' ? 'plan' : 'work' } };
+            window.dispatchEvent(new CustomEvent('cv6:demo-send', { detail: payload }));
+            return true;
           } catch { return false; }
         }}
         onOpenReview={() => {}}
@@ -4445,10 +4445,6 @@ export default function CornerCV6() {
           settings view which already exists and is reached via onNav('settings'). */}
       {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={onSearch} onOpenShortcuts={() => setShortcutsOpen(true)} onOpenEmailColumn={onOpenEmailColumn} onOpenWorkersColumn={onOpenWorkersColumn} onOpenProfile={() => onNav('settings', { section: 'account' })} onOpenAlerts={() => setAlertsOpen((o) => !o)} theme={theme} onTheme={changeTheme} badges={navBadges} />}
       {!isDesktop && <MobileAirPodsHeaderPortal canvasRef={workspaceCanvasRef} activeColumnId={activeColumnId} />}
-      {/* TOP-20 #15: 429 banner with retry — re-checks limit on account switch and auto-respawn via onAuthStateChange */}
-      <div style={{ padding: '0 12px', marginTop: 6 }}>
-        <RateLimitBanner onRetry={() => { try { window.dispatchEvent(new CustomEvent('corner:rate-limit-retry', { detail: { reason: 'banner-retry' } })); } catch {} }} />
-      </div>
       <AlertsPanel open={alertsOpen} onClose={() => setAlertsOpen(false)} worldId={worldId} />
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
       <ActivityDock worldId={worldId} onOpenJob={(job) => {

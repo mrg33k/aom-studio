@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { supabase } from '../dashboard/lib/supabase';
+import { useConvexLive } from '../dashboard/lib/convex';
 import { authFetch } from '../dashboard/lib/authFetch';
 import seedData from '../data/finance-seed.json';
 
@@ -8,6 +8,21 @@ const PASSWORD = 'aom2026';
 const API_URL = '/api/dashboard/finance';
 
 const OWNER_OPTIONS = ['Patrik', 'Ash', 'AOM', 'Review', 'Revenue', 'Refund', 'Transfer'];
+
+// Convex financeTransactions row -> the row shape this page reads. Keep in step
+// with shapeRow in api/dashboard/finance.js.
+function shapeConvexRow(r) {
+  return {
+    id: r._id,
+    date: r.date,
+    description: r.description || '',
+    amount: Number(r.amount),
+    category: r.category || '',
+    owner: r.source || 'Review',
+    notes: r.vendor || '',
+    created_at: typeof r.createdAt === 'number' ? new Date(r.createdAt).toISOString() : null,
+  };
+}
 
 const OWNER_COLORS = {
   Patrik: { bg: 'rgba(232,93,38,0.08)', border: '#E85D26', text: '#F0A882', badge: '#E85D26' },
@@ -267,39 +282,16 @@ export default function FinanceTracker() {
     if (authed) fetchTransactions();
   }, [authed, fetchTransactions]);
 
-  // Supabase Realtime: live sync when either user edits
+  // Live sync when either user edits (corner:retire-supabase): a Convex
+  // subscription on finance:list pushes the whole list on every change. The
+  // rows are mapped the same way api/dashboard/finance.js maps them
+  // (source -> owner, vendor -> notes), so the table never sees two shapes.
+  const live = useConvexLive('finance:list', authed ? { limit: 2000 } : null);
   useEffect(() => {
-    if (!authed || !supabase) return;
-
-    const channel = supabase
-      .channel('finance-realtime')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'finance_transactions',
-      }, (payload) => {
-        if (payload.eventType === 'UPDATE') {
-          const updated = payload.new;
-          setTransactions(prev => prev.map(t =>
-            t.id === updated.id ? { ...updated, amount: Number(updated.amount) } : t
-          ));
-        } else if (payload.eventType === 'INSERT') {
-          const inserted = { ...payload.new, amount: Number(payload.new.amount) };
-          setTransactions(prev => {
-            if (prev.some(t => t.id === inserted.id)) return prev;
-            return [inserted, ...prev];
-          });
-        } else if (payload.eventType === 'DELETE') {
-          const deletedId = payload.old.id;
-          setTransactions(prev => prev.filter(t => t.id !== deletedId));
-        }
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [authed]);
+    if (!authed || !Array.isArray(live.value)) return;
+    if (live.value.length === 0) return; // the seed path in fetchTransactions owns the empty case
+    setTransactions(live.value.map(shapeConvexRow));
+  }, [authed, live.value]);
 
   // Owner change: optimistic local update + API persist
   const handleOwnerChange = useCallback((txn, newOwner) => {

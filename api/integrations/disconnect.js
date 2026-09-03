@@ -1,12 +1,33 @@
 // POST /api/integrations/disconnect { slug }
-// Sets the user's integration row back to status='available' (preserves row history).
+// Disconnects the user's integration. The row is kept (history) with its
+// status flipped and any stored OAuth token blob cleared.
+//
+// corner:retire-supabase (2026-09-03): the caller is identified by their Convex
+// Auth token (users:verifyToken) and the row lives in the Convex integrations
+// table (integrations:disconnect). /api/integrations/list reports a
+// disconnected row as 'available' so the UI shape is unchanged.
 
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { extractJwt } from '../_lib/verifyTenant.js'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+
+async function convex(kind, path, args, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+  const res = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  })
+  if (!res.ok) throw new Error(`convex ${kind} ${path}: HTTP ${res.status}`)
+  const data = await res.json()
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex ${kind} ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`)
+  }
+  return data.value
+}
 
 function loadKnownSlugs() {
   try {
@@ -21,17 +42,12 @@ function loadKnownSlugs() {
 
 const KNOWN_SLUGS = loadKnownSlugs()
 
-async function getUserId(req) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null
-  const jwt = extractJwt(req)
-  if (!jwt) return null
+async function getUser(req) {
+  const token = extractJwt(req)
+  if (!token) return null
   try {
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${jwt}` },
-    })
-    if (!r.ok) return null
-    const user = await r.json()
-    return user?.id || null
+    const who = await convex('query', 'users:verifyToken', {}, token)
+    return who && who.userId ? { ...who, token } : null
   } catch {
     return null
   }
@@ -50,34 +66,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'unknown integration slug' })
   }
 
-  const userId = await getUserId(req)
-  if (!userId) return res.status(401).json({ error: 'auth required', degraded: true })
-
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'supabase not configured' })
-  }
+  const user = await getUser(req)
+  if (!user) return res.status(401).json({ error: 'auth required', degraded: true })
 
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.${encodeURIComponent(slug)}`,
-      {
-        method: 'PATCH',
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal',
-        },
-        body: JSON.stringify({ status: 'available', connected_at: null }),
-      },
-    )
-    if (!r.ok) {
-      const errText = await r.text()
-      const status = r.status === 404 || r.status === 400 ? 202 : r.status
-      return res.status(status).json({ ok: false, degraded: true, error: errText })
-    }
+    await convex('mutation', 'integrations:disconnect', { userId: user.userId, slug }, user.token)
     return res.status(200).json({ ok: true })
   } catch (err) {
-    return res.status(500).json({ error: err.message })
+    return res.status(202).json({ ok: false, degraded: true, error: err.message })
   }
 }

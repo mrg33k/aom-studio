@@ -1,20 +1,151 @@
 // AOM Construction Outreach Tracker
 // Route: /outreach — soft password gate (AOM2026, remembered in localStorage)
-// Backend: Supabase outreach_leads + outreach_touchpoints
+// Backend: Convex outreach:* functions plus keyed state rows (see the data layer below)
 // Brand: AOM light editorial (unified w/ Call Mode 2026-08-10) — ivory ground #F7F6F3,
 //   surface #FFFFFF, secondary #F1EFEA, ink #17170F, body #43423A, muted #77746A,
 //   hairline #E4E2DB / control #D3D0C7, single bronze accent #B58A38 (text #8A6828),
 //   square corners, flat, 1px hairlines. Bricolage Grotesque display + Inter body.
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { convexQuery, convexMutation } from '../dashboard/lib/convex.js'
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://mcngatprgluexjjcqpkp.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jbmdhdHByZ2x1ZXhqamNxcGtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjU3MTUsImV4cCI6MjA4OTQwMTcxNX0.Rgn57thbT_kZf-PEvcS1ix4l8CTO1fwz0I2t589hSd8'
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-
 const PASSWORD = 'AOM2026'
+
+// ─── Data layer (Convex, corner:retire-supabase 2026-09-03) ──────────────────
+// Convex (dev:neat-pony-216) is the only backend. The hardcoded database URL and
+// anon key that used to live here are gone. Mapping, because the Convex tables
+// are narrower than the old ones:
+//   leads        outreach:leads / outreach:leadUpsert. name, company, email,
+//                phone, stage (= status), rep (= assigned_to) and notes are real
+//                columns; every other column this page reads (need_score, city,
+//                day_route, website, ...) rides in the row's `fields` object.
+//   touchpoints  outreach:touchpoints / outreach:touchpointAdd. kind carries the
+//                channel plus the rep ("call:courtney"); date is the row's
+//                createdAt. The lead also keeps fields.last_call =
+//                { date, rep_username } so the same-day double-call rule can be
+//                checked from the leads list without one query per lead.
+//   reps         outreach:reps is the roster (name = username). display_name,
+//                role and trusted live in state rows of kind "outreach_rep_meta".
+//                Per-rep passwords did not move (no Supabase reads, ever): a rep
+//                logs in with a username from the roster plus the shared portal
+//                password.
+//   batches      state rows of kind "outreach_rep_batch", one per rep username:
+//                { batch_number, lead_ids, is_current, assigned_at }.
+
+const LEAD_COLUMNS = ['name', 'company', 'email', 'phone', 'stage', 'rep', 'notes']
+const LEAD_SKIP = ['id', '_id', '_creationTime', 'worldId', 'createdAt', 'updatedAt']
+function optStr(v) { return v === null || v === undefined || v === '' ? undefined : String(v) }
+
+function leadFromRow(r) {
+  const fields = r.fields && typeof r.fields === 'object' ? r.fields : {}
+  return {
+    ...fields,
+    id: String(r._id),
+    name: r.name,
+    company: r.company ?? fields.company ?? null,
+    email: r.email ?? fields.email ?? null,
+    phone: r.phone ?? fields.phone ?? null,
+    notes: r.notes ?? fields.notes ?? null,
+    status: fields.status ?? r.stage ?? 'Not contacted',
+    assigned_to: r.rep ?? fields.assigned_to ?? null,
+  }
+}
+
+function leadToRow(lead) {
+  const fields = {}
+  for (const [k, v] of Object.entries(lead)) {
+    if (LEAD_SKIP.includes(k) || LEAD_COLUMNS.includes(k)) continue
+    if (v !== undefined) fields[k] = v
+  }
+  return {
+    name: String(lead.name || lead.contact_name || lead.company || 'Unknown'),
+    company: optStr(lead.company),
+    email: optStr(lead.email),
+    phone: optStr(lead.phone),
+    stage: optStr(lead.status),
+    rep: optStr(lead.assigned_to),
+    notes: optStr(lead.notes),
+    fields,
+  }
+}
+
+function touchpointFromRow(r) {
+  const kind = String(r.kind || 'call')
+  const i = kind.indexOf(':')
+  return {
+    id: String(r._id),
+    lead_id: String(r.leadId),
+    channel: i >= 0 ? kind.slice(0, i) : kind,
+    rep_username: i >= 0 ? kind.slice(i + 1) : null,
+    note: r.note || '',
+    date: new Date(r.createdAt || Date.now()).toISOString().slice(0, 10),
+  }
+}
+
+// Same-day call bookkeeping from the leads list: which leads other reps called
+// today, and how many calls this rep logged today.
+function todayCallsFrom(leads, username) {
+  const today = todayStr()
+  const byOthers = new Set()
+  let myCount = 0
+  for (const l of leads) {
+    const c = l.last_call
+    if (!c || c.date !== today || !c.rep_username) continue
+    if (c.rep_username !== username) byOthers.add(l.id)
+    else myCount++
+  }
+  return { byOthers, myCount }
+}
+
+const db = {
+  async listLeads() {
+    const rows = await convexQuery('outreach:leads', { limit: 5000 })
+    return (Array.isArray(rows) ? rows : []).map(leadFromRow)
+  },
+  async saveLead(lead) {
+    await convexMutation('outreach:leadUpsert', { id: lead.id, row: leadToRow(lead) })
+  },
+  async listTouchpoints(leadId) {
+    const rows = await convexQuery('outreach:touchpoints', { leadId })
+    return (Array.isArray(rows) ? rows : []).map(touchpointFromRow)
+  },
+  async addTouchpoint({ lead_id, date, channel, note, rep_username }) {
+    const today = todayStr()
+    // The row's date is its createdAt; a backdated entry keeps its date in the note.
+    const text = date && date !== today ? `${date}: ${note || ''}`.trim() : (note || '')
+    const kind = rep_username ? `${channel}:${rep_username}` : channel
+    const id = await convexMutation('outreach:touchpointAdd', { leadId: lead_id, kind, ...(text ? { note: text } : {}) })
+    return { id: String(id), lead_id, date: date || today, channel, note: note || '', rep_username: rep_username || null }
+  },
+  async listReps() {
+    const [roster, meta] = await Promise.all([
+      convexQuery('outreach:reps', { includeInactive: false }),
+      convexQuery('state:get', { kind: 'outreach_rep_meta' }),
+    ])
+    const metaByName = new Map((Array.isArray(meta) ? meta : []).map(m => [m.scopeId, m.value || {}]))
+    return (Array.isArray(roster) ? roster : []).map(r => {
+      const m = metaByName.get(r.name) || {}
+      return { username: r.name, email: r.email || null, display_name: m.display_name || r.name, role: m.role || 'rep', trusted: !!m.trusted }
+    })
+  },
+  async setRepMeta(username, patch) {
+    const row = await convexQuery('state:get', { kind: 'outreach_rep_meta', scopeId: username })
+    const value = { ...((row && row.value) || {}), ...patch }
+    await convexMutation('state:put', { kind: 'outreach_rep_meta', scopeId: username, value })
+  },
+  async listBatches() {
+    const rows = await convexQuery('state:get', { kind: 'outreach_rep_batch' })
+    return (Array.isArray(rows) ? rows : []).map(r => ({ username: r.scopeId, ...(r.value || {}) }))
+  },
+  async getBatch(username) {
+    const row = await convexQuery('state:get', { kind: 'outreach_rep_batch', scopeId: username })
+    return row && row.value ? { username, ...row.value } : null
+  },
+  async setBatch(username, value) {
+    await convexMutation('state:put', { kind: 'outreach_rep_batch', scopeId: username, value })
+  },
+}
 const REPS = ['Courtney', 'Patrik', 'Ash', 'James']
 
 // ─── Rep Portal: session storage helpers ────────────────────────────────────
@@ -233,13 +364,19 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
  : `${today}, ${noteInput.trim()}`
         await updateLead(lead.id, 'notes', appended)
       }
-      await sb.from('outreach_touchpoints').insert([{
-        lead_id: lead.id,
-        date: today,
-        channel: outcome === 'Sent email' ? 'email' : 'call',
-        note: noteInput.trim() || outcome,
-        ...(repSession ? { rep_username: repSession.username } : {}),
-      }])
+      const channel = outcome === 'Sent email' ? 'email' : 'call'
+      try {
+        await db.addTouchpoint({
+          lead_id: lead.id,
+          date: today,
+          channel,
+          note: noteInput.trim() || outcome,
+          rep_username: repSession ? repSession.username : null,
+        })
+      } catch { /* the status change above already landed */ }
+      if (channel === 'call' && repSession) {
+        await updateLead(lead.id, 'last_call', { date: today, rep_username: repSession.username })
+      }
       onCallLogged?.()
       clearTimeout(toastTimer.current)
       // Every logged call gets a payoff line, not a database receipt — the job
@@ -977,10 +1114,9 @@ function CallMode({ leads, updateLead, repSession, onCallLogged }) {
 }
 
 // ─── Rep Login ───────────────────────────────────────────────────────────────
-// Handles both rep login (via outreach_reps table) and admin fallback (AOM2026 password).
-// Security note: uses the anon Supabase client — consistent with the rest of this app's
-// client-side model. No server route is introduced, so the known service-key footgun
-// (open endpoint with no caller check) is not repeated here.
+// Handles both rep login (username from the outreach:reps roster plus the shared
+// portal password) and admin fallback (the same password with an unknown username).
+// No server route is introduced; the page talks to Convex directly.
 function RepLogin({ onLogin }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -1004,17 +1140,16 @@ function RepLogin({ onLogin }) {
     setErr(false)
     setLoading(true)
 
-    // 1. Try outreach_reps table first (rep or admin in the table)
-    if (username.trim()) {
-      const { data } = await sb
-        .from('outreach_reps')
-        .select('username, display_name, role, trusted')
-        .eq('username', username.trim().toLowerCase())
-        .eq('password', password)
-        .maybeSingle()
+    // 1. A username on the roster (rep or admin) with the portal password
+    if (username.trim() && password === PASSWORD) {
+      let rep = null
+      try {
+        const reps = await db.listReps()
+        rep = reps.find(r => r.username === username.trim().toLowerCase()) || null
+      } catch { rep = null }
 
-      if (data) {
-        const session = { username: data.username, display_name: data.display_name, role: data.role, trusted: data.trusted }
+      if (rep) {
+        const session = { username: rep.username, display_name: rep.display_name, role: rep.role, trusted: rep.trusted }
         saveRepSession(session)
         setLoading(false)
         onLogin(session)
@@ -1592,28 +1727,20 @@ function LeadCard({ lead, expanded, onToggle, onUpdate }) {
   }, [expanded])
 
   async function loadTouchpoints() {
-    const { data } = await sb
-      .from('outreach_touchpoints')
-      .select('*')
-      .eq('lead_id', lead.id)
-      .order('date', { ascending: false })
-    if (data) setTouchpoints(data)
+    try { setTouchpoints(await db.listTouchpoints(lead.id)) } catch { /* keep the empty list */ }
     setTpsLoaded(true)
   }
 
   async function saveTouchpoint() {
     if (!tpForm.note.trim() && !tpForm.date) return
     setTpSaving(true)
-    const { data, error } = await sb
-      .from('outreach_touchpoints')
-      .insert([{ lead_id: lead.id, date: tpForm.date, channel: tpForm.channel, note: tpForm.note }])
-      .select()
-    if (!error && data) {
-      setTouchpoints(prev => [data[0], ...prev])
+    try {
+      const tp = await db.addTouchpoint({ lead_id: lead.id, date: tpForm.date, channel: tpForm.channel, note: tpForm.note })
+      setTouchpoints(prev => [tp, ...prev])
       onUpdate('last_touch', tpForm.date)
       setTpForm({ date: todayStr(), channel: 'call', note: '' })
       setAddingTp(false)
-    }
+    } catch { /* leave the form open so the note is not lost */ }
     setTpSaving(false)
   }
 
@@ -2971,17 +3098,18 @@ function AdminTeamView({ leads }) {
 
   async function loadTeamData() {
     setLoadingTeam(true)
-    const [{ data: repData }, { data: assignData }] = await Promise.all([
-      sb.from('outreach_reps').select('*').eq('role', 'rep').order('display_name'),
-      sb.from('outreach_rep_assignments').select('rep_username, lead_id').eq('is_current', true),
-    ])
-    setReps(repData || [])
-    const map = {}
-    for (const row of (assignData || [])) {
-      if (!map[row.rep_username]) map[row.rep_username] = []
-      map[row.rep_username].push(row.lead_id)
+    try {
+      const [repData, batches] = await Promise.all([db.listReps(), db.listBatches()])
+      setReps(repData.filter(r => r.role === 'rep').sort((a, b) => a.display_name.localeCompare(b.display_name)))
+      const map = {}
+      for (const b of batches) {
+        if (b.is_current) map[b.username] = Array.isArray(b.lead_ids) ? b.lead_ids : []
+      }
+      setAssignments(map)
+    } catch {
+      setReps([])
+      setAssignments({})
     }
-    setAssignments(map)
     setLoadingTeam(false)
   }
 
@@ -2990,37 +3118,20 @@ function AdminTeamView({ leads }) {
   async function handleReload(rep) {
     setReloading(prev => ({ ...prev, [rep.username]: true }))
     try {
-      // 1. Retire current batch
-      await sb.from('outreach_rep_assignments')
-        .update({ is_current: false })
-        .eq('rep_username', rep.username)
-        .eq('is_current', true)
-
-      // 2. Next batch number
-      const { data: existing } = await sb.from('outreach_rep_assignments')
-        .select('batch_number')
-        .eq('rep_username', rep.username)
-        .order('batch_number', { ascending: false })
-        .limit(1)
-      const nextBatch = (existing && existing[0] ? existing[0].batch_number : 0) + 1
+      // 1 + 2. The rep's current batch row gives the next batch number; writing
+      // the new batch below retires the old one.
+      const previous = await db.getBatch(rep.username)
+      const nextBatch = (previous && Number(previous.batch_number) || 0) + 1
 
       // 3. Leads currently in other reps' active batches (excluded from eligibility)
-      const { data: otherBatches } = await sb.from('outreach_rep_assignments')
-        .select('lead_id')
-        .eq('is_current', true)
-      const otherIds = new Set((otherBatches || []).map(r => r.lead_id))
+      const otherIds = new Set()
+      for (const b of await db.listBatches()) {
+        if (b.username === rep.username || !b.is_current) continue
+        for (const id of (b.lead_ids || [])) otherIds.add(id)
+      }
 
-      // 4. Today's touchpoints by reps OTHER than the target rep
-      const today = todayStr()
-      const { data: touchData } = await sb.from('outreach_touchpoints')
-        .select('lead_id, rep_username')
-        .eq('date', today)
-        .eq('channel', 'call')
-      const calledByOthers = new Set(
-        (touchData || [])
-          .filter(r => r.rep_username !== rep.username)
-          .map(r => r.lead_id)
-      )
+      // 4. Leads called today by reps OTHER than the target rep (fields.last_call)
+      const calledByOthers = todayCallsFrom(leads, rep.username).byOthers
 
       // 5. Filter eligible leads (same rules as auto-assign)
       const eligible = leads.filter(l => {
@@ -3031,15 +3142,12 @@ function AdminTeamView({ leads }) {
       })
 
       const batch = eligible.slice(0, 15)
-      if (batch.length > 0) {
-        const rows = batch.map(l => ({
-          rep_username: rep.username,
-          lead_id: l.id,
-          batch_number: nextBatch,
-          is_current: true,
-        }))
-        await sb.from('outreach_rep_assignments').insert(rows)
-      }
+      await db.setBatch(rep.username, {
+        batch_number: nextBatch,
+        lead_ids: batch.map(l => l.id),
+        is_current: true,
+        assigned_at: new Date().toISOString(),
+      })
  showToast(`${rep.display_name}: batch #${nextBatch}, ${batch.length} leads assigned`)
       await loadTeamData()
     } catch (e) {
@@ -3053,7 +3161,7 @@ function AdminTeamView({ leads }) {
     setPromoting(prev => ({ ...prev, [rep.username]: true }))
     try {
       const newTrusted = !rep.trusted
-      await sb.from('outreach_reps').update({ trusted: newTrusted }).eq('username', rep.username)
+      await db.setRepMeta(rep.username, { trusted: newTrusted })
       setReps(prev => prev.map(r => r.username === rep.username ? { ...r, trusted: newTrusted } : r))
       showToast(`${rep.display_name} ${newTrusted ? 'promoted to Trusted' : 'set to Standard'}`)
     } catch (e) {
@@ -3091,7 +3199,7 @@ function AdminTeamView({ leads }) {
   if (reps.length === 0) {
     return (
       <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#A5A29A', fontSize: '0.85rem', fontFamily: "'Inter', sans-serif" }}>
-        No reps found. Add reps in the outreach_reps table.
+        No reps found. Add reps with outreach:repUpsert.
       </div>
     )
   }
@@ -3274,7 +3382,7 @@ function AdminTeamView({ leads }) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function OutreachTracker() {
-  // Auth: legacy admin flag OR rep session from outreach_reps table
+  // Auth: legacy admin flag OR rep session from the outreach:reps roster
   const [unlocked, setUnlocked] = useState(() =>
     localStorage.getItem('outreach_unlocked') === '1'
   )
@@ -3287,6 +3395,10 @@ export default function OutreachTracker() {
   const [repBatch, setRepBatch] = useState(null)
 
   const [leads, setLeads] = useState([])
+  // Mirror of `leads` that updates synchronously, so back-to-back updateLead
+  // calls each build on the previous write instead of a stale render.
+  const leadsRef = useRef([])
+  useEffect(() => { leadsRef.current = leads }, [leads])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filterDay, setFilterDay] = useState('all')
@@ -3301,41 +3413,23 @@ export default function OutreachTracker() {
   const loadLeads = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const { data, error: err } = await sb
-      .from('outreach_leads')
-      .select('*')
-      .order('need_score', { ascending: false })
-      .order('company', { ascending: true })
-    if (err) {
+    try {
+      const data = await db.listLeads()
+      // Re-order warmest-first (has a site) before NEED, see warmthCompare.
+      const sorted = [...data].sort(warmthCompare)
+      leadsRef.current = sorted
+      setLeads(sorted)
+    } catch (err) {
       setError(err.message)
-    } else {
-      // Re-order warmest-first (has a site) before NEED — see warmthCompare.
-      setLeads([...(data || [])].sort(warmthCompare))
     }
     setLoading(false)
   }, [])
 
-  // Load today's rep touchpoints so we can enforce the no-same-day-double-call rule.
-  // Pure client-side: uses the anon key, consistent with the rest of this app's model.
+  // Today's rep calls, for the no-same-day-double-call rule. Read from the
+  // leads list (fields.last_call), no extra query.
   const loadTodayTouchpoints = useCallback(async (session) => {
     if (!session) return
-    const today = todayStr()
-    const { data } = await sb
-      .from('outreach_touchpoints')
-      .select('lead_id, rep_username')
-      .eq('date', today)
-      .eq('channel', 'call')
-      .not('rep_username', 'is', null)
-    if (!data) return
-    const byOthers = new Set()
-    let myCount = 0
-    for (const row of data) {
-      if (row.rep_username !== session.username) {
-        byOthers.add(row.lead_id)
-      } else {
-        myCount++
-      }
-    }
+    const { byOthers, myCount } = todayCallsFrom(leadsRef.current, session.username)
     setCalledTodayByOthers(byOthers)
     setTodayRepCallCount(myCount)
   }, [])
@@ -3348,52 +3442,39 @@ export default function OutreachTracker() {
       setError(null)
 
       // 1. Load all leads
-      const { data: leadsData, error: leadsErr } = await sb
-        .from('outreach_leads')
-        .select('*')
-        .order('need_score', { ascending: false })
-        .order('company', { ascending: true })
-      if (leadsErr) { setError(leadsErr.message); setLoading(false); return }
-      const sortedLeads = [...(leadsData || [])].sort(warmthCompare)
+      let leadsData
+      try {
+        leadsData = await db.listLeads()
+      } catch (leadsErr) {
+        setError(leadsErr.message); setLoading(false); return
+      }
+      const sortedLeads = [...leadsData].sort(warmthCompare)
+      leadsRef.current = sortedLeads
       setLeads(sortedLeads)
       setLoading(false)
 
       if (repSession) {
-        // 2. Load today's touchpoints
-        const today = todayStr()
-        const { data: touchData } = await sb
-          .from('outreach_touchpoints')
-          .select('lead_id, rep_username')
-          .eq('date', today)
-          .eq('channel', 'call')
-          .not('rep_username', 'is', null)
-        const byOthers = new Set()
-        let myCount = 0
-        for (const row of (touchData || [])) {
-          if (row.rep_username !== repSession.username) byOthers.add(row.lead_id)
-          else myCount++
-        }
+        // 2. Today's calls, from the leads list
+        const { byOthers, myCount } = todayCallsFrom(sortedLeads, repSession.username)
         setCalledTodayByOthers(byOthers)
         setTodayRepCallCount(myCount)
 
         // 3. Batch check / auto-assign (reps only, not admin)
         if (repSession.role === 'rep') {
-          const { data: batchData } = await sb
-            .from('outreach_rep_assignments')
-            .select('lead_id')
-            .eq('rep_username', repSession.username)
-            .eq('is_current', true)
-            .order('assigned_at', { ascending: true })
-          if (batchData && batchData.length > 0) {
+          let current = null
+          try { current = await db.getBatch(repSession.username) } catch { current = null }
+          if (current && current.is_current && Array.isArray(current.lead_ids) && current.lead_ids.length > 0) {
             // Existing batch: use it
-            setRepBatch(batchData.map(r => r.lead_id))
+            setRepBatch(current.lead_ids)
           } else {
-            // No active batch — auto-assign first 15 eligible leads
-            const { data: otherBatches } = await sb
-              .from('outreach_rep_assignments')
-              .select('lead_id')
-              .eq('is_current', true)
-            const otherIds = new Set((otherBatches || []).map(r => r.lead_id))
+            // No active batch: auto-assign first 15 eligible leads
+            const otherIds = new Set()
+            try {
+              for (const b of await db.listBatches()) {
+                if (b.username === repSession.username || !b.is_current) continue
+                for (const id of (b.lead_ids || [])) otherIds.add(id)
+              }
+            } catch { /* nobody else has a batch we can see */ }
             const eligible = sortedLeads.filter(l => {
               if (!repSession.trusted && (l.need_score || 0) >= 7) return false
               if (otherIds.has(l.id)) return false
@@ -3402,13 +3483,14 @@ export default function OutreachTracker() {
             })
             const batch = eligible.slice(0, 15)
             if (batch.length > 0) {
-              const rows = batch.map(l => ({
-                rep_username: repSession.username,
-                lead_id: l.id,
-                batch_number: 1,
-                is_current: true,
-              }))
-              await sb.from('outreach_rep_assignments').insert(rows)
+              try {
+                await db.setBatch(repSession.username, {
+                  batch_number: 1,
+                  lead_ids: batch.map(l => l.id),
+                  is_current: true,
+                  assigned_at: new Date().toISOString(),
+                })
+              } catch { /* the batch still shows locally for this session */ }
             }
             setRepBatch(batch.map(l => l.id))
           }
@@ -3425,13 +3507,13 @@ export default function OutreachTracker() {
   }, [unlocked, repSession])
 
   const updateLead = useCallback(async (id, field, value) => {
-    const { error: err } = await sb
-      .from('outreach_leads')
-      .update({ [field]: value })
-      .eq('id', id)
-    if (!err) {
-      setLeads(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l))
-    }
+    const current = leadsRef.current.find(l => l.id === id)
+    if (!current) return
+    try {
+      await db.saveLead({ ...current, [field]: value })
+      leadsRef.current = leadsRef.current.map(l => l.id === id ? { ...l, [field]: value } : l)
+      setLeads(leadsRef.current)
+    } catch { /* the row keeps its old value on screen and on the server */ }
   }, [])
 
   // ── Admin filter + group (full view) ────────────────────────────────────────

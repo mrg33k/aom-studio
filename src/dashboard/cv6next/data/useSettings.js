@@ -1,17 +1,24 @@
-// cv6next — real Settings data, shaped to wired/settings/settings.json.
-// Loads profile (from session), projects/rooms, and theme preference.
-// Real data: user profile, projects (rooms), theme stored in localStorage.
+// cv6next: real Settings data, shaped to wired/settings/settings.json.
+// Loads profile (from the Convex session), projects (projects:list), and the
+// theme preference (localStorage).
 // Held-c (no backing): connections, secrets, agent permissions, notifications.
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { supabase } from '../../lib/supabase';
-import { authFetch } from '../../lib/authFetch';
+import { getViewer, hasSession, onSessionChange, convexQuery, convexMutation, convexWorldId, invalidateViewer } from '../../lib/convex.js';
 import { setClientIdFromUser } from '../../lib/clientConfig';
 
 function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '·';
   return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
+}
+
+// Turn a data: URL into the bytes Convex storage wants.
+function dataUrlToBlob(mime, base64) {
+  const bin = atob(base64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
 }
 
 export function useSettings(worldId = null, externalTheme = null) {
@@ -27,101 +34,84 @@ export function useSettings(worldId = null, externalTheme = null) {
 
   const activeTheme = externalTheme || theme;
 
-  // Prime from the current session as well as listening for future auth changes.
-  // Relying only on onAuthStateChange left Settings loading indefinitely in
-  // clients that mounted after the initial SIGNED_IN event.
+  // Prime from the current session and follow every later sign in / sign out.
   useEffect(() => {
-    if (!supabase) { setProjects([]); setState('ready'); return undefined; }
     let alive = true;
-    supabase.auth.getSession().then(({ data: sessionData }) => {
-      if (!alive || !sessionData?.session?.user) return;
-      setClientIdFromUser(sessionData.session.user);
-      setCurrentUser(sessionData.session.user);
-    }).catch(() => { if (alive) setState('error'); });
-    return () => { alive = false; };
+    const load = () => {
+      if (!hasSession()) {
+        if (alive) { setCurrentUser(null); setProjects([]); setState('ready'); }
+        return;
+      }
+      getViewer().then((viewer) => {
+        if (!alive || !viewer) return;
+        setClientIdFromUser(viewer);
+        setCurrentUser(viewer);
+      }).catch(() => { if (alive) setState('error'); });
+    };
+    load();
+    const off = onSessionChange(load);
+    return () => { alive = false; off(); };
   }, []);
 
   const saveProfileIdentity = useCallback(async (draft) => {
-    if (!currentUser?.id) return { ok: false, error: 'Sign in to update your profile.' };
-    const currentImage = currentUser.user_metadata?.avatar_url || '';
-    const body = {
+    if (!currentUser?.userId) return { ok: false, error: 'Sign in to update your profile.' };
+    const currentImage = currentUser.avatarUrl || '';
+    const args = {
+      userId: String(currentUser.userId),
       initials: draft?.initials,
       color: draft?.color,
     };
     const nextImage = String(draft?.image || '');
     const prepared = nextImage.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);
-    if (prepared) {
-      body.mime_type = prepared[1].toLowerCase();
-      body.image_base64 = prepared[2];
-    } else if (!nextImage && currentImage) {
-      body.remove_image = true;
-    }
-
     try {
-      const response = await authFetch('/api/dashboard/avatar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) return { ok: false, error: payload?.error || 'Your profile could not be updated.' };
-      const nextMetadata = {
-        ...(currentUser.user_metadata || {}),
-        avatar_url: payload.avatar_url || null,
-        avatar_initials: payload.initials,
-        avatar_color: payload.color,
-      };
-      setCurrentUser((current) => current ? { ...current, user_metadata: nextMetadata } : current);
-      // Refresh the signed session so the new metadata survives leaving Settings
-      // and is visible to every surface that reads the authenticated user.
-      if (supabase) {
-        const { data: refreshed } = await supabase.auth.refreshSession().catch(() => ({ data: null }));
-        if (refreshed?.user) setCurrentUser(refreshed.user);
+      if (prepared) {
+        // Bytes go to Convex storage first (files:generateUploadUrl), then the
+        // storage id is saved on the person's row.
+        const uploadUrl = await convexMutation('files:generateUploadUrl', {});
+        const mime = prepared[1].toLowerCase();
+        const upload = await fetch(uploadUrl, { method: 'POST', headers: { 'Content-Type': mime }, body: dataUrlToBlob(mime, prepared[2]) });
+        if (!upload.ok) return { ok: false, error: 'Your photo could not be uploaded.' };
+        const { storageId } = await upload.json();
+        if (storageId) args.avatarStorageId = storageId;
+      } else if (!nextImage && currentImage) {
+        args.removeImage = true;
       }
+      const shape = await convexMutation('users:saveProfile', args);
+      invalidateViewer();
+      if (shape) setCurrentUser(shape);
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('cv6:profile-identity-changed', { detail: payload }));
+        window.dispatchEvent(new CustomEvent('cv6:profile-identity-changed', {
+          detail: { initials: shape?.initials, color: shape?.color, avatar_url: shape?.avatarUrl || null },
+        }));
       }
       return {
         ok: true,
         synced: true,
-        identity: { initials: payload.initials, color: payload.color, image: payload.avatar_url || '' },
+        identity: { initials: shape?.initials || args.initials, color: shape?.color || args.color, image: shape?.avatarUrl || '' },
       };
     } catch {
       return { ok: false, error: 'Your profile could not be updated.' };
     }
   }, [currentUser]);
 
-  // Watch auth state
+  // Load projects (rooms) for the person's world.
   useEffect(() => {
-    if (!supabase) return;
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session?.user) {
-        setClientIdFromUser(session.user);
-        setCurrentUser(session.user);
-      }
-    });
-    return () => sub?.unsubscribe?.();
-  }, []);
-
-  // Load projects (rooms) from the API
-  useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) return undefined;
+    let alive = true;
+    const worldSlug = convexWorldId(worldId) || currentUser.worldSlug || null;
     (async () => {
       try {
-        const res = await authFetch('/api/dashboard/projects');
-        if (res.ok) {
-          const json = await res.json();
-          setProjects(json.projects || []);
-          setState('ready');
-        } else {
-          setState('error');
-        }
+        const rows = await convexQuery('projects:list', worldSlug ? { worldSlug } : {});
+        if (!alive) return;
+        setProjects((Array.isArray(rows) ? rows : []).map((p) => ({ id: p.slug || String(p._id), slug: p.slug, name: p.name })));
+        setState('ready');
       } catch (e) {
         console.error('Failed to load projects:', e);
-        setState('error');
+        if (alive) setState('error');
       }
     })();
-  }, [currentUser]);
+    return () => { alive = false; };
+  }, [currentUser, worldId]);
 
   // Listen for theme changes (both from this component and external changes)
   useEffect(() => {
@@ -146,17 +136,15 @@ export function useSettings(worldId = null, externalTheme = null) {
 
     const activeSection = sections[0]; // Environment is default
 
-    // Profile (REAL from session)
-    const displayName = currentUser?.user_metadata?.full_name
-      || currentUser?.user_metadata?.display_name
-      || currentUser?.user_metadata?.name
+    // Profile (REAL from the session)
+    const displayName = currentUser?.name
       || currentUser?.email?.split('@')[0]
       || 'User';
-    const savedColor = currentUser?.user_metadata?.avatar_color;
+    const savedColor = currentUser?.color;
     const profile = currentUser ? {
-      initials: currentUser.user_metadata?.avatar_initials || initials(displayName),
+      initials: currentUser.initials || initials(displayName),
       color: /^#[0-9a-f]{6}$/i.test(String(savedColor || '')) ? savedColor : '#2563EB',
-      image: currentUser.user_metadata?.avatar_url || '',
+      image: currentUser.avatarUrl || '',
       name: displayName,
       email: currentUser.email || '',
     } : { initials: '·', color: '#2563EB', image: '', name: '', email: '' };
@@ -174,9 +162,9 @@ export function useSettings(worldId = null, externalTheme = null) {
       },
     ];
 
-    // Rooms & scope (REAL room names from the projects API; the sharing/scope store
+    // Rooms & scope (REAL room names from projects:list; the sharing/scope store
     // does not exist yet, so we do NOT invent member counts. Single-tenant default is
-    // private — honest, not a fabricated "Shared · N".)
+    // private: honest, not a fabricated "Shared · N".)
     const rooms = (projects || []).map((p, i) => ({
       id: p.id || p.slug,
       name: p.name || p.slug || 'Project',
@@ -186,16 +174,13 @@ export function useSettings(worldId = null, externalTheme = null) {
       caution: '',
     }));
 
-    // Secrets & keys (HELD-C: no secret store. Honest zero, never a fabricated
-    // "3 keys · rotated 12d ago".)
+    // Secrets & keys (HELD-C: no secret store. Honest zero.)
     const secrets = { count: 0, lastRotated: 'never' };
 
-    // Agents & permissions (HELD-C: no permissions store + no enforcement. We will not
-    // fabricate per-agent on/off states — that misrepresents what an agent may do.
-    // Empty until a real permissions source exists.)
+    // Agents & permissions (HELD-C: no permissions store + no enforcement.)
     const agents = [];
 
-    // Notifications (HELD-C: no prefs store. Empty rather than fabricated toggle states.)
+    // Notifications (HELD-C: no prefs store.)
     const notifications = [];
 
     // Themes (REAL: read from localStorage and setTheme action wires back)

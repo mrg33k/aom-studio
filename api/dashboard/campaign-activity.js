@@ -1,19 +1,18 @@
-// /api/dashboard/campaign-activity — corner:campaign-tool R3.
+// /api/dashboard/campaign-activity
 // RECENT feed for a campaign's mission-control screen.
 //   GET ?world=&id=&limit=20&offset=0
 // Noise (run_started/run_finished heartbeats) is filtered out; the feed shows
 // human-meaningful events only.
+//
+// corner:retire-supabase (2026-09-03): events come from campaigns:events on
+// Convex. Each row's `payload` carries { summary, details } as written by
+// campaign-actions.js and campaigns.js.
 
-import { resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js';
+import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { requestedTenantFromCompat, sendTenantContextError } from '../_lib/tenantContext.js';
+import { convexQuery } from '../_lib/reportsStore.js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const FEED_KINDS = 'in.(sent,replied,bounced,flagged,stage_changed,batch_prepared,batch_approved,batch_sent,health,import)';
-
-function restIn(values) {
-  return (values || []).map(value => encodeURIComponent(String(value))).join(',');
-}
+const FEED_KINDS = new Set(['sent', 'replied', 'bounced', 'flagged', 'stage_changed', 'batch_prepared', 'batch_approved', 'batch_sent', 'health', 'import', 'open', 'click', 'reply', 'bounce']);
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,15 +21,14 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
-  let tenantContext;
   let world;
   try {
-    tenantContext = await resolveTenantContext(req);
-    world = tenantContext.tenantId;
+    const requested = requestedTenantFromCompat({ query: req.query || {}, body: req.body || {} });
+    ({ tenant: world } = await verifyTenant(requested, req));
   } catch (err) {
+    if (err instanceof TenantAuthError) return res.status(err.status).json({ ok: false, error: err.message });
     return sendTenantContextError(res, err);
   }
-  const campaignWorlds = tenantContext.aliases?.length ? tenantContext.aliases : [world];
 
   const id = String(req.query.id || '');
   if (!id) return res.status(400).json({ error: 'id required' });
@@ -38,26 +36,27 @@ export default async function handler(req, res) {
   const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
 
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/campaign_events?campaign_id=eq.${id}&world=in.(${restIn(campaignWorlds)})` +
-        `&kind=${FEED_KINDS}&select=id,kind,summary,details,contact_id,created_at&order=created_at.desc&limit=${limit}&offset=${offset}`,
-      {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-          Prefer: 'count=exact',
-        },
-      }
-    );
-    if (!r.ok) return res.status(r.status).json({ error: await r.text() });
-    const feed = await r.json();
-    const range = r.headers.get('content-range') || '';
-    const total = parseInt(range.split('/')[1], 10);
+    const campaign = await convexQuery('campaigns:get', { id }).catch(() => null);
+    const owner = campaign ? await convexQuery('worlds:getBySlug', { slug: world }).catch(() => null) : null;
+    if (!campaign || !owner || String(owner._id) !== String(campaign.worldId)) return res.status(404).json({ error: 'campaign not found' });
+
+    const rows = await convexQuery('campaigns:events', { id: campaign._id, limit: 1000 });
+    const all = (Array.isArray(rows) ? rows : [])
+      .filter((e) => FEED_KINDS.has(e.kind))
+      .map((e) => ({
+        id: e._id,
+        kind: e.kind,
+        summary: e.payload?.summary || e.kind,
+        details: e.payload?.details || {},
+        contact_id: e.contactId || null,
+        created_at: new Date(e.createdAt).toISOString(),
+      }));
+    const feed = all.slice(offset, offset + limit);
     return res.status(200).json({
       ok: true,
       tenant_id: world,
       feed,
-      hasMore: Number.isFinite(total) ? offset + feed.length < total : false,
+      hasMore: offset + feed.length < all.length,
     });
   } catch (err) {
     return res.status(500).json({ error: String((err && err.message) || err) });

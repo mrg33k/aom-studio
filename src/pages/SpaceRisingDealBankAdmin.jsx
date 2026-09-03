@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { supabase } from '../dashboard/lib/supabase.js'
+import { getSession } from '../dashboard/lib/auth.js'
 
 // Corner accounts that get in with their own login (no admin key needed).
 const DEAL_BANK_ALLOWLIST = ['ben@arsenalgpa.com', 'patrikmatheson@gmail.com']
@@ -78,8 +78,8 @@ export default function SpaceRisingDealBankAdmin() {
   // If Ben (or Patrik / AOM team) is already signed into the dashboard, they're in.
   useEffect(() => {
     let active = true
-    supabase.auth.getSession().then(({ data }) => {
-      const sess = data && data.session
+    // Convex Auth session (corner:retire-supabase R3): { user, access_token } or null.
+    getSession().then((sess) => {
       const email = sess && sess.user && sess.user.email
       if (active && sess && isAllowedCornerEmail(email)) {
         setSessionToken(sess.access_token || '')

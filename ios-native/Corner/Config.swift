@@ -1,24 +1,16 @@
 // Config.swift — Corner native iOS
 // corner:native-ios Stage 1
 //
-// Everything in this file is client-safe by construction. The Supabase anon key
-// is the same publishable key the web bundle already ships (role "anon", exp
-// 2089); RLS is what protects the data — an anon key on its own reads nothing
-// from `messages` (verified live via REST 2026-08-09).
+// Everything in this file is client-safe by construction. There is no API key in
+// this target at all: identity is the Convex JWT the user gets at sign-in
+// (ConvexAuth.swift), and every privileged read or write goes through a Convex
+// function or an /api/* route that verifies that token server-side.
 //
-// THE SERVICE ROLE KEY MUST NEVER APPEAR HERE, OR ANYWHERE ELSE IN THIS TARGET.
-// Every privileged read and write goes through an /api/* route that holds the
-// service key server-side and derives identity from the caller's JWT.
+// NO SERVICE KEY OF ANY KIND MAY APPEAR HERE, OR ANYWHERE ELSE IN THIS TARGET.
 
 import Foundation
 
 enum Config {
-    /// Supabase project — the same one the web dashboard uses.
-    static let supabaseURL = URL(string: "https://mcngatprgluexjjcqpkp.supabase.co")!
-
-    /// Client-safe anon (publishable) key.
-    static let supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jbmdhdHByZ2x1ZXhqamNxcGtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4MjU3MTUsImV4cCI6MjA4OTQwMTcxNX0.Rgn57thbT_kZf-PEvcS1ix4l8CTO1fwz0I2t589hSd8"
-
     /// The Corner API origin. `www.` on purpose: the bare-domain redirect can strip
     /// the Authorization header off a URLSession request, which reads as a 401 that
     /// has nothing to do with the session (the same trap nativeBootstrap.js documents).
@@ -96,9 +88,9 @@ enum Config {
     /// Convex via raw HTTP (api/query + api/mutation) without an SDK dependency.
     static let convexURL = URL(string: "https://neat-pony-216.convex.cloud")!
 
-    /// Feature flag to switch between Convex (true) and Supabase REST (false).
-    /// When true, RoomStore and ChatViewModel use ConvexService; when false they
-    /// fall back to the existing Supabase /api/* paths.
+    /// Feature flag to switch between direct Convex calls (true) and the /api/*
+    /// routes (false). When true, RoomStore and ChatViewModel use ConvexService;
+    /// when false they go through the Vercel routes, which now read Convex too.
     static let useConvex = true
 
     /// Unit tests use fake transports and must not reach the live data plane. UI

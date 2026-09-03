@@ -1,43 +1,35 @@
 // POST /api/dashboard/stripe-webhook
-// Stripe sends subscription events here; we mirror the tier into worlds.plan_tier.
+// Stripe sends subscription events here; we mirror the tier into the world's
+// planTier (Convex worlds:setPlanTier, corner:retire-supabase R2, 2026-09-03).
 //
-// Wiring ONLY: this endpoint is not a checkout initiator. A real charge only
-// happens after Patrik approves the first live charge (per brief hard rule).
+// Wiring only: this endpoint is not a checkout initiator. A real charge only
+// happens after Patrik approves the first live charge.
 //
-// Signature verification follows the Stripe docs pattern (HMAC-SHA256 with the
-// `stripe-signature` header). We implement it with node:crypto to avoid adding
-// the `stripe` SDK as a dependency — this endpoint only reads payloads, it
-// never calls the Stripe API back out.
+// Signature verification follows the Stripe docs pattern (HMAC-SHA256 with
+// the `stripe-signature` header) with node:crypto, so the `stripe` SDK is not
+// a dependency. This endpoint only reads payloads.
 //
-// Entitlement pattern (R8 research):
-//   Stripe is the ledger. This DB is the entitlement source. Product reads
-//   worlds.plan_tier at request time — never re-queries Stripe.
+// Entitlement pattern: Stripe is the ledger, the world row is the entitlement
+// source. Product reads worlds.planTier at request time.
 //
-// Subscription → world lookup:
-//   1. If event.data.object.metadata.world_client_id is set, use it.
-//   2. Else fall back to customer.metadata.world_client_id (via event.data.object.customer,
-//      resolved from Stripe customer endpoint only if STRIPE_SECRET_KEY is present; we
-//      skip the outbound call if missing, and return 202 so Stripe records delivery).
-//   3. Else fall back to matching worlds.stripe_customer_id.
+// Subscription to world lookup: event.data.object.metadata.world_client_id
+// (or client_id / world) names the world slug. The Convex world row has no
+// Stripe customer column, so an event with no world in its metadata is
+// acknowledged and ignored.
+//
+// Before relying on this route, check the Stripe dashboard for whether this
+// webhook URL is registered at all.
 
 import crypto from 'node:crypto'
+import { convexQuery, convexMutation } from '../_lib/reportsStore.js'
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET
 const WEBHOOK_TOLERANCE_SECONDS = 300
-
-function sbHeaders(extra) {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-    ...extra,
-  }
-}
+// Optional write key for worlds:setPlanTier (gated by TASKS_KEY on the
+// deployment). Unset on dev today; JSON drops an undefined field.
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || undefined
 
 // Vercel node functions parse JSON by default; we need the raw body for HMAC.
-// Disable body parsing: we read the stream ourselves.
 export const config = {
   api: {
     bodyParser: false,
@@ -81,7 +73,7 @@ function verifyStripeSignature(rawBody, signatureHeader, secret) {
   })
 }
 
-// Map a Stripe subscription status → our plan_tier.
+// Map a Stripe subscription status to our plan tier.
 // `pro` is current. On cancel/past_due we fall back to `free`.
 function tierFromSubscription(sub) {
   const status = sub?.status
@@ -94,44 +86,9 @@ async function findWorldForEvent(eventObject) {
   const metaClientId = eventObject?.metadata?.world_client_id
     || eventObject?.metadata?.client_id
     || eventObject?.metadata?.world
-  if (metaClientId) {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/worlds?or=(client_id.eq.${encodeURIComponent(metaClientId)},slug.eq.${encodeURIComponent(metaClientId)})&select=id,slug,client_id&limit=1`,
-      { headers: sbHeaders() }
-    )
-    if (r.ok) {
-      const rows = await r.json()
-      if (rows[0]) return rows[0]
-    }
-  }
-
-  const customerId = typeof eventObject?.customer === 'string'
-    ? eventObject.customer
-    : eventObject?.customer?.id
-  if (customerId) {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/worlds?stripe_customer_id=eq.${encodeURIComponent(customerId)}&select=id,slug,client_id&limit=1`,
-      { headers: sbHeaders() }
-    )
-    if (r.ok) {
-      const rows = await r.json()
-      if (rows[0]) return rows[0]
-    }
-  }
-
-  return null
-}
-
-async function updateWorldTier(worldId, patch) {
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/worlds?id=eq.${worldId}`,
-    {
-      method: 'PATCH',
-      headers: sbHeaders({ Prefer: 'return=minimal' }),
-      body: JSON.stringify({ ...patch, plan_updated_at: new Date().toISOString() }),
-    }
-  )
-  return r.ok
+  if (!metaClientId) return null
+  const world = await convexQuery('worlds:getBySlug', { slug: String(metaClientId).trim().toLowerCase() }).catch(() => null)
+  return world ? { id: String(world._id), slug: world.slug } : null
 }
 
 export default async function handler(req, res) {
@@ -140,9 +97,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'POST only' })
   }
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' })
-  }
   if (!STRIPE_WEBHOOK_SECRET) {
     // Intentionally 503 (not 200) so webhook misconfiguration is visible in Stripe.
     return res.status(503).json({ error: 'webhook secret not configured' })
@@ -165,8 +119,8 @@ export default async function handler(req, res) {
   const object = event.data?.object
   if (!type || !object) return res.status(400).json({ error: 'malformed event' })
 
-  // We only mirror subscription-shaped events. Checkout + invoice events are noise
-  // for the entitlement mirror (Patrik has not approved live charges yet).
+  // Only subscription-shaped events are mirrored. Checkout and invoice events
+  // are noise for the entitlement mirror.
   const subscriptionEvents = new Set([
     'customer.subscription.created',
     'customer.subscription.updated',
@@ -181,25 +135,22 @@ export default async function handler(req, res) {
 
   const world = await findWorldForEvent(object)
   if (!world) {
-    // Ack so Stripe stops retrying; log ignored id in the response for observability.
+    // Ack so Stripe stops retrying; the ignored id is in the response for observability.
     return res.status(200).json({ ok: true, ignored: 'no matching world', event_id: event.id })
   }
 
-  const patch = {
-    plan_tier: type === 'customer.subscription.deleted' ? 'free' : tierFromSubscription(object),
-    stripe_subscription_id: object.id || null,
+  const planTier = type === 'customer.subscription.deleted' ? 'free' : tierFromSubscription(object)
+  try {
+    await convexMutation('worlds:setPlanTier', { key: CONVEX_KEY, worldId: world.id, planTier })
+  } catch (err) {
+    return res.status(502).json({ error: `world update failed: ${String(err?.message || err)}` })
   }
-  const customerId = typeof object.customer === 'string' ? object.customer : object.customer?.id
-  if (customerId) patch.stripe_customer_id = customerId
-
-  const ok = await updateWorldTier(world.id, patch)
-  if (!ok) return res.status(502).json({ error: 'world update failed' })
 
   return res.status(200).json({
     ok: true,
     event_id: event.id,
     type,
     world: world.slug,
-    plan_tier: patch.plan_tier,
+    plan_tier: planTier,
   })
 }

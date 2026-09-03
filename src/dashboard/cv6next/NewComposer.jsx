@@ -16,7 +16,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import { createMissionInProject, createProjectFromHome } from './data/useHomeData.js';
-import { supabase } from '../lib/supabase';
 
 // Agents show as TITLES (roles), never persona names — hard doctrine 2026-06-23
 // (agentTitles.js: "a name never leaks ANYWHERE"). The Assign-To list shows the role
@@ -112,7 +111,8 @@ const NEW_COMPOSER_HTML = `
 // "Auto" is always offered), initialMode 'mission' | 'project', onClose(), and
 // onCreated(kind) fired after a successful submit so the host can refetch its lists.
 export default function NewComposer({ worldId, projects, agents, initialMode = 'mission', onClose, onCreated }) {
-  const localReadOnly = !supabase;
+  // Convex is always writable; the old no-workspace read-only gate is gone.
+  const localReadOnly = false;
   // Freeze the project/agent lists at open so a realtime data tick can't re-bind the
   // overlay and wipe a half-typed goal (same guarantee the Home inline version gave).
   const [snap] = useState(() => ({

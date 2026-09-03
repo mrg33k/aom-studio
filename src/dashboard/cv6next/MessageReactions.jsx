@@ -1,11 +1,10 @@
 // MessageReactions — lightweight emoji reactions on messages.
-// Hover/long-press shows 5 quick-react emojis. Reactions stored as metadata.reactions
-// array on the message row. Renders reaction pills below messages that have them.
-// smoothness-blitz #23
+// Hover/long-press shows 5 quick-react emojis. Reactions live on the Convex
+// message row (messages:toggleReaction). Renders reaction pills below messages
+// that have them. smoothness-blitz #23
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { authFetch } from '../lib/authFetch';
-import { convexMutation, convexPlaneActive } from './data/convexClient.js';
+import { convexMutation } from './data/convexClient.js';
 import { convexReadIdentity, convexViewerIdentity } from './data/convexIdentity.js';
 
 const QUICK_EMOJIS = ['\u{1F44D}', '\u{2764}\u{FE0F}', '\u{1F602}', '\u{1F914}', '\u{1F389}'];
@@ -94,7 +93,6 @@ export default function MessageReactions({ messageId, reactions: initialReaction
 
   useEffect(() => { setReactions(Array.isArray(initialReactions) ? initialReactions : []); }, [initialReactions]);
   useEffect(() => {
-    if (!convexPlaneActive()) return undefined;
     let alive = true;
     reactionActor().then((identity) => { if (alive) setActor(identity); });
     return () => { alive = false; };
@@ -112,7 +110,7 @@ export default function MessageReactions({ messageId, reactions: initialReaction
   const toggleReaction = useCallback(async (emoji) => {
     if (!messageId) return;
     let actorKey = actor;
-    if (convexPlaneActive() && !actorKey) {
+    if (!actorKey) {
       actorKey = await reactionActor();
       if (actorKey) setActor(actorKey);
     }
@@ -124,29 +122,16 @@ export default function MessageReactions({ messageId, reactions: initialReaction
       next = [...reactions, { emoji, self: true, actor: actorKey, ts: new Date().toISOString() }];
     }
     setReactions(next);
-    // Persist to Supabase via the messages metadata
+    // Persist on the message row; the server answers with the saved list.
     try {
-      if (convexPlaneActive()) {
-        if (!actorKey) throw new Error('No signed-in reaction identity');
-        const saved = await convexMutation('messages:toggleReaction', { messageId: String(messageId), emoji, actor: actorKey });
-        setReactions(Array.isArray(saved) ? saved : next);
-      } else {
-        await authFetch('/api/dashboard/message-reaction', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message_id: messageId,
-            emoji,
-            action: existing ? 'remove' : 'add',
-            client_id: worldId || '',
-          }),
-        });
-      }
+      if (!actorKey) throw new Error('No signed-in reaction identity');
+      const saved = await convexMutation('messages:toggleReaction', { messageId: String(messageId), emoji, actor: actorKey });
+      setReactions(Array.isArray(saved) ? saved : next);
     } catch {
       // Revert on failure
       setReactions(reactions);
     }
-  }, [actor, messageId, reactions, worldId]);
+  }, [actor, messageId, reactions]);
 
   const replyTarget = message?.id ? {
     type: 'message',

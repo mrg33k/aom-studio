@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { marked } from 'marked';
 import { authFetch } from '../../lib/authFetch';
-import { supabase } from '../../lib/supabase';
+import { hasSession, subscribeConvexQuery, convexWorldId } from '../../lib/convex.js';
 import { demoFixtureActive } from '../../lib/fixtureClient.js';
 import { titleForAgent } from './agentTitles';
 import { mediaAttrs } from './mediaFallback';
@@ -559,10 +559,10 @@ export function useReview(worldId = null, injected = null) {
   // WD40-R4: past decisions for the selected project, shown in the queue panel as a
   // dimmed "Past decisions (N)" section. Only fetched when a project is in scope —
   // showing all-world history when browsing the full queue adds no value and noise.
-  // Real local no-Supabase mode never fires tenant-gated Review reads (they can only
-  // error against a Vite-only server); explicit ?demo= fixtures keep fetching because
-  // their network is owned by Playwright intercepts.
-  const localRenderOnly = !supabase && !demoFixtureActive();
+  // A signed-out page never fires tenant-gated Review reads (they can only
+  // answer 401); explicit ?demo= fixtures keep fetching because their network is
+  // owned by Playwright intercepts.
+  const localRenderOnly = !hasSession() && !demoFixtureActive();
   const [history, setHistory] = useState([]);
   useEffect(() => {
     if (!projSel || !worldId || localRenderOnly) { setHistory([]); return; }
@@ -704,28 +704,24 @@ export function useReview(worldId = null, injected = null) {
       return undefined;
     }
     load();
-    // Realtime contract (review R7): a new file lands as a messages INSERT (the watcher
-    // posts the chat bubble at the same instant it rebuilds the queue cache), so a
-    // messages INSERT is our "the queue probably changed" signal. Refetch on it, debounced
-    // past the server's ~1.2s share->rebuild window so we read the fresh cache, not race
-    // it. The 30s poll stays as the dropped-subscription fallback (same pattern as
-    // useDataPipe).
-    const t = setInterval(load, 30000);
+    // Live contract (review R7, now on Convex): a new deliverable lands as a review
+    // message, so the world's pending review count (reviews:count) is our "the queue
+    // probably changed" signal. The websocket pushes every change; there is no poll.
+    // Refetch on it, debounced past the server's ~1.2s share->rebuild window so we
+    // read the fresh cache, not race it. The first push is the current value and is
+    // skipped: load() above already covered it.
     let debounce = null;
-    let channel = null;
-    if (supabase) {
-      channel = supabase
-        .channel(`review-queue-messages-${Math.random().toString(36).slice(2, 8)}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+    let first = true;
+    const unsub = (worldId && !localRenderOnly)
+      ? subscribeConvexQuery('reviews:count', { worldId: convexWorldId(worldId) }, () => {
+          if (first) { first = false; return; }
           if (debounce) clearTimeout(debounce);
           debounce = setTimeout(() => { debounce = null; load(); }, 3000);
-        })
-        .subscribe();
-    }
+        }, () => { /* a failed subscription leaves the loaded queue as is */ })
+      : null;
     return () => {
-      clearInterval(t);
       if (debounce) clearTimeout(debounce);
-      if (channel) supabase.removeChannel(channel);
+      if (unsub) unsub();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load, hasInjected, injected]);
@@ -1214,23 +1210,22 @@ export function useReviewWaitingCount(worldId = null) {
       } catch { /* keep the last known count */ }
     };
     load();
-    const t = setInterval(load, 60000);
+    // The badge follows the world's pending review count on Convex: every change
+    // is pushed over the websocket and refreshes the queue's own waiting number.
+    // No poll. The first push is the current value; load() above already ran.
     let debounce = null;
-    let channel = null;
-    if (supabase) {
-      channel = supabase
-        .channel(`review-badge-${Math.random().toString(36).slice(2, 8)}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+    let first = true;
+    const unsub = (worldId && hasSession())
+      ? subscribeConvexQuery('reviews:count', { worldId: convexWorldId(worldId) }, () => {
+          if (first) { first = false; return; }
           if (debounce) clearTimeout(debounce);
           debounce = setTimeout(() => { debounce = null; load(); }, 3500);
-        })
-        .subscribe();
-    }
+        }, () => { /* keep the last known count */ })
+      : null;
     return () => {
       dead = true;
-      clearInterval(t);
       if (debounce) clearTimeout(debounce);
-      if (channel) supabase.removeChannel(channel);
+      if (unsub) unsub();
     };
   }, [worldId]);
   return count;

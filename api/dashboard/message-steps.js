@@ -1,25 +1,91 @@
 // GET /api/dashboard/message-steps?client_id=aom&agent=elon[&project=corner][&limit=20]
 //
-// Returns recent message_step events for a surface. Proxies to Supabase with
-// the service-role key because events RLS blocks anon/user reads, which is
-// why R65-impl's client-side subscription never rendered steps in practice.
+// Returns recent message_step events for a surface.
 //
 // Response shape:
-//   { steps: [{ id, agent, parent_message_id, step_index, text, status, timestamp, project }] }
+//   { steps: [{ id, agent, parent_message_id, step_index, text, status, timestamp, project, phase }] }
+//
+// corner:retire-supabase (2026-09-03): events:find on Convex, filtered by
+// payload.client_id server-side.
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+// ---------------------------------------------------------------------------
+// Convex is the only backend (corner:retire-supabase, 2026-09-03). The signed
+// in person's Convex Auth token arrives as Authorization: Bearer and the
+// deployment checks it in users:verifyToken. This block is repeated in each
+// route on purpose until a shared helper lands in api/_lib.
+// ---------------------------------------------------------------------------
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+
+async function convexCall(kind, path, args, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+  const r = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  })
+  if (!r.ok) throw new Error(`convex ${kind} ${path}: HTTP ${r.status}`)
+  const data = await r.json()
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex ${kind} ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`)
+  }
+  return data.value
+}
+const convexQuery = (path, args, token) => convexCall('query', path, args, token)
+
+class AuthError extends Error {
+  constructor(message, status = 403) { super(message); this.name = 'AuthError'; this.status = status }
+}
+
+function bearerToken(req) {
+  const auth = req.headers?.authorization || req.headers?.Authorization
+  if (typeof auth === 'string' && /^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, '').trim() || null
+  return null
+}
+
+// Who is calling. Throws 401 when the request carries no valid session.
+async function requireCaller(req) {
+  const token = bearerToken(req)
+  if (!token) throw new AuthError('sign-in required', 401)
+  let who = null
+  try { who = await convexQuery('users:verifyToken', {}, token) } catch { who = null }
+  if (!who || !who.userId) throw new AuthError('invalid session', 401)
+  const world = who.world ? String(who.world).toLowerCase() : null
+  let superAdmin = false
+  try { superAdmin = !!(await convexQuery('worlds:isAdmin', { worldId: 'aom' }, token)) } catch { superAdmin = false }
+  return { userId: who.userId, email: who.email || null, userName: who.name || null, world, worldId: who.worldId || null, isAdmin: !!who.isAdmin, superAdmin, token }
+}
+
+// May the caller act inside `tenant`? A world slug admits an aom admin
+// (Patrik) everywhere and any member of that world. "shared:<project>" admits
+// a world that holds the project or a grant on it.
+async function verifyTenant(tenant, req) {
+  const t = String(tenant || '').trim().toLowerCase()
+  if (!t) throw new AuthError('tenant required', 400)
+  const who = await requireCaller(req)
+  if (who.superAdmin) return { ok: true, tenant: t, ...who, isAdmin: true }
+  if (t.startsWith('shared:')) {
+    const slug = t.slice('shared:'.length)
+    const access = who.world ? await convexQuery('projects:hasAccess', { slug, worldId: who.world }, who.token).catch(() => null) : null
+    if (access && access.ok) return { ok: true, tenant: t, ...who, isAdmin: false }
+  } else {
+    const m = await convexQuery('worlds:membership', { worldId: t }, who.token).catch(() => null)
+    if (m && m.role) return { ok: true, tenant: t, ...who, isAdmin: m.role === 'owner' || m.role === 'admin' }
+    if (who.world === t) return { ok: true, tenant: t, ...who }
+  }
+  throw new AuthError(`forbidden: caller world "${who.world || '(none)'}" cannot access "${t}"`, 403)
+}
 
 // Steps are auto-derived from the agent's raw tool calls, so they leak file paths and shell
-// commands ("Running: ls -la /Users/...", "Reading v3-mobile-top.png") — a terminal log, not a
+// commands ("Running: ls -la /Users/...", "Reading v3-mobile-top.png"), a terminal log, not a
 // conversation. This rewrites each step into a short, plain-language line a user understands and
-// strips every path/command, so the live thread reads like work, not a console (rule 4 + the
-// 2026-06-23 "short human points, NOT raw tool names and NOT code" reframe). ONE chokepoint: every
-// surface reads steps through this endpoint, so this covers all agents and all history at once.
+// strips every path/command, so the live thread reads like work, not a console. ONE chokepoint:
+// every surface reads steps through this endpoint, so this covers all agents and all history.
 function humanizeStep(raw) {
   let t = String(raw || '').trim()
   if (!t) return t
 
-  // Raw shell command ("Running: <cmd>") — never show the command or its paths; speak the intent.
+  // Raw shell command ("Running: <cmd>"): never show the command or its paths; speak the intent.
   let m = t.match(/^Running:\s*(.+)$/i)
   if (m) {
     const verb = (m[1].trim().split(/\s+/)[0] || '').replace(/.*\//, '').toLowerCase()
@@ -43,7 +109,7 @@ function humanizeStep(raw) {
     return byVerb[verb] || 'Working through the project'
   }
 
-  // File op named by file ("Reading X.png", "Editing Y.jsx") — say the kind, never the filename.
+  // File op named by file ("Reading X.png", "Editing Y.jsx"): say the kind, never the filename.
   m = t.match(/^(Reading|Editing|Writing|Opening)\s+(.+)$/i)
   if (m) {
     const verb = m[1].toLowerCase()
@@ -74,27 +140,11 @@ function humanizeStep(raw) {
     .replace(/\b[\w\-]+\.(?:jsx?|tsx?|py|sh|json|ya?ml|md|css|html?|png|jpe?g|gif|webp|svg)\b/gi, 'the file')
     .replace(/\s{2,}/g, ' ')
     .trim()
-  // Root safety net (Steffen design-gate 2026-07-21): a machine-flavored label
-  // ("Count entries in current directory") must NEVER reach the user — the whole
-  // strip exists to translate the machine into plain comprehension (rule 4). If the
-  // text still carries dev-world vocabulary after scrubbing, speak the intent
-  // generically instead of leaking the terminal's voice. Clean plain-English
-  // descriptions have none of these tokens and pass through untouched.
+  // A machine-flavored label ("Count entries in current directory") must NEVER reach the user.
   if (/\b(director(?:y|ies)|subdir|cwd|std(?:out|err|in)|node_modules|localhost|entries|filesystem|grep|chmod|mkdir|rmdir|dir|repo|regex|npm|npx)\b/i.test(t)) {
     return 'Working through the project'
   }
   return t
-}
-
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-function headers() {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-  }
 }
 
 export default async function handler(req, res) {
@@ -105,43 +155,35 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
   }
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' })
-  }
 
   const _msgClient = req.query.client_id ? String(req.query.client_id).trim() : ''
   if (!_msgClient) return res.status(401).json({ error: 'Missing client' })
-  let tenant
+  let verified
   try {
-    ({ tenant } = await verifyTenant(_msgClient, req))
+    verified = await verifyTenant(_msgClient, req)
   } catch (err) {
-    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message })
+    if (err instanceof AuthError) return res.status(err.status).json({ error: err.message })
     throw err
   }
-  const clientId = tenant
+  const clientId = verified.tenant
   const agent = (req.query.agent || '').toString().toLowerCase()
   const project = (req.query.project || '').toString().toLowerCase()
   const limit = Math.min(parseInt(req.query.limit, 10) || 40, 100)
 
-  const qsParts = [
-    'select=id,agent,payload,timestamp',
-    'event_type=eq.message_step',
-    `order=timestamp.desc`,
-    `limit=${limit}`,
-  ]
-  // Filter by client_id server-side to avoid fetching all events
-  qsParts.push(`payload->>client_id.eq.${encodeURIComponent(clientId)}`)
-  if (agent) qsParts.push(`agent=eq.${encodeURIComponent(agent)}`)
-
-  const url = `${SUPABASE_URL}/rest/v1/events?${qsParts.join('&')}`
   let rows = []
   try {
-    const r = await fetch(url, { headers: headers() })
-    if (r.ok) rows = await r.json()
-  } catch (_) {}
+    const args = {
+      event_type: 'message_step',
+      payload_eq: { key: 'client_id', value: clientId },
+      order: 'desc',
+      limit: project ? limit * 4 : limit,
+    }
+    if (agent) args.agent = agent
+    rows = await convexQuery('events:find', args, verified.token)
+  } catch (_) { rows = [] }
 
   const steps = []
-  for (const row of rows) {
+  for (const row of (Array.isArray(rows) ? rows : [])) {
     const p = row.payload || {}
     if ((p.client_id || clientId) !== clientId) continue
     if (project && (p.project || '') !== project) continue
@@ -159,10 +201,10 @@ export default async function handler(req, res) {
       status: p.status || 'in_progress',
       timestamp: row.timestamp,
       project: p.project || '',
-      // R-SMOOTHNESS Round B: turn-phase tag stamped by the bridge
-      // (thinking | working | streaming | done | waiting). Additive.
+      // Turn-phase tag stamped by the bridge (thinking | working | streaming | done | waiting).
       phase: p.phase || '',
     })
+    if (steps.length >= limit) break
   }
   return res.status(200).json({ steps })
 }

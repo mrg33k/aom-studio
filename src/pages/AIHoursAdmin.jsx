@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
-// NOTE: We do NOT use supabase.auth.signIn/signOut here — that would contaminate
-// the Corner dashboard session. Instead, admin auth goes through /api/ai-hours/admin-auth
-// and DB calls go through /api/ai-hours/clients (both use service role server-side).
+// NOTE: We never sign in or out of the Corner session here; that would contaminate
+// the Corner dashboard session. Admin auth goes through /api/ai-hours/admin-auth
+// and DB calls go through /api/ai-hours/clients (both talk to Convex server-side).
 // The admin session is stored in 'ai-hours-admin-session' localStorage only.
-import { supabase } from '../dashboard/lib/supabase.js'
+// The one Corner read is getCurrentUser (Convex users:viewer), read-only.
+import { getCurrentUser } from '../dashboard/lib/auth.js'
+import { hasSession } from '../dashboard/lib/convex.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AI Hours Admin — Facilitator / AOM Team View
@@ -695,7 +697,7 @@ function AdminLoginGate({ onSuccess }) {
     setLoading(true)
     setError(null)
     try {
-      // Server-side auth — does NOT touch supabase.auth state (no session contamination)
+      // Server-side auth, does not touch the Corner session (no session contamination)
       const res = await fetch('/api/ai-hours/admin-auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -844,7 +846,7 @@ function TeamView({ user, onLogout }) {
   }, [])
 
   async function loadClients() {
-    // Use service-role API endpoint — no Supabase auth session required
+    // Use the server API endpoint, which checks the caller itself
     try {
       const res = await fetch('/api/ai-hours/clients')
       const result = await res.json()
@@ -1847,9 +1849,9 @@ export default function AIHoursAdmin() {
       }
 
       // Second: if already signed into Corner as an AOM team member, auto-admit them
-      // (read-only check — does NOT modify the Corner session)
-      if (supabase) {
-        const { data: { user } } = await supabase.auth.getUser()
+      // (read-only check, does not modify the Corner session)
+      if (hasSession()) {
+        const user = await getCurrentUser().catch(() => null)
         if (user && isAOMTeamMember(user.email)) {
           // Stamp an AI Hours session so subsequent loads skip re-auth
           localStorage.setItem('ai-hours-admin-session', JSON.stringify({ email: user.email }))
@@ -1865,7 +1867,7 @@ export default function AIHoursAdmin() {
   }, [])
 
   function handleLogout() {
-    // Clear ONLY the AI Hours session — never touch supabase.auth (that's Corner's session)
+    // Clear ONLY the AI Hours session, never the Corner session
     localStorage.removeItem('ai-hours-admin-session')
     setTeamUser(null)
     setMode('login')

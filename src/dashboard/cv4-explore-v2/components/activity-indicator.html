@@ -12,7 +12,7 @@
     agent stops running tools.
 
   Data contract:
-    Supabase Realtime subscription on the `events` table:
+    the Convex `events` table (events:find) in CV6:
       filter: event_type=eq.tool_activity
       payload: {
         message_id: string,   // parent user message id
@@ -138,12 +138,8 @@
     ? window.ACTIVITY_STUB
     : true;
 
-  // Supabase project config — pulled from the global AOM config if available,
-  // or fallback to the known values for local dev.
-  var SUPABASE_URL = (window.AOM_CONFIG && window.AOM_CONFIG.supabaseUrl)
-    || 'https://mcngatprgluexjjcqpkp.supabase.co';
-  var SUPABASE_ANON_KEY = (window.AOM_CONFIG && window.AOM_CONFIG.supabaseAnonKey)
-    || '';
+  // Live activity comes from the Convex events table (events:find, event_type tool_activity).
+  // This explore component ships in stub mode; the live reader lives in the CV6 dashboard.
 
   /* ──────────────────────────────────────────────────────────────────────────
    *  DOM refs
@@ -221,7 +217,7 @@
   }
 
   /* ──────────────────────────────────────────────────────────────────────────
-   *  Live mode: subscribe to Supabase Realtime
+   *  Live mode: stubbed (data plane moved to Convex)
    *  Filter: event_type=eq.tool_activity
    *
    *  Payload shape:
@@ -233,88 +229,9 @@
    * ────────────────────────────────────────────────────────────────────────── */
 
   function startRealtimeSubscription() {
-    // Wait for the Supabase client to be available. The chat views initialise
-    // a global `window.supabaseClient` via the shared include.js bootstrap.
-    var maxWait = 20;  // 20 × 250ms = 5s
-    var waited = 0;
-
-    function tryConnect() {
-      var client = window.supabaseClient;
-
-      if (!client && waited < maxWait) {
-        waited++;
-        setTimeout(tryConnect, 250);
-        return;
-      }
-
-      if (!client) {
-        console.warn('[activity-indicator] supabaseClient not found — staying hidden');
-        return;
-      }
-
-      // Derive the current conversation context from the page.
-      // The chat views attach agent_slug + client_id to the body or a meta tag.
-      var agentSlug = document.body.dataset.agent || null;
-      var clientId  = document.body.dataset.clientId || null;
-
-      var channel = client
-        .channel('tool-activity-' + (agentSlug || 'ea'))
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'events',
-            filter: 'event_type=eq.tool_activity',
-          },
-          function (payload) {
-            var row = payload.new;
-            if (!row || !row.payload) return;
-
-            var data;
-            try {
-              data = typeof row.payload === 'string'
-                ? JSON.parse(row.payload)
-                : row.payload;
-            } catch (e) {
-              return;
-            }
-
-            // Scope check: only handle events for THIS conversation
-            if (agentSlug && data.agent && data.agent !== agentSlug) return;
-            if (clientId  && data.client_id && data.client_id !== clientId) return;
-
-            if (data.active) {
-              show(data.text || 'Working');
-            } else {
-              hide();
-            }
-          }
-        )
-        .subscribe();
-
-      // Also hide when a new assistant message is inserted (agent finished speaking)
-      client
-        .channel('messages-watch-' + (agentSlug || 'ea'))
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: clientId ? 'client_id=eq.' + clientId : undefined,
-          },
-          function (payload) {
-            var row = payload.new;
-            if (row && row.role === 'assistant') {
-              hide();
-            }
-          }
-        )
-        .subscribe();
-    }
-
-    tryConnect();
+    // Moved to Convex (corner:retire-supabase, 2026-09-03). This explore-only
+    // component has no live mode any more; CV6 reads events:find directly.
+    console.info('[activity-indicator] live mode is stubbed here; see CV6 for the Convex reader');
   }
 
   /* ──────────────────────────────────────────────────────────────────────────

@@ -2,11 +2,21 @@
 // Authenticated, tenant-scoped action broker for the global CV6 voice runtime.
 // The model may request only allowlisted operations; this endpoint owns authority,
 // idempotency, speaker attribution, project scope, and the durable audit record.
+//
+// corner:retire-supabase (2026-09-03): every read and write is a Convex call.
+//   tasks            -> tasks:find / tasks:get / tasks:queue / tasks:update
+//   roster           -> agents:listStatus
+//   rooms            -> rooms:listRooms, projects:list
+//   room activity    -> messages:listSince, messages:getThread
+//   start work       -> messages:send
+//   audit record     -> airpods:recordAction / airpods:setActionResult
+//   attention        -> state (kind airpods_attention) + airpods:handleAttention
+// Project scope is projects:hasAccess (holder world or a grant). A task never
+// gets a project that is not registered and reachable, because the project
+// steers which checkout the runner uses.
 
 import crypto from 'crypto';
 import { verifyTenant, verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js';
-import { writeMessageRow, makeProjectScopeAuthorizer } from '../_lib/write-message.js';
-import { authorizeTaskProject, taskScopeDenialMessage } from '../_lib/taskScope.js';
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' };
 import {
   AIRPODS_ALLOWED_ACTIONS,
@@ -17,24 +27,13 @@ import {
   signConfirmation,
   verifyConfirmation,
 } from '../_lib/airpods.js';
+import { convexQuery, convexMutation } from '../_lib/reportsStore.js';
+import { ATTENTION_STATE_KIND, readAttentionState } from './airpods-attention.js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const CONFIRM_SECRET = process.env.AIRPODS_CONFIRMATION_SECRET || SUPABASE_KEY || '';
+const CONFIRM_SECRET = process.env.AIRPODS_CONFIRMATION_SECRET || process.env.CORNER_INGEST_SECRET || '';
 
-const headers = (prefer = 'return=representation') => ({
-  apikey: SUPABASE_KEY,
-  Authorization: `Bearer ${SUPABASE_KEY}`,
-  'Content-Type': 'application/json',
-  Prefer: prefer,
-});
-
-async function db(path, options = {}) {
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...options, headers: { ...headers(), ...(options.headers || {}) } });
-  const body = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(body?.message || body?.error || `Supabase ${response.status}`);
-  return body;
-}
+const ACTIVE_TASK = new Set(['queued', 'running', 'building']);
+const BLOCKED_TASK = new Set(['blocked', 'failed', 'needs_input']);
 
 function uiTool(tool) {
   const map = {
@@ -44,20 +43,45 @@ function uiTool(tool) {
   return map[String(tool || '').trim().toLowerCase()] || String(tool || 'home').trim().toLowerCase();
 }
 
-function compactSpokenTitle(value) {
-  const words = String(value || 'Untitled task').trim().split(/\s+/).filter(Boolean);
-  return words.slice(0, 5).join(' ');
+function iso(ms) {
+  return typeof ms === 'number' && Number.isFinite(ms) ? new Date(ms).toISOString() : null;
 }
 
-async function workspaceStatus(clientId) {
-  const taskFilter = `client_id=eq.${encodeURIComponent(clientId)}&status=neq.done&order=created_at.desc&limit=20&select=id,title,description,status,agent,project,error,attempt_count,max_attempts,metadata,created_at`;
-  const agentFilter = `client_id=eq.${encodeURIComponent(clientId)}&select=slug,status,current_task,updated_at`;
-  const doneFilter = `client_id=eq.${encodeURIComponent(clientId)}&status=eq.done&order=completed_at.desc&limit=5&select=id,title,agent,completed_at`;
-  const [tasks, agents, completed] = await Promise.all([
-    db(`tasks?${taskFilter}`), db(`agent_status?${agentFilter}`), db(`tasks?${doneFilter}`),
-  ]);
-  const active = tasks.filter((task) => ['queued', 'active', 'building', 'qa', 'planning', 'classifying'].includes(task.status));
-  const allBlockers = tasks.filter((task) => ['blocked', 'failed', 'needs_input', 'needs_verification'].includes(task.status));
+// Every task in a world, newest first. The queue is small enough to read whole
+// and filter here; it keeps one round trip per status question.
+async function allTasks(tenant) {
+  const rows = await convexQuery('tasks:find', { client_id: tenant, order: 'created_at.desc', limit: 300 });
+  return Array.isArray(rows) ? rows : [];
+}
+
+async function findTask(tenant, taskId) {
+  const task = await convexQuery('tasks:get', { id: taskId });
+  if (!task || task.client_id !== tenant) return null;
+  return task;
+}
+
+// Is this world allowed to reach this project? Holder world or a grant.
+async function projectVerdict(project, tenant) {
+  try {
+    const verdict = await convexQuery('projects:hasAccess', { slug: project, worldId: tenant });
+    return verdict && verdict.ok ? { ok: true, via: verdict.role || 'access' } : { ok: false, reason: 'not reachable from this world' };
+  } catch (error) {
+    return { ok: false, reason: String(error?.message || error) };
+  }
+}
+
+function taskScopeDenialMessage({ clientId, projectSlug, reason }) {
+  return (
+    `forbidden: world "${clientId}" may not queue work under project "${projectSlug}": ${reason}. ` +
+    `A queued task runs a brief inside that project's checkout, so the project must be one this world already reaches.`
+  );
+}
+
+async function workspaceStatus(tenant) {
+  const [tasks, roster] = await Promise.all([allTasks(tenant), convexQuery('agents:listStatus', { worldId: tenant })]);
+  const open = tasks.filter((task) => task.status !== 'done').slice(0, 20);
+  const active = open.filter((task) => ACTIVE_TASK.has(task.status));
+  const allBlockers = open.filter((task) => BLOCKED_TASK.has(task.status));
   const recentCutoff = Date.now() - 7 * 24 * 60 * 60_000;
   const blockers = allBlockers.filter((task) => new Date(task.created_at || 0).getTime() >= recentCutoff).slice(0, 6);
   const seenPriorityTitles = new Set();
@@ -79,54 +103,52 @@ async function workspaceStatus(clientId) {
       created_at: task.created_at,
       next_read: { action: 'read_task_status', arguments: { task_id: task.id } },
     }));
+  const completed = tasks.filter((task) => task.status === 'done' && task.completed_at)
+    .sort((a, b) => String(b.completed_at).localeCompare(String(a.completed_at)))
+    .slice(0, 5)
+    .map((task) => ({ id: task.id, title: task.title, agent: task.agent, completed_at: task.completed_at }));
+  const agents = (Array.isArray(roster) ? roster : [])
+    .filter((agent) => agent.status && agent.status !== 'idle')
+    .map((agent) => ({ slug: agent.slug, status: agent.status, current_task: agent.currentTask, updated_at: iso(agent.updatedAt) }));
   return {
     active,
     blockers,
     priorities,
     older_attention_count: Math.max(0, allBlockers.length - blockers.length),
-    completed: completed.filter((task) => task.completed_at),
-    agents: agents.filter((agent) => agent.status && agent.status !== 'idle'),
+    completed,
+    agents,
     checked_at: new Date().toISOString(),
   };
 }
 
-async function recoverLatestPriorityTaskId(sessionId, tenant) {
-  if (!sessionId) return null;
-  const rows = await db(`airpods_actions?session_id=eq.${encodeURIComponent(sessionId)}&world_id=eq.${encodeURIComponent(tenant)}&action=eq.read_workspace_status&status=eq.succeeded&order=created_at.desc&limit=1&select=result`);
-  return rows?.[0]?.result?.status?.priorities?.[0]?.task_id || null;
+// The latest priority from the last workspace read of this session. Convex
+// keeps action rows by session but has no query over them, so the answer is
+// recomputed live from the queue instead of read back from the audit log.
+async function recoverLatestPriorityTaskId(tenant) {
+  const status = await workspaceStatus(tenant);
+  return status.priorities[0]?.task_id || null;
 }
 
-async function readTaskStatus(args, tenant, sessionId) {
+async function readTaskStatus(args, tenant) {
   const suppliedTaskId = String(args.task_id || '').trim();
-  let taskId = /^[0-9a-f-]{36}$/i.test(suppliedTaskId)
-    ? suppliedTaskId
-    : await recoverLatestPriorityTaskId(sessionId, tenant);
+  let taskId = /^[0-9a-f-]{36}$/i.test(suppliedTaskId) ? suppliedTaskId : await recoverLatestPriorityTaskId(tenant);
   if (!taskId) throw new Error('A valid task_id is required');
-  const taskPath = (id) => `tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(id)}&limit=1&select=id,title,text,description,status,agent,project,project_path,error,attempt_count,max_attempts,metadata,created_at,completed_at`;
-  let rows = await db(taskPath(taskId));
-  let task = Array.isArray(rows) ? rows[0] : null;
+  let task = await findTask(tenant, taskId);
   if (!task) {
-    const recoveredTaskId = await recoverLatestPriorityTaskId(sessionId, tenant);
+    const recoveredTaskId = await recoverLatestPriorityTaskId(tenant);
     if (recoveredTaskId && recoveredTaskId !== taskId) {
       taskId = recoveredTaskId;
-      rows = await db(taskPath(taskId));
-      task = Array.isArray(rows) ? rows[0] : null;
+      task = await findTask(tenant, taskId);
     }
   }
   if (!task) throw new Error('Task not found in this workspace');
   const reason = String(task.error || '').trim();
   // A zombie repo LOCK is repairable by exactly the same requeue as a missing
-  // repo path, but 'repo lock held by zombie' matched none of these words, so
-  // the assistant inspected the failure and then had nothing to offer. Live
-  // gauntlet 2026-08-09: 'failure answer advances one executable retry
-  // proposal' failed for this reason, not because the model declined to help.
+  // repo path. The words below are what the runner writes for either.
   const repairableScope = task.status === 'failed' && /metadata\.repo|repositor|repo lock|project_path|working path|never (?:got )?claimed|not been claimed|without being claimed|runner (?:dead|died)/i.test(reason);
-  // Same defect as read_workspace_status: the raw `error` column was read out
-  // verbatim behind a say-exactly contract, so the caller heard engine strings
-  // like "stuck queued for 1829 minutes without being claimed (runner dead or
-  // repo lock held by zombie)". The error text still travels as recorded_error
-  // for the audit rules that quote it exactly; the SPOKEN layer stops being a
-  // transcript of a database column.
+  // The raw `error` column stays in recorded_error for the audit rules that
+  // quote it exactly; the SPOKEN layer describes it instead of reading a
+  // database column aloud.
   return {
     ok: true,
     spoken_summary: reason
@@ -135,7 +157,7 @@ async function readTaskStatus(args, tenant, sessionId) {
     recorded_error: reason || null,
     resolved_from: taskId === suppliedTaskId ? 'task_id' : 'latest_workspace_priority',
     response_contract: repairableScope
-      ? `Explain in your own words what went wrong and what it means, keeping the recorded cause accurate, then ask once whether to repair and retry it. Do not read the raw error string aloud as if it were a sentence. Never hedge the diagnosis: no "it looks like", "seems like", or "well" — you inspected the record, so state what it says.`
+      ? `Explain in your own words what went wrong and what it means, keeping the recorded cause accurate, then ask once whether to repair and retry it. Do not read the raw error string aloud as if it were a sentence. Never hedge the diagnosis: no "it looks like", "seems like", or "well". You inspected the record, so state what it says.`
       : 'Explain the cause in your own natural words, keeping every recorded fact accurate. Do not read the raw error string verbatim, and do not add a question.',
     next_action: repairableScope ? {
       action: 'retry_task',
@@ -153,17 +175,38 @@ function activityTerms(value) {
   return String(value || '').toLowerCase().match(/[a-z0-9]+/g)?.filter((term) => term.length > 1).slice(0, 12) || [];
 }
 
+// A Convex message row (from messages:listSince) in the shape the activity
+// scorer reads: agent, project, mission slug, source, timestamp.
+function shapeActivityMessage(row) {
+  const parts = String(row.legacyRoomId || '').split(':');
+  const kind = parts[1] || row.roomKind || '';
+  let mission = String(row.metadata?.mission_slug || '').trim();
+  if (!mission && kind === 'mission' && parts.length >= 4) mission = `${parts[2]}:${parts.slice(3).join(':')}`;
+  return {
+    id: row._id,
+    agent: row.agentSlug || null,
+    project: row.project || (kind === 'project' ? parts.slice(2).join(':') : null),
+    role: row.role,
+    text: row.text,
+    timestamp: iso(row.createdAt),
+    source: row.source,
+    metadata: { ...(row.metadata || {}), ...(mission ? { mission_slug: mission } : {}) },
+    user_name: row.userName || null,
+    room_agent: kind === 'agent' ? parts.slice(2).join(':') : null,
+  };
+}
+
 function roomLabel(message) {
   const mission = String(message?.metadata?.mission_slug || '').trim();
   if (mission) return { room_key: `mission:${mission}`, room_name: mission };
   if (message?.project) return { room_key: `project:${message.project}`, room_name: String(message.project) };
-  return { room_key: `agent:${message?.agent || 'corner'}`, room_name: String(message?.agent || 'Corner') };
+  const agent = message?.room_agent || message?.agent || 'corner';
+  return { room_key: `agent:${agent}`, room_name: String(agent) };
 }
 
 // A proposal card is only useful if the task it would create is well-formed.
 // create_task REQUIRES project + mission_slug, so the scope has to be carried
 // out of the record the evidence came from instead of being invented later.
-// Mission slugs are stored in `project:mission` form, so split before use.
 function roomTaskScope(message) {
   const mission = String(message?.metadata?.mission_slug || '').trim();
   const project = String(message?.project || '').trim();
@@ -182,10 +225,7 @@ function activityScore(message, terms, phrase = '') {
     .filter(Boolean).join(' ').toLowerCase();
   const termScore = terms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0);
   // A record that contains the caller's actual PHRASE is about their subject;
-  // a record that merely scatters the same words usually is not. Without this,
-  // "App Store submission" tied a provisioning receipt against a commit that
-  // happened to use all three words in a sentence about something else, and
-  // the tie fell to whichever was newer.
+  // a record that merely scatters the same words usually is not.
   const phraseBonus = phrase && phrase.length > 3 && haystack.includes(phrase) ? 3 : 0;
   return termScore + phraseBonus;
 }
@@ -195,12 +235,14 @@ function activityMatches(score, terms) {
   return score >= Math.max(1, Math.ceil(terms.length / 2));
 }
 
-async function recentWorkspaceActivity(clientId, query) {
-  const rows = await db(`messages?client_id=eq.${encodeURIComponent(clientId)}&order=timestamp.desc&limit=300&select=id,agent,project,role,text,timestamp,source,metadata,user_name`);
+async function recentWorkspaceActivity(tenant, query) {
+  const since = Date.now() - 30 * 24 * 60 * 60_000;
+  const rows = await convexQuery('messages:listSince', { worldSlug: tenant, since, limit: 300 });
   const terms = activityTerms(query);
   const phrase = String(query || '').trim().toLowerCase();
   return (Array.isArray(rows) ? rows : [])
-    .filter((message) => !['voice-handoff', 'airpods-mode', 'task-ack'].includes(message?.source))
+    .map(shapeActivityMessage)
+    .filter((message) => !['voice-handoff', 'airpods-mode', 'task-ack', 'clear_context'].includes(message?.source))
     .filter((message) => !(message?.role === 'assistant' && ['room-bridge', 'share-file'].includes(message?.source)))
     .map((message) => ({ message, score: activityScore(message, terms, phrase) }))
     .filter(({ score }) => activityMatches(score, terms))
@@ -218,10 +260,10 @@ async function recentWorkspaceActivity(clientId, query) {
     });
 }
 
-async function recentGithubActivity(clientId, query) {
+async function recentGithubActivity(tenant, query) {
   // Repository access is AOM-internal: never expose it to another tenant or a
   // shared room. Report availability explicitly so voice cannot bluff a check.
-  if (clientId !== 'aom') return { availability: 'not_available_for_this_workspace', items: [] };
+  if (tenant !== 'aom') return { availability: 'not_available_for_this_workspace', items: [] };
   const token = process.env.GITHUB_TOKEN || process.env.VITE_GITHUB_TOKEN;
   const owner = process.env.VERCEL_GIT_REPO_OWNER || 'mrg33k';
   const repo = process.env.VERCEL_GIT_REPO_SLUG || 'aom-studio';
@@ -229,10 +271,7 @@ async function recentGithubActivity(clientId, query) {
   try {
     const githubUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/commits?per_page=30`;
     const requestHeaders = { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
-    let response = await fetch(githubUrl, {
-      headers: requestHeaders,
-      signal: AbortSignal.timeout(5000),
-    });
+    let response = await fetch(githubUrl, { headers: requestHeaders, signal: AbortSignal.timeout(5000) });
     // The repository is public, while the legacy VITE_GITHUB_TOKEN may expire.
     // Retry anonymously instead of letting a stale optional token disable a
     // source that requires no credential.
@@ -247,13 +286,7 @@ async function recentGithubActivity(clientId, query) {
     const phrase = String(query || '').trim().toLowerCase();
     const commits = await response.json();
     const items = (Array.isArray(commits) ? commits : [])
-      // The commit-side half of the existing self-evidence rule. Room messages
-      // written BY the voice runtime are already excluded as circular; commits
-      // about the voice runtime are the same thing wearing a different hat, and
-      // they are worse, because a commit message describing this fix mentions
-      // "App Store" a dozen times and will outrank the provisioning receipt
-      // that actually answers the question. Our own machinery is never evidence
-      // about the outside world.
+      // Our own machinery is never evidence about the outside world.
       .filter((commit) => !/corner:airpods-mode|corner:voice-chat/i.test(String(commit?.commit?.message || '')))
       .map((commit) => ({ commit, score: activityScore({ text: commit?.commit?.message }, terms, phrase) }))
       .filter(({ score }) => activityMatches(score, terms))
@@ -273,32 +306,20 @@ async function recentGithubActivity(clientId, query) {
   }
 }
 
-async function readRecentActivity(clientId, args) {
+async function readRecentActivity(tenant, args) {
   const query = String(args.query || '').trim().slice(0, 240);
   const [roomItems, github] = await Promise.all([
-    recentWorkspaceActivity(clientId, query),
-    args.include_github === false ? Promise.resolve({ availability: 'not_requested', items: [] }) : recentGithubActivity(clientId, query),
+    recentWorkspaceActivity(tenant, query),
+    args.include_github === false ? Promise.resolve({ availability: 'not_requested', items: [] }) : recentGithubActivity(tenant, query),
   ]);
-  // ── 2026-08-10, corner:airpods-mode R18 ──────────────────────────────────
-  // This merge used to sort on TIMESTAMP ALONE, which threw away the relevance
-  // score both sources had just computed. Reproduced on production this date:
-  // the query "App Store submission" returned, as its primary record, a commit
-  // titled "the second word cap was hiding inside the evidence tool" — newest,
-  // and about nothing the caller asked. The spoken contract then pointed at that
-  // commit while the model sensibly answered from the business-ops room record
-  // further down items[]. That IS the "it named the wrong source for evidence it
-  // just gave you" defect: not a wording bug, a ranking bug. Relevance first,
-  // recency as the tie-break, so the record the answer uses and the record
-  // provenance names are the same record.
+  // Relevance first, recency as the tie-break, so the record the answer uses
+  // and the record provenance names are the same record.
   const items = [...roomItems, ...github.items]
     .sort((a, b) => (b.match_score || 0) - (a.match_score || 0)
       || String(b.timestamp || '').localeCompare(String(a.timestamp || '')))
     .slice(0, 16);
   const primary = items[0] || null;
-  // Rendered in UTC, so every dated evidence answer given after ~5pm Phoenix
-  // named tomorrow's date — the assistant cited "August 10, 2026" for a record
-  // written the evening of the 9th. The caller's clock is the one being quoted
-  // back to them, so it is the one that has to be used.
+  // The caller's clock (Phoenix) is the one being quoted back to them.
   const primaryDate = primary?.timestamp
     ? new Date(primary.timestamp).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Phoenix' })
     : null;
@@ -307,17 +328,8 @@ async function readRecentActivity(clientId, args) {
   const spokenSummary = recordedWaitingReview
     ? `As of ${primaryDate || 'an unknown date'}, Corner records show Corner was submitted and recorded as Waiting for Review; live App Store status is unverified.`
     : primary
-      // Was `Corner record from <date>: <raw excerpt>`, which put a raw commit
-      // subject line into the caller's ear ("fix(corner:airpods-mode): restore
-      // native app icon"). The excerpt still travels in primary_record for the
-      // model to read and interpret; the spoken layer describes it instead.
       ? `The most recent matching record in ${primary.source_label} is dated ${primaryDate || 'an unknown date'}. Describe what it says in your own words: ${primary.excerpt.slice(0, 200)}`
       : 'I did not find a matching recent record. That is not proof the event did not happen.';
-  // Provenance now describes USE, not merely search. The old sentence led with
-  // "Checked GitHub …" even when the answer came from a room record, so the
-  // caller heard a source that had contributed nothing to the claim. What was
-  // quoted comes first and is named as the thing the answer rests on; anything
-  // else is explicitly demoted to "also searched, not quoted".
   const alsoSearched = [
     primary?.source_type === 'corner_room'
       ? `GitHub ${github.availability === 'available' ? `(${github.items.length} matching commit${github.items.length === 1 ? '' : 's'}, not quoted)` : `(${github.availability.replace(/_/g, ' ')})`}`
@@ -326,10 +338,6 @@ async function readRecentActivity(clientId, args) {
   const provenanceSummary = primary
     ? `The answer above comes from one record: ${primary.source_label}, dated ${primaryDate}. Also searched: ${alsoSearched}.`
     : `Checked Corner room records and GitHub; neither returned a matching record.`;
-  // The external system this question is really about, when there is one. A
-  // stored Corner note can never settle it, so the only honest next step is a
-  // task that goes and looks — and that step has to arrive as an approval card,
-  // not as a sentence.
   const externalSystem = /app\s*store|testflight/i.test(query) ? 'App Store Connect'
     : /vercel|deploy(ment)?\b/i.test(query) ? 'the Vercel deployment'
     : /gmail|email|inbox/i.test(query) ? 'the mailbox'
@@ -352,32 +360,11 @@ async function readRecentActivity(clientId, args) {
     sources: { corner_rooms: 'available', github: github.availability }, items,
     primary_record: primary ? { ...primary, calendar_date: primaryDate } : null,
     provenance_summary: provenanceSummary,
-    // The single record the spoken answer is contracted to rest on. Provenance
-    // and the answer are built from THIS, so they cannot disagree.
     evidence_used: primary ? { source_label: primary.source_label, calendar_date: primaryDate, room_key: primary.room_key || null, reference: primary.reference || null } : null,
     next_action: externalVerification,
     spoken_summary: spokenSummary,
-    // The second hidden word cap. The prompt's "22 spoken words" was the loud
-    // one; this contract enforced the same ceiling from inside the tool result,
-    // on the single most substantive question type there is — "did this
-    // actually happen?" Removing only the prompt half would have left the
-    // evidence answers just as clipped.
-    //
-    // Everything the honesty pass earned is KEPT and made explicit, because
-    // these are the sentences that stop a stored note from being reported as
-    // live external truth: say "Corner records", say the calendar date, say
-    // what remains unverified.
-    // Two contract clauses were added on 2026-08-10 (R18), both because the
-    // measured production transcript broke them:
-    //   • "Is there anything specific you want me to look into about it?" —
-    //     a trailing invitation on an evidence read. The old wording said "do
-    //     not ask a follow-up question" and lost; a period is a checkable
-    //     instruction, a "don't" is not.
-    //   • "I can queue a task … Want me to?" spoken with no tool call, so no
-    //     approval card ever reached the screen and the caller's yes had
-    //     nothing to land on. The card is the offer; the sentence is not.
     response_contract: primary
-      ? `Answer from primary_record in your own natural spoken words, at whatever length the question deserves. You MUST say the phrase "Corner records" (or name the source label), MUST say the explicit calendar_date, and MUST say that the live external status is unverified whenever the question is about an external system such as the App Store. Cite ONLY the source named in evidence_used — never name a source you did not quote. Never read the raw excerpt aloud, never use a relative date, and never claim live external state. End on a period. Do not ask a follow-up question, do not offer to "look into" anything, and do not append an invitation such as "anything specific" or "anything else".${externalVerification ? ' If the caller asks what you can do next, you MUST call offer_next_action with the exact action and arguments from next_action IN THE SAME TURN. Speaking the offer without that call puts no approval card on their screen, so nothing can happen: it is a failed turn, not a polite one.' : ''}`
+      ? `Answer from primary_record in your own natural spoken words, at whatever length the question deserves. You MUST say the phrase "Corner records" (or name the source label), MUST say the explicit calendar_date, and MUST say that the live external status is unverified whenever the question is about an external system such as the App Store. Cite ONLY the source named in evidence_used: never name a source you did not quote. Never read the raw excerpt aloud, never use a relative date, and never claim live external state. End on a period. Do not ask a follow-up question, do not offer to "look into" anything, and do not append an invitation such as "anything specific" or "anything else".${externalVerification ? ' If the caller asks what you can do next, you MUST call offer_next_action with the exact action and arguments from next_action IN THE SAME TURN. Speaking the offer without that call puts no approval card on their screen, so nothing can happen: it is a failed turn, not a polite one.' : ''}`
       : 'State that no matching record was found and that this does not prove the event did not happen. End on a period. Do not ask a follow-up question and do not append an invitation.',
   };
 }
@@ -386,15 +373,16 @@ function roomCandidate({ key, name, type, slug, project, room, aliases = [] }) {
   return { room_key: key, room_name: name, room_type: type, slug, project: project || null, room, aliases };
 }
 
-async function roomDirectory(clientId) {
-  const [projects, statuses] = await Promise.all([
-    db(`projects?client_id=eq.${encodeURIComponent(clientId)}&is_active=eq.true&select=slug,name`),
-    db(`agent_status?client_id=eq.${encodeURIComponent(clientId)}&type=in.(agent,mission)&select=slug,name,type,status,current_task`),
+async function roomDirectory(tenant) {
+  const [projects, roster, rooms] = await Promise.all([
+    convexQuery('projects:list', { worldSlug: tenant, activeOnly: true }).catch(() => []),
+    convexQuery('agents:listStatus', { worldId: tenant }).catch(() => []),
+    convexQuery('rooms:listRooms', { worldId: tenant, filter: 'all' }).catch(() => []),
   ]);
-  const rooms = new Map();
-  const add = (candidate) => { if (candidate?.room_key) rooms.set(candidate.room_key, candidate); };
+  const directory = new Map();
+  const add = (candidate) => { if (candidate?.room_key) directory.set(candidate.room_key, candidate); };
 
-  for (const project of projects || []) {
+  for (const project of Array.isArray(projects) ? projects : []) {
     if (!project?.slug) continue;
     const name = project.name || project.slug;
     add(roomCandidate({
@@ -402,32 +390,47 @@ async function roomDirectory(clientId) {
       room: { id: project.slug, name, isProject: true }, aliases: [project.slug],
     }));
   }
-  for (const row of statuses || []) {
-    if (!row?.slug) continue;
-    const name = row.name || row.slug;
-    if (row.type === 'mission' && row.slug.includes(':')) {
-      const [project, ...rest] = row.slug.split(':');
-      const bare = rest.join(':');
+  for (const agent of Array.isArray(roster) ? roster : []) {
+    if (!agent?.slug) continue;
+    const name = agent.title || agent.slug;
+    add(roomCandidate({
+      key: `agent:${agent.slug}`, name, type: 'agent', slug: agent.slug,
+      room: { id: agent.slug, name }, aliases: [agent.slug],
+    }));
+  }
+  for (const room of Array.isArray(rooms) ? rooms : []) {
+    const parts = String(room.legacyRoomId || '').split(':');
+    if (room.kind === 'project' && room.project && !directory.has(`project:${room.project}`)) {
       add(roomCandidate({
-        key: `mission:${row.slug}`, name, type: 'mission', slug: row.slug, project,
-        room: { id: bare, name, isMission: true, missionSlug: row.slug, projectSlug: project },
-        aliases: [bare, row.slug, `${project} ${name}`],
+        key: `project:${room.project}`, name: room.title || room.project, type: 'project', slug: room.project,
+        room: { id: room.project, name: room.title || room.project, isProject: true }, aliases: [room.project],
       }));
-    } else if (row.type === 'agent') {
+    } else if (room.kind === 'mission') {
+      const project = room.project || (parts.length >= 4 ? parts[2] : '');
+      const bare = parts.length >= 4 ? parts.slice(3).join(':') : (parts[2] || '');
+      if (!project || !bare) continue;
+      const fullSlug = `${project}:${bare}`;
+      const name = room.title || bare;
       add(roomCandidate({
-        key: `agent:${row.slug}`, name, type: 'agent', slug: row.slug,
-        room: { id: row.slug, name }, aliases: [row.slug],
+        key: `mission:${fullSlug}`, name, type: 'mission', slug: fullSlug, project,
+        room: { id: bare, name, isMission: true, missionSlug: fullSlug, projectSlug: project },
+        aliases: [bare, fullSlug, `${project} ${name}`],
+      }));
+    } else if (room.kind === 'agent' && room.specialist && !directory.has(`agent:${room.specialist}`)) {
+      add(roomCandidate({
+        key: `agent:${room.specialist}`, name: room.title || room.specialist, type: 'agent', slug: room.specialist,
+        room: { id: room.specialist, name: room.title || room.specialist }, aliases: [room.specialist],
       }));
     }
   }
-  if (clientId === 'aom') {
+  if (tenant === 'aom') {
     for (const mission of missionsRegistry?.missions || []) {
       if (!mission?.slug || mission.is_done || mission.status === 'archived') continue;
       const project = mission.project_slug || String(mission.slug).split(':')[0];
       const fullSlug = String(mission.slug).includes(':') ? String(mission.slug) : `${project}:${mission.slug}`;
       const bare = fullSlug.slice(fullSlug.indexOf(':') + 1);
       const name = mission.name || mission.raw_slug || bare;
-      if (rooms.has(`mission:${fullSlug}`)) continue;
+      if (directory.has(`mission:${fullSlug}`)) continue;
       add(roomCandidate({
         key: `mission:${fullSlug}`, name, type: 'mission', slug: fullSlug, project,
         room: { id: bare, name, isMission: true, missionSlug: fullSlug, projectSlug: project, path: mission.path || null },
@@ -435,7 +438,7 @@ async function roomDirectory(clientId) {
       }));
     }
   }
-  return [...rooms.values()];
+  return [...directory.values()];
 }
 
 async function resolveRoom(args, tenant) {
@@ -454,69 +457,79 @@ async function resolveRoom(args, tenant) {
   };
 }
 
+// The Convex room key for a directory match.
+function convexRoomKey(tenant, match) {
+  if (match.room_type === 'mission') {
+    const [project, ...rest] = String(match.slug).split(':');
+    return `${tenant}:mission:${project}:${rest.join(':')}`;
+  }
+  if (match.room_type === 'project') return `${tenant}:project:${match.slug}`;
+  return `${tenant}:agent:${match.slug}`;
+}
+
 async function readRoomStatus(args, tenant) {
   const resolution = await resolveRoom(args, tenant);
   if (!resolution.room) return resolution;
   const match = resolution.room;
-  let tasks = [];
-  let messages = [];
+  const [tasks, thread] = await Promise.all([
+    allTasks(tenant),
+    convexQuery('messages:getThread', { roomId: convexRoomKey(tenant, match), limit: 20 }).catch(() => []),
+  ]);
+  let open = tasks.filter((task) => task.status !== 'done');
   if (match.room_type === 'agent') {
-    [tasks, messages] = await Promise.all([
-      db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&agent=eq.${encodeURIComponent(match.slug)}&status=neq.done&order=created_at.desc&limit=12&select=id,title,status,agent,project,metadata,created_at`),
-      db(`messages?client_id=eq.${encodeURIComponent(tenant)}&agent=eq.${encodeURIComponent(match.slug)}&order=timestamp.desc&limit=8&select=role,text,timestamp,user_name,project,metadata`),
-    ]);
+    open = open.filter((task) => task.agent === match.slug).slice(0, 12);
   } else {
     const project = match.project || match.slug;
-    [tasks, messages] = await Promise.all([
-      db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&project=eq.${encodeURIComponent(project)}&status=neq.done&order=created_at.desc&limit=30&select=id,title,status,agent,project,metadata,created_at`),
-      db(`messages?client_id=eq.${encodeURIComponent(tenant)}&project=eq.${encodeURIComponent(project)}&order=timestamp.desc&limit=20&select=role,text,timestamp,user_name,project,metadata`),
-    ]);
+    open = open.filter((task) => task.project === project).slice(0, 30);
     if (match.room_type === 'mission') {
       const bare = match.slug.split(':').pop();
-      tasks = tasks.filter((task) => [match.slug, bare].includes(String(task.metadata?.mission_slug || '')));
-      messages = messages.filter((message) => [match.slug, bare].includes(String(message.metadata?.mission_slug || '')));
+      open = open.filter((task) => [match.slug, bare].includes(String(task.metadata?.mission_slug || '')));
     }
   }
-  const recent = messages.slice(0, 6).map((message) => ({ role: message.role, author: message.user_name || null, text: String(message.text || '').slice(0, 500), at: message.timestamp }));
+  const recent = (Array.isArray(thread) ? thread : []).slice(-6).reverse().map((message) => ({
+    role: message.role || (message.agentSlug ? 'assistant' : 'user'),
+    author: message.userName || message.agentSlug || null,
+    text: String(message.text || '').slice(0, 500),
+    at: iso(message.createdAt),
+  }));
   return {
     ok: true, resolved: true, room_key: match.room_key,
-    spoken_summary: `${match.room_name} has ${tasks.length} active item${tasks.length === 1 ? '' : 's'}${recent.length ? ` and ${recent.length} recent update${recent.length === 1 ? '' : 's'}` : ''}.`,
+    spoken_summary: `${match.room_name} has ${open.length} active item${open.length === 1 ? '' : 's'}${recent.length ? ` and ${recent.length} recent update${recent.length === 1 ? '' : 's'}` : ''}.`,
     room: { room_key: match.room_key, room_name: match.room_name, room_type: match.room_type, project: match.project },
-    active_tasks: tasks.slice(0, 12), recent_updates: recent,
+    active_tasks: open.slice(0, 12), recent_updates: recent,
   };
 }
 
-async function createTask(args, req, identity) {
+async function createTask(args, identity) {
   const project = String(args.project || '').trim();
   const missionSlug = String(args.mission_slug || '').trim();
   const title = String(args.title || '').trim().slice(0, 240);
   if (!project || !missionSlug || !title) throw new Error('title, project, and mission_slug are required');
-  const verdict = await authorizeTaskProject({ req, clientId: identity.tenant, projectSlug: project });
+  const verdict = await projectVerdict(project, identity.tenant);
   if (!verdict.ok) throw new Error(taskScopeDenialMessage({ clientId: identity.tenant, projectSlug: project, reason: verdict.reason }));
-  const projectRows = await db(`projects?client_id=eq.${encodeURIComponent(identity.tenant)}&slug=eq.${encodeURIComponent(project)}&limit=1&select=slug,repo_path`);
-  const projectRow = Array.isArray(projectRows) ? projectRows[0] : null;
+  const projectRow = await convexQuery('projects:lookupBySlug', { slug: project, worldId: identity.tenant });
   if (!projectRow) throw new Error('Authorized project record not found');
-  const row = {
-    title,
-    text: String(args.description || title).trim(),
-    description: String(args.description || title).trim(),
-    status: 'queued',
-    source: 'airpods-mode',
-    client_id: identity.tenant,
-    created_by: identity.userId,
-    project,
-    project_path: projectRow.repo_path || '',
-    ...(args.agent ? { agent: String(args.agent).trim() } : {}),
-    metadata: {
-      mission_slug: missionSlug,
-      repo: projectRow.slug,
-      created_via: 'airpods-mode',
-      requested_by_name: identity.userName || null,
-      requested_by_email: identity.email || null,
+  const task = await convexMutation('tasks:queue', {
+    row: {
+      title,
+      text: String(args.description || title).trim(),
+      description: String(args.description || title).trim(),
+      status: 'queued',
+      source: 'airpods-mode',
+      client_id: identity.tenant,
+      created_by: identity.userId || undefined,
+      project,
+      project_path: projectRow.repoPath || '',
+      ...(args.agent ? { agent: String(args.agent).trim() } : {}),
+      metadata: {
+        mission_slug: missionSlug,
+        repo: projectRow.slug,
+        created_via: 'airpods-mode',
+        requested_by_name: identity.userName || null,
+        requested_by_email: identity.email || null,
+      },
     },
-  };
-  const rows = await db('tasks', { method: 'POST', body: JSON.stringify(row) });
-  const task = Array.isArray(rows) ? rows[0] : rows;
+  });
   return {
     ok: true,
     spoken_summary: `Queued ${title}.`,
@@ -528,119 +541,114 @@ async function createTask(args, req, identity) {
 async function startWork(args, req, tenant, identity, sessionId) {
   const instruction = String(args.instruction || '').trim();
   if (!instruction) throw new Error('instruction is required');
-  const project = String(args.project || '').trim() || null;
+  let project = String(args.project || '').trim() || null;
   if (project) await verifyProjectAccess(project, req);
   const agent = String(args.agent || 'corner').trim() || 'corner';
-  const authorizer = makeProjectScopeAuthorizer({ req, clientId: tenant });
-  const result = await writeMessageRow({
-    supabaseUrl: SUPABASE_URL,
-    headers: headers(),
+  const mission = String(args.mission_slug || '').trim() || null;
+  // A project this world cannot reach drops its scope and the message still
+  // lands in the agent room. A denied scope must not steer a room.
+  if (project && !(await projectVerdict(project, tenant)).ok) project = null;
+  const roomId = mission && project
+    ? `${tenant}:mission:${project}:${mission.includes(':') ? mission.slice(mission.indexOf(':') + 1) : mission}`
+    : project ? `${tenant}:project:${project}` : `${tenant}:agent:${agent}`;
+  const messageId = await convexMutation('messages:send', {
+    roomId,
     text: instruction,
     role: 'user',
     source: 'airpods-mode',
-    agent,
     clientId: tenant,
-    project,
-    mission: String(args.mission_slug || '').trim() || null,
-    authorizeProjectScope: authorizer,
-    metadata: { airpods_session_id: sessionId, interaction_mode: 'work' },
-    userId: identity.userId,
-    userName: identity.userName,
-    worldId: identity.world,
+    userId: identity.userId || undefined,
+    userEmail: identity.email || undefined,
+    userName: identity.userName || undefined,
+    metadata: { airpods_session_id: sessionId, interaction_mode: 'work', ...(mission && project ? { mission_slug: mission } : {}) },
   });
-  if (!result.ok) throw new Error(result.error || 'Could not start work');
   return {
     ok: true,
     spoken_summary: 'I sent that to the room and work is starting.',
-    entities: [{ type: 'message', id: result.row?.id }],
+    entities: [{ type: 'message', id: messageId }],
     ui_effect: project
-      ? { type: 'open_room', room: args.mission_slug
-        ? { id: args.mission_slug, name: args.mission_slug, isMission: true, missionSlug: args.mission_slug, projectSlug: project }
+      ? { type: 'open_room', room: mission
+        ? { id: mission, name: mission, isMission: true, missionSlug: mission, projectSlug: project }
         : { id: project, name: project, isProject: true } }
       : { type: 'open_room', room: { id: agent, name: agent } },
   };
 }
 
 async function manageAttention(args, tenant) {
-  const ids = Array.isArray(args.item_ids) ? args.item_ids.filter(Boolean).slice(0, 50) : [];
+  const ids = Array.isArray(args.item_ids) ? args.item_ids.filter(Boolean).map(String).slice(0, 50) : [];
   if (!ids.length) throw new Error('item_ids required');
   const operation = args.operation === 'snooze' ? 'snooze' : 'acknowledge';
-  const patch = operation === 'snooze'
-    ? { status: 'queued', snoozed_until: new Date(Date.now() + Math.max(1, Number(args.minutes) || 15) * 60_000).toISOString(), updated_at: new Date().toISOString() }
-    : { status: 'acknowledged', acknowledged_at: new Date().toISOString(), updated_at: new Date().toISOString() };
-  await db(`airpods_attention_items?world_id=eq.${encodeURIComponent(tenant)}&id=in.(${ids.map(encodeURIComponent).join(',')})`, { method: 'PATCH', body: JSON.stringify(patch) });
-  return { ok: true, spoken_summary: operation === 'snooze' ? 'I’ll bring those back later.' : 'Got it. Those are cleared.' };
+  const now = new Date().toISOString();
+  const marks = await readAttentionState(tenant);
+  for (const id of ids) {
+    marks[id] = operation === 'snooze'
+      ? { status: 'snoozed', snoozed_until: new Date(Date.now() + Math.max(1, Number(args.minutes) || 15) * 60_000).toISOString(), at: now }
+      : { status: 'acknowledged', at: now };
+    // A durable Convex attention row is also marked handled on the row itself.
+    if (operation === 'acknowledge') {
+      try { await convexMutation('airpods:handleAttention', { id }); } catch { /* task-derived id, not a row */ }
+    }
+  }
+  // Keep the map from growing forever: drop marks older than seven days.
+  const cutoff = Date.now() - 7 * 24 * 60 * 60_000;
+  for (const [id, mark] of Object.entries(marks)) {
+    const at = Date.parse(mark?.at || '');
+    if (Number.isFinite(at) && at < cutoff) delete marks[id];
+  }
+  await convexMutation('state:put', { kind: ATTENTION_STATE_KIND, scopeId: '', worldId: tenant, value: marks, updatedBy: 'airpods-action' });
+  return { ok: true, spoken_summary: operation === 'snooze' ? 'I will bring those back later.' : 'Got it. Those are cleared.' };
 }
 
 async function reassignTask(args, tenant) {
   const taskId = String(args.task_id || '').trim();
   const agent = String(args.agent || '').trim().toLowerCase();
   if (!/^[0-9a-f-]{36}$/i.test(taskId) || !agent) throw new Error('task_id and agent are required');
-  const [tasks, agents] = await Promise.all([
-    db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(taskId)}&limit=1&select=id,title,text,agent,status,project,metadata`),
-    db(`agent_status?client_id=eq.${encodeURIComponent(tenant)}&slug=eq.${encodeURIComponent(agent)}&type=eq.agent&limit=1&select=slug,name`),
-  ]);
-  const task = Array.isArray(tasks) ? tasks[0] : null;
+  const [task, roster] = await Promise.all([findTask(tenant, taskId), convexQuery('agents:listStatus', { worldId: tenant })]);
   if (!task) throw new Error('Task not found in this workspace');
-  if (!Array.isArray(agents) || !agents[0]) throw new Error('Agent not found in this workspace');
-  const rows = await db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(taskId)}`, {
-    method: 'PATCH', body: JSON.stringify({ agent }),
-  });
+  const target = (Array.isArray(roster) ? roster : []).find((row) => row.slug === agent);
+  if (!target) throw new Error('Agent not found in this workspace');
+  const rows = await convexMutation('tasks:update', { id: taskId, patch: { agent } });
   const updated = Array.isArray(rows) ? rows[0] : rows;
   return {
     ok: true,
-    spoken_summary: `Reassigned ${task.title || task.text || 'the task'} to ${agents[0].name || agent}.`,
+    spoken_summary: `Reassigned ${task.title || task.text || 'the task'} to ${target.title || agent}.`,
     entities: [{ type: 'task', id: taskId, title: task.title || task.text || null, agent }],
     task: updated || { ...task, agent },
   };
 }
 
-async function retryTask(args, req, tenant) {
+async function retryTask(args, tenant) {
   const taskId = String(args.task_id || '').trim();
   if (!/^[0-9a-f-]{36}$/i.test(taskId)) throw new Error('A valid task_id is required');
-  const rows = await db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(taskId)}&limit=1&select=id,title,text,status,agent,project,project_path,error,metadata`);
-  const task = Array.isArray(rows) ? rows[0] : null;
+  const task = await findTask(tenant, taskId);
   if (!task) throw new Error('Task not found in this workspace');
   if (!task.project) throw new Error('Task has no project, so Corner cannot choose an execution repository safely');
-  const verdict = await authorizeTaskProject({ req, clientId: tenant, projectSlug: task.project });
+  const verdict = await projectVerdict(task.project, tenant);
   if (!verdict.ok) throw new Error(taskScopeDenialMessage({ clientId: tenant, projectSlug: task.project, reason: verdict.reason }));
-  const projectRows = await db(`projects?client_id=eq.${encodeURIComponent(tenant)}&slug=eq.${encodeURIComponent(task.project)}&limit=1&select=slug,repo_path`);
-  const project = Array.isArray(projectRows) ? projectRows[0] : null;
+  const project = await convexQuery('projects:lookupBySlug', { slug: task.project, worldId: tenant });
   if (!project) throw new Error('Authorized project record not found');
-  const metadata = { ...(task.metadata || {}), repo: project.slug, retried_via: 'airpods-mode' };
-  const updated = await db(`tasks?client_id=eq.${encodeURIComponent(tenant)}&id=eq.${encodeURIComponent(taskId)}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status: 'queued', error: null, completed_at: null, project_path: project.repo_path || '', metadata }),
+  const rows = await convexMutation('tasks:update', {
+    id: taskId,
+    patch: { status: 'queued', error: null, completed_at: null, project_path: project.repoPath || '', metadata: { repo: project.slug, retried_via: 'airpods-mode' } },
   });
   return {
     ok: true,
     spoken_summary: `Repaired the execution scope and requeued ${task.title || 'the task'} for ${task.agent || 'its assigned agent'}.`,
-    task: Array.isArray(updated) ? updated[0] : updated,
+    task: Array.isArray(rows) ? rows[0] : rows,
     entities: [{ type: 'task', id: taskId, title: task.title || null, status: 'queued', agent: task.agent || null }],
   };
 }
 
 async function execute(action, args, req, tenant, identity, sessionId) {
   if (action === 'read_workspace_status') {
-    // ── 2026-08-09, corner:airpods-mode ──────────────────────────────────────
-    // THIS is where "it talks like a database" came from, not the prompt.
-    // spoken_summary was assembled as `<5-word title> is <status>` joined with a
-    // semicolon, and response_contract then ordered the model to say ONLY that
-    // string. So the very first answer of every call came out as
-    // "Finalize contact list research is failed; Mobile reskin R2b — CHAT: is
-    // failed." — grammatically broken, no room, no person, no time. Measured on
-    // the live bench 2026-08-09: identical dump opened all three conversations,
-    // and no amount of prompt instruction could override an explicit
-    // say-only-this contract coming back from the tool.
-    //
-    // The row data still goes back untouched under `status` — nothing is hidden
-    // from the model. What changes is that the summary is a sentence a person
-    // would say, and the contract now constrains the FACTS rather than the WORDS.
+    // The row data goes back untouched under `status`. The summary is a
+    // sentence a person would say, and the contract constrains the FACTS
+    // rather than the WORDS.
     const status = await workspaceStatus(tenant);
     const spokenPriorities = status.priorities.slice(0, 2);
-    const humanAge = (iso) => {
-      const ms = Date.now() - new Date(iso || 0).getTime();
-      if (!iso || Number.isNaN(ms)) return null;
+    const humanAge = (isoValue) => {
+      const ms = Date.now() - new Date(isoValue || 0).getTime();
+      if (!isoValue || Number.isNaN(ms)) return null;
       const hours = ms / 3_600_000;
       if (hours < 1) return 'in the last hour';
       if (hours < 24) return `${Math.round(hours)} hours ago`;
@@ -649,20 +657,14 @@ async function execute(action, args, req, tenant, identity, sessionId) {
     };
     const STATUS_WORDS = {
       failed: 'failed', blocked: 'is blocked', needs_input: 'is waiting on you',
-      needs_verification: 'needs checking', queued: 'is still queued',
-      active: 'is running', building: 'is building', qa: 'is in QA',
-      planning: 'is being planned', classifying: 'is being sorted',
+      queued: 'is still queued', running: 'is running', building: 'is building',
     };
-    // ── 2026-08-10, R18 ──────────────────────────────────────────────────────
-    // A task TITLE can itself be a dumped sentence: "Mobile reskin R2b — CHAT:
-    // steps flow through the bar, one card that never grows". Read whole, that
-    // is the database voice again, arriving through the one field the R17 fix
-    // still passed through untouched. Cut at the first structural separator a
-    // human would never say out loud, and cap the tail.
+    // Cut a dumped title at the first structural separator a human would
+    // never say out loud, and cap the tail.
     const spokenTitle = (value) => {
       const raw = String(value || '').trim();
       if (!raw) return 'an untitled task';
-      const head = raw.split(/\s+[—–-]\s+|:\s+/)[0].trim();
+      const head = raw.split(/\s+[:—–-]\s+|:\s+/)[0].trim();
       const base = head.split(/\s+/).length >= 2 ? head : raw;
       const words = base.split(/\s+/).slice(0, 9).join(' ');
       return words.replace(/[\s—–:,;-]+$/, '');
@@ -671,7 +673,7 @@ async function execute(action, args, req, tenant, identity, sessionId) {
       const who = task.agent ? `${task.agent}'s ` : '';
       const what = STATUS_WORDS[task.status] || `is ${task.status}`;
       const when = humanAge(task.created_at);
-      return `${who}${spokenTitle(task.title)} ${what}${when ? ` — started ${when}` : ''}`;
+      return `${who}${spokenTitle(task.title)} ${what}${when ? `, started ${when}` : ''}`;
     };
     const prioritySummary = spokenPriorities.length
       ? `${spokenPriorities.length === 1 ? 'One thing needs you' : `${spokenPriorities.length} things need you`}: ${spokenPriorities.map(describe).join(', and ')}`
@@ -680,7 +682,7 @@ async function execute(action, args, req, tenant, identity, sessionId) {
       ok: true,
       spoken_summary: `${prioritySummary}.`,
       checked_at: status.checked_at,
-      response_contract: 'Say these priorities in your own natural spoken sentence. Keep every fact — the names, who owns them, and how long they have been sitting — but do not read the summary back word for word, do not read totals or older backlog, and do not ask a follow-up question. Never hedge: no "it looks like", "seems like", "well", or "my bad". State it.',
+      response_contract: 'Say these priorities in your own natural spoken sentence. Keep every fact, the names, who owns them, and how long they have been sitting, but do not read the summary back word for word, do not read totals or older backlog, and do not ask a follow-up question. Never hedge: no "it looks like", "seems like", "well", or "my bad". State it.',
       status: {
         priorities: status.priorities,
         older_attention_count: status.older_attention_count,
@@ -689,7 +691,7 @@ async function execute(action, args, req, tenant, identity, sessionId) {
     };
   }
   if (action === 'read_recent_activity') return readRecentActivity(tenant, args);
-  if (action === 'read_task_status') return readTaskStatus(args, tenant, sessionId);
+  if (action === 'read_task_status') return readTaskStatus(args, tenant);
   if (action === 'list_rooms') {
     const rooms = (await roomDirectory(tenant)).slice(0, 240).map((room) => ({ room_key: room.room_key, room_name: room.room_name, room_type: room.room_type, project: room.project }));
     return { ok: true, spoken_summary: `I found ${rooms.length} rooms in this workspace.`, rooms };
@@ -733,9 +735,9 @@ async function execute(action, args, req, tenant, identity, sessionId) {
       ui_effect: { type: 'open_room', room: match.room, request_id: crypto.randomUUID() },
     };
   }
-  if (action === 'create_task') return createTask(args, req, identity);
+  if (action === 'create_task') return createTask(args, identity);
   if (action === 'reassign_task') return reassignTask(args, tenant);
-  if (action === 'retry_task') return retryTask(args, req, tenant);
+  if (action === 'retry_task') return retryTask(args, tenant);
   if (action === 'start_work') return startWork(args, req, tenant, identity, sessionId);
   if (action === 'manage_attention') return manageAttention(args, tenant);
   if (action === 'end_voice_session') return { ok: true, closing: true, spoken_summary: 'Ending the voice session now.' };
@@ -745,7 +747,6 @@ async function execute(action, args, req, tenant, identity, sessionId) {
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
   const body = req.body || {};
   const action = String(body.action || '').trim();
@@ -759,6 +760,9 @@ export default async function handler(req, res) {
     if (error instanceof TenantAuthError) return res.status(error.status).json({ error: error.message });
     throw error;
   }
+  // Rooms, tasks and rosters live in a world; a shared room resolves to the
+  // caller's own world on Convex.
+  if (String(identity.tenant).startsWith('shared:') && identity.world) identity = { ...identity, tenant: identity.world };
 
   if (action === 'confirm_consequential_action') {
     const payload = verifyConfirmation(args.confirmation_token, CONFIRM_SECRET);
@@ -776,39 +780,39 @@ export default async function handler(req, res) {
   const callerKey = freshReads.has(action)
     ? `fresh:${action}:${crypto.randomUUID()}`
     : idempotencyKey({ supplied: body.idempotency_key, sessionId, action, args });
-  // Namespace even caller-supplied keys. The database uniqueness constraint is
-  // global, while replay visibility must never cross a world or user boundary.
+  // Namespace even caller-supplied keys. Replay visibility must never cross a
+  // world or user boundary.
   const key = crypto.createHash('sha256')
     .update(`${identity.tenant}:${identity.userId}:${callerKey}`)
     .digest('hex');
 
-  try {
-    const prior = await db(`airpods_actions?world_id=eq.${encodeURIComponent(identity.tenant)}&user_id=eq.${encodeURIComponent(identity.userId)}&idempotency_key=eq.${encodeURIComponent(key)}&select=result,status,error&limit=1`);
-    if (Array.isArray(prior) && prior[0]?.status === 'succeeded') return res.status(200).json({ ...prior[0].result, replayed: true });
+  const audit = { session_id: sessionId, user_id: identity.userId, speaker_name: identity.userName, action, authority, arguments: args };
 
+  try {
     if (authority === 'confirm') {
       const token = signConfirmation({ action, args, worldId: identity.tenant, userId: identity.userId, exp: Date.now() + 5 * 60_000 }, CONFIRM_SECRET);
-      await db('airpods_actions?on_conflict=idempotency_key', {
-        method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-        body: JSON.stringify({ idempotency_key: key, session_id: sessionId, world_id: identity.tenant, user_id: identity.userId, speaker_name: identity.userName, action, authority, arguments: args, confirmation_state: 'pending', status: 'started' }),
+      await convexMutation('airpods:recordAction', {
+        idempotencyKey: key, worldId: identity.tenant, sessionId: sessionId || '', op: action,
+        payload: { ...audit, confirmation_state: 'pending' }, result: { status: 'started' },
       });
       return res.status(200).json({ ok: false, requires_confirmation: true, confirmation_token: token, spoken_summary: `Please confirm that you want me to ${action.replaceAll('_', ' ')}.` });
     }
 
-    await db('airpods_actions?on_conflict=idempotency_key', {
-      method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
-      body: JSON.stringify({ idempotency_key: key, session_id: sessionId, world_id: identity.tenant, user_id: identity.userId, speaker_name: identity.userName, action, authority, arguments: args, confirmation_state: 'not_required', status: 'started' }),
+    // One row per key. A replay of a finished action returns its stored
+    // result; a fresh key records 'started' before anything runs.
+    const record = await convexMutation('airpods:recordAction', {
+      idempotencyKey: key, worldId: identity.tenant, sessionId: sessionId || '', op: action,
+      payload: { ...audit, confirmation_state: 'not_required' }, result: { status: 'started' },
     });
+    if (record?.existing && record.result?.status === 'succeeded') {
+      return res.status(200).json({ ...(record.result.result || {}), replayed: true });
+    }
+
     const result = await execute(action, args, req, identity.tenant, identity, sessionId);
 
-    // ── 2026-08-09 — the check-in filler had no owner ────────────────────────
-    // "Anything else?", "What's next?", "What are you thinking about now?" were
-    // banned in the voice prompt and still came back on every completed action
-    // (measured both before and after the prompt rewrite, so the prompt was
-    // never going to win this one). Confirmations are the turns where the model
-    // has nothing left to say and reaches for a check-in to fill the gap. The
-    // ban belongs on the tool result, next to the confirmation itself, where it
-    // is the last instruction the model reads before speaking.
+    // Confirmations are the turns where the model has nothing left to say and
+    // reaches for a check-in to fill the gap. The ban belongs on the tool
+    // result, next to the confirmation itself.
     const CONFIRMING = new Set([
       'create_task', 'start_work', 'reassign_task', 'retry_task',
       'open_room', 'close_room', 'open_tool', 'manage_attention',
@@ -817,10 +821,10 @@ export default async function handler(req, res) {
       result.response_contract =
         'Confirm what you just did in one short sentence and stop. Do not ask "anything else", "what next", "what are you thinking", or any other check-in. The caller will say what they want next.';
     }
-    await db(`airpods_actions?idempotency_key=eq.${encodeURIComponent(key)}`, { method: 'PATCH', body: JSON.stringify({ status: 'succeeded', result, completed_at: new Date().toISOString() }) });
+    await convexMutation('airpods:setActionResult', { idempotencyKey: key, result: { status: 'succeeded', result, completed_at: new Date().toISOString() } });
     return res.status(200).json(result);
   } catch (error) {
-    try { await db(`airpods_actions?idempotency_key=eq.${encodeURIComponent(key)}`, { method: 'PATCH', body: JSON.stringify({ status: 'failed', error: String(error?.message || error), completed_at: new Date().toISOString() }) }); } catch { /* audit insert itself may have failed */ }
+    try { await convexMutation('airpods:setActionResult', { idempotencyKey: key, result: { status: 'failed', error: String(error?.message || error), completed_at: new Date().toISOString() } }); } catch { /* audit row itself may have failed */ }
     return res.status(500).json({ error: error?.message || 'Action failed' });
   }
 }

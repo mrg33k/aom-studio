@@ -38,11 +38,6 @@ configs:
   Debug: debug
   Release: release
 
-packages:
-  Supabase:
-    url: https://github.com/supabase/supabase-swift
-    from: 2.0.0
-
 targets:
   Corner:
     type: application
@@ -50,8 +45,6 @@ targets:
     sources:
       - path: Corner
     dependencies:
-      - package: Supabase
-        product: Supabase
       - target: CornerWidgets
         embed: true
     info:

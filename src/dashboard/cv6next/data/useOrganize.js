@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
-import { supabase } from '../../lib/supabase';
+import { hasSession } from '../../lib/convex.js';
 import { mediaAttrs } from './mediaFallback';
 import { pdfShellHtml } from './pdfDocView';
 import { docxShellHtml, isDocxName } from './docxDocView';
@@ -342,7 +342,9 @@ export function useOrganize(worldId = null, opts = {}) {
     let gotFiles = false;
     let gotFilesTruth = false;
 
-    if (!supabase) {
+    // No Convex session: a signed-out page renders empty instead of firing
+    // tenant-gated reads that can only answer 401.
+    if (!hasSession()) {
       setFiles([]);
       setProjects([]);
       setUploads([]);

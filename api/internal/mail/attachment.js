@@ -2,8 +2,9 @@
 //
 // Internal-auth endpoint for terminal agents. Downloads a single Gmail
 // attachment by attachmentId and returns its bytes as base64. Mirrors the
-// shape of /api/dashboard/mail/attachment but accepts SUPABASE_SERVICE_ROLE_KEY
-// auth instead of a user JWT.
+// shape of /api/dashboard/mail/attachment but accepts the CORNER_INTERNAL_KEY
+// shared secret instead of a user JWT (corner:retire-supabase, 2026-09-03:
+// the secret used to be the Supabase service role key).
 //
 // Body: {
 //   connection_id?,  // account_integrations.id (or account_email as alternative)
@@ -18,7 +19,7 @@
 
 import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch } from '../../_lib/gmailClient.js'
 
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const INTERNAL_KEY = process.env.CORNER_INTERNAL_KEY
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
   const internalKey = (req.headers['x-internal-key'] || '').trim()
-  if (!SUPABASE_SERVICE_ROLE_KEY || !internalKey || internalKey !== SUPABASE_SERVICE_ROLE_KEY) {
+  if (!INTERNAL_KEY || !internalKey || internalKey !== INTERNAL_KEY) {
     return res.status(401).json({ error: 'unauthorized' })
   }
 

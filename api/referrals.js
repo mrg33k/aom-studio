@@ -1,14 +1,8 @@
 // Referrals API -- capture referred emails from brand pages
 // Stores to data/referrals.json in AOM-EA repo via GitHub API (same pattern as waitlist.js)
 //
-// To migrate to Supabase, run:
-//   CREATE TABLE referrals (
-//     id         uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-//     email      text NOT NULL,
-//     source     text NOT NULL DEFAULT 'unknown',
-//     created_at timestamptz DEFAULT now()
-//   );
-// Then swap the handler body to use @supabase/supabase-js INSERT.
+// To move this off the GitHub file, swap the handler body to the Convex
+// leads:capture mutation on neat-pony-216 (see api/_lib/reportsStore.js for the call shape).
 
 const GITHUB_TOKEN = process.env.VITE_GITHUB_TOKEN
 const REPO = 'mrg33k/AOM-EA'

@@ -28,13 +28,40 @@
 // a served secret — GEMINI_API_KEY must be ROTATED in the Vercel project env
 // independently of this fix.
 
+// ── 2026-09-03, corner:retire-supabase ───────────────────────────────────────
+// Every piece of workspace context below (agent persona, room history, tasks,
+// agent status, projects, the task-notification tape) now comes from Convex.
+// Reads are open on the deployment, so no key is needed; the tenant gate
+// (verifyTenant) still runs BEFORE any of them.
+
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud';
 const RAG_URL = process.env.RAG_SERVER_URL || 'http://aom-home:8787';
+
+async function convexQuery(path, args) {
+  const res = await fetch(`${CONVEX_URL}/api/query`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  });
+  if (!res.ok) throw new Error(`convex query ${path}: HTTP ${res.status}`);
+  const data = await res.json();
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex query ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`);
+  }
+  return data.value;
+}
+
+// Room key grammar, mirrored from api/_lib/write-message.js deriveRoomId:
+// a normal room is <world>:agent:<slug>; a shared room's client_id IS the key.
+function agentRoomId(clientId, agentSlug) {
+  if (!clientId) return null;
+  if (String(clientId).startsWith('shared:')) return String(clientId);
+  return `${clientId}:agent:${agentSlug || 'elon'}`;
+}
 
 async function createEphemeralToken() {
   const expireTime = new Date(Date.now() + 30 * 60 * 1000).toISOString();
@@ -97,7 +124,7 @@ Patrik is not the only human here. Other members of the workspace (teammates on 
 SYSTEM MAP (what exists, where things live):
 - Machine: macOS (Apple Silicon), this is Patrik's home machine
 - Repos: AOM-EA (agents, scripts, ops) + aom-studio (dashboard, React, Vercel)
-- DB: Supabase (messages, tasks, agent_status, events tables)
+- DB: Convex (messages, rooms, tasks, agents, events tables on dev:neat-pony-216)
 - Deploy: Vercel (aheadofmarket.com). Push to aom-studio triggers deploy.
 - Task pipeline: after each call, the transcript is summarized by Claude Haiku (voice-summary.js) and turned into task rows. Live workers run in fresh tmux sessions spawned by scripts/task-runner.sh. One repo lock per session.
 - Agents run in fresh tmux sessions with full Claude Code access
@@ -267,22 +294,22 @@ function applyCors(req, res) {
   res.setHeader('Cache-Control', 'private, no-store');
 }
 
-const supaHeaders = () => ({
-  apikey: SUPABASE_KEY,
-  Authorization: `Bearer ${SUPABASE_KEY}`,
-  'Content-Type': 'application/json',
-});
-
+// The agent's persona from the Convex agents table. Field names are mapped to
+// the shape the prompt builder below has always read (display_name,
+// description, personality, voice_style). instructions is the agent's own
+// system text and stands in for personality; there is no separate voice field.
 async function getAgentIdentity(slug) {
-  if (!slug || !SUPABASE_URL || !SUPABASE_KEY) return null;
+  if (!slug) return null;
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/agents?slug=eq.${encodeURIComponent(slug)}&limit=1&select=display_name,description,personality,voice_style`,
-      { headers: supaHeaders() }
-    );
-    if (!res.ok) return null;
-    const rows = await res.json();
-    return Array.isArray(rows) ? rows[0] : null;
+    const rows = await convexQuery('agents:list', {});
+    const row = (Array.isArray(rows) ? rows : []).find(a => a.slug === slug);
+    if (!row) return null;
+    return {
+      display_name: row.title || slug,
+      description: row.subtitle || '',
+      personality: row.instructions || null,
+      voice_style: null,
+    };
   } catch { return null; }
 }
 
@@ -303,27 +330,30 @@ async function getAgentIdentity(slug) {
 // user_name comes along so each human line can be attributed to whoever
 // actually said it instead of a bare "user:".
 async function getRecentMessages(agentSlug, clientId, limit = 15) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  const roomId = agentRoomId(clientId, agentSlug);
+  if (!roomId) return [];
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(agentSlug)}&client_id=eq.${encodeURIComponent(clientId)}&order=timestamp.desc&limit=${limit}&select=role,text,timestamp,user_name`,
-      { headers: supaHeaders() }
-    );
-    if (!res.ok) return [];
-    const rows = await res.json();
-    return Array.isArray(rows) ? rows.reverse() : [];
+    const rows = await convexQuery('messages:getThread', { roomId, limit });
+    // getThread is already chronological. Map to the shape the prompt reads.
+    return (Array.isArray(rows) ? rows : []).map(m => ({
+      role: m.role || (m.agentSlug ? 'assistant' : 'user'),
+      text: m.text,
+      timestamp: m.createdAt,
+      user_name: m.userName || null,
+    }));
   } catch { return []; }
 }
 
+const OPEN_TASK_STATUSES = ['queued', 'running', 'building', 'failed', 'needs_input', 'blocked'];
+
 async function getTasks(clientId, limit = 10) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/tasks?client_id=eq.${encodeURIComponent(clientId)}&status=neq.done&order=created_at.desc&limit=${limit}&select=title,status,agent,created_at`,
-      { headers: supaHeaders() }
-    );
-    if (!res.ok) return [];
-    const rows = await res.json();
+    const rows = await convexQuery('tasks:find', {
+      client_id: clientId,
+      status_in: OPEN_TASK_STATUSES,
+      order: 'created_at.desc',
+      limit,
+    });
     return Array.isArray(rows) ? rows : [];
   } catch { return []; }
 }
@@ -352,58 +382,61 @@ async function getAgentTape(slug, clientId = 'aom', { allowLocalTape = false } =
         const data = await res.json();
         if (data?.tape) return data.tape;
       }
-    } catch { /* fall through to Supabase */ }
+    } catch { /* fall through to the Convex mini-tape */ }
   }
-  // Fallback: build a mini-tape from recent task completions in Supabase (scoped by client_id)
-  if (!SUPABASE_URL || !SUPABASE_KEY) return '';
+  // Fallback: build a mini-tape from this agent's recent task notifications in
+  // the world (messages:listSince, source=task-notification). A shared room is
+  // not a world, so it gets no tape.
+  if (!clientId || String(clientId).startsWith('shared:')) return '';
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?agent=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientId)}&source=eq.task-notification&order=timestamp.desc&limit=5&select=text,timestamp`,
-      { headers: supaHeaders() }
-    );
-    if (!res.ok) return '';
-    const rows = await res.json();
+    const rows = await convexQuery('messages:listSince', {
+      worldSlug: clientId,
+      since: Date.now() - 30 * 24 * 60 * 60 * 1000,
+      agentSlug: slug,
+      source: 'task-notification',
+      limit: 5,
+    });
     if (!Array.isArray(rows) || rows.length === 0) return '';
-    return 'Recent task notifications:\n' + rows.reverse().map(r => `- ${r.text}`).join('\n');
+    // listSince is newest first; the tape reads oldest first.
+    return 'Recent task notifications:\n' + rows.slice().reverse().map(r => `- ${r.text}`).join('\n');
   } catch { return ''; }
 }
 
 async function getRecentCompleted(clientId, limit = 5) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/tasks?client_id=eq.${encodeURIComponent(clientId)}&status=eq.done&order=completed_at.desc&limit=${limit}&select=title,qa_score,completed_at,agent_identity`,
-      { headers: supaHeaders() }
-    );
-    if (!res.ok) return [];
-    const rows = await res.json();
+    const rows = await convexQuery('tasks:find', {
+      client_id: clientId,
+      status: 'done',
+      order: 'completed_at.desc.nullslast',
+      limit,
+    });
     return Array.isArray(rows) ? rows : [];
   } catch { return []; }
 }
 
+// A shared room belongs to no world, so it gets the shared roster (no world id).
 async function getAgentStatuses(clientId) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/agent_status?client_id=eq.${encodeURIComponent(clientId)}&select=slug,name,type,status,current_task,updated_at`,
-      { headers: supaHeaders() }
-    );
-    if (!res.ok) return [];
-    const rows = await res.json();
-    return Array.isArray(rows) ? rows : [];
+    const args = clientId && !String(clientId).startsWith('shared:') ? { worldId: clientId } : {};
+    const rows = await convexQuery('agents:listStatus', args);
+    return (Array.isArray(rows) ? rows : []).map(r => ({
+      slug: r.slug,
+      name: r.title || r.slug,
+      type: 'agent',
+      status: r.status || 'idle',
+      current_task: r.currentTask || null,
+      updated_at: r.updatedAt || null,
+    }));
   } catch { return []; }
 }
 
 async function getActiveProjects(clientId) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  if (!clientId || String(clientId).startsWith('shared:')) return [];
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/projects?client_id=eq.${encodeURIComponent(clientId)}&is_active=eq.true&select=slug,name&order=name.asc`,
-      { headers: supaHeaders() }
-    );
-    if (!res.ok) return [];
-    const rows = await res.json();
-    return Array.isArray(rows) ? rows : [];
+    const rows = await convexQuery('projects:list', { worldSlug: clientId, activeOnly: true });
+    return (Array.isArray(rows) ? rows : [])
+      .map(p => ({ slug: p.slug, name: p.name }))
+      .sort((a, b) => String(a.name).localeCompare(String(b.name)));
   } catch { return []; }
 }
 
@@ -507,8 +540,8 @@ export default async function handler(req, res) {
         error: 'sign in required — voice sessions are issued to verified Corner sessions only',
       });
     }
-    // Anything else is the TENANT check failing on its own (RPC unavailable,
-    // Supabase misconfigured, a malformed tenant string). Fail open on
+    // Anything else is the TENANT check failing on its own (Convex unreachable,
+    // a malformed tenant string). Fail open on
     // availability, never on the credential: we still need a verified session,
     // so re-resolve the caller and serve a context-free call only if that
     // succeeds.

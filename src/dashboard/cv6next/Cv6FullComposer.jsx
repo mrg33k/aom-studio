@@ -17,15 +17,12 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { CornerNavProvider } from '../CornerContext.jsx';
-import { supabase } from '../lib/supabase.js';
-import { demoFixtureActive } from '../lib/fixtureClient.js';
-import { convexPlaneActive } from './data/convexClient.js';
+import { getViewer, hasSession, onSessionChange } from '../lib/convex.js';
+import { sendRoomMessage } from './WorkersShell.jsx';
 
-// Real local no-Supabase mode is read-only; explicit ?demo= fixtures keep the live
-// composer so the send path stays browser-testable (Playwright owns the POSTs).
-// The Convex plane (?convex=1) is writable without Supabase: sends go straight
-// to messages:send (corner:convex-multi-agent).
-const composerLive = () => !!supabase || demoFixtureActive() || convexPlaneActive();
+// corner:retire-supabase (2026-09-03): Convex is the only plane and it is always
+// writable (sends go straight to messages:send), so the composer is always live.
+const composerLive = () => true;
 import { authFetch } from '../lib/authFetch.js';
 import { readRoutedHere, acceptRoutedHere } from './data/routedHere.js';
 import {
@@ -114,14 +111,27 @@ const SEND_ERROR_COPY = {
 function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agents = [], roomOptions = [], onOpenFiles, onClearRoom, replyTo: controlledReplyTo, onReplyToChange }) {
   // CornerCV6 is NOT mounted under the CV4 Corner context providers (it uses
   // useHome/useDataPipe standalone), so we can't read useCornerAuth/Data here —
-  // worldId + agents come in as props and the user comes straight from supabase.
+  // worldId + agents come in as props and the user comes from the Convex session
+  // (users:viewer). The shape keeps the old `id` / `email` / `user_metadata` keys
+  // because useChatSettings and the CV4 hooks read them.
   const [currentUser, setCurrentUser] = useState(null);
   useEffect(() => {
     let alive = true;
-    if (supabase?.auth?.getUser) {
-      supabase.auth.getUser().then(({ data }) => { if (alive) setCurrentUser(data?.user || null); }).catch(() => {});
-    }
-    return () => { alive = false; };
+    const read = () => {
+      if (!hasSession()) { if (alive) setCurrentUser(null); return; }
+      getViewer().then((viewer) => {
+        if (!alive) return;
+        setCurrentUser(viewer ? {
+          ...viewer,
+          id: String(viewer.userId || ''),
+          email: viewer.email || '',
+          user_metadata: { full_name: viewer.name || '', name: viewer.name || '', world: viewer.worldSlug || '' },
+        } : null);
+      }).catch(() => {});
+    };
+    read();
+    const off = onSessionChange(read);
+    return () => { alive = false; off(); };
   }, []);
 
   const { selectedAgent, selectedProject } = useMemo(() => mapRoom(room, agents), [room, agents]);
@@ -245,8 +255,8 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   //
   // corner:voice-chat 2026-07-27 — two attribution defects closed here:
   //
-  //   * THE AUTHOR RIDES ALONG. userIdentity is derived from the live Supabase
-  //     session a few lines up, and this path dropped it — so every row it wrote
+  //   * THE AUTHOR RIDES ALONG. The author is the signed-in person from the
+  //     Convex session (sendRoomMessage attaches it), and this path dropped it — so every row it wrote
   //     (voice turns, generated images) landed with a null author and downstream
   //     defaults filled in "Patrik". A human turn now carries the real person.
   //     An AGENT turn deliberately carries none: stamping the caller onto the
@@ -255,30 +265,36 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   //   * THE CALLER'S SOURCE WINS. `source` was pinned to 'corner-dashboard' and
   //     the caller's { source: 'voice' } was buried inside metadata, so spoken
   //     messages were indistinguishable from typed ones in the permanent record
-  //     — and, because 'corner-dashboard' is on supabase-listener's executable
-  //     allowlist and 'voice' is not, every mid-call fragment was also being
+  //     — and, because 'corner-dashboard' was on the old listener's executable
+  //     allowlist and 'voice' was not, every mid-call fragment was also being
   //     re-fired at the agent as fresh user input. The other two voice hosts
   //     (cv3 thread + project chat) have always written source:'voice'; this
   //     brings CV6 in line with them.
+  //
+  // corner:retire-supabase (2026-09-03): the row goes through messages:send
+  // (sendRoomMessage), keyed to the same room the thread reads. A human turn
+  // carries the signed-in person; an agent turn names the agent instead.
   const postToRoom = useCallback((text, role, options) => {
     if (!worldId || !room) return Promise.resolve();
     const { source: sourceOverride, agent: agentOverride, ...rest } = options || {};
     const source = sourceOverride || 'corner-dashboard';
     const extraMeta = Object.keys(rest).length ? rest : null;
-    const author = role === 'user' && userIdentity.user_id
-      ? { user_id: userIdentity.user_id, ...(userIdentity.user_name ? { user_name: userIdentity.user_name } : {}) }
-      : {};
-    const base = { client_id: worldId, text, role, source, ...author };
     const roomAgent = agentOverride || dispatchAgent;
-    const payload = room.isMission
-      ? { ...base, agent: roomAgent, project: room.projectSlug, metadata: { mission_slug: room.missionSlug || room.id, ...(extraMeta || {}) } }
+    const target = room.isMission
+      ? { project: room.projectSlug, missionSlug: room.missionSlug || room.id }
       : room.isProject
-        ? { ...base, agent: roomAgent, project: room.id, ...(extraMeta ? { metadata: extraMeta } : {}) }
-        : { ...base, agent: room.id, ...(extraMeta ? { metadata: extraMeta } : {}) };
-    return authFetch('/api/dashboard/supabase-messages', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+        ? { project: room.id }
+        : { agent: room.id };
+    return sendRoomMessage({
+      worldId,
+      ...target,
+      text,
+      role,
+      source,
+      ...(role === 'assistant' ? { agentSlug: roomAgent } : {}),
+      ...(extraMeta ? { metadata: extraMeta } : {}),
     });
-  }, [worldId, room, userIdentity, dispatchAgent]);
+  }, [worldId, room, dispatchAgent]);
 
   const selectRoomAgent = useCallback(async (slug) => {
     if (!worldId || !agentPreferenceKey || agentSaving) return false;

@@ -1,15 +1,14 @@
 // DashboardSettingsInvites -- R22a. Owner-facing invite manager. Lives at
-// /dashboard/settings/invites. POSTs to the already-live
-// /api/dashboard/invite-create. Renders a minimal list of outstanding
-// invites scoped to the viewer's tenant.
+// /dashboard/settings/invites. Creates invites with Convex invites:create and
+// lists them with invites:list (corner:retire-supabase R3), scoped to the
+// viewer's world.
 //
 // R22b (EA-as-onboarder persona seeded at invite-accept) is a server-side
 // change in the accept-invite handler; R22c (welcome state machine skip +
 // resume) lives in DashboardWelcome.jsx. This page is R22a's slice.
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../dashboard/lib/supabase.js'
-import { authFetch } from '../dashboard/lib/authFetch.js'
+import { convexQuery, convexMutation } from '../dashboard/lib/convex.js'
 import { getClientId } from '../dashboard/lib/clientConfig.js'
 
 const C = {
@@ -55,13 +54,19 @@ export default function DashboardSettingsInvites() {
 
   const refresh = useCallback(async () => {
     try {
-      const { data } = await supabase
-        .from('invites')
-        .select('id,email,world_slug,role,expires_at,accepted_at,created_at')
-        .eq('world_slug', clientId)
-        .order('created_at', { ascending: false })
-        .limit(50)
-      setInvites(Array.isArray(data) ? data : [])
+      // invites:list drops the token hash and adds `expired`; rows carry
+      // _id, email, role, expiresAt, consumedAt, createdAt (ms since epoch).
+      const rows = await convexQuery('invites:list', { worldId: clientId, includeConsumed: true })
+      const shaped = (Array.isArray(rows) ? rows : []).slice(0, 50).map((r) => ({
+        id: String(r._id),
+        email: r.email,
+        world_slug: clientId,
+        role: r.role,
+        expires_at: r.expiresAt ? new Date(r.expiresAt).toISOString() : null,
+        accepted_at: r.consumedAt ? new Date(r.consumedAt).toISOString() : null,
+        created_at: r.createdAt ? new Date(r.createdAt).toISOString() : null,
+      }))
+      setInvites(shaped)
     } catch (err) {
       setError(err?.message || 'Failed to load invites')
     }
@@ -77,23 +82,19 @@ export default function DashboardSettingsInvites() {
     setInviteUrl('')
     setInviteToken('')
     try {
-      // authFetch, not fetch: invite-create runs verifyTenant on world_slug and
-      // records invited_by from the JWT. Any member of the world can still
-      // invite at 'member' role — the admin ceiling only applies to
-      // owner/admin invites — so this stays open to Ash and Courtney.
-      const resp = await authFetch('/api/dashboard/invite-create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email.trim(),
-          world_slug: clientId,
-          role: 'member',
-        }),
+      // invites:create runs with the signed-in person's token; the server
+      // records createdBy from it and hands back the one-time link. The
+      // plaintext token is shown once here and never stored in the browser
+      // beyond this panel.
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : undefined
+      const data = await convexMutation('invites:create', {
+        worldId: clientId,
+        email: email.trim(),
+        role: 'member',
+        ...(baseUrl ? { baseUrl } : {}),
       })
-      const data = await resp.json().catch(() => ({}))
-      if (!resp.ok || data.error) throw new Error(data.error || `HTTP ${resp.status}`)
-      setInviteUrl(data.invite_url || '')
-      setInviteToken(data.token || '')
+      setInviteUrl(data?.url || '')
+      setInviteToken(data?.token || '')
       setEmail('')
       refresh()
     } catch (err) {
@@ -133,8 +134,8 @@ export default function DashboardSettingsInvites() {
           Invites
         </h1>
         <p style={{ color: C.muted, fontSize: 14, margin: '0 0 28px' }}>
-          Send an email-scoped, single-use invite. Each invite is good for 48
-          hours and lets the recipient join this world.
+          Send an email-scoped, single-use invite. Each invite is good for 14
+          days and lets the recipient join this world.
         </p>
 
         <form

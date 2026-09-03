@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { titleForAgent, AGENT_TITLES } from '../cv6next/data/agentTitles.js';
-import { authFetch } from '../lib/authFetch';
+import { convexQuery, convexMutation, convexWorldId } from '../lib/convex.js';
+import { convexViewerIdentity } from '../cv6next/data/convexIdentity.js';
 
 /**
  * P6 — AssignButton
@@ -22,20 +23,17 @@ import { authFetch } from '../lib/authFetch';
  *   disabled?: boolean (render greyed out)
  *
  * Agent picker:
- *   - Fetches real agents from the live data stream (via useDataPipe or local agents list if provided).
+ *   - Loads the roster from agents:listStatus on Convex (or the agents list the caller passes in).
  *   - Shows each agent as { slug, title: titleForAgent(slug), status }.
  *   - On click, shows a CONFIRM step, then REAL dispatch:
- *       POST /api/dashboard/supabase-messages { agent, text, role:'user', source }
+ *       messages:send { roomId: "<world>:agent:<slug>", text, role:'user', source }
  *       -> the ask lands in the agent's room thread (the same write path the chat
- *          composer uses); the bridge picks it up and the agent works it. Persisted
- *          forever in the messages table. Per-surface state (e.g. a bug's owner)
+ *          composer uses); the dispatcher picks it up and the agent works it. Persisted
+ *          in the Convex messages table. Per-surface state (e.g. a bug's owner)
  *          persists through the onAssigned hook.
- *     (Was HELD-C until 2026-07-06: it logged to console and simulated success; and the
- *     agent list came from /active-agents, whose backing table active_processes does not
- *     exist -- the picker was empty everywhere. Now the roster loads from the same
- *     supabase-status source Home's agent rooms use. A tasks-table write was probed and
- *     rejected: the live tasks_status_check forbids 'todo', and repo-less 'queued' rows
- *     get auto-failed by task-runner.sh -- the room message IS the real dispatch path.)
+ *     (corner:retire-supabase, 2026-09-03: the roster is agents:listStatus on Convex and
+ *     the dispatch is messages:send into the agent's room. The room message IS the
+ *     dispatch path; nothing is written to a tasks table from here.)
  *
  * Picker UI:
  *   - Bottom sheet on mobile (390px).
@@ -43,6 +41,37 @@ import { authFetch } from '../lib/authFetch';
  *   - Safe-area-inset padding on mobile.
  *   - Handles loading/empty/error states.
  */
+
+// The Convex room key a dispatch lands in: "<world>:agent:<slug>",
+// "<world>:project:<slug>" or "<world>:mission:<slug>". Rail entries that
+// already carry the backend key (convexKey) win.
+function roomKeyForTarget(worldId, target) {
+  const world = convexWorldId(worldId || 'aom');
+  if (target?.convexKey) return target.convexKey;
+  if (target?.kind === 'mission') return `${world}:mission:${String(target.missionSlug || target.slug || '')}`;
+  if (target?.kind === 'project') return `${world}:project:${String(target.projectSlug || target.slug || '')}`;
+  if (target?.kind === 'agent' && target.slug) return `${world}:agent:${target.slug}`;
+  if (target?.projectSlug) return `${world}:project:${target.projectSlug}`;
+  return `${world}:agent:corner`;
+}
+
+// One write path for both pickers: messages:send on Convex, signed as the
+// viewer so the row shows who assigned it. Returns the new message id.
+async function sendRoomMessage({ roomKey, world, text, metadata }) {
+  const viewer = await convexViewerIdentity();
+  const id = await convexMutation('messages:send', {
+    roomId: roomKey,
+    text,
+    role: 'user',
+    clientId: convexWorldId(world || 'aom'),
+    source: 'corner-dashboard',
+    userId: viewer.userId,
+    userEmail: viewer.userEmail,
+    userName: viewer.userName,
+    metadata,
+  });
+  return id ? String(id) : null;
+}
 
 function AgentPickerPopover({
   agents = [],
@@ -615,9 +644,8 @@ function LegacyAssignButton({
   const fetchGuard = useRef(false);
 
   // Load the agent roster when the picker opens and the caller didn't hand one in.
-  // Source is /api/dashboard/supabase-status (the agent_status roster) — the SAME
-  // source Home's agent rooms use. (The old /active-agents source read active_processes,
-  // which does not exist in production, so the list was permanently empty.)
+  // Source is agents:listStatus on Convex (the shared team roster plus this world's
+  // own agents, each with its idle/working status).
   //
   // Deps are STABLE PRIMITIVES ONLY (showPicker, worldId, retryNonce). The previous
   // version listed the `agents` prop, whose default value `[]` is a fresh array on every
@@ -639,37 +667,30 @@ function LegacyAssignButton({
     fetchGuard.current = true;
 
     let cancelled = false;
-    let activeCtrl = null;
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
     const attemptOnce = async () => {
-      const ctrl = new AbortController();
-      activeCtrl = ctrl;
-      const timer = setTimeout(() => ctrl.abort(), 6000); // 6s per-attempt ceiling
-      try {
-        const r = await authFetch(
-          `/api/dashboard/supabase-status?client=${encodeURIComponent(worldId || 'aom')}`,
-          { signal: ctrl.signal },
-        );
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const data = await r.json();
-        const roster = Array.isArray(data.agents) ? data.agents : [];
-        // Curate to the titled working roster (same doctrine as Home). Unknown slugs
-        // only show when a world has NO titled agents at all.
-        const order = Object.keys(AGENT_TITLES);
-        const titled = roster.filter((a) => AGENT_TITLES[String(a.slug || '').toLowerCase()]);
-        return (titled.length ? titled : roster)
-          .map((a) => ({
-            slug: a.slug,
-            status: String(a.status || '').toLowerCase() === 'working' ? 'live' : 'ready',
-          }))
-          .sort((x, y) => {
-            const ix = order.indexOf(x.slug); const iy = order.indexOf(y.slug);
-            return (ix === -1 ? 99 : ix) - (iy === -1 ? 99 : iy);
-          });
-      } finally {
-        clearTimeout(timer);
-      }
+      // 6s per-attempt ceiling; the Convex call has its own timeout too.
+      const data = await convexQuery(
+        'agents:listStatus',
+        { worldId: convexWorldId(worldId || 'aom') },
+        { timeoutMs: 6000 },
+      );
+      if (cancelled) return [];
+      const roster = Array.isArray(data) ? data : [];
+      // Curate to the titled working roster (same doctrine as Home). Unknown slugs
+      // only show when a world has NO titled agents at all.
+      const order = Object.keys(AGENT_TITLES);
+      const titled = roster.filter((a) => AGENT_TITLES[String(a.slug || '').toLowerCase()]);
+      return (titled.length ? titled : roster)
+        .map((a) => ({
+          slug: a.slug,
+          status: String(a.status || '').toLowerCase() === 'working' ? 'live' : 'ready',
+        }))
+        .sort((x, y) => {
+          const ix = order.indexOf(x.slug); const iy = order.indexOf(y.slug);
+          return (ix === -1 ? 99 : ix) - (iy === -1 ? 99 : iy);
+        });
     };
 
     const run = async () => {
@@ -701,7 +722,6 @@ function LegacyAssignButton({
     return () => {
       cancelled = true;
       fetchGuard.current = false;
-      if (activeCtrl) activeCtrl.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showPicker, worldId, retryNonce]);
@@ -735,37 +755,25 @@ function LegacyAssignButton({
     ].filter(Boolean).join('\n');
 
     try {
-      // Drop the ask in the agent's room thread — the same write path the chat
-      // composer uses. The bridge picks it up, the agent works it, and the row is
-      // the platform's eternal record of the assignment.
-      const msgResp = await authFetch('/api/dashboard/supabase-messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agent: slug,
-          text: body,
-          role: 'user',
-          source: 'corner-dashboard',
-          client_id: world,
-          metadata: {
-            assign: { type: artifactType, id: artifactId, project: projectSlug || null },
-          },
-        }),
+      // Drop the ask in the agent's room thread (messages:send on Convex), the same
+      // write path the chat composer uses. The dispatcher picks it up, the agent
+      // works it, and the row is the platform's record of the assignment.
+      const messageId = await sendRoomMessage({
+        roomKey: `${convexWorldId(world)}:agent:${slug}`,
+        world,
+        text: body,
+        metadata: {
+          assign: { type: artifactType, id: artifactId, project: projectSlug || null },
+        },
       });
-
-      if (!msgResp?.ok) {
-        throw new Error(`assign dispatch failed (message ${msgResp?.status || '?'})`);
-      }
 
       // Per-surface persistence (e.g. Tracker stamps the bug's assignee).
       if (typeof onAssigned === 'function') {
         try { await onAssigned(selectedAgent); } catch (e) { console.error('[AssignButton] onAssigned hook failed:', e); }
       }
 
-      let msg = null;
-      try { msg = (await msgResp.json())?.message || null; } catch { /* non-JSON */ }
       onSuccess({
-        id: msg?.id || `assign-${Date.now()}`,
+        id: messageId || `assign-${Date.now()}`,
         title: `Assign: ${label}`,
         status: 'sent',
         agent: slug,
@@ -872,23 +880,19 @@ function DestinationDispatch({
       details ? `\nContext:\n${details}` : '',
       artifactId ? `\n(ref: ${artifactType}:${artifactId})` : '',
     ].filter(Boolean).join('\n');
-    const payload = {
-      client_id: worldId || 'aom', role: 'user', source: 'corner-dashboard', text: body,
-      agent: target.kind === 'agent' ? target.slug : 'corner',
-      ...(target.projectSlug ? { project: target.projectSlug } : {}),
-      metadata: {
-        assign: { type: artifactType, id: artifactId, project: target.projectSlug || null, destination: target.kind },
-        ...(target.kind === 'mission' ? { mission_slug: String(target.missionSlug || target.slug || '').split(':').pop() } : {}),
-      },
+    const metadata = {
+      assign: { type: artifactType, id: artifactId, project: target.projectSlug || null, destination: target.kind },
+      ...(target.kind === 'mission' ? { mission_slug: String(target.missionSlug || target.slug || '').split(':').pop() } : {}),
     };
     try {
-      const response = await authFetch('/api/dashboard/supabase-messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      const messageId = await sendRoomMessage({
+        roomKey: roomKeyForTarget(worldId || 'aom', target),
+        world: worldId || 'aom',
+        text: body,
+        metadata,
       });
-      if (!response?.ok) throw new Error(`dispatch failed (${response?.status || '?'})`);
       if (typeof onAssigned === 'function') await onAssigned(target);
-      const data = await response.json().catch(() => ({}));
-      onSuccess({ id: data?.message?.id || `dispatch-${Date.now()}`, status: 'sent', target, room: target.room || null });
+      onSuccess({ id: messageId || `dispatch-${Date.now()}`, status: 'sent', target, room: target.room || null });
     } catch (dispatchError) {
       const message = dispatchError?.message || 'Dispatch failed. Nothing was sent.';
       setError(message); onError(dispatchError);

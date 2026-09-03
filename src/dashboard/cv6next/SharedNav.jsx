@@ -6,7 +6,7 @@
 // Drop-in rule: every page mounts this one nav. If a screen hand-rolls its own
 // tool list, it's wrong -- point it back here.
 import React, { useEffect } from 'react';
-import { supabase } from '../lib/supabase.js';
+import { getViewer, hasSession, onSessionChange } from '../lib/convex.js';
 import { AirPodsHeaderButton } from './airpods/AirPodsProvider.jsx';
 
 // --- the ONE ordered tool list both forms render -------------------------------
@@ -89,16 +89,17 @@ function CurrentUserProfileButton({ fallbackInitials = 'P', onOpenProfile }) {
   const [identity, setIdentity] = React.useState({ initials: fallbackInitials, color: '#2563EB', image: '' });
 
   useEffect(() => {
-    const applyUser = (user) => {
-      if (!user) return;
-      const metadata = user.user_metadata || {};
-      const name = metadata.full_name || metadata.display_name || metadata.name || user.email?.split('@')[0] || fallbackInitials;
+    let alive = true;
+    // The signed-in person from users:viewer (name, initials, color, avatar).
+    const applyViewer = (viewer) => {
+      if (!alive || !viewer) return;
+      const name = viewer.name || viewer.email?.split('@')[0] || fallbackInitials;
       const parts = String(name).trim().split(/\s+/).filter(Boolean);
       const derived = `${parts[0]?.[0] || ''}${parts[1]?.[0] || ''}`.toUpperCase() || fallbackInitials;
       setIdentity({
-        initials: metadata.avatar_initials || derived,
-        color: /^#[0-9a-f]{6}$/i.test(String(metadata.avatar_color || '')) ? metadata.avatar_color : '#2563EB',
-        image: metadata.avatar_url || '',
+        initials: viewer.initials || derived,
+        color: /^#[0-9a-f]{6}$/i.test(String(viewer.color || '')) ? viewer.color : '#2563EB',
+        image: viewer.avatarUrl || '',
       });
     };
     const onIdentity = (event) => setIdentity({
@@ -106,11 +107,14 @@ function CurrentUserProfileButton({ fallbackInitials = 'P', onOpenProfile }) {
       color: event.detail?.color || '#2563EB',
       image: event.detail?.avatar_url || '',
     });
-    supabase?.auth.getSession().then(({ data }) => applyUser(data?.session?.user)).catch(() => {});
-    const { data: authSub } = supabase?.auth.onAuthStateChange?.((_event, session) => applyUser(session?.user)) || {};
+    const readViewer = () => { if (hasSession()) getViewer().then(applyViewer).catch(() => {}); };
+    readViewer();
+    // Sign in, sign out and token refresh all re-read the identity.
+    const offSession = onSessionChange(readViewer);
     window.addEventListener('cv6:profile-identity-changed', onIdentity);
     return () => {
-      authSub?.subscription?.unsubscribe?.();
+      alive = false;
+      offSession();
       window.removeEventListener('cv6:profile-identity-changed', onIdentity);
     };
   }, [fallbackInitials]);

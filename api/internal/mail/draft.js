@@ -2,7 +2,8 @@
 //
 // Internal-auth endpoint for terminal agents (Elon, Studio, tenant EAs).
 // Manages Gmail DRAFTS — list, get, delete, send. No user JWT required;
-// auth via X-Internal-Key matched against SUPABASE_SERVICE_ROLE_KEY.
+// auth via X-Internal-Key matched against CORNER_INTERNAL_KEY
+// (corner:retire-supabase, 2026-09-03: was the Supabase service role key).
 //
 // Why a separate endpoint from /modify: drafts are UNSENT, agent/user-composed
 // content, not received mail. The "archive only, never delete" hard rule
@@ -24,7 +25,7 @@
 
 import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch } from '../../_lib/gmailClient.js'
 
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const INTERNAL_KEY = process.env.CORNER_INTERNAL_KEY
 
 const ALLOWED_ACTIONS = new Set(['list', 'get', 'delete', 'send'])
 
@@ -42,7 +43,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
   const internalKey = (req.headers['x-internal-key'] || '').trim()
-  if (!SUPABASE_SERVICE_ROLE_KEY || !internalKey || internalKey !== SUPABASE_SERVICE_ROLE_KEY) {
+  if (!INTERNAL_KEY || !internalKey || internalKey !== INTERNAL_KEY) {
     return res.status(401).json({ error: 'unauthorized' })
   }
 

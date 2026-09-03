@@ -352,95 +352,19 @@ export function deliveryForRow(record) {
 }
 
 /**
- * Look up the devices signed into this row's world and push the reply to them.
- * Resolves rather than rejects on every failure path — the caller is the chat
- * write path and MUST NOT be able to fail because a phone was unreachable.
+ * Fan-out from a message row.
+ *
+ * corner:retire-supabase R3: this no longer sends anything. Device tokens live
+ * in the Convex `devices` table and the push for every new message row is
+ * scheduled on the deployment itself (messages:send schedules
+ * notify:onMessage, which reads devices:targetsForMessage and prunes dead
+ * tokens with devices:prune). Sending from here too would buzz every phone
+ * twice. The function stays exported, and resolves rather than rejects, so
+ * the chat write path that awaits it is unchanged. sendApnsBatch above is
+ * still the sender api/push/notify.js uses for explicit pushes.
  */
-export async function notifyDevicesForMessageRow({ supabaseUrl, headers, row }) {
-  try {
-    if (!supabaseUrl || !headers || !row) return { ok: true, skipped: 'no context' };
-    if (!isPushableAssistantRow(row)) return { ok: true, skipped: 'not a user-facing agent message' };
-
-    // client_id is the tenant column every dashboard query filters on and the one
-    // notify.js already trusts; messages.world_id is under-written and defaulted.
-    // No world resolved => notify NOBODY. Under-notifying is always safer than
-    // putting one world's room name on another world's lock screen.
-    const world = row.client_id || row.world_id || null;
-    if (!world) return { ok: true, skipped: 'no world resolved' };
-
-    if (!apnsConfigured()) {
-      console.log('[apns] fan-out skipped for room %s — APNs not configured', row.room_id || world);
-      return { ok: true, skipped: 'not configured' };
-    }
-
-    const url = `${supabaseUrl}/rest/v1/device_tokens?select=token,environment&world_id=eq.${encodeURIComponent(world)}&limit=200`;
-    const res = await fetch(url, { headers });
-    if (!res.ok) {
-      console.warn('[apns] device_tokens lookup failed (%s) for world %s', res.status, world);
-      return { ok: false, skipped: 'lookup failed' };
-    }
-    const devices = await res.json().catch(() => []);
-    if (!Array.isArray(devices) || !devices.length) return { ok: true, sent: 0, skipped: 'no devices' };
-
-    const delivery = deliveryForRow(row);
-
-    // Badge truth (row 40): count unread for world via recent-unread view when available, else 1
-    let badge = 1;
-    try {
-      const cntUrl = `${supabaseUrl}/rest/v1/messages?select=id&world_id=eq.${encodeURIComponent(world)}&is_read=eq.false&limit=200`;
-      const cRes = await fetch(cntUrl, { headers });
-      if (cRes.ok) {
-        const rows = await cRes.json().catch(() => []);
-        if (Array.isArray(rows)) badge = Math.min(99, rows.length || 1);
-      }
-    } catch {}
-    const result = await sendApnsBatch(devices, {
-      title: titleForRow(row),
-      body: previewForRow(row),
-      badge,
-      // One banner per room, replaced in place — a room that produced six replies
-      // while you were away is one notification, not six.
-      collapseId: row.room_id || undefined,
-      threadId: row.room_id || undefined,
-      // A single-file hand-off gets the delivery actions; every OTHER reply now
-      // carries CORNER_REPLY (R18 N6) — the client's inline-reply category. An
-      // older build that never registered the name degrades to the plain banner
-      // it always had; nothing else changes.
-      category: delivery ? 'CORNER_DELIVERY' : 'CORNER_REPLY',
-      data: {
-        room_id: row.room_id || null,
-        message_id: row.id || null,
-        agent: row.agent || null,
-        project: row.project || null,
-        mission_slug: (row.metadata && row.metadata.mission_slug) || null,
-        world_id: world,
-        // Deep link the native app routes on; `url` is the web equivalent so the
-        // same payload works if a browser client ever consumes it.
-        deep_link: row.room_id ? `corner://room/${encodeURIComponent(row.room_id)}` : 'corner://rooms',
-        url: '/dashboard',
-        // The file the actions act on. Ids only — 4.5.4 says a push must not carry the
-        // content itself, and the app fetches the real bytes on tap anyway.
-        ...(delivery ? {
-          file_url: delivery.url,
-          file_name: delivery.name,
-          file_source_path: delivery.sourcePath,
-          file_sha256: delivery.sha256,
-        } : {}),
-      },
-    });
-
-    // Apple said these installs are gone. Keeping them means retrying forever.
-    if (result.dead?.length) {
-      const list = result.dead.map((t) => `"${t}"`).join(',');
-      await fetch(`${supabaseUrl}/rest/v1/device_tokens?token=in.(${encodeURIComponent(list)})`, {
-        method: 'DELETE',
-        headers,
-      }).catch(() => {});
-      console.log('[apns] pruned %d dead device token(s)', result.dead.length);
-    }
-    return result;
-  } catch (err) {
-    console.warn('[apns] fan-out error (swallowed — chat write is unaffected):', err?.message || err);
-    return { ok: false, error: String(err?.message || err) };
-  }
+export async function notifyDevicesForMessageRow({ row } = {}) {
+  if (!row) return { ok: true, skipped: 'no context' };
+  if (!isPushableAssistantRow(row)) return { ok: true, skipped: 'not a user-facing agent message' };
+  return { ok: true, sent: 0, skipped: 'handled by convex notify:onMessage' };
 }

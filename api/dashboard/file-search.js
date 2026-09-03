@@ -1,11 +1,10 @@
 // GET /api/dashboard/file-search?world=<client_id>&q=<query>
 //
-// R68 (session 21) — surfaces MD files across every project in the home
-// search bar. Queries the events table for event_type='scaffold_file' rows
-// (R55 auto-surfaces MD writes into this table) and matches the query
-// against filename + content (case-insensitive). Cross-project hits return
-// with a project label so the home dashboard can render "#ambition-mechanical"
-// or similar.
+// R68 (session 21): surfaces MD files across every project in the home
+// search bar. Reads scaffold_file events (R55 auto-surfaces MD writes into the
+// ledger) and matches the query against filename + content (case-insensitive).
+// Cross-project hits return with a project label so the home dashboard can
+// render "#ambition-mechanical" or similar.
 //
 // Response shape:
 //   {
@@ -20,24 +19,84 @@
 //     }]
 //   }
 //
-// Limit 15 hits. Does not paginate — this is a search surface, not an index.
+// Limit 15 hits. Does not paginate; this is a search surface, not an index.
+//
+// corner:retire-supabase (2026-09-03): events:find on Convex, newest first,
+// text match done here. The ledger is append-only, so the newest row per
+// project + filename is the one that counts.
 
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+// ---------------------------------------------------------------------------
+// Convex is the only backend (corner:retire-supabase, 2026-09-03). The signed
+// in person's Convex Auth token arrives as Authorization: Bearer and the
+// deployment checks it in users:verifyToken. This block is repeated in each
+// route on purpose until a shared helper lands in api/_lib.
+// ---------------------------------------------------------------------------
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+async function convexCall(kind, path, args, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const r = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  });
+  if (!r.ok) throw new Error(`convex ${kind} ${path}: HTTP ${r.status}`);
+  const data = await r.json();
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex ${kind} ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`);
+  }
+  return data.value;
+}
+const convexQuery = (path, args, token) => convexCall('query', path, args, token);
+
+class AuthError extends Error {
+  constructor(message, status = 403) { super(message); this.name = 'AuthError'; this.status = status; }
+}
+
+function bearerToken(req) {
+  const auth = req.headers?.authorization || req.headers?.Authorization;
+  if (typeof auth === 'string' && /^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, '').trim() || null;
+  return null;
+}
+
+// Who is calling. Throws 401 when the request carries no valid session.
+async function requireCaller(req) {
+  const token = bearerToken(req);
+  if (!token) throw new AuthError('sign-in required', 401);
+  let who = null;
+  try { who = await convexQuery('users:verifyToken', {}, token); } catch { who = null; }
+  if (!who || !who.userId) throw new AuthError('invalid session', 401);
+  const world = who.world ? String(who.world).toLowerCase() : null;
+  let superAdmin = false;
+  try { superAdmin = !!(await convexQuery('worlds:isAdmin', { worldId: 'aom' }, token)); } catch { superAdmin = false; }
+  return { userId: who.userId, email: who.email || null, userName: who.name || null, world, worldId: who.worldId || null, isAdmin: !!who.isAdmin, superAdmin, token };
+}
+
+// May the caller act inside `tenant`? A world slug admits an aom admin
+// (Patrik) everywhere and any member of that world. "shared:<project>" admits
+// a world that holds the project or a grant on it.
+async function verifyTenant(tenant, req) {
+  const t = String(tenant || '').trim().toLowerCase();
+  if (!t) throw new AuthError('tenant required', 400);
+  const who = await requireCaller(req);
+  if (who.superAdmin) return { ok: true, tenant: t, ...who, isAdmin: true };
+  if (t.startsWith('shared:')) {
+    const slug = t.slice('shared:'.length);
+    const access = who.world ? await convexQuery('projects:hasAccess', { slug, worldId: who.world }, who.token).catch(() => null) : null;
+    if (access && access.ok) return { ok: true, tenant: t, ...who, isAdmin: false };
+  } else {
+    const m = await convexQuery('worlds:membership', { worldId: t }, who.token).catch(() => null);
+    if (m && m.role) return { ok: true, tenant: t, ...who, isAdmin: m.role === 'owner' || m.role === 'admin' };
+    if (who.world === t) return { ok: true, tenant: t, ...who };
+  }
+  throw new AuthError(`forbidden: caller world "${who.world || '(none)'}" cannot access "${t}"`, 403);
+}
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-_:]{0,64}$/i;
 const MAX_HITS = 15;
 const PREVIEW_RADIUS = 110; // chars before + after the first match
-
-async function supa(path) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-  });
-  if (!resp.ok) return [];
-  return resp.json().catch(() => []);
-}
+const SCAN_LIMIT = 1500; // newest scaffold rows scanned per search
 
 function parseAgent(agent) {
   // Agent key can be a plain project slug ('corner') or parent:child ('aom:aom-lut').
@@ -57,8 +116,8 @@ function buildPreview(content, qLower) {
   const start = Math.max(0, idx - PREVIEW_RADIUS);
   const end = Math.min(content.length, idx + qLower.length + PREVIEW_RADIUS);
   let slice = content.slice(start, end).replace(/\s+/g, ' ').trim();
-  if (start > 0) slice = '…' + slice;
-  if (end < content.length) slice = slice + '…';
+  if (start > 0) slice = '...' + slice;
+  if (end < content.length) slice = slice + '...';
   return slice;
 }
 
@@ -73,48 +132,43 @@ export default async function handler(req, res) {
 
   if (!SLUG_RE.test(world)) return res.status(400).json({ error: 'bad_world' });
 
-  let tenant;
+  let verified;
   try {
-    ({ tenant } = await verifyTenant(world, req));
+    verified = await verifyTenant(world, req);
   } catch (err) {
-    if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
+    if (err instanceof AuthError) return res.status(err.status).json({ error: err.message });
     throw err;
   }
+  const tenant = verified.tenant;
 
   if (qRaw.length < 2 || qRaw.length > 80) {
     return res.status(200).json({ q: qRaw, hits: [] });
   }
 
-  // PostgREST ilike filter on JSONB children is supported with `->>` operator.
-  // Filter filename OR content. Cap rows to a sane bound to keep the query
-  // fast — the ORDER BY timestamp.desc + limit 200 means the newest files
-  // win when there's overflow.
-  const ilikeQ = `*${qRaw.replace(/[\*%]/g, '')}*`;
-  const orClause = encodeURIComponent(
-    `payload->>filename.ilike.${ilikeQ},payload->>content.ilike.${ilikeQ}`
-  );
-
   try {
-    const rows = await supa(
-      `events?event_type=eq.scaffold_file&or=(${orClause})&order=timestamp.desc&limit=200&select=id,agent,payload,timestamp`
-    );
+    const rows = await convexQuery('events:find', {
+      event_type: 'scaffold_file',
+      order: 'desc',
+      limit: SCAN_LIMIT,
+    }, verified.token);
 
     const qLower = qRaw.toLowerCase();
     const hits = [];
-    for (const row of rows) {
+    const seen = new Set();
+    for (const row of (Array.isArray(rows) ? rows : [])) {
       if (hits.length >= MAX_HITS) break;
       const filename = row?.payload?.filename || '';
       const content = row?.payload?.content || '';
       const { project, parent } = parseAgent(row.agent);
       if (!filename || !project) continue;
-      // Tenant scope: writers tag payload.tenant_id (AOM-EA scripts hardcode
-      // 'aom' since the repo IS AOM's). Pre-tagging rows are treated as 'aom'
-      // — every existing scaffold_file row was authored from AOM-EA before the
-      // tagging change shipped. Cross-tenant search is blocked here.
+      // Newest row per project + filename wins; older versions are skipped.
+      const key = `${row.agent}::${filename}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      // Tenant scope: writers tag payload.tenant_id. Cross-tenant search is
+      // blocked here.
       const rowTenant = row?.payload?.tenant_id || '';
       if (rowTenant !== tenant) continue;
-      // Belt-and-suspenders: confirm a real text match (ilike is case-
-      // insensitive Postgres; we verify in JS too so the preview is accurate).
       const haystack = `${filename} ${content}`.toLowerCase();
       if (!haystack.includes(qLower)) continue;
       hits.push({

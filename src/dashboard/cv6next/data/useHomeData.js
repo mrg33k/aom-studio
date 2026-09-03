@@ -8,9 +8,10 @@
 // is not exposed), so we bind it to honest empties (no fabricated steps/bullets)
 // instead of leaving the design's sample text on screen. No fake data.
 
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { supabase } from '../../lib/supabase';
+import { useState, useEffect, useMemo } from 'react';
 import { authFetch } from '../../lib/authFetch';
+import { hasSession, convexMutation, convexWorldId } from '../../lib/convex.js';
+import { convexViewerIdentity } from './convexIdentity.js';
 import { useTenantContext } from '../../lib/tenantContext.jsx';
 import { useDataContext } from '../providers/DataContext.jsx';
 import { curateTitledAgents, titleForAgent } from './agentTitles.js';
@@ -18,8 +19,6 @@ import { normalizePreview } from './previewText.js';
 import { missionRecencyKey } from './roomKeys.js';
 import { isRoomActivityNoise, roomPreviewLine } from './presentationClean.js';
 import { fetchRoomActivity } from './roomActivity.js';
-import { prefetchThread } from './useRoomThread.js';
-import { convexPlaneActive } from './convexClient.js';
 import { refreshConvexRooms, useConvexRail } from './convexRooms.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
@@ -103,7 +102,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     return bare === 'bridge-smoke' || bare === 'daily-research' || bare.startsWith('lab-') || bare.startsWith('qa-') || bare.startsWith('smoke-') || bare.startsWith('proj-tool-') || bare.startsWith('loop-test-');
   };
   const filteredRooms = (projectRooms || []).filter((p) => !isInfra(p.slug));
-  // Generic archived/hidden gate: supabase-status already drops archived
+  // Generic archived/hidden gate: the status feed already drops archived
   // (is_active=false) + hidden rows from the rail, but recentMap is
   // message-driven (6000-row room-activity window) and would re-inject
   // them. This set is the canonical allow-list for recents.
@@ -425,11 +424,11 @@ export function useHome() {
   // `missionLabelClean` crash. Locked by tests/cv6-home-hook-order.test.mjs.
   const shaped = useMemo(() => {
     const base = shapeHome({ agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms, worldId });
-    // Convex plane: ONLY the room lists swap (agents/projects/recent/total) —
-    // catchUp/missionActivity and every other surface keep their Supabase shape.
-    // Readiness comes from the Convex rooms fetch, not the Supabase pipe (which
-    // may never resolve on a local no-Supabase build). A first-load failure is
-    // an error, while a later failure keeps the last verified directory visible.
+    // The room lists (agents/projects/recent/total) come from the Convex rail;
+    // catchUp/missionActivity keep the data-pipe shape. Readiness comes from the
+    // Convex rooms fetch, not the pipe (which may never resolve on a signed-out
+    // page). A first-load failure is an error, while a later failure keeps the
+    // last verified directory visible.
     if (!convexRail) return base;
     const canShowRooms = ['ready', 'refreshing', 'stale'].includes(convexRail.status);
     const cx = canShowRooms ? convexRail.shaped : null;
@@ -447,28 +446,16 @@ export function useHome() {
     return { state, data, convexPlane: true, railStatus: convexRail.status };
   }, [agents, projectRooms, inboxItems, missionRooms, agentThreadRooms, roomActivity, unreadRooms, worldId, convexRail]);
 
-  // Prefetch top 5 recent rooms' threads (#6)
-  const prefetchedRef = useRef(false);
-  useEffect(() => {
-    if (convexPlaneActive()) return; // Convex plane: only the open room polls its thread
-    if (prefetchedRef.current || !shaped.data.recent?.length || !worldId) return;
-    prefetchedRef.current = true;
-    const top5 = shaped.data.recent.slice(0, 5);
-    for (const r of top5) {
-      let room;
-      if (r.kind === 'mission') room = { id: String(r.missionSlug || '').split(':').pop(), isMission: true, missionSlug: r.missionSlug, projectSlug: r.project || String(r.missionSlug || '').split(':')[0], name: r.name };
-      else if (r.kind === 'project') room = { id: r.project, isProject: true, name: r.name };
-      else room = { id: r.agent || r.id, name: r.name };
-      prefetchThread(worldId, room);
-    }
-  }, [shaped.data.recent, worldId]);
+  // No thread prefetch: only the open room subscribes to its thread (Convex
+  // bills on database reads, and a room nobody opened is not worth one).
   // DEF-2: !agents is false when agents=[] (empty array is truthy), causing the loading
   // guard to exit too early and render an empty screen. Use null-check instead: useDataPipe
   // returns null until the first fetch resolves, then [] or a real array.
   // Honest counters (20): ALL ROOMS must not show 13 (agents-only) before projects load.
   // While any of the counts is still null, keep 'loading' so the header doesn't flash a wrong total.
   const stillLoadingCounts = agents == null || projectRooms == null;
-  const loading = (supabase && status === 'loading') || (supabase && !worldId) || stillLoadingCounts || (agents == null && projectRooms == null && inboxItems == null);
+  const signedIn = hasSession();
+  const loading = (signedIn && status === 'loading') || (signedIn && !worldId) || stillLoadingCounts || (agents == null && projectRooms == null && inboxItems == null);
   // Convex plane: shaped.state already carries the Convex readiness (see the memo).
   if (shaped.convexPlane) return {
     state: shaped.state,
@@ -558,10 +545,11 @@ export function useChatList() {
       convexPlane: true,
     };
   }, [agents, projectRooms, inboxItems, worldId, convexRail]);
-  // Same DEF-2 null-check fix applied to the chat-list hook. Both supabase-only
-  // clauses stay gated behind `supabase &&` so local no-Supabase mode never blocks
-  // on an auth-derived worldId (the branch's local-mode contract holds).
-  const loading = (supabase && status === 'loading') || (supabase && !worldId) || (agents == null && projectRooms == null && inboxItems == null);
+  // Same DEF-2 null-check fix applied to the chat-list hook. Both signed-in-only
+  // clauses stay gated on the session so a signed-out render never blocks on an
+  // auth-derived worldId (the render-only contract holds).
+  const signedIn = hasSession();
+  const loading = (signedIn && status === 'loading') || (signedIn && !worldId) || (agents == null && projectRooms == null && inboxItems == null);
   if (shaped.convexPlane) return { state: shaped.state, data: shaped.data, worldId };
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
@@ -586,6 +574,19 @@ export function shapeProjectState(project, missions) {
     project: { id: project?.id, name: project?.name || 'Project', missionCount: ms.length, tint: project?.tint || 'violet' },
     missions: ms,
   };
+}
+
+// Post the first line into a room by its canonical key (messages:send). The
+// room already exists by the time this runs (the create endpoints mint it), so
+// this only lands the text; a failure is swallowed by the callers because the
+// room itself was created fine.
+async function postFirstMessage({ worldId, roomId, text, missionSlug = '' }) {
+  const viewer = await convexViewerIdentity();
+  return convexMutation('messages:send', {
+    roomId, text, role: 'user', clientId: convexWorldId(worldId), source: 'corner-dashboard',
+    userId: viewer.userId, userEmail: viewer.userEmail, userName: viewer.userName,
+    ...(missionSlug ? { metadata: { mission_slug: missionSlug } } : {}),
+  });
 }
 
 // Create a mission inside a project, for real, via the self-serve drawer endpoint. The
@@ -614,9 +615,9 @@ export async function createMissionInProject({ worldId, projectSlug, title, goal
         priority ? `Priority: ${priority}` : '',
         when ? `When: ${when}` : '',
       ].filter(Boolean).join(' · ');
-      await authFetch('/api/dashboard/supabase-messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: worldId, agent: 'corner', project: projectSlug, text: note, role: 'user', source: 'corner-dashboard', metadata: { mission_slug } }),
+      await postFirstMessage({
+        worldId, text: note, missionSlug: mission_slug,
+        roomId: `${convexWorldId(worldId)}:mission:${projectSlug}:${mission_slug}`,
       }).catch(() => {});
     }
     return d;
@@ -637,9 +638,9 @@ export async function createProjectFromHome({ worldId, name, about, agentName })
     });
     const d = r && r.ok ? await r.json() : null;
     if (d?.ok && about && about.trim()) {
-      await authFetch('/api/dashboard/supabase-messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client_id: worldId, agent: 'corner', project: slug, text: about.trim(), role: 'user', source: 'corner-dashboard' }),
+      await postFirstMessage({
+        worldId, text: about.trim(),
+        roomId: `${convexWorldId(worldId)}:project:${slug}`,
       }).catch(() => {});
     }
     return d;

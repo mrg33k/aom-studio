@@ -1,30 +1,31 @@
 // GET /api/dashboard/admin-tickets
 //
-// Read-only bridge to the Space Rising live ticket tracker (admin_tickets in the
-// sourcing-directory Supabase). The Tracker tool on the dashboard renders this
-// data in OUR CV6 design — we only pull the data, not Space Rising's styling.
+// Read-only feed for the Space Rising ticket tracker, rendered in OUR CV6
+// design by the Tracker tool (HomeView, useCommandTracker).
 //
-// admin_tickets is admin-only (RLS denies anon/authenticated); only the
-// service-role key can read it, so this endpoint queries server-side with the
-// service key and returns a clean, minimal shape. No writes here — read only.
+// corner:retire-supabase (2026-09-03): this used to read the admin_tickets
+// table in a SECOND Supabase project (the sourcing directory). Supabase is
+// retired, and Space Rising is a separate product, so the dashboard no longer
+// reaches into its database. The tickets shown here come from the keyed state
+// row `admin-tickets` on Convex (state:get), which a sync script or a person
+// can fill. Nothing stored yet reads as an empty tracker, not an error.
 //
-// Env:
-//   SOURCING_SUPABASE_URL          (default https://kzzvjtthknsozktmpvak.supabase.co)
-//   SOURCING_SUPABASE_SERVICE_KEY  (service-role JWT — required, never in git)
+// Stored shape (state kind "admin-tickets", value):
+//   { tickets: [ { id, title, description, status, priority, owner, area, link, updatedAt } ] }
+//   or a bare array of the same rows.
 //
 // Query: ?status=needs_fix,working   (optional comma list filter)
 //
-// SECURITY (corner:tenant-isolation R1): this reads the Space Rising ticket
-// tracker. Space Rising is the 'space-rising' project (arsenal-held, with
-// project_access grants). Access is gated by verifyProjectAccess('space-rising')
-// so only the super-admin, the holder world, and granted worlds may read it —
-// it was previously unauthenticated and returned Space Rising tickets to anyone.
+// SECURITY: Space Rising is the 'space-rising' project (arsenal-held, with
+// project access grants). Access is gated by verifyProjectAccess('space-rising')
+// so only the super-admin, the holder world, and granted worlds may read it.
 
 import { verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js';
+import { convexQuery } from '../_lib/reportsStore.js';
 
-const DEFAULT_URL = 'https://kzzvjtthknsozktmpvak.supabase.co';
 const VALID_STATUS = new Set(['needs_fix', 'working', 'in_review', 'done']);
 const TICKETS_PROJECT = 'space-rising';
+const STATE_KEY = 'admin-tickets';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -43,57 +44,34 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Auth verification failed', tickets: [] });
   }
 
-  const SUPABASE_URL = process.env.SOURCING_SUPABASE_URL || DEFAULT_URL;
-  const SERVICE_KEY = process.env.SOURCING_SUPABASE_SERVICE_KEY;
-  if (!SERVICE_KEY) {
-    return res.status(503).json({
-      error: 'tracker bridge not configured',
-      detail: 'SOURCING_SUPABASE_SERVICE_KEY is not set on this deployment.',
-      tickets: [],
-    });
-  }
-
   // Optional status filter (comma-separated, validated against the known set).
   const statusParam = (req.query?.status || '').toString().trim();
   const statuses = statusParam
     ? statusParam.split(',').map((s) => s.trim()).filter((s) => VALID_STATUS.has(s))
     : [];
 
-  // Build the PostgREST query. Newest-touched first.
-  const cols = 'id,title,description,status,priority,assigned_to,area,link,updated_at,created_at';
-  let url = `${SUPABASE_URL}/rest/v1/admin_tickets?select=${cols}&order=updated_at.desc`;
-  if (statuses.length === 1) {
-    url += `&status=eq.${encodeURIComponent(statuses[0])}`;
-  } else if (statuses.length > 1) {
-    url += `&status=in.(${statuses.map((s) => encodeURIComponent(s)).join(',')})`;
-  }
-
   try {
-    const r = await fetch(url, {
-      headers: {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${SERVICE_KEY}`,
-        'User-Agent': 'aom-dashboard-tracker',
-      },
-    });
-    if (!r.ok) {
-      const body = await r.text().catch(() => '');
-      return res.status(502).json({ error: 'sourcing supabase error', status: r.status, detail: body.slice(0, 300), tickets: [] });
-    }
-    const rows = await r.json();
-    const tickets = (Array.isArray(rows) ? rows : []).map((t) => ({
+    const stored = await convexQuery('state:get', { key: STATE_KEY });
+    const raw = Array.isArray(stored) ? stored : (Array.isArray(stored?.tickets) ? stored.tickets : []);
+    let tickets = raw.map((t) => ({
       id: t.id,
       title: t.title || '',
       description: t.description || '',
       status: t.status || 'needs_fix',
       priority: t.priority || 'medium',
-      owner: t.assigned_to || '',
+      owner: t.owner || t.assigned_to || '',
       area: t.area || '',
       link: t.link || '',
-      updatedAt: t.updated_at || t.created_at || null,
+      updatedAt: t.updatedAt || t.updated_at || t.created_at || null,
     }));
-    return res.status(200).json({ tickets, count: tickets.length });
+    if (statuses.length) {
+      const allow = new Set(statuses);
+      tickets = tickets.filter((t) => allow.has(t.status));
+    }
+    // Newest-touched first.
+    tickets.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+    return res.status(200).json({ tickets, count: tickets.length, source: 'convex:state/admin-tickets' });
   } catch (err) {
-    return res.status(500).json({ error: 'failed to reach sourcing supabase', detail: String(err).slice(0, 200), tickets: [] });
+    return res.status(500).json({ error: 'failed to read tickets', detail: String(err?.message || err).slice(0, 200), tickets: [] });
   }
 }

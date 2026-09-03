@@ -1,4 +1,4 @@
-// /api/prospect-report — the half of the scanner a stranger is allowed to touch.
+// /api/prospect-report: the half of the scanner a stranger is allowed to touch.
 //
 //   POST /api/prospect-report              { scan }      gated   -> { token, url }
 //   GET  /api/prospect-report?r=<token>                  public  -> the saved scan
@@ -6,11 +6,11 @@
 //   GET  /api/prospect-report?started=1                  gated   -> the leads
 //   POST /api/prospect-report?r=<token>    { picked_up } gated   -> a person took it
 //
-// ── WHY THIS FILE EXISTS AT ALL ────────────────────────────────────────────
+// WHY THIS FILE EXISTS AT ALL
 // /api/prospect-scan is gated on purpose (see its header): it is an outbound
 // HTTP client that takes its target from the caller, and there is no version of
 // the funnel where a stranger needs to aim it. But the funnel DOES need the
-// stranger to read the result — Patrik's use is "run it cold right before a
+// stranger to read the result. Patrik's use is "run it cold right before a
 // phone call and send the page ahead of dialling", and a page behind a login is
 // a page nobody reads before a cold call.
 //
@@ -19,20 +19,21 @@
 // operator, readable by anyone holding an unguessable link. Reading it costs
 // one indexed row read and reaches nothing outbound.
 //
-// ── THE TOKEN IS THE WHOLE ACCESS CONTROL, SO IT IS A REAL ONE ─────────────
-// 160 bits from crypto.randomUUID() x2, base36. Not a slug of the company name
-// — "icon-mechanical" is guessable by anyone who can guess a competitor's name,
+// THE TOKEN IS THE WHOLE ACCESS CONTROL, SO IT IS A REAL ONE
+// 160 bits from crypto.randomUUID() x2, base36. Not a slug of the company name:
+// "icon-mechanical" is guessable by anyone who can guess a competitor's name,
 // and this document quotes a stranger's own website back at them. It is not
 // secret in the sense that the recipient will forward it (we want that); it is
 // unguessable in the sense that you cannot enumerate other people's.
 //
-// ── STORAGE ────────────────────────────────────────────────────────────────
-// The existing `cm_state` table (kind, scope_id, client_id, payload) — the same
-// generic JSON store the trackers and review checklists already use. No
-// migration, because a scan report is a JSON document keyed by one id and that
-// is exactly what cm_state is for. kind='prospect_scan', scope_id=<token>.
+// STORAGE
+// corner:retire-supabase (2026-09-03): the report used to be a cm_state row.
+// It is now a Convex state row (state:put / state:get) with kind
+// "prospect_scan", scopeId = the token, world "aom". The leads list is one
+// state:get over the kind. (The plan named kb:put/get; kb:get returns only
+// metadata and caps content at 32KB, so the state table is the right home.)
 //
-// ── THE ONE UNAUTHENTICATED WRITE, AND ITS LEASH ───────────────────────────
+// THE ONE UNAUTHENTICATED WRITE, AND ITS LEASH
 // Get Started has to work for somebody who has never logged into anything, so
 // the capture POST is public. What it can do is bounded to the point of being
 // dull: it must present a token that already exists, it may only add a
@@ -40,33 +41,25 @@
 // finding, or read anything back. Worst case is a junk lead on one report,
 // which is the same worst case as any contact form on any website.
 //
-// ── PICKING ONE UP IS A SECOND, GATED WRITE (2026-08-05) ───────────────────
+// PICKING ONE UP IS A SECOND, GATED WRITE (2026-08-05)
 // A lead that can only be READ is a list that grows forever and stops being
-// looked at, so the board needs a way to close one out — and the moment there
+// looked at, so the board needs a way to close one out, and the moment there
 // is a way to close one out, the record has to say WHO closed it and WHAT they
 // did, or the board is back to a green tick with nothing behind it.
 //
-// So `picked_up` is the operator half of the same row and follows the two lines
-// the parts board already holds (see api/client-parts.js):
-//
-//   THE NAME IS DERIVED, NEVER ACCEPTED. `by` comes from the verified JWT. A
-//   body-supplied name would let any caller sign Patrik's name to a line the
-//   next person reads before calling a stranger back.
+//   THE NAME IS DERIVED, NEVER ACCEPTED. `by` comes from the verified session.
 //   IT IS A REPORT, NOT A VERIFICATION. Nothing here fetched anything; a person
-//   said they called. The note is required for the same reason mark_done
-//   refuses without a receipt — "picked up" with nothing behind it is exactly
-//   the shape of claim this product exists to make impossible.
+//   said they called. The note is required.
 //
 // It is also write-once. The second write would erase the first person's line,
 // and a trail that can be quietly overwritten is not a trail.
 
 import { randomUUID } from 'crypto'
-import { TenantAuthError, verifyTenant } from './_lib/verifyTenant.js'
-import { stateGet, stateSet, stateConfigured } from './_lib/stateStore.js'
+import { TenantAuthError, verifyTenant, convexQuery, convexMutation } from './_lib/verifyTenant.js'
 
 const TENANT = process.env.CLIENT_ENGINE_TENANT || 'aom'
 const KIND = 'prospect_scan'
-const CLIENT_ID = 'aom'
+const WORLD = 'aom'
 
 const MAX_FIELD = 200
 const MAX_NOTE = 600
@@ -91,22 +84,37 @@ const clean = (v, max) => {
 // the shape we mint is refused before it gets there.
 const tokenOk = (t) => typeof t === 'string' && /^[a-z0-9]{16,48}$/.test(t)
 
+// One report by token: the stored payload or null.
+async function reportGet(token) {
+  try {
+    const row = await convexQuery('state:get', { kind: KIND, scopeId: token, worldSlug: WORLD })
+    return row && row.value && typeof row.value === 'object' ? row.value : null
+  } catch {
+    return null
+  }
+}
+
+// Write the whole payload for a token. Returns true on success.
+async function reportSet(token, payload, by) {
+  try {
+    await convexMutation('state:put', { kind: KIND, scopeId: token, worldSlug: WORLD, value: payload, updatedBy: by || 'api/prospect-report' })
+    return true
+  } catch (e) {
+    console.warn('[prospect-report] state:put failed:', e?.message || e)
+    return false
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
 
-  if (!stateConfigured()) {
-    return res.status(500).json({ error: 'Report storage is not configured on this deployment.' })
-  }
-
   const token = typeof req.query?.r === 'string' ? req.query.r : null
 
-  // ── gated: who has pressed Get Started ──────────────────────────────────
+  // gated: who has pressed Get Started
   // The report tells a stranger their answers land in front of Patrik. This is
-  // the list they land on — read by the scanner console AND, since 2026-08-05,
-  // by the client board's day view, which is the screen he actually opens.
-  // Without a screen reading it, the sentence on the report is a promise with
-  // no mechanism behind it, which is the one thing a first impression cannot
-  // afford to be.
+  // the list they land on, read by the scanner console AND the client board's
+  // day view. Without a screen reading it, the sentence on the report is a
+  // promise with no mechanism behind it.
   if (req.method === 'GET' && req.query?.started) {
     try {
       await verifyTenant(TENANT, req)
@@ -114,56 +122,46 @@ export default async function handler(req, res) {
       const status = e instanceof TenantAuthError ? (e.status || 403) : 500
       return res.status(status).json({ error: String(e.message || e), auth: false })
     }
-    const url = `${process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/cm_state` +
-      `?kind=eq.${KIND}&client_id=eq.${CLIENT_ID}` +
-      '&select=scope_id,updated_at,started:payload->started,picked_up:payload->picked_up' +
-      ',company:payload->scan->>company' +
-      '&order=updated_at.desc&limit=40'
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-    const r = await fetch(url, { headers: { apikey: key, Authorization: `Bearer ${key}` } })
-    if (!r.ok) return res.status(200).json({ leads: [] })
-    const rows = await r.json()
+    let rows = []
+    try {
+      rows = await convexQuery('state:get', { kind: KIND, worldSlug: WORLD })
+    } catch {
+      rows = []
+    }
     const leads = (Array.isArray(rows) ? rows : [])
-      .filter((row) => row.started && row.started.name)
-      .map((row) => ({
-        token: row.scope_id,
-        company: row.company || null,
-        name: row.started.name,
-        email: row.started.email || null,
-        phone: row.started.phone || null,
-        note: row.started.note || null,
-        at: row.started.at || row.updated_at,
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+      .slice(0, 40)
+      .map((row) => ({ row, payload: row.value && typeof row.value === 'object' ? row.value : {} }))
+      .filter(({ payload }) => payload.started && payload.started.name)
+      .map(({ row, payload }) => ({
+        token: row.scopeId,
+        company: (payload.scan && payload.scan.company) || null,
+        name: payload.started.name,
+        email: payload.started.email || null,
+        phone: payload.started.phone || null,
+        note: payload.started.note || null,
+        at: payload.started.at || (row.updatedAt ? new Date(row.updatedAt).toISOString() : null),
         // Present = somebody has already called them. The board shows those
         // rows differently rather than hiding the fact that they existed.
-        picked_up: row.picked_up || null,
+        picked_up: payload.picked_up || null,
       }))
     return res.status(200).json({ leads })
   }
 
-  // ── public read ─────────────────────────────────────────────────────────
+  // public read
   if (req.method === 'GET') {
     if (!tokenOk(token)) {
       return res.status(400).json({ error: 'This link is missing its report id.' })
     }
-    const row = await stateGet(KIND, token, CLIENT_ID)
+    const row = await reportGet(token)
     if (!row || !row.scan) {
       return res.status(404).json({ error: 'No report at this link. It may have been replaced.' })
     }
     // The lead capture never travels back out. Whoever forwards this link is
-    // not entitled to whoever else already filled the form in on it — and the
-    // pickup line ("called, he wants the Google listing sorted first") is an
-    // internal note about a stranger, which travels out even less.
-    //
-    // The ONE thing that does come back is the timestamp. The report tells the
-    // person who pressed Get Started that their answers were saved onto it, and
-    // a claim this page makes about itself has to be checkable on this page:
-    // reopen the link and it says the minute it landed.
-    //
-    // The pickup TIME comes back for the same reason and nothing else does.
-    // Without it a report reopened after we called still tells the person the
-    // next thing to happen is a call they have already had — the page would be
-    // narrating a mechanism instead of reading the record. The minute is a
-    // fact about them; the name and the note are ours.
+    // not entitled to whoever else already filled the form in on it, and the
+    // pickup line is an internal note about a stranger, which travels out even
+    // less. The ONE thing that does come back is the timestamp, so a claim
+    // this page makes about itself can be checked on this page.
     const { started, picked_up, picked_up_log, ...rest } = row
     const handled = started && picked_up &&
       !(String(started.at || '') > String(picked_up.at || ''))
@@ -185,15 +183,14 @@ export default async function handler(req, res) {
   }
   body = body || {}
 
-  // ── on an existing report: Get Started (public), or picked up (gated) ───
+  // on an existing report: Get Started (public), or picked up (gated)
   if (token) {
     if (!tokenOk(token)) return res.status(400).json({ error: 'This link is missing its report id.' })
-    const row = await stateGet(KIND, token, CLIENT_ID)
+    const row = await reportGet(token)
     if (!row || !row.scan) return res.status(404).json({ error: 'No report at this link.' })
 
-    // ── gated: an operator taking the lead off the board ──────────────────
-    // Checked BEFORE the public branch, so the anonymous door can never reach
-    // it: a body carrying `picked_up` either presents a session or is refused.
+    // gated: an operator taking the lead off the board. Checked BEFORE the
+    // public branch, so the anonymous door can never reach it.
     if (body.picked_up) {
       let byWho
       try {
@@ -212,10 +209,7 @@ export default async function handler(req, res) {
         String(row.started.at) > String(row.picked_up.at || '')
       if (row.picked_up && !pressedSince) {
         return res.status(409).json({
-          // Phoenix, explicitly. This runs on a machine set to UTC, so the
-          // default locale string told an operator standing in Phoenix that
-          // he picked something up at 3:57 PM when he did it at 8:57 AM — a
-          // wrong time printed BY the record, in a refusal about the record.
+          // Phoenix, explicitly. This runs on a machine set to UTC.
           error: `Already picked up by ${row.picked_up.by || 'someone'}` +
             (row.picked_up.at
               ? ` on ${new Date(row.picked_up.at).toLocaleString('en-US', { timeZone: 'America/Phoenix' })}`
@@ -231,15 +225,16 @@ export default async function handler(req, res) {
       const at = new Date().toISOString()
       // The one overwrite this file allows still keeps what it replaced.
       const prior = Array.isArray(row.picked_up_log) ? row.picked_up_log : []
-      const okUp = await stateSet(KIND, token, CLIENT_ID, {
+      const by = byWho.userName || byWho.email || 'Unknown'
+      const okUp = await reportSet(token, {
         ...row,
-        picked_up: { by: byWho.userName || byWho.email || 'Unknown', at, note },
+        picked_up: { by, at, note },
         picked_up_log: row.picked_up ? prior.concat([row.picked_up]) : prior,
-      })
+      }, by)
       if (!okUp) return res.status(500).json({ error: 'That did not save. Try once more.' })
       return res.status(200).json({
         ok: true,
-        picked_up: { by: byWho.userName || byWho.email || 'Unknown', at, note },
+        picked_up: { by, at, note },
       })
     }
 
@@ -249,22 +244,20 @@ export default async function handler(req, res) {
     const phone = clean(started.phone, MAX_FIELD)
     if (!name || !(email || phone)) {
       return res.status(400).json({
-        error: 'A name and one way to reach you — email or phone — are needed.',
+        error: 'A name and one way to reach you, email or phone, are needed.',
       })
     }
-    // ONE timestamp, stored and returned. Two `new Date()` calls put a stamp on
-    // the record and a different stamp on the screen that says the record says
-    // so — a small lie of exactly the kind this page exists not to tell.
+    // ONE timestamp, stored and returned.
     const at = new Date().toISOString()
-    const ok = await stateSet(KIND, token, CLIENT_ID, {
+    const ok = await reportSet(token, {
       ...row,
       started: { name, email, phone, note: clean(started.note, MAX_NOTE), at },
-    })
+    }, 'public:get-started')
     if (!ok) return res.status(500).json({ error: 'That did not save. Try once more.' })
     return res.status(200).json({ ok: true, at })
   }
 
-  // ── gated: save a scan an operator just ran ─────────────────────────────
+  // gated: save a scan an operator just ran
   let who
   try {
     who = await verifyTenant(TENANT, req)
@@ -281,11 +274,11 @@ export default async function handler(req, res) {
   }
 
   const t = newToken()
-  const ok = await stateSet(KIND, t, CLIENT_ID, {
+  const ok = await reportSet(t, {
     scan,
     saved_at: new Date().toISOString(),
     saved_by: who.userName || null,
-  })
+  }, who.userName || who.email || null)
   if (!ok) return res.status(500).json({ error: 'The report did not save.' })
 
   return res.status(200).json({ ok: true, token: t, path: `/scan/?r=${t}` })

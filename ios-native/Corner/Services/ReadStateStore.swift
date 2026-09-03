@@ -75,9 +75,9 @@ final class ReadStateStore: ObservableObject {
     /// The same identity `messages:send` writes, so a read receipt and a message from
     /// this device belong to the same user server-side.
     private static func userIdentity() -> String {
-        // Convex users are indexed by email; the Supabase UUID is not a Convex id.
+        // Convex users are indexed by email; the id is the fallback.
         if let email = CornerAPI.shared.session?.user.email, !email.isEmpty { return email }
-        if let uid = CornerAPI.shared.session?.user.id.uuidString, !uid.isEmpty { return uid }
+        if let uid = CornerAPI.shared.session?.user.id, !uid.isEmpty { return uid }
         let key = "convex.anonUserId"
         if let saved = UserDefaults.standard.string(forKey: key), !saved.isEmpty { return saved }
         let fresh = "anon-\(UUID().uuidString.prefix(8).lowercased())"

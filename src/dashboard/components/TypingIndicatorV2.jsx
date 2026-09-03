@@ -10,7 +10,7 @@
 //     always opens for live dashboard sends.
 //   * relay-keepalive.py auto-restarts dead Claude processes inside tmux
 //     (HANG_THRESHOLD=180s, HANG_HARD_MAX=600s).
-//   * supabase-listener.py writes to the agent inbox and the keepalive pokes
+//   * the Convex dispatcher (ai.dispatchMessage) hands the turn to the agent and the keepalive pokes
 //     within ~3s when the bridge POST loses its stream.
 // All the user needs to see is the dots. If the agent really hangs past those
 // safety nets, the user can resend; we don't ask them to poke or clear.

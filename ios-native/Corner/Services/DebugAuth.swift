@@ -1,10 +1,10 @@
 // DebugAuth.swift — DEBUG-only session hand-off for the simulator walk rig.
 // corner:native-ios
 //
-// corner://debug-auth?access_token=...&refresh_token=... installs a session in
-// this build without a password ever touching the device: the walk rig mints a
-// one-time link server-side (service key, owner-authorized), exchanges it for
-// tokens, and hands them to the running simulator via this URL.
+// corner://debug-auth?access_token=...&refresh_token=... installs a Convex
+// session in this build without a password ever touching the device: the walk
+// rig signs in server-side (auth:signIn on the deployment), takes the token
+// pair, and hands it to the running simulator via this URL.
 //
 // The ENTIRE file body is #if DEBUG — a Release/store binary compiles to an
 // empty file and contains no trace of this route. RootView consults this
@@ -26,13 +26,10 @@ enum DebugAuth {
         else { return false }
         Task {
             do {
-                _ = try await CornerAPI.shared.client.auth.setSession(
-                    accessToken: access,
-                    refreshToken: refresh
-                )
+                try await CornerAPI.shared.installSession(accessToken: access, refreshToken: refresh)
                 print("[DebugAuth] session installed")
             } catch {
-                print("[DebugAuth] setSession failed: \(error)")
+                print("[DebugAuth] installSession failed: \(error)")
             }
         }
         return true

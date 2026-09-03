@@ -1,45 +1,22 @@
-// POST /api/dashboard/route-accept   { client_id, message_id }
+// POST /api/dashboard/route-accept   { client_id, message_id[, room_id] }
 //
 // Record that the user accepted the room the front-door router chose for them.
 //
-// WHY (corner:front-door R11, 2026-07-26). R10 left one defect named and open: a misroute
-// writes itself into the wrong room's description. room-activity digests a room's recent
-// messages into the "hint" the router is shown next time, so a message the router GUESSED
-// into a room immediately becomes evidence that the room is about that topic. The R10 cap
-// (undescribedNameMatch) only fires on a room with NO description, so one wrong route
-// permanently disarms it there. "The rule protects a room exactly once."
+// Why (corner:front-door R11): a misroute used to write itself into the wrong
+// room's description. An auto-routed message shapes nothing until it has been
+// accepted, and this endpoint is that durable accept. Two callers, both real
+// user actions: "Got it" on the routed-here strip, and sending another message
+// in the room while the strip is live.
 //
-// The fix is provenance, not another prompt: an auto-routed message shapes nothing until it
-// has been accepted. That needs a durable accept, and there wasn't one — R10 assumed the
-// signal already existed because the R8 strip has a "Got it" button, but that button was
-// `localStorage.removeItem` and nothing more. The record it cleared was a single global slot
-// with a 15-minute TTL, so it could not answer "was THIS row accepted" even in the same tab.
-// This endpoint is that missing write.
-//
-// Two callers, both real user actions:
-//   * "Got it" on the routed-here strip (RoutedHereBar).
-//   * Sending another message in the room while the strip is live (Cv6FullComposer) —
-//     carrying on working somewhere is a confirmation that it was the right somewhere.
-//
-// Rejection needs no counterpart here: move-message already DELETEs the row outright.
+// Backend: Convex messages:patchMetadata (corner:retire-supabase R2,
+// 2026-09-03). The row is read first so the merge preserves everything else
+// under metadata (mission_slug, interaction_mode).
 
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
+import { convexQuery, convexMutation } from '../_lib/reportsStore.js';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
-
-// The world this request is scoped to. An explicit value wins; otherwise the world is
-// resolved from the VERIFIED JWT — never a hardcoded default.
-//
-// This read `DEFAULT_CLIENT_ID = 'aom'` (2026-07-27 audit): one world hardcoded in place
-// of the one that should be resolved. Invisible to the people most likely to test it —
-// Patrik, Ash and Courtney are all world 'aom' — and silently wrong for every other
-// world, whose world-less request was filed against Patrik's namespace and then refused
-// for the wrong reason. routedHere.js already sends worldId, so this only changes a
-// request that omits it.
-//
-// No session → 401. A verified session whose account carries no world → an explicit 400
-// naming the fix, never a silent fallback into another world.
+// The world this request is scoped to. An explicit value wins; otherwise the
+// world is resolved from the verified JWT, never a hardcoded default.
 async function scopeWorld(explicit, req) {
   const given = explicit == null ? '' : String(explicit).trim();
   if (given) return given.toLowerCase();
@@ -49,21 +26,19 @@ async function scopeWorld(explicit, req) {
   return who.world;
 }
 
-async function sb(method, path, body) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    method,
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=representation',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const text = await res.text();
-  let json = null;
-  try { json = text ? JSON.parse(text) : null; } catch { json = null; }
-  return { ok: res.ok, status: res.status, json, text };
+// Find the message. With a room id it is one indexed read; without one the
+// recent window of the world is scanned (routed messages are minutes old).
+async function findMessage({ world, messageId, roomId }) {
+  if (roomId) {
+    const direct = await convexQuery('messages:getMessage', { roomId: String(roomId), messageId }).catch(() => null);
+    if (direct) return direct;
+  }
+  for (const windowMs of [24 * 3600 * 1000, 7 * 24 * 3600 * 1000]) {
+    const rows = await convexQuery('messages:listSince', { worldSlug: world, since: Date.now() - windowMs, role: 'user', limit: 2000 }).catch(() => []);
+    const hit = (Array.isArray(rows) ? rows : []).find((r) => String(r._id) === messageId);
+    if (hit) return hit;
+  }
+  return null;
 }
 
 export default async function handler(req, res) {
@@ -73,7 +48,6 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
   const body = req.body || {};
   let clientId;
@@ -88,31 +62,27 @@ export default async function handler(req, res) {
   const messageId = String(body.message_id || '').trim();
   if (!messageId) return res.status(400).json({ error: 'message_id required' });
 
-  // Read first: it proves the row is this tenant's, and the existing metadata is what the
-  // merge below has to preserve.
-  const found = await sb('GET', `messages?id=eq.${encodeURIComponent(messageId)}&select=id,client_id,role,metadata&limit=1`);
-  const original = Array.isArray(found.json) ? found.json[0] : null;
+  const original = await findMessage({ world: clientId, messageId, roomId: body.room_id });
   if (!original) return res.status(404).json({ error: 'message not found' });
-  if (original.client_id !== clientId) return res.status(403).json({ error: 'not your message' });
-  if (original.role !== 'user') return res.status(400).json({ error: 'only a message you sent can be accepted' });
+  const role = original.role || (original.agentSlug ? 'assistant' : 'user');
+  if (role !== 'user') return res.status(400).json({ error: 'only a message you sent can be accepted' });
 
   const meta = (original.metadata && typeof original.metadata === 'object') ? original.metadata : {};
   const routed = (meta.routed && typeof meta.routed === 'object') ? meta.routed : null;
-  // Nothing to accept unless the router chose this room. A message the user sent from inside
-  // the room was never quarantined, so marking it accepted would be a lie about its history.
+  // Nothing to accept unless the router chose this room.
   if (!routed || routed.auto !== true) {
     return res.status(400).json({ error: 'this message was not auto-routed' });
   }
-  // Idempotent: both callers can fire for the same row (tap "Got it", then keep typing).
+  // Idempotent: both callers can fire for the same row.
   if (routed.accepted === true) return res.status(200).json({ ok: true, already: true });
 
-  // Read-modify-write the WHOLE metadata object. PostgREST PATCH replaces a jsonb column
-  // outright rather than deep-merging, so sending a bare { routed: ... } would silently drop
-  // mission_slug and interaction_mode — and a row that loses mission_slug leaves its room.
-  const next = { ...meta, routed: { ...routed, accepted: true, accepted_at: new Date().toISOString() } };
-  const upd = await sb('PATCH', `messages?id=eq.${encodeURIComponent(messageId)}`, { metadata: next });
-  if (!upd.ok) {
-    return res.status(upd.status || 500).json({ error: String(upd.text || 'could not record the acceptance').slice(0, 160) });
+  try {
+    await convexMutation('messages:patchMetadata', {
+      messageId,
+      patch: { routed: { ...routed, accepted: true, accepted_at: new Date().toISOString() } },
+    });
+  } catch (err) {
+    return res.status(502).json({ error: String(err?.message || 'could not record the acceptance').slice(0, 160) });
   }
 
   return res.status(200).json({ ok: true, message_id: messageId });

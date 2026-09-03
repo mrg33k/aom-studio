@@ -1,11 +1,17 @@
-// api/_lib/mailNoise.js — is this email real-person mail or machinery?
+// api/_lib/mailNoise.js: is this email real-person mail or machinery?
 //
 // JS port of the noise gate in scripts/support-triage.py (is_noise, M17/M19):
 // sender-pattern check + bulk-content phrases + cold-outreach phrasing + the
 // structural newsletter detector. The Python gate protects wish CREATION on the
 // watcher; this port protects DISPLAY (support inbox/wish lists on Vercel) so
-// blasts that predate the gate — or slip it — never render as real asks.
+// blasts that predate the gate, or slip it, never render as real asks.
 // Keep the two in sync when adding patterns; the Python file is the origin.
+//
+// corner:retire-supabase R2: the known-sender and blocked-sender lists are
+// read from the Convex state table (kinds support_allowlist and
+// support_blocklist, scope "all", world aom) instead of cm_state.
+
+import { convexQuery } from './verifyTenant.js';
 
 const NOISE_SENDER = new RegExp(
   '(no[-_.]?reply|do[-_.]?not[-_.]?reply|notifications?@|mailer|postmaster|bounce|' +
@@ -32,13 +38,13 @@ const BULK_CONTENT = new RegExp(
   "save up to \\d+%|store wide|sound packs?|bundle includes|click the .{0,30} button|" +
   "registration (?:approved|pending approval) for|is starting in \\d+ (?:hour|minute)|" +
   "add to (?:your )?calendar|rsvp now|" +
-  // Hype-blast phrasing (OddsJam-style promos that ride personal-looking senders,
-  // caught live 2026-07-01): profit-porn language no real correspondent uses.
+  // Hype-blast phrasing (promos that ride personal-looking senders): profit
+  // language no real correspondent uses.
   "insane (?:profits?|results|returns)|massive monthly profits?|" +
   "most profitable (?:month|week|year)|users have achieved|" +
   "make (?:thousands|hundreds) of dollars|" +
-  // Receipts/invoices are machinery even when the sender looks like a company
-  // contact (ElevenLabs receipt rendered as an open ask, caught 2026-07-01).
+  // Receipts and invoices are machinery even when the sender looks like a
+  // company contact.
   "your receipt from|receipt #\\s?\\d|invoice #?\\s?\\d|payment (?:received|confirmation)|" +
   "order confirmation|thank you for your (?:order|purchase))",
   'i'
@@ -85,17 +91,14 @@ function looksLikeNewsletter(body) {
   return '';
 }
 
-// Known business contacts — mirror of corner/state/support-allowlist.json,
-// served from cm_state (kind='support_allowlist') because Vercel can't read the
-// disk copy. Real client threads are link-heavy; the structural heuristics
-// (bulk/pitch/newsletter-shape) must never fire on them (spacerising/sirotin/
-// arsenal false-positives, 2026-06-14 — re-confirmed live 2026-07-01 when this
-// port flagged Struck/Sirotin threads). Hard noise-sender check still wins.
-// 60s module-level cache; fail-open to empty sets, never block on it.
-// The blocklist is the same idea in reverse (cm_state kind='support_blocklist'):
-// repeat blast operations that keep rewording past the content heuristics
-// (OddsJam sent three differently-phrased promos in one day, 2026-07-01). A
-// domain added there dies at display with no deploy.
+// Known business contacts: mirror of corner/state/support-allowlist.json,
+// served from the Convex state table (kind support_allowlist) because Vercel
+// cannot read the disk copy. Real client threads are link-heavy; the
+// structural heuristics must never fire on them. Hard noise-sender check
+// still wins. 60s module-level cache; fail-open to empty sets, never block.
+// The blocklist is the same idea in reverse (kind support_blocklist): repeat
+// blast operations that keep rewording past the content heuristics. A domain
+// added there dies at display with no deploy.
 let _listsCache = null;
 let _listsAt = 0;
 async function getSenderLists() {
@@ -105,18 +108,12 @@ async function getSenderLists() {
     addresses: new Set(((p && p.addresses) || []).map((a) => String(a).toLowerCase().trim())),
   });
   const empty = { allow: toSets(null), block: toSets(null) };
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return empty;
   try {
-    const r = await fetch(
-      `${url}/rest/v1/cm_state?kind=in.(support_allowlist,support_blocklist)&scope_id=eq.all&client_id=eq.aom&select=kind,payload`,
-      { headers: { apikey: key, Authorization: `Bearer ${key}` } }
-    );
-    const rows = r.ok ? await r.json() : [];
-    const byKind = {};
-    for (const row of rows) byKind[row.kind] = row.payload;
-    _listsCache = { allow: toSets(byKind.support_allowlist), block: toSets(byKind.support_blocklist) };
+    const [allow, block] = await Promise.all([
+      convexQuery('state:get', { kind: 'support_allowlist', scopeId: 'all', worldSlug: 'aom' }).catch(() => null),
+      convexQuery('state:get', { kind: 'support_blocklist', scopeId: 'all', worldSlug: 'aom' }).catch(() => null),
+    ]);
+    _listsCache = { allow: toSets(allow && allow.value), block: toSets(block && block.value) };
     _listsAt = Date.now();
     return _listsCache;
   } catch {
@@ -143,7 +140,7 @@ export function isBlockedSender(email, lists) {
   return inList(email, lists && lists.block);
 }
 
-// A real reply drags quoted history and forwarded signatures along — links and
+// A real reply drags quoted history and forwarded signatures along; links and
 // bulk phrases in THAT text say nothing about the sender. Judge only their own
 // words: cut at the first quote marker / forward header / reply attribution.
 function ownWords(body) {
@@ -152,14 +149,14 @@ function ownWords(body) {
   return cut >= 0 ? s.slice(0, cut) : s;
 }
 
-// (noisy, reason) — mirror of support-triage.is_noise. Pass knownSender=true
+// (noisy, reason), mirror of support-triage.is_noise. Pass knownSender=true
 // (via isKnownSender + getKnownSenders) to skip the structural heuristics.
 export function isNoiseMail(email, subject = '', rawBody = '', { knownSender = false, blockedSender = false } = {}) {
   const addr = String(email || '').toLowerCase();
   if (blockedSender) return { noisy: true, reason: `blocklisted sender (${addr})` };
   if (NOISE_SENDER.test(addr)) return { noisy: true, reason: `noise sender (${addr})` };
   if (knownSender) return { noisy: false, reason: '' };
-  // The watcher's summarizer classifies wish heads itself — "Pitching a purchase:"
+  // The watcher's summarizer classifies wish heads itself: "Pitching a purchase:"
   // as a bullet IS the verdict, regardless of how the blast words its body.
   if (/^\s*[•·]\s*pitching a purchase\b/im.test(rawBody)) {
     return { noisy: true, reason: 'summarizer verdict: pitching a purchase' };

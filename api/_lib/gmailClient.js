@@ -1,62 +1,83 @@
-// Gmail API client — loads + decrypts + auto-refreshes a user's Gmail OAuth
+// Gmail API client: loads, decrypts and auto-refreshes a user's Gmail OAuth
 // tokens, then exposes a thin fetch helper that targets
 // https://gmail.googleapis.com/gmail/v1/users/me/* with the right
 // Authorization header.
 //
-// The token blob lives in supabase: account_integrations.config.tokens
-// (AES-GCM-encrypted JSON, see api/_lib/oauthCrypto.js). When the access_token
-// is past its expiry we POST to Google's token endpoint with the refresh_token
-// and write the new blob back to supabase before returning the bearer.
+// corner:retire-supabase R3: the encrypted token blob lives in the Convex
+// integrations table (integrations:getOAuthTokens / setOAuthTokens, slug
+// "gmail"). The blob is the same AES-GCM JSON api/_lib/oauthCrypto.js has
+// always produced; Convex never sees a plaintext refresh token. A connection
+// is addressed by its connectionId (default `gmail:<userId>`), which is what
+// the mail routes carry around as the connection id.
 
 import { decryptJson, encryptJson } from './oauthCrypto.js'
-import { extractJwt } from './verifyTenant.js'
+import { extractJwt, getUserFromJwt, convexQuery, convexMutation } from './verifyTenant.js'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const GMAIL_BASE = 'https://gmail.googleapis.com/gmail/v1/users/me'
+const SLUG = 'gmail'
 
 export async function getUserIdFromRequest(req) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null
   const jwt = extractJwt(req)
   if (!jwt) return null
-  const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${jwt}` },
-  })
-  if (!r.ok) return null
-  const user = await r.json()
+  const user = await getUserFromJwt(jwt)
   return user?.id || null
 }
 
-async function loadRow(userId) {
-  // A user can hold more than one Gmail (e.g. a support inbox + a personal one). When no specific
-  // connection is requested we must pick DETERMINISTICALLY, otherwise the same user sees a different
-  // inbox call to call and one account looks "not connected". Prefer the canonical (pinned) inbox,
-  // then most-recently-updated. The real per-account path is getGmailTokenByConnection.
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.gmail&select=config,connected_at,updated_at&order=config->>canonical.desc.nullslast,updated_at.desc&limit=1`,
-    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
-  )
-  if (!r.ok) return null
-  const rows = await r.json()
-  return Array.isArray(rows) && rows.length ? rows[0] : null
+// Convex row -> the row shape the callers read (config.tokens, config.profile,
+// config.account_email, connected_at, user_id, workspace_id).
+function legacyRow(row, { userId = null, connectionId = null } = {}) {
+  if (!row || !row.ciphertext) return null
+  const email = row.email || null
+  return {
+    id: row.connectionId || connectionId || null,
+    user_id: userId,
+    workspace_id: row.workspaceId || null,
+    integration_slug: SLUG,
+    connected_at: null,
+    updated_at: null,
+    config: {
+      tokens: row.ciphertext,
+      account_email: email,
+      profile: email ? { emailAddress: email, email } : null,
+    },
+  }
 }
 
-async function writeRow(userId, configPatch) {
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.gmail`,
-    {
-      method: 'PATCH',
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify({ config: configPatch, updated_at: new Date().toISOString() }),
-    },
-  )
-  return r.ok
+async function loadRow(userId) {
+  const row = await convexQuery('integrations:getOAuthTokens', { userId, slug: SLUG })
+  return legacyRow(row, { userId })
+}
+
+async function loadConnectionRow(connectionId) {
+  const row = await convexQuery('integrations:getOAuthTokens', { connectionId, slug: SLUG })
+  return legacyRow(row, { connectionId })
+}
+
+// Write the refreshed blob back. `expiresAt` (ms) lets the next reader skip
+// the decrypt when the token is plainly fresh.
+// setOAuthTokens needs the owner. The default connection id is
+// `gmail:<userId>`, so a connection-only caller can still name the owner.
+function ownerFromConnectionId(connectionId) {
+  const m = String(connectionId || '').match(/^gmail:(.+)$/)
+  return m ? m[1] : null
+}
+
+async function writeTokens({ userId, connectionId, tokens, email, workspaceId }) {
+  try {
+    const r = await convexMutation('integrations:setOAuthTokens', {
+      userId: userId || ownerFromConnectionId(connectionId) || undefined,
+      connectionId: connectionId || undefined,
+      slug: SLUG,
+      ciphertext: encryptJson(tokens),
+      email: email || undefined,
+      expiresAt: tokens.expires_at || undefined,
+      workspaceId: workspaceId || undefined,
+    })
+    return !!(r && r.ok)
+  } catch {
+    return false
+  }
 }
 
 async function refresh(refreshToken) {
@@ -86,28 +107,17 @@ async function refresh(refreshToken) {
   return r.json()
 }
 
-// Returns { accessToken, profile } or null if Gmail isn't connected for this
-// user. Caller should respond 401 with {error:'integration:not-connected'} in
-// that case so the UI can render the "Connect Gmail" empty state.
-export async function getGmailToken(userId) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null
-  const row = await loadRow(userId)
-  if (!row || !row.config || !row.config.tokens) return null
+function expiryOf(tokens) {
+  return tokens.expires_at || 0
+}
 
+async function freshAccessToken(row, { userId, connectionId }) {
   const tokens = decryptJson(row.config.tokens)
-  // Google returns expires_in (seconds). callback.js stores tokens as-is, so
-  // we compute absolute expiry from connected_at + expires_in unless an
-  // explicit expires_at is already set (later writes do this).
   const now = Date.now()
-  const expiresAt = tokens.expires_at
-    || (tokens.expires_in && row.connected_at
-        ? new Date(row.connected_at).getTime() + tokens.expires_in * 1000
-        : 0)
-
+  const expiresAt = expiryOf(tokens)
   if (tokens.access_token && (!expiresAt || expiresAt - now > 60_000)) {
-    return { accessToken: tokens.access_token, profile: row.config.profile || null }
+    return { accessToken: tokens.access_token, tokens }
   }
-
   if (!tokens.refresh_token) return null
   const refreshed = await refresh(tokens.refresh_token)
   const merged = {
@@ -120,49 +130,27 @@ export async function getGmailToken(userId) {
     token_type: refreshed.token_type || tokens.token_type,
     scope: refreshed.scope || tokens.scope,
   }
-  await writeRow(userId, {
-    ...row.config,
-    tokens: encryptJson(merged),
-  })
-  return { accessToken: merged.access_token, profile: row.config.profile || null }
+  await writeTokens({ userId, connectionId, tokens: merged, email: row.config.account_email, workspaceId: row.workspace_id })
+  return { accessToken: merged.access_token, tokens: merged }
 }
 
-
-async function loadConnectionRow(connectionId) {
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?id=eq.${connectionId}&integration_slug=eq.gmail&select=id,user_id,workspace_id,config,connected_at,updated_at&limit=1`,
-    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
-  )
-  if (!r.ok) return null
-  const rows = await r.json()
-  return Array.isArray(rows) && rows.length ? rows[0] : null
+// Returns { accessToken, profile } or null if Gmail is not connected for this
+// user. Caller should respond 401 with {error:'integration:not-connected'} in
+// that case so the UI can render the "Connect Gmail" empty state.
+export async function getGmailToken(userId) {
+  if (!userId) return null
+  const row = await loadRow(userId)
+  if (!row) return null
+  const fresh = await freshAccessToken(row, { userId })
+  if (!fresh) return null
+  return { accessToken: fresh.accessToken, profile: row.config.profile || null }
 }
 
-async function writeConnectionRow(connectionId, configPatch) {
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?id=eq.${connectionId}`,
-    {
-      method: 'PATCH',
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify({ config: configPatch, updated_at: new Date().toISOString() }),
-    },
-  )
-  return r.ok
-}
-
-// Self-heal: fetch Gmail profile and patch row.config.account_email if missing.
-// Only fires when the row is a Gmail connection AND account_email isn't set —
-// once patched it never fires again. Non-blocking from the caller's POV via
-// catch().
+// Self-heal: fetch the Gmail profile and store the account email when the row
+// has none. Fires once per connection; non-blocking from the caller's view.
 async function backfillAccountEmail(connectionId, row, accessToken) {
   try {
-    if (!row || row.integration_slug !== 'gmail') return
-    if (row.config && row.config.account_email) return
+    if (!row || row.config?.account_email) return
     const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
@@ -170,47 +158,22 @@ async function backfillAccountEmail(connectionId, row, accessToken) {
     const profile = await r.json()
     const email = profile && profile.emailAddress
     if (!email) return
-    const nextConfig = { ...(row.config || {}), account_email: email, profile: { ...(row.config?.profile || {}), emailAddress: email } }
-    await writeConnectionRow(connectionId, nextConfig)
-    row.config = nextConfig
+    const tokens = decryptJson(row.config.tokens)
+    await writeTokens({ connectionId, tokens, email, workspaceId: row.workspace_id })
+    row.config = { ...(row.config || {}), account_email: email, profile: { ...(row.config?.profile || {}), emailAddress: email } }
   } catch { /* soft-fail; cosmetic only */ }
 }
 
-// Same shape as getGmailToken but keyed on a specific connection row id.
+// Same shape as getGmailToken but keyed on a specific connection id.
 // Caller is responsible for checking access via mailAccess.assertCanUseConnection.
 export async function getGmailTokenByConnection(connectionId) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null
+  if (!connectionId) return null
   const row = await loadConnectionRow(connectionId)
-  if (!row || !row.config || !row.config.tokens) return null
-
-  const tokens = decryptJson(row.config.tokens)
-  const now = Date.now()
-  const expiresAt = tokens.expires_at
-    || (tokens.expires_in && row.connected_at
-        ? new Date(row.connected_at).getTime() + tokens.expires_in * 1000
-        : 0)
-
-  if (tokens.access_token && (!expiresAt || expiresAt - now > 60_000)) {
-    await backfillAccountEmail(connectionId, row, tokens.access_token)
-    return { accessToken: tokens.access_token, profile: row.config.profile || null, row }
-  }
-  if (!tokens.refresh_token) return null
-  const refreshed = await refresh(tokens.refresh_token)
-  const merged = {
-    ...tokens,
-    access_token: refreshed.access_token,
-    expires_in: refreshed.expires_in,
-    expires_at: Date.now() + (refreshed.expires_in || 0) * 1000,
-    refresh_token: refreshed.refresh_token || tokens.refresh_token,
-    token_type: refreshed.token_type || tokens.token_type,
-    scope: refreshed.scope || tokens.scope,
-  }
-  await writeConnectionRow(connectionId, {
-    ...row.config,
-    tokens: encryptJson(merged),
-  })
-  await backfillAccountEmail(connectionId, row, merged.access_token)
-  return { accessToken: merged.access_token, profile: row.config.profile || null, row }
+  if (!row) return null
+  const fresh = await freshAccessToken(row, { connectionId })
+  if (!fresh) return null
+  await backfillAccountEmail(connectionId, row, fresh.accessToken)
+  return { accessToken: fresh.accessToken, profile: row.config.profile || null, row }
 }
 
 export async function gmailFetch(accessToken, path, init = {}) {
@@ -230,47 +193,20 @@ export function decodeBase64Url(b64url) {
   return Buffer.from(b64, 'base64').toString('utf-8')
 }
 
-// Resolve a Gmail connection id by account email.
-// Prefers workspace-owned rows (canonical for terminal agents), falls back to
-// the most-recently-updated user-owned row. Returns null if none found.
-// Used by internal mail endpoints so agents can pass account_email instead of
-// a fragile hardcoded connection UUID.
+// Resolve a Gmail connection id by account email. Used by the internal mail
+// endpoints so agents can pass account_email instead of a connection id.
+// The connection belongs to the Convex user with that email (the shared
+// hello@ inbox is the hello@ account's own connection). Returns null when no
+// such user or no Gmail connection exists.
 export async function resolveConnectionIdByEmail(accountEmail) {
-  if (!SUPABASE_URL || !SUPABASE_KEY || !accountEmail) return null
-  const emailEnc = encodeURIComponent(accountEmail)
-  const svcHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
-
-  // FIRST: the pinned canonical row for this inbox, if one exists. This is the live link the daily
-  // reconcile keeps honest. Without this, a stale DUPLICATE (left over from a past re-auth) could win
-  // and get handed out as a dead connection — the root cause of the recurring "not connected" issue.
-  const canonR = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?integration_slug=eq.gmail&config->>canonical=eq.true&config->>account_email=eq.${emailEnc}&select=id&order=updated_at.desc&limit=1`,
-    { headers: svcHeaders },
-  )
-  if (canonR.ok) {
-    const rows = await canonR.json()
-    if (Array.isArray(rows) && rows.length) return rows[0].id
+  const email = String(accountEmail || '').trim().toLowerCase()
+  if (!email) return null
+  try {
+    const user = await convexQuery('users:getByEmail', { email })
+    if (!user?._id) return null
+    const row = await convexQuery('integrations:getOAuthTokens', { userId: String(user._id), slug: SLUG })
+    return row?.connectionId ? String(row.connectionId) : null
+  } catch {
+    return null
   }
-
-  // Then workspace-owned, then user-owned. Canonical-first ordering in each so a pinned row always
-  // beats an unpinned stray sharing the same email.
-  const wsR = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?workspace_id=not.is.null&integration_slug=eq.gmail&config->>account_email=eq.${emailEnc}&select=id&order=config->>canonical.desc.nullslast,updated_at.desc&limit=1`,
-    { headers: svcHeaders },
-  )
-  if (wsR.ok) {
-    const rows = await wsR.json()
-    if (Array.isArray(rows) && rows.length) return rows[0].id
-  }
-
-  const userR = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=not.is.null&integration_slug=eq.gmail&config->>account_email=eq.${emailEnc}&select=id&order=config->>canonical.desc.nullslast,updated_at.desc&limit=1`,
-    { headers: svcHeaders },
-  )
-  if (userR.ok) {
-    const rows = await userR.json()
-    if (Array.isArray(rows) && rows.length) return rows[0].id
-  }
-
-  return null
 }

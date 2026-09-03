@@ -5,7 +5,8 @@
 // is the skinned surface that route exists before any of that lands.
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../dashboard/lib/supabase.js'
+import { getCurrentUser } from '../dashboard/lib/auth.js'
+import { convexQuery } from '../dashboard/lib/convex.js'
 import { getClientId } from '../dashboard/lib/clientConfig.js'
 
 const C = {
@@ -54,23 +55,22 @@ export default function DashboardWelcome() {
   useEffect(() => {
     let cancelled = false
     ;(async () => {
-      const clientId = getClientId() || 'aom'
+      let clientId = getClientId() || 'aom'
       try {
-        const { data: userRes } = await supabase.auth.getUser()
+        const user = await getCurrentUser()
         if (cancelled) return
-        if (userRes?.user) {
-          const name = userRes.user.user_metadata?.full_name
-            || userRes.user.email?.split('@')[0]
+        if (user) {
+          const name = user.user_metadata?.full_name
+            || user.email?.split('@')[0]
             || 'there'
           setDisplayName(name)
+          if (user.user_metadata?.world) clientId = user.user_metadata.world
         }
-        const { data } = await supabase
-          .from('projects')
-          .select('id')
-          .eq('client_id', clientId)
-          .limit(1)
+        // corner:retire-supabase R3: project rooms live on Convex. Any project
+        // room in the world means the person is past the welcome step.
+        const rooms = await convexQuery('rooms:listRooms', { worldId: clientId, filter: 'project' })
         if (cancelled) return
-        const projectCount = Array.isArray(data) ? data.length : 0
+        const projectCount = Array.isArray(rooms) ? rooms.length : 0
         setHasProjects(projectCount > 0)
         if (projectCount > 0) navigate('/dashboard', { replace: true })
       } catch {

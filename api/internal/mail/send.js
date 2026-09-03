@@ -2,8 +2,9 @@
 //
 // Internal-auth endpoint for terminal agents (Elon, Studio tmux sessions).
 // No user JWT required. Authentication via X-Internal-Key header matched
-// against SUPABASE_SERVICE_ROLE_KEY — already present in Vercel env and
-// in the AOM-EA local .env, so no new env vars needed.
+// against CORNER_INTERNAL_KEY. corner:retire-supabase (2026-09-03): the shared
+// secret used to be the Supabase service role key; it is now its own value,
+// set in the Vercel project env and in the AOM-EA local .env.
 //
 // This endpoint exists because the terminal EA has no user JWT — it runs in
 // a tmux Claude Code session without access to Patrik's browser session.
@@ -11,7 +12,7 @@
 // terminal can't provide. This internal path skips user auth and goes
 // straight to the connection-scoped token via getGmailTokenByConnection.
 //
-// Auth: X-Internal-Key header must equal SUPABASE_SERVICE_ROLE_KEY.
+// Auth: X-Internal-Key header must equal CORNER_INTERNAL_KEY.
 //
 // Body: {
 //   connection_id?,     // account_integrations.id (or account_email as alternative)
@@ -31,7 +32,7 @@
 
 import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch } from '../../_lib/gmailClient.js'
 
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const INTERNAL_KEY = process.env.CORNER_INTERNAL_KEY
 
 // ─── RFC 822 helpers (mirrored from api/dashboard/mail/send.js) ─────────────
 
@@ -159,10 +160,9 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
-  // Internal auth: X-Internal-Key must match SUPABASE_SERVICE_ROLE_KEY.
-  // This key is already in Vercel env and in AOM-EA .env — no new vars needed.
+  // Internal auth: X-Internal-Key must match CORNER_INTERNAL_KEY.
   const internalKey = (req.headers['x-internal-key'] || '').trim()
-  if (!SUPABASE_SERVICE_ROLE_KEY || !internalKey || internalKey !== SUPABASE_SERVICE_ROLE_KEY) {
+  if (!INTERNAL_KEY || !internalKey || internalKey !== INTERNAL_KEY) {
     return res.status(401).json({ error: 'unauthorized' })
   }
 

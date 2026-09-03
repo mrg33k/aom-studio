@@ -12,26 +12,41 @@
 //      oauth_status:"coming_soon" so the Connect button activates)
 //
 // Required env: TOKEN_ENC_KEY (signs state), per-provider OAuth creds.
+//
+// corner:retire-supabase (2026-09-03): the caller is identified by their Convex
+// Auth token (users:verifyToken) and the workspace membership check is
+// worlds:membership. The userId signed into state is the Convex users id, which
+// is what callback.js hands to integrations:setOAuthTokens.
 
 import { extractJwt } from '../../_lib/verifyTenant.js'
 import { getProvider, getProviderCreds, buildRedirectUri } from '../../_lib/oauthProviders.js'
 import { signState } from '../../_lib/oauthCrypto.js'
 import { randomBytes } from 'crypto'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
 
-async function getUserId(req) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null
-  const jwt = extractJwt(req)
-  if (!jwt) return null
+async function convex(kind, path, args, token) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (token) headers.Authorization = `Bearer ${token}`
+  const res = await fetch(`${CONVEX_URL}/api/${kind}`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ path, args: args || {}, format: 'json' }),
+  })
+  if (!res.ok) throw new Error(`convex ${kind} ${path}: HTTP ${res.status}`)
+  const data = await res.json()
+  if (!data || data.status !== 'success') {
+    throw new Error(`convex ${kind} ${path}: ${(data && (data.errorMessage || data.status)) || 'malformed response'}`)
+  }
+  return data.value
+}
+
+async function getUser(req) {
+  const token = extractJwt(req)
+  if (!token) return null
   try {
-    const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${jwt}` },
-    })
-    if (!r.ok) return null
-    const user = await r.json()
-    return user?.id || null
+    const who = await convex('query', 'users:verifyToken', {}, token)
+    return who && who.userId ? { ...who, token } : null
   } catch {
     return null
   }
@@ -57,8 +72,9 @@ export default async function handler(req, res) {
     })
   }
 
-  const userId = await getUserId(req)
-  if (!userId) return res.status(401).json({ error: 'not authenticated' })
+  const user = await getUser(req)
+  if (!user) return res.status(401).json({ error: 'not authenticated' })
+  const userId = user.userId
 
   // return_to lets callers (e.g. the onboarding flow) ask the callback to land
   // them on a specific same-origin path instead of /dashboard. Must be a
@@ -80,15 +96,16 @@ export default async function handler(req, res) {
   if (scope === 'workspace') {
     const requested = (req.query?.workspace_id || '').toString()
     if (!requested) return res.status(400).json({ error: 'workspace_id required when scope=workspace' })
-    const memCheck = await fetch(
-      `${SUPABASE_URL}/rest/v1/tenant_users?user_id=eq.${userId}&tenant_id=eq.${requested}&select=tenant_id&limit=1`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
-    )
-    const memRows = memCheck.ok ? await memCheck.json() : []
-    if (!Array.isArray(memRows) || !memRows.length) {
+    let membership = null
+    try {
+      membership = await convex('query', 'worlds:membership', { worldId: requested, userId }, user.token)
+    } catch {
+      membership = null
+    }
+    if (!membership) {
       return res.status(403).json({ error: 'not a member of requested workspace' })
     }
-    workspaceId = requested
+    workspaceId = membership.slug || requested
   }
   const state = signState({ userId, slug, ts: Date.now(), nonce, returnTo, workspaceId })
 

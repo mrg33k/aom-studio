@@ -389,7 +389,7 @@ final class ChatViewModel: ObservableObject {
         self.revealInterval = revealInterval
         self.onFirstReply = onFirstReply
         self.cacheStore = cacheStore ?? (Config.suppressLiveBackendsForTests ? nil : .shared)
-        let viewer = CornerAPI.shared.session?.user.id.uuidString.lowercased() ?? "anonymous"
+        let viewer = CornerAPI.shared.session?.user.id.lowercased() ?? "anonymous"
         self.cacheKey = "\(viewer):\(room.roomID)"
         // Restore per-room mode, defaulting to work — mirrors web's localStorage.cv6.chatMode.<key>
         let saved = UserDefaults.standard.string(forKey: "chatMode.\(room.id)")
@@ -572,7 +572,7 @@ final class ChatViewModel: ObservableObject {
         let world = concreteAPI.world ?? "aom"
         // Prefer real session identity when available; fall back to the local anon shape the web preview uses.
         let userId: String = {
-            if let uid = concreteAPI.session?.user.id.uuidString, !uid.isEmpty { return uid }
+            if let uid = concreteAPI.session?.user.id, !uid.isEmpty { return uid }
             // Stable per-install anon so typing + message rows coalesce without auth.
             let key = "convex.anonUserId"
             if let saved = UserDefaults.standard.string(forKey: key), !saved.isEmpty { return saved }
@@ -581,8 +581,7 @@ final class ChatViewModel: ObservableObject {
             return fresh
         }()
         let userName: String? = {
-            if let meta = concreteAPI.session?.user.userMetadata,
-               let n = (meta["name"]?.stringValue ?? meta["full_name"]?.stringValue ?? meta["user_name"]?.stringValue)?.trimmingCharacters(in: .whitespacesAndNewlines),
+            if let n = concreteAPI.session?.user.name?.trimmingCharacters(in: .whitespacesAndNewlines),
                !n.isEmpty { return n }
             return concreteAPI.session == nil ? "iOS" : nil
         }()

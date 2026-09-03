@@ -1,18 +1,18 @@
 // /api/deal-bank/completed — public read of Deal Bank Completed Rounds.
 // Backs the /space-rising/deal-bank/completed page.
-// Falls back to embedded seed data if the table hasn't been created yet.
+// Falls back to embedded seed data when nothing has been added yet.
 //
-// SETUP: run the migration SQL in Supabase Studio:
-//   supabase/migrations/20260518100000_deal_bank_completed_rounds.sql
+// corner:retire-supabase (2026-09-03): rounds used to live in the Supabase
+// deal_bank_completed_rounds table. They now live on Convex in the keyed
+// `state` table, one row per round: kind DEAL_BANK_KIND, scopeId = round id,
+// value = the round fields. /api/deal-bank/add writes them with state:put and
+// this endpoint reads them all back with state:get {kind}.
 
-import { createClient } from '@supabase/supabase-js'
+import { convexQuery } from '../_lib/reportsStore.js'
 
-const SUPABASE_URL = 'https://mcngatprgluexjjcqpkp.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY
+export const DEAL_BANK_KIND = 'deal-bank-completed-round'
 
-const supabase = SUPABASE_SERVICE_KEY ? createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY) : null
-
-// Seed data embedded as fallback until the Supabase table is created.
+// Seed data embedded as fallback until real rounds have been added.
 // Source: research/2026-05-18-blacknight-seed.json
 const SEED_ROUNDS = [
   {
@@ -59,6 +59,28 @@ const SEED_ROUNDS = [
   },
 ]
 
+const ROUND_COLUMNS = [
+  'company', 'amount_raised', 'round', 'date', 'source_url', 'notes',
+  'amount_usd_m', 'segment', 'short_description', 'source', 'investors', 'region',
+]
+
+// Turn one state row into the row shape the page has always read.
+function rowToRound(row) {
+  const value = (row && row.value && typeof row.value === 'object') ? row.value : {}
+  const out = { id: row.scopeId }
+  for (const col of ROUND_COLUMNS) out[col] = value[col] ?? null
+  out.created_at = value.created_at || (row.updatedAt ? new Date(row.updatedAt).toISOString() : null)
+  return out
+}
+
+// Newest date first; rows with no date sink to the bottom.
+function byDateDesc(a, b) {
+  if (!a.date && !b.date) return 0
+  if (!a.date) return 1
+  if (!b.date) return -1
+  return a.date < b.date ? 1 : a.date > b.date ? -1 : 0
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=3600')
@@ -68,19 +90,15 @@ export default async function handler(req, res) {
     return
   }
 
-  // Try Supabase first
-  if (supabase) {
-    const { data, error } = await supabase
-      .from('deal_bank_completed_rounds')
-      .select('id, company, amount_raised, round, date, source_url, notes, amount_usd_m, segment, short_description, source, investors, region, created_at')
-      .order('date', { ascending: false, nullsFirst: false })
-      .limit(1000)
-
-    if (!error && data) {
-      res.status(200).json({ rounds: data, source: 'supabase', count: data.length })
+  try {
+    const rows = await convexQuery('state:get', { kind: DEAL_BANK_KIND })
+    if (Array.isArray(rows) && rows.length) {
+      const rounds = rows.map(rowToRound).sort(byDateDesc).slice(0, 1000)
+      res.status(200).json({ rounds, source: 'convex', count: rounds.length })
       return
     }
-    console.warn('[deal-bank/completed] Supabase error (table may not exist yet):', error?.message)
+  } catch (err) {
+    console.warn('[deal-bank/completed] Convex read failed, serving seed:', err?.message)
   }
 
   // Fallback to embedded seed data

@@ -1,41 +1,38 @@
 // POST /api/dashboard/task-message
 //
-// corner:task-rooms R3 — mid-flight chat. Patrik (or any cross-tenant viewer)
-// sends a message inside a task room; the row lands in `messages` tagged with
-// metadata.task_id so:
-//   - the dashboard task drawer renders it (R2 dual-query path).
-//   - the sub-agent's `scripts/sub-agent-poll-inbox.sh` discovers it between
-//     tool boundaries and pauses to respond.
+// corner:task-rooms R3: mid-flight chat. Patrik (or any cross-tenant viewer)
+// sends a message inside a task room; the row lands in the task's room
+// (<world>:agent:task:<id>) tagged with metadata.task_id so the dashboard task
+// drawer renders it and the sub-agent's inbox poll discovers it.
 //
-// R4 extension (post-completion follow-up) will kick off a fresh sub-agent
-// dispatch from this endpoint when the target task is in a terminal state.
-// For R3, terminal-state messages just land in `messages` like any other —
-// the dashboard renders them, no dispatch fires.
+// R4 (post-completion follow-up): when the target task is terminal and the
+// caller flags terminal=true, a fresh task is queued with the prior transcript
+// and this message as the brief.
 //
-// Body: { task_id, text, client_id?, role? }
-//   - task_id   (required) — uuid of the target task.
-//   - text      (required) — message body.
-//   - client_id (optional) — viewer's world. Defaults to 'aom'.
-//   - role      (optional) — 'user' (default) so the poll script picks it up.
-//                            'assistant' for sub-agent replies (use the
-//                            scripts/sub-agent-reply.sh helper instead).
+// Body: { task_id, text, client_id?, role?, terminal? }
+//   task_id   (required) uuid of the target task.
+//   text      (required) message body.
+//   client_id (optional) viewer's world.
+//   role      (optional) 'user' (default) or 'assistant' for sub-agent replies.
 //
-// Returns: { ok: true, message: <inserted row> } on success.
+// Returns: { ok: true, message, task_status, followup } on success.
+//
+// Backend: Convex tasks:get + messages:send + tasks:queue
+// (corner:retire-supabase R2, 2026-09-03).
+//
+// World gate: this endpoint can mint a queued task that copies the target
+// task's project and repo and embeds the caller's text in the brief, so the
+// caller must reach the world that owns the task (verifyTenant on the row's
+// own client_id), or hold a grant on the task's project.
 
-import crypto from 'crypto'
-import { extractJwt, verifyTenant, verifyProjectAccess, TenantAuthError } from '../_lib/verifyTenant.js'
+import { extractJwt, verifyTenant, callerIdentity, TenantAuthError } from '../_lib/verifyTenant.js'
+import { convexQuery, convexMutation } from '../_lib/reportsStore.js'
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+const iso = (ms) => (Number.isFinite(ms) ? new Date(ms).toISOString() : null)
 
-function supabaseHeaders() {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-    Prefer: 'return=representation',
-  }
-}
+// Optional write key for the gated script-facing mutations (tasks:queue).
+// Unset on dev today; JSON drops an undefined field.
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || undefined
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -45,10 +42,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' })
-  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' })
 
-  // JWT required so the room is never anonymous. Per-room membership is a
-  // follow-up; for R3 the floor is "authenticated dashboard user".
   const jwt = extractJwt(req)
   if (!jwt) return res.status(401).json({ error: 'jwt required' })
 
@@ -60,135 +54,88 @@ export default async function handler(req, res) {
   const clientId = (String(body.client_id || '').trim() || '').toLowerCase()
   const role = body.role === 'assistant' ? 'assistant' : 'user'
 
-  // Load the task row so we can include its agent + status in the message
-  // metadata. This lets the drawer render with context (R4 reads status to
-  // decide followup-dispatch vs inbox-append) without a second round trip.
+  // Load the task row so the message carries its agent + status.
   let taskRow = null
   try {
-    const sbRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/tasks?select=id,title,text,agent_identity,agent,status,client_id,project,project_path,metadata&id=eq.${encodeURIComponent(taskId)}&limit=1`,
-      { headers: supabaseHeaders() },
-    )
-    if (sbRes.ok) {
-      const rows = await sbRes.json()
-      if (Array.isArray(rows) && rows[0]) taskRow = rows[0]
-    }
+    taskRow = await convexQuery('tasks:get', { id: taskId })
   } catch {
-    // If the lookup fails, fall through with a thin metadata payload — the
-    // sub-agent poll path doesn't need the agent field, and R4 will re-load
-    // the task row inside its dispatch path anyway.
+    // Fall through with a thin metadata payload.
   }
 
   const agent = taskRow?.agent_identity || taskRow?.agent || `task:${taskId}`
   const taskStatus = taskRow?.status || null
-  const taskClientId = taskRow?.client_id || clientId
+  const taskClientId = String(taskRow?.client_id || clientId || '').toLowerCase()
+  if (!taskClientId) return res.status(400).json({ error: 'client_id required when the task is unknown' })
 
-  // --- WORLD GATE (r7) ------------------------------------------------------
-  // Until now the only check on this endpoint was "is there a JWT", and the
-  // header comment above still describes that as the floor ("Per-room
-  // membership is a follow-up"). It is not a follow-up: with `terminal: true`
-  // this endpoint MINTS A QUEUED TASK further down, copying the target task's
-  // project, project_path and metadata (including metadata.repo) and embedding
-  // the caller's own `text` in the brief under "## New ask". VERIFIED: a
-  // karens-world session posted terminal=true against an AOM-owned task id and
-  // produced a status='queued' row carrying AOM's project and repo with
-  // attacker-authored brief text. Task UUIDs are not secrets — they leak
-  // through several read surfaces — so the uuid alone authorized code execution
-  // in another world's checkout.
-  //
-  // Gate on the world that OWNS the task, read off the row (never a body
-  // field) — the same shape retry-task.js already uses. When the task carries a
-  // project, a world holding a project_access grant on it is admitted too, via
-  // verifyProjectAccess: the sharing model says a granted world may work on the
-  // project, and refusing them here would be the r2/r3 lockout again, invisible
-  // to the super-admin who returns before either check.
-  let verifiedTenant = null
+  // World gate on the world that owns the task. A world holding a grant on the
+  // task's project is admitted too.
+  const identity = await callerIdentity(req).catch(() => null)
   try {
-    ({ tenant: verifiedTenant } = await verifyTenant(taskClientId, req))
+    await verifyTenant(taskClientId, req)
   } catch (err) {
     if (!(err instanceof TenantAuthError)) throw err
     let grantOk = false
-    if (taskRow?.project) {
-      try {
-        await verifyProjectAccess(taskRow.project, req)
-        grantOk = true
-      } catch (e2) {
-        if (!(e2 instanceof TenantAuthError)) throw e2
-      }
+    if (taskRow?.project && identity?.world) {
+      const access = await convexQuery('projects:hasAccess', { slug: taskRow.project, worldId: identity.world }).catch(() => null)
+      grantOk = !!access?.ok
     }
     if (!grantOk) {
       return res.status(err.status).json({
         error: `forbidden: this task belongs to world "${taskClientId}" and your session cannot reach it${taskRow?.project ? ` or its project "${taskRow.project}"` : ''}`,
       })
     }
-    verifiedTenant = taskClientId
   }
 
-  const payload = {
-    id: crypto.randomUUID(),            // messages.id is NOT NULL with no DB default
-    agent: `task:${taskId}`,            // back-compat with legacy thread expansion
-    text,
-    role,
-    source: 'task-room',
-    client_id: taskClientId,
-    timestamp: new Date().toISOString(),
-    metadata: {
-      task_id: taskId,
-      task_agent: agent,
-      task_status: taskStatus,
-      sender_client_id: clientId,
-    },
+  const roomId = `${taskClientId}:agent:task:${taskId}`
+  const metadata = {
+    task_id: taskId,
+    task_agent: agent,
+    task_status: taskStatus,
+    sender_client_id: clientId,
   }
 
   try {
-    const sbRes = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
-      method: 'POST',
-      headers: supabaseHeaders(),
-      body: JSON.stringify(payload),
+    const messageId = await convexMutation('messages:send', {
+      roomId,
+      text,
+      role,
+      source: 'task-room',
+      clientId: taskClientId,
+      userId: role === 'user' && identity?.userId ? String(identity.userId) : undefined,
+      userEmail: role === 'user' ? (identity?.email || undefined) : undefined,
+      userName: role === 'user' ? (identity?.userName || undefined) : undefined,
+      agentSlug: role === 'assistant' ? String(agent).split(':')[0] : undefined,
+      metadata,
     })
-    if (!sbRes.ok) {
-      const errBody = await sbRes.text()
-      return res.status(sbRes.status).json({ error: errBody })
+    // messages:send does not keep the metadata bag. task_id is how the task
+    // drawer and the sub-agent inbox poll find this row, so it is a second
+    // write; a failure here must not lose the message that already landed.
+    await convexMutation('messages:patchMetadata', { messageId: String(messageId), patch: metadata })
+      .catch((err) => console.warn('[task-message] patchMetadata failed (ignored):', err?.message || err))
+    const now = new Date().toISOString()
+    const row = {
+      id: String(messageId),
+      agent: `task:${taskId}`,
+      text,
+      role,
+      source: 'task-room',
+      client_id: taskClientId,
+      room_id: roomId,
+      timestamp: now,
+      metadata,
     }
-    const inserted = await sbRes.json()
-    const row = Array.isArray(inserted) ? inserted[0] : inserted
 
-    // R4 corner:task-rooms — post-completion follow-up. When the original
-    // task is terminal (done|failed) AND the caller flagged terminal=true,
-    // enqueue a fresh task row with the prior transcript + this new message
-    // re-hydrated as the brief. task-runner picks it up and dispatches a
-    // new sub-agent via the same Studio path. No new dispatch script needed.
+    // R4: post-completion follow-up. When the original task is terminal and
+    // the caller flagged terminal=true, queue a fresh task with the prior
+    // transcript + this message as the brief.
     const terminalRequested = body.terminal === true
     const isTerminal = taskStatus === 'done' || taskStatus === 'failed'
     let followup = null
     if (terminalRequested && isTerminal && taskRow) {
       try {
-        // Pull the prior transcript: both legacy task:<id> rows and the new
-        // metadata.task_id rows (R2's dual-query pattern). 60-row cap so a
-        // very-chatty task doesn't produce a 200KB brief.
-        const [legacyRes, roomRes] = await Promise.all([
-          fetch(
-            `${SUPABASE_URL}/rest/v1/messages?select=text,timestamp,role&agent=eq.${encodeURIComponent('task:' + taskId)}&order=timestamp.asc&limit=60`,
-            { headers: supabaseHeaders() },
-          ),
-          fetch(
-            `${SUPABASE_URL}/rest/v1/messages?select=text,timestamp,role,metadata&metadata->>task_id=eq.${encodeURIComponent(taskId)}&order=timestamp.asc&limit=60`,
-            { headers: supabaseHeaders() },
-          ),
-        ])
-        const legacyRows = legacyRes.ok ? await legacyRes.json() : []
-        const roomRows = roomRes.ok ? await roomRes.json() : []
-        const seen = new Set()
-        const transcript = []
-        for (const m of [...legacyRows, ...roomRows]) {
-          const k = (m.timestamp || '') + '|' + (m.text || '')
-          if (seen.has(k)) continue
-          seen.add(k)
-          transcript.push(m)
-        }
-        transcript.sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)))
-        const transcriptText = transcript
-          .map(m => `[${(m.timestamp || '').slice(0, 19)}] ${m.role || '?'}: ${m.text || ''}`)
+        const thread = await convexQuery('messages:getThread', { roomId, limit: 60 }).catch(() => [])
+        const transcriptText = (Array.isArray(thread) ? thread : [])
+          .map((m) => `[${String(iso(m.createdAt) || '').slice(0, 19)}] ${m.role || (m.agentSlug ? 'assistant' : 'user')}: ${m.text || ''}`)
           .join('\n')
         const followupBody = [
           `# Follow-up on task ${taskId}`,
@@ -215,47 +162,35 @@ export default async function handler(req, res) {
           `- The new ask is a follow-up, not a fresh start. Acknowledge what the prior agent already did before adding new work.`,
           `- Finalize with task-complete.sh on THIS task id (the followup row), not the original.`,
         ].join('\n')
-        const followupRow = {
-          title: `[followup] ${(taskRow.title || '').slice(0, 90)}`,
-          text: followupBody,
-          description: followupBody,
-          status: 'queued',
-          source: 'task-room-followup',
-          client_id: taskClientId,
-          project: taskRow.project || null,
-          project_path: taskRow.project_path || null,
-          priority: 100,
-          created_at: new Date().toISOString(),
-          metadata: {
-            ...(taskRow.metadata && typeof taskRow.metadata === 'object' ? taskRow.metadata : {}),
-            followup_of: taskId,
-            followup_message_id: row?.id || null,
-            mission_slug: (taskRow.metadata && taskRow.metadata.mission_slug) || null,
+        followup = await convexMutation('tasks:queue', {
+          key: CONVEX_KEY,
+          row: {
+            title: `[followup] ${(taskRow.title || '').slice(0, 90)}`,
+            text: followupBody,
+            description: followupBody,
+            status: 'queued',
+            source: 'task-room-followup',
+            client_id: taskClientId,
+            project: taskRow.project || null,
+            project_path: taskRow.project_path || null,
+            priority: 100,
+            agent: taskRow.agent || undefined,
+            agent_identity: taskRow.agent_identity || undefined,
+            metadata: {
+              ...(taskRow.metadata && typeof taskRow.metadata === 'object' ? taskRow.metadata : {}),
+              followup_of: taskId,
+              followup_message_id: row.id,
+              mission_slug: (taskRow.metadata && taskRow.metadata.mission_slug) || null,
+            },
           },
-        }
-        const fRes = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
-          method: 'POST',
-          headers: supabaseHeaders(),
-          body: JSON.stringify(followupRow),
         })
-        if (fRes.ok) {
-          const fJson = await fRes.json()
-          followup = Array.isArray(fJson) ? fJson[0] : fJson
-        }
       } catch (followupErr) {
-        // Follow-up dispatch is best-effort. The user's message still landed
-        // in messages; the dashboard renders it. Failure here is reported in
-        // the response payload, not by erroring the whole request.
+        // Best effort. The user's message already landed.
         followup = { error: followupErr?.message || 'followup enqueue failed' }
       }
     }
 
-    return res.status(200).json({
-      ok: true,
-      message: row,
-      task_status: taskStatus,
-      followup,
-    })
+    return res.status(200).json({ ok: true, message: row, task_status: taskStatus, followup })
   } catch (err) {
     return res.status(500).json({ error: err?.message || 'insert failed' })
   }

@@ -1,41 +1,45 @@
-// useIntakeRoute — the front-door composer's brain-to-room wiring.
+// useIntakeRoute: the front-door composer's brain-to-room wiring.
 // corner:front-door Stage 3.
 //
 // Flow: the user types a task at the front door and sends. We ask the routing
 // brain (/api/dashboard/intake-route) where it belongs, then:
-//   continue|existing (and confident) → open that room + post the text.
-//   new (or low-confidence / degraded) → show an EDITABLE confirm; nothing is
+//   continue|existing (and confident) -> open that room + post the text.
+//   new (or low-confidence / degraded) -> show an EDITABLE confirm; nothing is
 //   created or sent until the user commits. (M14: creation always confirms.)
 //
 // Nothing the user typed is ever lost: the composer text is only cleared on a
 // successful open+seed; every failure path lands in the editable confirm with
 // the text preserved.
+//
+// The seed itself is a Convex messages:send into the room's canonical key
+// (corner:retire-supabase R2); the room's live thread picks it up at once.
 
 import { useCallback, useRef, useState } from 'react';
 import { authFetch } from '../../lib/authFetch';
-import { supabase } from '../../lib/supabase.js';
+import { hasSession, convexMutation, convexWorldId } from '../../lib/convex.js';
 import { demoFixtureActive } from '../../lib/fixtureClient.js';
 import { createMissionInProject, createProjectFromHome } from './useHomeData.js';
 import { fetchRoomActivity } from './roomActivity.js';
 import { recordRoutedHere, clearRoutedHere } from './routedHere.js';
+import { convexViewerIdentity } from './convexIdentity.js';
 
 const AUTO_ROUTE_CONFIDENCE = 0.85;
-// Matches HINT_CHARS in api/dashboard/room-activity.js — the room digests are built there.
+// Matches HINT_CHARS in api/dashboard/room-activity.js: the room digests are built there.
 const HINT_CHARS = 200;
 const ROUTE_TIMEOUT_MS = 8000;
 
-const live = () => !!supabase || demoFixtureActive();
+const live = () => hasSession() || demoFixtureActive();
 const bareSlug = (s) => (s && String(s).includes(':') ? String(s).split(':').pop() : String(s || ''));
 const initialsOf = (s) => (String(s || '?').trim().slice(0, 2) || '?').toUpperCase();
 
 // Recursively flatten a missions tree/list into flat candidate rows.
-// hintMap: { "projectSlug:bareSlug" → preview string } for semantic context.
+// hintMap: { "projectSlug:bareSlug" -> preview string } for semantic context.
 function flattenMissions(nodes, projectSlug, out, hintMap, activity) {
   for (const m of (nodes || [])) {
     if (!m) continue;
     const slug = bareSlug(m.slug || m.folder_name || m.id);
-    // The tree these nodes come from (useProjectMissions) is folders on disk — it carries no
-    // message data at all, so recency/preview have to be joined in from missionActivity.
+    // The tree these nodes come from carries little message data, so recency and
+    // preview are joined in from missionActivity.
     const act = (activity && activity[`${projectSlug}:${slug}`]) || null;
     if (slug) out.push({
       slug,
@@ -54,12 +58,9 @@ function flattenMissions(nodes, projectSlug, out, hintMap, activity) {
 // straight from the data Home already holds in memory (no extra fetch).
 // Attaches a short `hint` (recent message preview) to each project/mission so
 // the router has semantic context beyond just the room name.
-// `roomActivity` is /api/dashboard/room-activity's payload — { projects: {slug: {…}},
-// missions: {"project:slug": {…}} } — and it is what makes ranking real. Home's own
-// projectRooms only learn recency from supabase-status's `limit=100` message window, which
-// on live data covered ONE project: without this overlay every candidate arrives at
-// timestamp 0 with no hint, the router's recency sort is a no-op, and its top-18 cut falls
-// alphabetically. Optional on purpose — if the fetch fails the composer still sends.
+// `roomActivity` is /api/dashboard/room-activity's payload ({ projects: {slug: {...}},
+// missions: {"project:slug": {...}} }) and it is what makes ranking real. Optional on
+// purpose: if the fetch fails the composer still sends.
 export function assembleCandidates(data, missionsByProject, roomActivity) {
   const actProjects = roomActivity?.projects || {};
   const actMissions = roomActivity?.missions || {};
@@ -80,7 +81,6 @@ export function assembleCandidates(data, missionsByProject, roomActivity) {
       slug,
       name: p.name || p.slug || p.id,
       last_message_at: p.last_message_at || act?.last_message_at || 0,
-      // last_message_text is the raw preview text on the projectRooms shape.
       // room-activity's digest FIRST: projectRooms only ever carries a single last line.
       hint: String(act?.last_message_text || p.last_message_text || '').trim().slice(0, HINT_CHARS),
     };
@@ -90,11 +90,8 @@ export function assembleCandidates(data, missionsByProject, roomActivity) {
     name: a.name || a.title || a.id,
   })).filter((a) => a.slug);
   const missions = [];
-  // Recency from Home when it has it (that is the live poll, so it is fresher), but the HINT
-  // always from room-activity. Home only ever knows a room's single last line, and a single
-  // line is a lottery ticket as a description of what a room is about — letting it win here
-  // would overwrite the multi-message digest with exactly the noise the digest exists to
-  // survive. See room-activity.js for the day-3-reel case that proved it.
+  // Recency from Home when it has it (that is the live feed, so it is fresher), but the
+  // HINT always from room-activity. Home only ever knows a room's single last line.
   const activity = {};
   for (const [k, v] of Object.entries(actMissions)) activity[k] = v;
   for (const [k, v] of Object.entries(data?.missionActivity || {})) {
@@ -110,10 +107,6 @@ export function assembleCandidates(data, missionsByProject, roomActivity) {
   }).filter((r) => r.id).slice(0, 6);
   return { candidates: { projects, missions, agents }, recent_rooms };
 }
-
-// fetchRoomActivity moved to ./roomActivity.js (2026-08-06) — Home's recent list became
-// a second consumer of the same wide window, and this module already imports from
-// useHomeData, so exporting it from here would have made an import cycle.
 
 function readLastRoom(worldId) {
   try {
@@ -133,36 +126,46 @@ function roomFromTarget(t) {
   return { id: t.id, name: t.name, initials: initialsOf(t.name), status: 'ready' };
 }
 
+// The canonical Convex room key for a room object. Mirrors
+// RoomThreadEngine.canonicalRoomKey so a seed lands in the same thread the
+// room opens on.
+export function roomKeyFor(worldId, room) {
+  if (room?.convexKey) return room.convexKey;
+  const world = convexWorldId(worldId);
+  if (room?.isMission) return `${world}:mission:${String(room.missionSlug || room.id || '')}`;
+  if (room?.isProject) return `${world}:project:${room.id}`;
+  return `${world}:agent:${room?.id}`;
+}
+
 // Post the user's text into a room with the correct scope + Work/Plan mode,
-// replicating useRoomThread.send's payloads so the room's poll surfaces it.
+// replicating useRoomThread.send's metadata so the room's thread surfaces it.
 // `auto` (the router's own decision, or null when the user picked the room) is stamped onto
-// the row as provenance. Until R11 nothing on a message said where it came from, so a room
-// the router GUESSED into was indistinguishable from one the user typed in — and
-// room-activity happily digested the guess into that room's description, which is what let
-// a single misroute teach the router to repeat itself (R10's closing note).
-//
-// The absence of `routed.accepted` IS the pending state; there is no `accepted: false`. A
-// room the user chose in the confirm card carries no stamp at all, because a choice they
-// made needs no confirming.
+// the row as provenance, so a room the router GUESSED into is distinguishable from one the
+// user typed in. The absence of `routed.accepted` IS the pending state.
 async function seedRoom(worldId, room, text, interactionMode, auto) {
   if (!live()) return true; // read-only/local: opening the room is enough
   const mode = interactionMode === 'plan' ? 'plan' : 'work';
-  const meta = { interaction_mode: mode, ...(auto ? { routed: { auto: true, confidence: Number(auto.confidence) || 0 } } : {}) };
-  const payload = room.isMission
-    ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || ''), ...meta } }
-    : room.isProject
-      ? { client_id: worldId, agent: 'corner', project: room.id, text, role: 'user', source: 'corner-dashboard', metadata: meta }
-      : { client_id: worldId, agent: room.id, text, role: 'user', source: 'corner-dashboard', metadata: meta };
+  const meta = {
+    interaction_mode: mode,
+    ...(room.isMission ? { mission_slug: String(room.missionSlug || room.id || '') } : {}),
+    ...(auto ? { routed: { auto: true, confidence: Number(auto.confidence) || 0 } } : {}),
+  };
   try {
-    // authFetch only rejects on a network failure, so a 4xx/5xx resolves normally —
-    // without this check the composer reports a successful seed for a message the room
-    // never received.
-    const res = await authFetch('/api/dashboard/supabase-messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (!res || !res.ok) return null;
+    const viewer = await convexViewerIdentity();
+    const id = await convexMutation('messages:send', {
+      roomId: roomKeyFor(worldId, room),
+      text,
+      role: 'user',
+      clientId: convexWorldId(worldId),
+      source: 'cv6-dashboard',
+      userId: viewer.userId,
+      userEmail: viewer.userEmail,
+      userName: viewer.userName,
+      metadata: meta,
+    });
     // The row's id is what makes the destination correctable: moving the message later
     // needs to know which row to retract from the room the router picked.
-    const d = await res.json().catch(() => null);
-    return { id: d?.message?.id || null };
+    return { id: id ? String(id) : null };
   } catch { return null; }
 }
 
@@ -174,8 +177,7 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
   const inFlight = useRef(false);
 
   // `auto` marks a room CORNER chose rather than one the user picked. Only those leave a
-  // routedHere record, so the room can name the destination and offer to move it — the
-  // whole point being that an automatic choice is the one the user never got to see.
+  // routedHere record, so the room can name the destination and offer to move it.
   const openAndSeed = useCallback(async (room, text, interactionMode, auto) => {
     onOpenRoom(room, worldId);
     // Carry the door's Work/Plan choice into the room's own composer.
@@ -207,26 +209,16 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
     setError('');
     setMode('routing');
     try {
-      // Real per-room recency + last line for the router to rank on. Edge-cached, so this
-      // is normally a few ms; capped short and swallowed on failure because a slow or dead
-      // activity lookup must never hold up the user's send — worst case the router ranks
-      // on what Home already had.
+      // Real per-room recency + last line for the router to rank on. Capped short and
+      // swallowed on failure because a slow or dead activity lookup must never hold up
+      // the user's send.
       const roomActivity = await fetchRoomActivity(worldId);
       const { candidates, recent_rooms } = assembleCandidates(data, missionsByProject, roomActivity);
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), ROUTE_TIMEOUT_MS);
       let decision = null;
       try {
-        // authFetch resolves to a Response, NOT parsed JSON — it is a thin wrapper that
-        // only attaches the bearer token. This await was being treated as the decision
-        // object itself, so `decision.route`, `.target`, `.confidence` and `.proposal`
-        // were ALL undefined on every send since the composer shipped: autoRoute could
-        // never be true, and control fell straight through to the editable new-mission
-        // draft with an empty proposal. The router was answering correctly the whole
-        // time and nothing was reading it — the "it doesn't place the project properly,
-        // it just takes a sentence from my prompt and attaches it randomly" report.
-        // Verified against the live endpoint: the Response carried route "existing" with
-        // a real target while the object the composer inspected was {}.
+        // authFetch resolves to a Response, NOT parsed JSON; read the body here.
         const res = await authFetch('/api/dashboard/intake-route', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
           body: JSON.stringify({ client_id: worldId, message: body, interaction_mode: pendingRef.current.mode, last_room: readLastRoom(worldId), recent_rooms, candidates }),
@@ -248,15 +240,13 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
       }
 
       if (decision && (decision.route === 'continue' || decision.route === 'existing') && decision.target) {
-        // Matched an existing room but below the auto bar → confirm as a room pick
+        // Matched an existing room but below the auto bar: confirm as a room pick
         // the user can accept or redirect (still no creation).
         toConfirm({ kind: 'existing', matchedRoom: decision.target, name: decision.target.name, reasoning: decision.reasoning || '', task_breakdown: [] }, '');
         return;
       }
 
-      // route 'new' (or degraded/no-decision) → editable new-mission draft.
-      // Server guarantees a non-verbatim name via synthesizeName; never use
-      // firstWords(body) which would paste the raw user message as the title.
+      // route 'new' (or degraded/no-decision): editable new-mission draft.
       const p = (decision && decision.proposal) || {};
       toConfirm({
         kind: p.kind === 'project' ? 'project' : 'mission',
@@ -269,7 +259,6 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
       }, decision?.degraded ? 'offline' : '');
     } catch (e) {
       // Never lose the text: fall to the editable new-mission draft.
-      // Leave name empty — the user will see "Name this work…" placeholder and type it.
       toConfirm({ kind: 'mission', name: '', project_slug: '', is_new_project: false, task_breakdown: [] }, 'offline');
     } finally {
       inFlight.current = false;
@@ -277,16 +266,15 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
   }, [data, missionsByProject, worldId, openAndSeed, toConfirm]);
 
   // Commit from the editable confirm. `decision` is one of:
-  //   { type:'existing', room }                    — open a room the user picked
-  //   { type:'create-mission', projectSlug, name } — create a mission, open, seed
-  //   { type:'create-project', name }              — create a project, open, seed
+  //   { type:'existing', room }                    - open a room the user picked
+  //   { type:'create-mission', projectSlug, name } - create a mission, open, seed
+  //   { type:'create-project', name }              - create a project, open, seed
   const commitNew = useCallback(async (decision) => {
     const { text, mode: pmode } = pendingRef.current;
     if (!text) { setMode('idle'); return; }
     setError('');
     if (decision?.type === 'to-new') {
-      // User rejected the matched room — offer an editable new-mission draft.
-      // Empty name so the user is prompted via the "Name this work…" placeholder.
+      // User rejected the matched room: offer an editable new-mission draft.
       setProposal({ kind: 'mission', name: '', project_slug: '', is_new_project: false, task_breakdown: [] });
       setMode('confirm');
       return;
@@ -302,7 +290,7 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
         const d = await createProjectFromHome({ worldId, name: decision.name, about: '' });
         const slug = d?.slug;
         if (!d?.ok || !slug) throw new Error('project create failed');
-        const room = { id: slug, name: d.name || decision.name, initials: initialsOf(decision.name), isProject: true, status: 'ready', statusText: 'project chat' };
+        const room = { id: slug, name: d.name || decision.name, initials: initialsOf(decision.name), isProject: true, status: 'ready', statusText: 'project chat', convexKey: d.convexKey };
         await openAndSeed(room, text, pmode);
       } else {
         // create-mission (default)
@@ -312,7 +300,7 @@ export function useIntakeRoute({ worldId, onOpenRoom, data, missionsByProject })
         const missionBare = d?.mission_slug;
         if (!d?.ok || !missionBare) throw new Error('mission create failed');
         const missionSlug = `${d.parent_slug || projectSlug}:${missionBare}`;
-        const room = { id: missionBare, name: d.name || decision.name, initials: initialsOf(decision.name), isMission: true, missionSlug, projectSlug: d.parent_slug || projectSlug, status: 'ready', statusText: '' };
+        const room = { id: missionBare, name: d.name || decision.name, initials: initialsOf(decision.name), isMission: true, missionSlug, projectSlug: d.parent_slug || projectSlug, status: 'ready', statusText: '', convexKey: d.convexKey };
         await openAndSeed(room, text, pmode);
       }
       setMode('idle'); setProposal(null);

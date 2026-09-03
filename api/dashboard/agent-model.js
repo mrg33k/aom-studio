@@ -1,47 +1,35 @@
 // GET  /api/dashboard/agent-model?client=CLIENT_ID
-//   → { models: { slug: 'default', 'project:slug': 'gemini-3.5-flash', ... } }
+//   -> { models: { slug: 'default', 'project:slug': 'gemini-3.5-flash', ... } }
 // PATCH /api/dashboard/agent-model  { slug, model, client_id }
-//   → saves model selection for the given slug (agent or project:slug)
+//   -> saves model selection for the given slug (agent or project:slug)
 //
-// corner:gemini-workers R3. Mirrors agent-voice.js (same user_preferences
-// storage). The bridge daemon reads this preference per message
+// corner:gemini-workers R3. Mirrors agent-voice.js (same storage). The bridge
+// daemon reads this preference per message
 // (scripts/bridge-daemon.py::resolve_model_preference) and routes the turn:
 // claude aliases ride the normal pool; gemini-* values run the whole turn
 // through the Gemini CLI lane. Adding a new model = add it to MODEL_OPTIONS
 // in the dashboard UI + (for non-claude providers) a lane in the daemon.
+//
+// corner:retire-supabase (2026-09-03): the map is one JSON row per WORLD on
+// Convex, state:get / state:set with key "agent_models". It was one
+// user_preferences row per world before, and it stays per world (not per
+// person) because the bridge daemon reads it with no user in hand.
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { convexQuery, convexMutation } from '../_lib/reportsStore.js';
 
 const PREF_KEY = 'agent_models';
 import modelsJson from '../../src/dashboard/data/models.json' with { type: 'json' }
 const ALLOWED_MODELS = new Set(modelsJson.map(m => m.id));
 
-async function getModels(clientId, headers) {
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/user_preferences?key=eq.${encodeURIComponent(PREF_KEY)}&client_id=eq.${encodeURIComponent(clientId)}&select=value&limit=1`,
-    { headers }
-  );
-  if (!r.ok) return {};
-  const rows = await r.json();
-  const raw = rows[0]?.value;
+async function getModels(clientId) {
+  const raw = await convexQuery('state:get', { worldId: clientId, key: PREF_KEY });
   if (!raw) return {};
-  try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { return {}; }
+  try { return typeof raw === 'string' ? JSON.parse(raw) : (raw && typeof raw === 'object' ? raw : {}); } catch { return {}; }
 }
 
-async function saveModels(clientId, models, headers) {
-  const value = JSON.stringify(models);
-  const response = await fetch(
-    `${SUPABASE_URL}/rest/v1/user_preferences?on_conflict=key,client_id`,
-    {
-      method: 'POST',
-      headers: { ...headers, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
-      body: JSON.stringify({ key: PREF_KEY, client_id: clientId, value, updated_at: new Date().toISOString() }),
-    }
-  );
-  if (!response.ok) throw new Error('Could not save model preference');
+async function saveModels(clientId, models) {
+  await convexMutation('state:set', { worldId: clientId, key: PREF_KEY, json: models, updatedBy: 'agent-model' });
 }
 
 export default async function handler(req, res) {
@@ -49,16 +37,6 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,PATCH,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' });
-  }
-
-  const headers = {
-    'apikey': SUPABASE_KEY,
-    'Authorization': `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-  };
 
   if (req.method === 'GET') {
     const _reqClient = req.query.client && String(req.query.client).trim();
@@ -71,7 +49,7 @@ export default async function handler(req, res) {
       throw err;
     }
     try {
-      const models = await getModels(tenant, headers);
+      const models = await getModels(tenant);
       return res.status(200).json({ models });
     } catch (err) {
       return res.status(500).json({ error: err.message });
@@ -99,9 +77,9 @@ export default async function handler(req, res) {
       throw err;
     }
     try {
-      const models = await getModels(tenant, headers);
+      const models = await getModels(tenant);
       models[normalizedSlug] = String(model).trim().toLowerCase();
-      await saveModels(tenant, models, headers);
+      await saveModels(tenant, models);
       return res.status(200).json({ ok: true });
     } catch (err) {
       return res.status(500).json({ error: err.message });

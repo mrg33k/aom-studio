@@ -1,124 +1,139 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { supabase } from './supabase.js'
-import { getClientId, setClientIdFromUser, clearWorldOverride } from './clientConfig.js'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { RENDER_ONLY_TENANT_ID, hasSession, getViewer, onSessionChange, convexQuery } from './convex.js';
+import { getClientId, setClientIdFromUser, clearWorldOverride } from './clientConfig.js';
 
-export const RENDER_ONLY_TENANT_ID = 'local-render'
+export { RENDER_ONLY_TENANT_ID };
+
+// TenantProvider (corner:retire-supabase R3): who is signed in and which world
+// they are looking at. The world comes from users:viewer (memberships on Convex,
+// aom outranks a personal world); an admin can look at another world through the
+// session-scoped override in clientConfig.js. With no session the page renders
+// in read-only mode with the 'local-render' placeholder tenant.
 
 const TenantContext = createContext({
   status: 'loading',
   tenant: null,
   worldId: null,
+  viewer: null,
   refresh: () => {},
-})
+});
 
 function normalize(value) {
-  return String(value || '').trim().toLowerCase()
+  return String(value || '').trim().toLowerCase();
 }
 
-function aliasesFor(user, tenantId) {
-  const meta = user?.user_metadata || {}
+function aliasesFor(viewer, tenantId) {
   return Array.from(new Set([
     tenantId,
-    normalize(meta.world),
-    normalize(meta.tenant_id),
-    normalize(meta.client_id),
-  ].filter(Boolean)))
+    normalize(viewer?.worldSlug),
+    normalize(viewer?.worldName),
+  ].filter(Boolean)));
+}
+
+// The viewer's home world slug. users:viewer already ranks memberships; when it
+// has none yet (an account made before memberships existed) ask the resolver.
+async function resolveWorldSlug(viewer) {
+  if (viewer?.worldSlug) return viewer.worldSlug;
+  try {
+    const r = await convexQuery('worlds:resolveForSession', { email: viewer?.email || undefined });
+    return r?.slug || null;
+  } catch {
+    return null;
+  }
 }
 
 export function TenantProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [tenantId, setTenantId] = useState(() => (supabase ? null : RENDER_ONLY_TENANT_ID))
-  const [status, setStatus] = useState(() => (supabase ? 'loading' : 'ready'))
+  const [viewer, setViewer] = useState(null);
+  const [tenantId, setTenantId] = useState(() => (hasSession() ? null : RENDER_ONLY_TENANT_ID));
+  const [status, setStatus] = useState(() => (hasSession() ? 'loading' : 'ready'));
 
-  const applyUser = useCallback((nextUser) => {
-    if (!supabase) {
-      setUser(null)
-      setTenantId(RENDER_ONLY_TENANT_ID)
-      setStatus('ready')
-      return
+  const applyViewer = useCallback((nextViewer) => {
+    if (!hasSession()) {
+      setViewer(null);
+      setTenantId(RENDER_ONLY_TENANT_ID);
+      setStatus('ready');
+      return;
     }
-    if (nextUser) setClientIdFromUser(nextUser)
-    const resolved = nextUser ? getClientId() : null
-    setUser(nextUser || null)
-    setTenantId(resolved || null)
-    setStatus('ready')
-  }, [])
+    if (nextViewer) setClientIdFromUser(nextViewer);
+    const resolved = nextViewer ? getClientId() : null;
+    setViewer(nextViewer || null);
+    setTenantId(resolved || null);
+    setStatus('ready');
+  }, []);
 
   const refresh = useCallback(() => {
-    if (!supabase) {
-      applyUser(null)
-      return
+    if (!hasSession()) {
+      applyViewer(null);
+      return undefined;
     }
-    setStatus('loading')
-    supabase.auth.getUser()
-      .then(({ data }) => applyUser(data?.user || null))
-      .catch(() => applyUser(null))
-  }, [applyUser])
+    setStatus('loading');
+    let cancelled = false;
+    getViewer({ force: true })
+      .then(async (v) => {
+        if (cancelled) return;
+        if (!v) { applyViewer(null); return; }
+        const slug = await resolveWorldSlug(v);
+        if (cancelled) return;
+        applyViewer(slug && slug !== v.worldSlug ? { ...v, worldSlug: slug } : v);
+      })
+      .catch(() => {
+        // Offline: keep whatever world we already had; the shell stays usable.
+        if (!cancelled) setStatus('ready');
+      });
+    return () => { cancelled = true; };
+  }, [applyViewer]);
 
   useEffect(() => {
-    refresh()
-    if (!supabase) return undefined
-    let lastUserId = null
-    supabase.auth.getSession().then(({ data }) => {
-      lastUserId = data?.session?.user?.id || null
-    }).catch(() => {})
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // A world override must never survive a logout into another account
-      // (corner:tenant-isolation R1). Fresh page loads are already handled by
-      // the boot purge in clientConfig.js.
-      if (event === 'SIGNED_OUT') {
-        clearWorldOverride()
-        lastUserId = null
-        applyUser(null)
-        return
+    refresh();
+    const off = onSessionChange((session) => {
+      if (!session) {
+        // A world override must never survive a sign-out into another account.
+        clearWorldOverride();
+        applyViewer(null);
+        return;
       }
-      const nextUserId = session?.user?.id || null
-      const isAccountSwitch = lastUserId && nextUserId && lastUserId !== nextUserId
-      // TOP-20 #15 + #17: auth refresh on account switch. When the user switches
-      // Google accounts, the Supabase session may still carry the old token for a
-      // beat and produce a 404/401 or a stale rate-limit. Refresh the session so
-      // the next api call carries the new account's JWT, clear any stale 429
-      // banner, and re-check the limit for the new account (auto-respawn).
-      if (isAccountSwitch || event === 'SIGNED_IN') {
-        try { await supabase.auth.refreshSession().catch(() => {}) } catch {}
-        if (isAccountSwitch) {
-          try {
-            if (typeof window !== 'undefined') {
-              window.dispatchEvent(new CustomEvent('corner:account-switched', { detail: { prevUserId: lastUserId, nextUserId, at: Date.now() } }))
-              window.dispatchEvent(new CustomEvent('corner:rate-limit-cleared', { detail: { reason: 'account-switched' } }))
-              window.dispatchEvent(new CustomEvent('corner:rate-limit-retry', { detail: { reason: 'account-switched', auto: true } }))
-            }
-          } catch {}
-        }
-      }
-      lastUserId = nextUserId
-      applyUser(session?.user || null)
-    })
-    return () => sub?.subscription?.unsubscribe?.()
-  }, [applyUser, refresh])
+      refresh();
+    });
+    // The world switcher writes the override and fires this event.
+    const onOverride = () => {
+      if (!hasSession()) return;
+      setTenantId(getClientId() || null);
+    };
+    if (typeof window !== 'undefined') window.addEventListener('corner:world-override', onOverride);
+    return () => {
+      off();
+      if (typeof window !== 'undefined') window.removeEventListener('corner:world-override', onOverride);
+    };
+  }, [applyViewer, refresh]);
 
   const tenant = useMemo(() => {
-    if (!tenantId) return null
+    if (!tenantId) return null;
     return {
       tenantId,
       canonicalSlug: tenantId,
-      aliases: aliasesFor(user, tenantId),
-      userId: user?.id || null,
-      renderOnly: !supabase,
-    }
-  }, [tenantId, user])
+      aliases: aliasesFor(viewer, tenantId),
+      userId: viewer?.userId ? String(viewer.userId) : null,
+      email: viewer?.email || null,
+      isAdmin: !!viewer?.isAdmin,
+      renderOnly: !hasSession(),
+    };
+  }, [tenantId, viewer]);
 
   return (
-    <TenantContext.Provider value={{ status, tenant, worldId: tenant?.tenantId || null, refresh }}>
+    <TenantContext.Provider value={{ status, tenant, worldId: tenant?.tenantId || null, viewer, refresh }}>
       {children}
     </TenantContext.Provider>
-  )
+  );
 }
 
 export function useTenantContext() {
-  return useContext(TenantContext)
+  return useContext(TenantContext);
 }
 
 export function useWorldId() {
-  return useTenantContext().worldId
+  return useTenantContext().worldId;
+}
+
+export function useViewer() {
+  return useTenantContext().viewer;
 }

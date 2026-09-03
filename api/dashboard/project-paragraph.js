@@ -1,39 +1,32 @@
 // GET /api/dashboard/project-paragraph?world=<client_id>&scope=all|<slug>[&expanded=0|1]
 //
-// R62 (session 20) — the living paragraph shown above the tasks-view
+// R62 (session 20): the living paragraph shown above the tasks-view
 // WeeklyStatsCard + ActiveTasksSection stack. Composes a 2-3 sentence
 // summary of the most-recent activity either across every project
 // (scope=all) or scoped to a single project (scope=<slug>). No LLM
-// calls — NO Anthropic-from-dashboard rule. Pure template-based
+// calls (NO Anthropic-from-dashboard rule). Pure template-based
 // synthesis of recent messages + scaffold events + task counts.
 //
-// R62-writer (deferred sub-round) will replace this endpoint with a
-// daemon-written `project_state_summary` cache table; for now every
-// request recomposes from source on demand.
+// corner:retire-supabase (2026-09-03): the three sources are Convex:
+// messages:listSince (world chat), events:find (scaffold ledger) and
+// tasks:find (the task queue). Was the Supabase messages, events and tasks
+// tables.
 //
 // Response shape:
 //   {
 //     scope: 'all' | '<slug>',
 //     paragraph: '<2-3 sentence summary>',
 //     detail?: '<longer detail block, only when expanded=1>',
-//     updated_at: '<iso8601 — latest data point the paragraph drew from>',
+//     updated_at: '<iso8601, latest data point the paragraph drew from>',
 //     sources: { messages: N, events: N, projects: N, open_tasks: N }
 //   }
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { convexQuery } from '../_lib/reportsStore.js';
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-_:]{0,64}$/i;
-
-async function supa(path) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-  });
-  if (!resp.ok) return [];
-  return resp.json().catch(() => []);
-}
+const OPEN_STATUSES = ['queued', 'running', 'needs_input'];
+const SCAFFOLD_EVENT_TYPES = ['scaffold_file', 'project_state_summary'];
 
 function fmtTimeAgo(iso) {
   if (!iso) return '';
@@ -50,35 +43,64 @@ function fmtTimeAgo(iso) {
   return new Date(iso).toISOString().slice(0, 10);
 }
 
+const iso = (ms) => (Number.isFinite(Number(ms)) ? new Date(Number(ms)).toISOString() : null);
+
+// Recent messages in the world, newest first, in the row shape the composer
+// reads (project, text, timestamp, role, agent).
+async function recentMessages(world, sinceMs, limit) {
+  const rows = await convexQuery('messages:listSince', { worldSlug: world, since: sinceMs, limit }).catch(() => []);
+  return (Array.isArray(rows) ? rows : []).map((r) => ({
+    project: r.project || null,
+    text: r.text || '',
+    timestamp: iso(r.createdAt),
+    role: r.role || (r.agentSlug ? 'assistant' : 'user'),
+    agent: r.agentSlug || null,
+  }));
+}
+
+// Scaffold events since a time. The Convex events table carries no tenant
+// column; rows that name a tenant in their payload are matched on it and rows
+// that name none are kept.
+async function recentEvents(world, sinceIso, limit) {
+  const rows = await convexQuery('events:find', {
+    event_type_in: SCAFFOLD_EVENT_TYPES,
+    since: sinceIso,
+    order: 'desc',
+    limit: Math.max(limit * 5, 50),
+  }).catch(() => []);
+  return (Array.isArray(rows) ? rows : [])
+    .filter((e) => {
+      const p = e.payload || {};
+      const tenant = p.tenant_id || p.client_id || p.world || null;
+      return !tenant || String(tenant).toLowerCase() === world;
+    })
+    .map((e) => ({ event_type: e.event_type, metadata: e.payload || {}, created_at: e.timestamp }));
+}
+
+async function openTasks(world, limit) {
+  const rows = await convexQuery('tasks:find', {
+    client_id: world,
+    status_in: OPEN_STATUSES,
+    order: 'created_at.desc',
+    limit,
+  }).catch(() => []);
+  return Array.isArray(rows) ? rows : [];
+}
+
 async function composeAll(world) {
-  // Pull the 10 most-recent messages with a project set across the tenant,
-  // plus the 5 most-recent scaffold events. Count distinct projects + open
+  // Pull the most-recent messages with a project set across the tenant,
+  // plus the most-recent scaffold events. Count distinct projects + open
   // tasks to ground the summary.
-  const sinceIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const [msgs, events, openTasks] = await Promise.all([
-    supa(
-      `messages?client_id=eq.${encodeURIComponent(world)}` +
-      `&project=not.is.null` +
-      `&timestamp=gte.${sinceIso}` +
-      `&select=project,text,timestamp,agent` +
-      `&order=timestamp.desc&limit=20`,
-    ),
-    supa(
-      `events?client_id=eq.${encodeURIComponent(world)}` +
-      `&event_type=in.(scaffold_file,project_state_summary)` +
-      `&created_at=gte.${sinceIso}` +
-      `&select=event_type,metadata,created_at` +
-      `&order=created_at.desc&limit=10`,
-    ),
-    supa(
-      `tasks?client_id=eq.${encodeURIComponent(world)}` +
-      `&status=in.(queued,running,needs_input)` +
-      `&select=id,metadata,updated_at,created_at` +
-      `&order=created_at.desc&limit=50`,
-    ),
+  const sinceMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const sinceIso = new Date(sinceMs).toISOString();
+  const [allMsgs, events, tasks] = await Promise.all([
+    recentMessages(world, sinceMs, 200),
+    recentEvents(world, sinceIso, 10),
+    openTasks(world, 50),
   ]);
+  const msgs = allMsgs.filter((m) => m.project).slice(0, 20);
   const distinctProjects = new Set(msgs.map(m => m.project).filter(Boolean));
-  const openCount = openTasks.length;
+  const openCount = tasks.length;
   const latest = msgs[0];
   const latestProject = latest?.project || null;
   const latestWhen = latest?.timestamp ? fmtTimeAgo(latest.timestamp) : 'a while';
@@ -125,32 +147,19 @@ async function composeAll(world) {
 }
 
 async function composeProject(world, slug) {
-  const sinceIso = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
-  const [msgs, events, openTasks] = await Promise.all([
-    supa(
-      `messages?client_id=eq.${encodeURIComponent(world)}` +
-      `&project=eq.${encodeURIComponent(slug)}` +
-      `&timestamp=gte.${sinceIso}` +
-      `&select=text,timestamp,role,agent` +
-      `&order=timestamp.desc&limit=20`,
-    ),
-    supa(
-      `events?client_id=eq.${encodeURIComponent(world)}` +
-      `&metadata->>project=eq.${encodeURIComponent(slug)}` +
-      `&created_at=gte.${sinceIso}` +
-      `&select=event_type,metadata,created_at` +
-      `&order=created_at.desc&limit=10`,
-    ),
-    supa(
-      `tasks?client_id=eq.${encodeURIComponent(world)}` +
-      `&status=in.(queued,running,needs_input)` +
-      `&metadata->>project=eq.${encodeURIComponent(slug)}` +
-      `&select=id,title,text,metadata,updated_at&order=created_at.desc&limit=20`,
-    ),
+  const sinceMs = Date.now() - 14 * 24 * 60 * 60 * 1000;
+  const sinceIso = new Date(sinceMs).toISOString();
+  const [allMsgs, allEvents, allTasks] = await Promise.all([
+    recentMessages(world, sinceMs, 500),
+    recentEvents(world, sinceIso, 10),
+    openTasks(world, 100),
   ]);
+  const msgs = allMsgs.filter((m) => m.project === slug).slice(0, 20);
+  const events = allEvents.filter((e) => (e.metadata?.project || '') === slug).slice(0, 10);
+  const tasks = allTasks.filter((t) => t.project === slug || (t.metadata && t.metadata.project === slug)).slice(0, 20);
   const latest = msgs[0];
   const latestWhen = latest?.timestamp ? fmtTimeAgo(latest.timestamp) : 'a while';
-  const openCount = openTasks.length;
+  const openCount = tasks.length;
   let paragraph;
   if (msgs.length === 0 && events.length === 0 && openCount === 0) {
     paragraph = `${slug} has been quiet for the last 14 days. No messages, no scaffold updates, no open tasks.`;
@@ -173,9 +182,9 @@ async function composeProject(world, slug) {
       when: fmtTimeAgo(e.created_at),
       meta: e.metadata || {},
     })),
-    open_tasks: openTasks.slice(0, 8).map(t => ({
+    open_tasks: tasks.slice(0, 8).map(t => ({
       title: t.title || (typeof t.text === 'string' ? t.text.split('|')[0]?.trim() : '') || 'Task',
-      updated: fmtTimeAgo(t.updated_at),
+      updated: fmtTimeAgo(t.started_at || t.created_at),
     })),
   };
   return {
@@ -197,7 +206,6 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
-  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
   const _worldRaw = req.query.world && String(req.query.world).trim();
   if (!_worldRaw) return res.status(401).json({ error: 'Missing client' });

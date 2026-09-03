@@ -1,9 +1,11 @@
-// CvgChatSurface.jsx — CV6-styled live conversation surface for /cvg.
-// Live-wired to Supabase for real-time message streaming.
+// CvgChatSurface.jsx — CV6-styled live conversation surface.
+// Live-wired to Convex: one messages:list subscription per open thread.
+// (corner:retire-supabase, 2026-09-03. The /cvg shell is gone; CV6KitTest still
+// mounts this surface in kit preview mode.)
 //
 // Responsibilities:
-//   1. Load conversation history from Supabase (agent or project thread)
-//   2. Live-subscribe to message INSERTs + UPDATEs for the target
+//   1. Subscribe to the room's thread on Convex (agent, project or mission room)
+//   2. Re-render as rows arrive; the websocket pushes, nothing polls
 //   3. Message thread (user + assistant bubbles, CV6-styled, theme-aware)
 //   4. Composer (textarea + send button, CV6-styled)
 //   5. Step indicator (animated row showing assistant's current task)
@@ -22,8 +24,43 @@
 //   - Padding/gaps: 14px card base, 8px section gaps
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase.js'
+import { subscribeConvexQuery, convexWorldId } from '../lib/convex.js'
 import { authFetch } from '../lib/authFetch.js'
+
+// The Convex room key for a target: "<world>:agent:<slug>", "<world>:project:<slug>"
+// or "<world>:mission:<slug>". Same keys the CV6 thread engine uses.
+function roomKeyForTarget(worldId, target) {
+  const world = convexWorldId(worldId)
+  if (!target || !world) return ''
+  if (target.type === 'project') {
+    if (target.missionSlug) return `${world}:mission:${String(target.missionSlug)}`
+    return `${world}:project:${target.slug}`
+  }
+  return `${world}:agent:${target.slug}`
+}
+
+// A Convex message row -> the flat row shape this file renders
+// (id, role, agent, text, timestamp, metadata).
+function convexRowToMessage(m) {
+  if (!m || typeof m !== 'object') return null
+  const role = m.role || (m.agentSlug ? 'assistant' : 'user')
+  const metadata = {
+    ...(m.metadata && typeof m.metadata === 'object' ? m.metadata : {}),
+    ...(Array.isArray(m.attachments) && m.attachments.length ? { attachments: m.attachments } : {}),
+  }
+  return {
+    id: String(m._id || ''),
+    role,
+    agent: role === 'user' ? 'user' : (m.agentSlug || 'corner'),
+    sender: role === 'user' ? 'user' : (m.agentSlug || 'corner'),
+    text: m.text || '',
+    content: m.text || '',
+    user_name: role === 'user' ? (m.userName || '') : '',
+    source: m.source || '',
+    timestamp: m.createdAt ? new Date(m.createdAt).toISOString() : null,
+    metadata: Object.keys(metadata).length ? metadata : null,
+  }
+}
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx'
 
 // chat-4 / parity: pull image + file attachments off a message the same way the
@@ -153,7 +190,7 @@ export default function CvgChatSurface({
   onSend,
   onBack,
   // previewMessages: preview/Storybook only — seed the thread directly and skip
-  // Supabase so /cv6kit can render real bubbles with no auth. Undefined in production.
+  // the backend so /cv6kit can render real bubbles with no auth. Undefined in production.
   previewMessages,
 }) {
   const inputRef = useRef(null)
@@ -176,15 +213,17 @@ export default function CvgChatSurface({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Load message history on mount or when target changes
+  // Subscribe to the thread on mount or when the target changes. One Convex
+  // messages:list subscription is both the history load and the live feed.
   useEffect(() => {
-    // Preview/Storybook: render the given thread without touching Supabase.
+    // Preview/Storybook: render the given thread without touching the backend.
     if (previewMessages) {
       setMessages(previewMessages)
       setLoading(false)
       return
     }
-    if (!target || !worldId || !supabase) {
+    const roomKey = roomKeyForTarget(worldId, target)
+    if (!target || !roomKey) {
       setLoading(false)
       return
     }
@@ -193,127 +232,44 @@ export default function CvgChatSurface({
     setMessages([])
     setLoadError('')
 
-    const loadHistory = async () => {
-      try {
-        if (target.type === 'agent') {
-          // Load agent thread: agent=target.slug, no project, not hidden loop cues
-          const { data, error } = await supabase
-            .from('messages')
-            .select('*')
-            .eq('client_id', worldId)
-            .eq('agent', target.slug)
-            .or('project.is.null,project.eq.')
-            .order('timestamp', { ascending: false })
-            .limit(200)
-
-          if (error) throw error
-          const filtered = (data || [])
-            .reverse()
-            .filter(m => !isHiddenLoopCue(m))
-          setMessages(filtered)
-        } else if (target.type === 'project') {
-          // Load project chat: project=target.slug OR agent=project:target.slug
-          // Support both owner (worldId) and shared (shared:slug) channels
-          const sharedCid = `shared:${target.slug}`
-          const clientIds = worldId === sharedCid ? [sharedCid] : [worldId, sharedCid]
-          const matchesMission = makeMissionMatcher(target.missionSlug)
-
-          const { data, error } = await supabase
-            .from('messages')
-            .select('*')
-            .in('client_id', clientIds)
-            .or(`project.eq.${target.slug},agent.eq.project:${target.slug}`)
-            .order('timestamp', { ascending: false })
-            .limit(400)
-
-          if (error) throw error
-          const filtered = (data || [])
-            .filter(matchesMission)
-            .reverse()
-          setMessages(filtered)
-        }
-      } catch (e) {
-        console.error('[CvgChatSurface] load history error', e)
-        setLoadError('We could not load this conversation.')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadHistory()
-  }, [target?.slug, target?.type, worldId, target?.missionSlug, reloadKey, previewMessages])
-
-  // Real-time subscription
-  useEffect(() => {
-    if (!target || !worldId || !supabase) return
-
     let active = true
-    let channel = null
-
-    const handleInsert = (payload) => {
-      const msg = payload.new
-      if (!msg || !msg.id) return
-      if (!active) return
-      if (msg.client_id !== worldId) return
-      if (isHiddenLoopCue(msg)) return
-
-      if (target.type === 'agent') {
-        // Agent thread: filter on agent + no project
-        if (msg.agent !== target.slug) return
-        if (msg.project) return
-      } else if (target.type === 'project') {
-        // Project chat: filter on project OR legacy agent=project:slug
-        const isLegacy = msg.agent === `project:${target.slug}`
-        const isCurrent = msg.project === target.slug
-        if (!isLegacy && !isCurrent) return
-
-        // Mission filtering
-        const matchesMission = makeMissionMatcher(target.missionSlug)
-        if (!matchesMission(msg)) return
-      }
-
-      // Dedup + add
-      setMessages(prev => {
-        if (prev.some(m => m.id === msg.id)) return prev
-        return [...prev, msg]
-      })
-
-      // An assistant reply ends the in-flight turn → hide the step indicator.
-      const isUserMsg = msg.role === 'user' || msg.agent === 'user' || msg.sender === 'user'
-      if (!isUserMsg) {
-        setAwaitingReply(false)
-        setStepText('')
-      }
-    }
-
-    const handleUpdate = (payload) => {
-      const msg = payload.new
-      if (!msg?.id || !active) return
-      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, ...msg } : m))
-    }
-
-    // Set up subscription
-    channel = supabase
-      .channel(`cvg-chat-${worldId}-${target.slug}-${Date.now()}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
-        handleInsert,
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
-        handleUpdate,
-      )
-      .subscribe()
+    let seenIds = null // ids from the last push; null until the first result lands
+    const limit = target.type === 'project' ? 400 : 200
+    const unsubscribe = subscribeConvexQuery(
+      'messages:list',
+      { roomId: roomKey, limit },
+      (value) => {
+        if (!active) return
+        const rows = (Array.isArray(value) ? value : [])
+          .map(convexRowToMessage)
+          .filter(Boolean)
+          .filter(m => !isHiddenLoopCue(m))
+        // An assistant row that was not there before ends the in-flight turn
+        // and hides the step indicator.
+        if (seenIds) {
+          const gotReply = rows.some(m => !seenIds.has(m.id) && !(m.role === 'user' || m.agent === 'user' || m.sender === 'user'))
+          if (gotReply) {
+            setAwaitingReply(false)
+            setStepText('')
+          }
+        }
+        seenIds = new Set(rows.map(m => m.id))
+        setMessages(rows)
+        setLoading(false)
+      },
+      (err) => {
+        if (!active) return
+        console.error('[CvgChatSurface] thread subscription error', err)
+        setLoadError('We could not load this conversation.')
+        setLoading(false)
+      },
+    )
 
     return () => {
       active = false
-      if (channel) {
-        try { supabase.removeChannel(channel) } catch (_) {}
-      }
+      try { unsubscribe() } catch (_) {}
     }
-  }, [target?.slug, target?.type, worldId, target?.missionSlug])
+  }, [target?.slug, target?.type, worldId, target?.missionSlug, reloadKey, previewMessages])
 
   // Step indicator: while awaiting a reply, poll the real step events for this
   // surface and show the assistant's current step. Service-role proxied endpoint
@@ -364,7 +320,7 @@ export default function CvgChatSurface({
 
     try {
       // Call parent's onSend handler with the target + text
-      // Parent is CornerVG.handleCvgChatSend, which routes to chat-bridge or supabase-messages
+      // The parent owns the write (messages:send on Convex).
       if (onSend) {
         await onSend(target, text)
       }
@@ -735,8 +691,8 @@ export default function CvgChatSurface({
         {/* Message bubbles */}
         {messages.map((msg) => {
           // Messages mark the sender via role OR agent ('user') depending on the
-          // write path (supabase-messages sets role:'user'; chat-bridge stores the
-          // user turn with agent='user'). Treat either as the user bubble.
+          // write path (messages:send sets role:'user'; older imported rows store
+          // the user turn with agent='user'). Treat either as the user bubble.
           const isUser = msg.role === 'user' || msg.agent === 'user' || msg.sender === 'user'
 
           // Extract sender name and format timestamp
@@ -1005,9 +961,9 @@ export default function CvgChatSurface({
  * ─── WIRING STATUS ───
  *
  * LIVE WIRED (R1):
- * ✓ MESSAGE LOADING — Supabase queries for both agent + project threads
- * ✓ LIVE STREAMING — Realtime subscriptions on INSERT + UPDATE
- * ✓ SEND ROUTING — onSend handler passed to parent (CornerVG.handleCvgChatSend)
+ * ✓ MESSAGE LOADING — Convex messages:list for agent, project and mission rooms
+ * ✓ LIVE STREAMING — the same messages:list subscription pushes new rows
+ * ✓ SEND ROUTING — onSend handler passed to parent
  * ✓ MISSION FILTERING — Project chats support mission-scope isolation
  * ✓ THEME INHERITANCE — theme prop applied to [data-cv6] root
  *

@@ -1,25 +1,19 @@
-// api/_lib/stateStore.js — Supabase-backed JSON state for dashboard tools.
+// api/_lib/stateStore.js: keyed JSON state for dashboard tools (trackers, cv6
+// bugs, review comments and checklists, room goals, prospect reports).
 //
-// Replaces the disk+tunnel persistence pattern (readSource/writeSource against
-// rag.aheadofmarket.com) for the small JSON state stores: trackers, cv6 bugs,
-// review comments/checklists, room goal steps. Those stores used to live as
-// JSON files under corner/users/aom/missions/master-loop/deliverables/ and
-// only persisted while the RAG tunnel to Patrik's Mac was up — Vercel has no
-// disk, so a down tunnel meant writes silently vanished (corner:state-to-supabase R1).
-//
-// Storage: the existing `cm_state` table (kind, scope_id, client_id, payload,
-// updated_at) — same table project-summary reads. Service-role key required
-// (cm_state has RLS on). One row per (store kind, scope, world).
+// corner:retire-supabase R2: the rows live in the Convex `state` table
+// (kind, scopeId, world, value), written through state:put and read through
+// state:get. Same (kind, scopeId, clientId) key the old cm_state rows used, so
+// the ten callers did not change.
 //
 // Self-migration: stateGetWithLegacy() falls back to the legacy JSON file
-// (tunnel, then local disk) when no row exists yet, and upserts what it found
+// (tunnel, then local disk) when no row exists yet, and writes what it found
 // so the second read never needs the tunnel again.
 
 import fs from 'fs';
 import path from 'path';
+import { convexQuery, convexMutation } from './verifyTenant.js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
 
 const AOM_EA_ENV = process.env.AOM_EA_ROOT;
@@ -27,56 +21,37 @@ const AOM_EA_HARDCODED = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA';
 const AOM_EA_SIBLING = path.resolve(process.cwd(), '..', 'AOM-EA');
 const AOM_EA_ROOT = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARDCODED : AOM_EA_SIBLING);
 
-const sbHeaders = () => ({
-  apikey: SUPABASE_KEY,
-  Authorization: `Bearer ${SUPABASE_KEY}`,
-  'Content-Type': 'application/json',
-});
-
+// Convex is always configured; kept for the callers that gate on it.
 export function stateConfigured() {
-  return Boolean(SUPABASE_URL && SUPABASE_KEY);
+  return true;
 }
 
 // Read one payload. Returns the payload object or null (missing row / error).
 export async function stateGet(kind, scopeId, clientId) {
-  if (!stateConfigured()) return null;
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/cm_state` +
-      `?kind=eq.${encodeURIComponent(kind)}` +
-      `&scope_id=eq.${encodeURIComponent(scopeId)}` +
-      `&client_id=eq.${encodeURIComponent(clientId)}` +
-      `&select=payload&limit=1`,
-      { headers: sbHeaders() }
-    );
-    if (!r.ok) return null;
-    const rows = await r.json();
-    return Array.isArray(rows) && rows.length ? rows[0].payload : null;
+    const row = await convexQuery('state:get', {
+      kind: String(kind),
+      scopeId: String(scopeId ?? ''),
+      worldSlug: clientId ? String(clientId) : undefined,
+    });
+    if (!row || typeof row !== 'object') return null;
+    return row.value === undefined ? null : row.value;
   } catch (_) {
     return null;
   }
 }
 
-// Upsert one payload. Returns true on success — callers surface a 500 on
-// false the same way the old writeSource() contract did.
+// Upsert one payload. Returns true on success; callers surface a 500 on false.
 export async function stateSet(kind, scopeId, clientId, payload) {
-  if (!stateConfigured()) return false;
   try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/cm_state?on_conflict=kind,scope_id,client_id`,
-      {
-        method: 'POST',
-        headers: { ...sbHeaders(), Prefer: 'resolution=merge-duplicates' },
-        body: JSON.stringify([{
-          kind,
-          scope_id: scopeId,
-          client_id: clientId,
-          payload,
-          updated_at: new Date().toISOString(),
-        }]),
-      }
-    );
-    return r.ok;
+    const r = await convexMutation('state:put', {
+      kind: String(kind),
+      scopeId: String(scopeId ?? ''),
+      worldSlug: clientId ? String(clientId) : undefined,
+      value: payload,
+      updatedBy: 'aom-studio-api',
+    });
+    return !!(r && r.ok);
   } catch (_) {
     return false;
   }
@@ -97,9 +72,9 @@ export async function legacyFileRead(relPath) {
   return null;
 }
 
-// Canonical read for a migrated store: cm_state first; when the row does not
+// Canonical read for a migrated store: Convex first; when the row does not
 // exist yet, pull the legacy file, slice out this world's piece via
-// `fromLegacy(parsedFile)`, upsert it, and return it. `fromLegacy` returning
+// `fromLegacy(parsedFile)`, save it, and return it. `fromLegacy` returning
 // null/undefined means "nothing to migrate" and yields `empty`.
 export async function stateGetWithLegacy({ kind, scopeId, clientId, legacyPath, fromLegacy, empty }) {
   const existing = await stateGet(kind, scopeId, clientId);

@@ -2,7 +2,8 @@
 //
 // Internal-auth endpoint for terminal agents (Elon, Studio tmux sessions).
 // No user JWT required. Authentication via X-Internal-Key header matched
-// against SUPABASE_SERVICE_ROLE_KEY.
+// against CORNER_INTERNAL_KEY (corner:retire-supabase, 2026-09-03: was the
+// Supabase service role key).
 //
 // Mirrors the read shape of /api/dashboard/mail/list but skips the user-JWT
 // + workspace-access checks. The terminal EA is trusted (already authed via
@@ -22,7 +23,7 @@
 import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch } from '../../_lib/gmailClient.js'
 import { buildBucketQuery } from '../../_lib/mailBuckets.js'
 
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const INTERNAL_KEY = process.env.CORNER_INTERNAL_KEY
 
 const AUTOMATED_FROM = /(noreply|no-reply|notifications?|mailer-daemon|automated|donotreply|do-not-reply|postmaster|bounces?@)/i
 const SKIP_CATEGORIES = new Set(['CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL', 'CATEGORY_UPDATES', 'CATEGORY_FORUMS'])
@@ -90,7 +91,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
   const internalKey = (req.headers['x-internal-key'] || '').trim()
-  if (!SUPABASE_SERVICE_ROLE_KEY || !internalKey || internalKey !== SUPABASE_SERVICE_ROLE_KEY) {
+  if (!INTERNAL_KEY || !internalKey || internalKey !== INTERNAL_KEY) {
     return res.status(401).json({ error: 'unauthorized' })
   }
 

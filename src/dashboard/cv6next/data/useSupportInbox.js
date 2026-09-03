@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
-import { supabase } from '../../lib/supabase';
+import { hasSession } from '../../lib/convex.js';
 import { mailListSnippet } from './presentationClean.js';
 
 const NOREPLY = /(no-?reply|do-?not-?reply|mailer-daemon|postmaster|bounce[@+]|notifications?@|newsletter@|marketing@|mailchimp|sendgrid|klaviyo|hubspot|salesforce)/i;
@@ -102,7 +102,8 @@ export function useSupportInbox(worldId) {
   const hasDataRef = useRef(false);
   const load = useCallback(async () => {
     if (!worldId) return;
-    if (!supabase) {
+    // No Convex session (render-only page): nothing to read, report an honest empty.
+    if (!hasSession()) {
       setWishes([]);
       setMailboxes([]);
       setStatus('loaded');

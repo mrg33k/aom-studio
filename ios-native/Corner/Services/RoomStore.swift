@@ -274,10 +274,10 @@ final class RoomStore: ObservableObject {
 
     private func convexListArgs(world: String) -> [String: Any] {
         var args: [String: Any] = ["worldId": world]
-        // Email is the shared identity between Supabase auth and Convex's users table.
+        // Email is how the users table is indexed; the Convex id is the fallback.
         if let email = api.session?.user.email, !email.isEmpty {
             args["userId"] = email
-        } else if let id = api.session?.user.id.uuidString, !id.isEmpty {
+        } else if let id = api.session?.user.id, !id.isEmpty {
             args["userId"] = id
         }
         return args

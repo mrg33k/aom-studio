@@ -1,36 +1,42 @@
 // POST /api/dashboard/review-decision
 //
 // Handles review workflow decisions: approve, request-changes, dismiss, send-checklist.
-// Each decision creates a structured message in the deliverable's room via Supabase,
-// notifying the agent and the room that the deliverable has moved in the review flow.
+// Each decision creates a structured message in the deliverable's room, notifying the
+// agent and the room that the deliverable has moved in the review flow.
 //
 // Actions:
 //   - approve: mark deliverable as approved, emit notification to room
-//   - request-changes: mark as needs-changes + notes, notify room, AND insert a real
-//     `tasks` row (status 'queued') so the feedback becomes dispatched work — the
-//     review loop closes instead of the note dying in chat. If the task insert
-//     fails the whole request 500s (the UI must see the failure).
+//   - request-changes: mark as needs-changes + notes, notify room, AND queue a real
+//     task (status 'queued') so the feedback becomes dispatched work. The review loop
+//     closes instead of the note dying in chat. If the task insert fails the whole
+//     request 500s (the UI must see the failure).
 //   - dismiss: drop the item from the queue without approval (not review-worthy)
 //   - send-checklist: send compiled checklist to deliverable's room for agent
+//   - undo: take back a dismiss so the item re-enters the queue
 //
 // The decision row carries the item's identity fields (source_path, sha256,
 // mission, title) so review-queue.js can suppress the decided item both by exact
 // id and by content identity (a re-share of the same unchanged bytes stays
 // decided; a fixed file with a new digest re-enters the queue).
 //
-// Persistence is Supabase: messages table for the decision event, tasks table for
-// the request-changes work item.
+// corner:retire-supabase (2026-09-03). Persistence is Convex: messages:send +
+// messages:patchMetadata for the decision row (source 'review-decision' in the
+// project or mission room), tasks:queue for the request-changes work item,
+// projects:lookupBySlug for the repo path. Was Supabase messages, tasks and
+// projects through the old client library. Two shape changes worth knowing:
+//   - the decision row is an assistant-role row spoken by 'corner' (was
+//     role 'system'), because Convex dispatches any row without an agentSlug
+//     to the AI round table and a decision must never be answered by an agent;
+//   - undo cannot delete (no client-side row delete on Convex), so it stamps
+//     metadata.undone on the dismiss row; review-history and review-queue skip
+//     rows carrying it.
 
-import { createClient } from '@supabase/supabase-js';
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
-import { authorizeTaskProject, taskScopeDenialMessage } from '../_lib/taskScope.js';
+import { convexQuery, convexMutation } from '../_lib/verifyTenant.js';
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js';
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' };
 
 const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry);
-
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const clean = (s, n) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, n);
 
@@ -40,9 +46,9 @@ const clean = (s, n) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().s
 // hardcoded to Patrik, which meant Courtney's review reached the agent carrying
 // the founder's authority (identity-attribution audit, 2026-07-27).
 // `verified` is verifyTenant's result, which already carries the identity it
-// resolved from the JWT — using it costs no extra /auth/v1/user round trip.
-// callerIdentity is the fallback for a result shape without identity; both use
-// the same derivation so one human reads the same on either path.
+// resolved from the JWT. callerIdentity is the fallback for a result shape
+// without identity; both use the same derivation so one human reads the same
+// on either path.
 async function resolveReviewer(req, verified) {
   const ident = (verified && 'userName' in verified)
     ? verified
@@ -50,9 +56,10 @@ async function resolveReviewer(req, verified) {
   const name = clean(ident?.userName || ident?.email || '', 80) || null;
   return {
     userId: ident?.userId || null,
+    email: ident?.email || null,
     name,
     // Displayed in the room echo. "Someone" is the honest rendering of an
-    // unresolvable author — never a substituted person.
+    // unresolvable author, never a substituted person.
     label: name || 'Someone',
     identified: Boolean(name),
   };
@@ -92,31 +99,51 @@ function cleanTitle(raw) {
   return s.length <= 140 ? s : `${s.slice(0, 137)}…`;
 }
 
-// Look up the project's repo_path from the projects table (mirrors
+// The project's repo path from the Convex registry (mirrors
 // queue-task.py::resolve_project). Returns '' when the slug is unknown.
-async function resolveProjectPath(supabase, slug) {
+async function resolveProjectPath(slug) {
   if (!slug) return '';
-  const { data, error } = await supabase
-    .from('projects')
-    .select('repo_path')
-    .eq('slug', slug)
-    .limit(1);
-  if (error || !Array.isArray(data) || !data.length) return '';
-  return data[0].repo_path || '';
+  const row = await convexQuery('projects:lookupBySlug', { slug }).catch(() => null);
+  return row?.repoPath || '';
 }
 
-// Insert the request-changes feedback as a real queued task (row shape copied
-// from AOM-EA scripts/queue-task.py::queue_task — keep in lockstep). Returns
+// --- PROJECT SCOPE (r7) -----------------------------------------------------
+// verifyTenant proves the caller may act inside `world`. It proves nothing
+// about the project slug, which arrives either straight off the body or
+// scraped out of the deliverable path, and on the request-changes branch
+// becomes tasks.project, metadata.repo AND project_path, i.e. a checkout a
+// worker runs in. So the slug is checked against the registry:
+//   registered   -> the world must hold it or hold a sharing grant
+//   unregistered -> the world must already have a room for it (participation),
+//                   because trust-on-first-use never authorizes a checkout
+async function authorizeProject({ world, projectSlug }) {
+  const slug = String(projectSlug || '').trim().toLowerCase();
+  if (!slug) return { ok: true, via: 'no-scope' };
+  const held = await convexQuery('projects:lookupBySlug', { slug }).catch(() => null);
+  if (held) {
+    if (held.ownerWorld && String(held.ownerWorld).toLowerCase() === world) return { ok: true, via: 'holder-world' };
+    const access = await convexQuery('projects:hasAccess', { slug, worldId: world }).catch(() => null);
+    if (access && access.ok) return { ok: true, via: 'project-access-grant' };
+    return { ok: false, reason: `project "${slug}" is held by "${held.ownerWorld}" and not shared with "${world}"` };
+  }
+  const rooms = await convexQuery('rooms:listRooms', { worldId: world, filter: 'all' }).catch(() => []);
+  const present = (Array.isArray(rooms) ? rooms : []).some((r) => String(r.project || '').toLowerCase() === slug);
+  if (present) return { ok: true, via: 'unregistered-project' };
+  return { ok: false, reason: `project "${slug}" is not registered and world "${world}" has no room for it` };
+}
+
+// Queue the request-changes feedback as a real task (row shape copied from
+// AOM-EA scripts/queue-task.py::queue_task, keep in lockstep). Returns
 // { id } on success or { error } on failure.
-async function createReviewTask(supabase, {
+async function createReviewTask({
   world, project, mission, title, deliverableId, sourcePath, sha256, notes, reviewer,
 }) {
   const fileName = title || String(deliverableId).split('/').pop() || 'deliverable';
   const taskTitle = cleanTitle(`Review feedback: ${fileName} (${project || 'unknown project'})`);
-  const projectPath = await resolveProjectPath(supabase, project);
+  const projectPath = await resolveProjectPath(project);
 
   // The worker acts on this text. It must name the REAL reviewer, and when we
-  // can't name them it must say so out loud — a worker that reads "Patrik" takes
+  // can't name them it must say so out loud. A worker that reads "Patrik" takes
   // actions it takes for nobody else, so an unverifiable request has to arrive
   // visibly unverified rather than wearing the founder's name.
   const openingLine = reviewer?.identified
@@ -132,8 +159,8 @@ async function createReviewTask(supabase, {
     `Requested changes:`,
     notes || '(no written notes — check the pin-comments below)',
     ``,
-    `Pin-comments (position-anchored notes on the file) live in Supabase cm_state:`,
-    `kind='dash_review_comments', client_id='${world}', payload.items['${deliverableId}']`,
+    `Pin-comments (position-anchored notes on the file) live in the Convex state table:`,
+    `kind='dash_review_comments', world='${world}', value.items['${deliverableId}']`,
     `(or via the dashboard API: GET /api/dashboard/review-comments?world=${world}&deliverable=<id>).`,
     ``,
     `IMPORTANT — after fixing, re-share the corrected file so it re-enters the Review queue:`,
@@ -149,7 +176,7 @@ async function createReviewTask(supabase, {
     source: 'review-decision',
     client_id: world,
     project: project || null,
-    project_path: projectPath,
+    project_path: projectPath || null,
     priority: 1,
     created_at: new Date().toISOString(),
     metadata: {
@@ -176,10 +203,26 @@ async function createReviewTask(supabase, {
     },
   };
 
-  const { data, error } = await supabase.from('tasks').insert(row).select('id');
-  if (error) return { error: error.message || 'task insert failed' };
-  const id = Array.isArray(data) && data.length ? data[0].id : null;
-  return id ? { id } : { error: 'task insert returned no id' };
+  try {
+    const inserted = await convexMutation('tasks:queue', { row });
+    const id = inserted && inserted.id ? inserted.id : null;
+    return id ? { id } : { error: 'task insert returned no id' };
+  } catch (err) {
+    return { error: err.message || 'task insert failed' };
+  }
+}
+
+// The room a decision is spoken in: the mission room when the item names a
+// mission, else the project room, else Corner's own room.
+function decisionRoomId(world, projectSlug, missionSlug) {
+  if (missionSlug) {
+    const canonical = canonicalizeMissionSlug(missionSlug, MISSION_SLUG_LOOKUP, projectSlug);
+    const project = projectSlug || canonical.split(':')[0];
+    const leaf = canonical.includes(':') ? canonical.slice(canonical.indexOf(':') + 1) : canonical;
+    return `${world}:mission:${project}:${leaf}`;
+  }
+  if (projectSlug) return `${world}:project:${projectSlug}`;
+  return `${world}:agent:corner`;
 }
 
 export default async function handler(req, res) {
@@ -206,37 +249,28 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'action must be approve, request-changes, dismiss, send-checklist, or undo' });
   }
 
-  // Initialize Supabase
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' });
-  }
-  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  // Stamp the VERIFIED tenant, not the raw body string. verifyTenant already
+  // lowercased and validated it, and the task/message rows below both key off it.
+  const worldId = String(verified?.tenant || clean(world || '', 60) || '');
 
-  // undo (review-loop design gate): delete a DISMISS decision row by id so the
-  // item re-enters the queue on the next fetch. Strictly scoped — the row must
+  // undo (review-loop design gate): take back a DISMISS decision by id so the
+  // item re-enters the queue on the next fetch. Strictly scoped: the row must
   // be a review-decision message AND its action must be 'dismiss' (approve /
   // request-changes stay permanent; a task may already be chasing the latter).
   if (act === 'undo') {
     const decisionId = clean(req.body.decision_id, 80);
     if (!decisionId) return res.status(400).json({ error: 'decision_id required' });
     try {
-      const { data: rows, error: selErr } = await supabase
-        .from('messages')
-        .select('id, metadata')
-        .eq('id', decisionId)
-        .eq('source', 'review-decision')
-        .limit(1);
-      if (selErr) return res.status(500).json({ error: 'Failed to look up decision' });
-      if (!rows || !rows.length) return res.status(404).json({ error: 'Decision not found' });
-      if ((rows[0].metadata || {}).action !== 'dismiss') {
+      const rows = await convexQuery('messages:findBySource', { worldId, source: 'review-decision', limit: 500 });
+      const row = (Array.isArray(rows) ? rows : []).find((r) => String(r._id) === decisionId);
+      if (!row) return res.status(404).json({ error: 'Decision not found' });
+      if ((row.metadata || {}).action !== 'dismiss') {
         return res.status(400).json({ error: 'Only dismiss decisions can be undone' });
       }
-      const { error: delErr } = await supabase
-        .from('messages')
-        .delete()
-        .eq('id', decisionId)
-        .eq('source', 'review-decision');
-      if (delErr) return res.status(500).json({ error: 'Failed to undo decision' });
+      await convexMutation('messages:patchMetadata', {
+        messageId: decisionId,
+        patch: { undone: true, undone_at: new Date().toISOString(), undone_by: verified.userId || null },
+      });
       return res.status(200).json({ ok: true, action: 'undo', undone: decisionId });
     } catch (e) {
       console.error('[review-decision] undo exception:', e);
@@ -262,9 +296,9 @@ export default async function handler(req, res) {
   let message = '';
   let messageType = 'review_decision';
 
-  // The room-facing echo speaks the FILE'S NAME, never the raw store URL —
-  // a URL with spaces (every multi-word filename) broke the chat's link-card
-  // lift into a dead Open card and read as plumbing (adv2 finding 1).
+  // The room-facing echo speaks the FILE'S NAME, never the raw store URL. A URL
+  // with spaces (every multi-word filename) broke the chat's link-card lift into
+  // a dead Open card and read as plumbing (adv2 finding 1).
   const displayName = (clean(req.body.title, 200) || decodeURIComponent(String(did).split('/').pop() || '').trim() || 'the file');
   // The room echo names the decider. Three people share the AOM world and
   // shared projects put two worlds' people in one thread, so an unsigned
@@ -292,38 +326,23 @@ export default async function handler(req, res) {
     // when the caller doesn't pass one explicitly.
     const pathMatch = did.match(/projects\/([a-z0-9][a-z0-9-_.]*)\//i);
     let projectSlug = clean(req.body.project, 80) || (pathMatch ? pathMatch[1] : null);
-    // Stamp the VERIFIED tenant, not the raw body string — verifyTenant already
-    // lowercased and validated it, and the task/message rows below both key off it.
-    const worldId = String(verified?.tenant || clean(world || '', 60) || '');
 
-    // --- PROJECT SCOPE (r7) -------------------------------------------------
-    // verifyTenant above proved the caller may act inside `world`. It proved
-    // nothing about `projectSlug`, which arrives either straight off the body or
-    // scraped out of the deliverable path — and on the request-changes branch it
-    // becomes tasks.project, metadata.repo AND project_path (resolved out of
-    // projects.repo_path for that slug, whoever holds it). VERIFIED: an arsenal
-    // session posting {world:'arsenal', project:'corner'} produced a queued row
-    // pointing at AOM's aom-studio checkout with the reviewer's own `notes`
-    // carried into the worker's brief.
-    //
     // ONE verdict, and each surface keeps the failure mode it already had:
     //   request-changes -> REFUSE (403). It creates a task; a task that runs in
     //                      the wrong checkout is the vulnerability, and this
     //                      branch already 500s when the task can't be queued, so
     //                      the UI is built to surface the failure and keep the item.
-    //   everything else -> DROP the tag. Those branches only record a `messages`
-    //                      row, and dropping a denied project tag is exactly what
-    //                      api/_lib/write-message.js does on every other message
-    //                      path. A review decision must never vanish.
+    //   everything else -> DROP the tag. Those branches only record a message
+    //                      row, and a review decision must never vanish.
     if (projectSlug) {
-      const verdict = await authorizeTaskProject({ req, clientId: worldId, projectSlug });
+      const verdict = await authorizeProject({ world: worldId, projectSlug });
       if (!verdict.ok) {
         console.warn(
-          `[review-decision] project scope DENIED: world "${worldId}" slug "${projectSlug}" — ${verdict.reason}`,
+          `[review-decision] project scope DENIED: world "${worldId}" slug "${projectSlug}": ${verdict.reason}`,
         );
         if (act === 'request-changes') {
           return res.status(403).json({
-            error: taskScopeDenialMessage({ clientId: worldId, projectSlug, reason: verdict.reason }),
+            error: `This world cannot queue work in project "${projectSlug}": ${verdict.reason}`,
             code: 'PROJECT_SCOPE_DENIED',
           });
         }
@@ -331,12 +350,12 @@ export default async function handler(req, res) {
       }
     }
 
-    // request-changes: create the work item FIRST — if it can't be queued, the
+    // request-changes: create the work item FIRST. If it can't be queued, the
     // decision must NOT be recorded (else the item vanishes from the queue with
     // no task chasing the fix). The UI sees the 500 and keeps the item.
     let taskId = null;
     if (act === 'request-changes') {
-      const t = await createReviewTask(supabase, {
+      const t = await createReviewTask({
         world: worldId,
         project: projectSlug,
         mission,
@@ -355,55 +374,50 @@ export default async function handler(req, res) {
     }
 
     // Emit the decision as a message so it appears in chat/notifications, and so
-    // review-queue.js can suppress the decided item.
-    // FIXED 2026-07-06 (R-ASSIGN): the original insert used `type`/`content` columns
-    // that do not exist in the messages table, so EVERY decision 500'd and nothing was
-    // recorded. Insert the real schema (the columns the chat composer writes).
-    // FIXED 2026-07-12 (review-loop): messages.id has NO default — the R-ASSIGN fix
-    // still 500'd on the NOT NULL (zero decision rows had EVER persisted). Stamp
-    // id + timestamp explicitly, exactly like share-file.py does.
-    const decisionId = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    const { error } = await supabase.from('messages').insert({
-      id: decisionId,
-      timestamp: new Date().toISOString(),
-      client_id: worldId,
-      agent: clean(req.body.agent, 80) || 'corner',
+    // review-queue.js can suppress the decided item. Spoken by Corner (assistant
+    // role) so the round table does not try to answer it.
+    const decidedAt = new Date().toISOString();
+    const metadata = {
+      message_type: messageType,
+      deliverable_id: did,
+      action: act,
+      decided_by: reviewer.name,
+      decided_by_user_id: reviewer.userId,
+      ...(reviewer.identified ? {} : { unattributed: true }),
+      notes: act === 'request-changes' ? clean(notes, 1000) : null,
+      checklist: act === 'send-checklist' ? clean(checklist, 2000) : null,
+      decided_at: decidedAt,
+      // Content identity of the decided item. review-queue.js keys its
+      // decidedContent suppression on source_path + sha256 together.
+      source_path: sourcePath,
+      sha256,
+      mission,
       project: projectSlug,
-      text: message,
-      role: 'system',
-      source: 'review-decision',
-      // Verified columns, not body-supplied. Both stay null when the JWT can't
-      // be resolved to a person — an unattributed decision reads as one.
-      ...(reviewer.userId ? { user_id: reviewer.userId } : {}),
-      ...(reviewer.name ? { user_name: reviewer.name } : {}),
-      metadata: {
-        message_type: messageType,
-        deliverable_id: did,
-        action: act,
-        decided_by: reviewer.name,
-        decided_by_user_id: reviewer.userId,
-        ...(reviewer.identified ? {} : { unattributed: true }),
-        notes: act === 'request-changes' ? clean(notes, 1000) : null,
-        checklist: act === 'send-checklist' ? clean(checklist, 2000) : null,
-        decided_at: new Date().toISOString(),
-        // Content identity of the decided item — review-queue.js keys its
-        // decidedContent suppression on source_path + sha256 together.
-        source_path: sourcePath,
-        sha256,
-        mission,
-        // mission_slug routes this decision card into the MISSION room's thread
-        // (the thread's mission arms match metadata->>mission_slug; without it the
-        // card lands only in the project room while the user sits in the mission
-        // room watching nothing happen — corner:one-corner drop 2).
-        // one-write-path R8: canonical composite, never a raw passthrough.
-        ...(mission ? { mission_slug: canonicalizeMissionSlug(mission, MISSION_SLUG_LOOKUP, project) } : {}),
-        title,
-        ...(taskId ? { task_id: taskId } : {}),
-      },
-    });
+      // mission_slug routes this decision card into the MISSION room's thread.
+      // one-write-path R8: canonical composite, never a raw passthrough.
+      ...(mission ? { mission_slug: canonicalizeMissionSlug(mission, MISSION_SLUG_LOOKUP, projectSlug) } : {}),
+      title,
+      ...(taskId ? { task_id: taskId } : {}),
+    };
 
-    if (error) {
-      console.error('[review-decision] Supabase insert error:', error);
+    let decisionId;
+    try {
+      decisionId = await convexMutation('messages:send', {
+        roomId: decisionRoomId(worldId, projectSlug, mission),
+        clientId: worldId,
+        text: message,
+        role: 'assistant',
+        agentSlug: clean(req.body.agent, 80) || 'corner',
+        source: 'review-decision',
+        // Verified identity, not body-supplied. Both stay empty when the JWT
+        // can't be resolved to a person; an unattributed decision reads as one.
+        userId: reviewer.userId || undefined,
+        userEmail: reviewer.email || undefined,
+        userName: reviewer.name || undefined,
+      });
+      await convexMutation('messages:patchMetadata', { messageId: decisionId, patch: metadata });
+    } catch (error) {
+      console.error('[review-decision] Convex insert error:', error);
       return res.status(500).json({ error: 'Failed to record decision' });
     }
 
@@ -412,7 +426,7 @@ export default async function handler(req, res) {
       action: act,
       deliverable: did,
       message,
-      // The decision row's id — the client's "Undo" for a dismiss targets this.
+      // The decision row's id. The client's "Undo" for a dismiss targets this.
       decision_id: decisionId,
       ...(taskId ? { task_id: taskId } : {}),
     });

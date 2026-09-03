@@ -1,8 +1,8 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
-import { onAuthStateChange, isTempPassword } from './dashboard/lib/auth.js'
-import { supabase } from './dashboard/lib/supabase.js'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom'
+import { onAuthStateChange, isTempPassword, getSession, updateUserPreferences } from './dashboard/lib/auth.js'
+import { hasSession } from './dashboard/lib/convex.js'
 import App from './App.jsx'
 import { injectThemeVars } from './dashboard/lib/cv3Colors.js'
 import { SystemToastProvider } from './dashboard/SystemToast.jsx' // R84: mount toasts on the real app entry (/cvg, /dashboard) so create-failure warnings actually render
@@ -72,10 +72,6 @@ const Corner = lazy(() => import('./pages/Corner.jsx'))
 const CornerSurgeHomepage = lazy(() => import('./pages/CornerSurgeHomepage.jsx'))
 const CornerAsciiHeroPoc = lazy(() => import('./pages/CornerAsciiHeroPoc.jsx'))
 const BookCorner = lazy(() => import('./pages/BookCorner.jsx'))
-const CornerV3 = lazy(() => import('./dashboard/CornerV3.jsx'))
-const CornerV4 = lazy(() => import('./dashboard/CornerV4.jsx'))
-// corner:gemini-workers R10 — /cvg Gemini workbench (CornerV4 duplicate).
-const CornerVG = lazy(() => import('./dashboard/CornerVG.jsx'))
 // corner:corner-ui-cv6 R-CLEANUP — fresh CV6 surface. /dashboard renders THIS now.
 // Every screen is a Claude Design fill-in template, mounted verbatim through the
 // template engine and fed real data. Nothing hand-drawn, nothing faked. Screens
@@ -133,7 +129,6 @@ const CV6Gallery = lazy(() => import('./dashboard/CV6Gallery.jsx'))
 // corner:corner-ui-cv6 — /cv6kit test route. Isolated rendering of the design kit's
 // mobile Home screen to verify pixel-perfect rendering before wiring data.
 const CV6KitTest = lazy(() => import('./dashboard/CV6KitTest.jsx'))
-const MissionRoom = lazy(() => import('./dashboard/MissionRoom.jsx'))
 const MissionsIndex = lazy(() => import('./dashboard/MissionsIndex.jsx'))
 const CleoWorkspacesIndex = lazy(() => import('./dashboard/components/cv3/CleoWorkspacesIndex.jsx'))
 const CleoWorkspaceDetail = lazy(() => import('./dashboard/components/cv3/CleoWorkspaceDetail.jsx'))
@@ -228,7 +223,6 @@ const ReaderDemo = lazy(() => import('./dashboard/pages/ReaderDemo.jsx'))
 // corner:files-in-app R79-f3 — local demo of the FilesPanel primitive
 // (rail-shaped panel + reader modal), mounted against ambition-mechanical by
 // default; ?slug=<project-slug> overrides.
-const FilesPanelDemo = lazy(() => import('./dashboard/pages/FilesPanelDemo.jsx'))
 import './index.css'
 
 function ConstructionRedirect() {
@@ -252,6 +246,17 @@ function BrandRedirect() {
   return null
 }
 
+// Old shell URLs (/cv3, /cv4, /cvg, the legacy mission room) land on the same
+// room in the live dashboard.
+function LegacyProjectRedirect() {
+  const { projectId } = useParams()
+  return <Navigate to={projectId ? `/dashboard/projects/${encodeURIComponent(projectId)}/chat` : '/dashboard'} replace />
+}
+function LegacyMissionRedirect() {
+  const { missionSlug } = useParams()
+  return <Navigate to={missionSlug ? `/dashboard/mission/${encodeURIComponent(missionSlug)}` : '/dashboard'} replace />
+}
+
 function DealBankRedirect() {
   useEffect(() => {
     // 301 redirect to the new sourcing.directory location
@@ -260,9 +265,11 @@ function DealBankRedirect() {
   return null
 }
 
-// AuthGuard: checks Supabase session before rendering dashboard routes.
-// Falls through immediately if Supabase is not configured (localhost without env vars).
-// First-time users are redirected to /onboarding. Checks metadata + DB for robustness.
+// AuthGuard: checks the Convex session before rendering dashboard routes
+// (corner:retire-supabase R3). No stored token means /login; a token whose
+// identity read fails (offline) lets the shell render read-only rather than
+// bouncing a signed-in person out. First-time users go to /onboarding; the
+// onboarded flag lives in users.preferences (users:viewer.onboarded).
 // Public demo routes (like /corner/hero-poc) bypass auth and render for all users.
 function AuthGuard({ children }) {
   const navigate = useNavigate()
@@ -288,8 +295,16 @@ function AuthGuard({ children }) {
 
     const handleSession = async (session) => {
       if (cancelled) return
-      if (session) {
-        // Admin-created accounts must change their temp password first
+      if (session && session.degraded) {
+        // Token stored, identity read failed (offline or the deployment is
+        // unreachable). Render the shell; the data hooks show their own stale
+        // and offline states, and the next session event re-runs this check.
+        setAuthed(true)
+        setChecked(true)
+        return
+      }
+      if (session && session.user) {
+        // Seeded accounts must pick a real password first (users.mustChangePassword).
         if (isTempPassword(session.user)) {
           setChecked(true)
           setAuthed(false)
@@ -307,7 +322,8 @@ function AuthGuard({ children }) {
           return
         }
 
-        // Check onboarding status: metadata flags, localStorage, OR world slug exists
+        // Onboarding status: the preferences flag, a world membership, or the
+        // local marker from a just-finished onboarding.
         const meta = session.user?.user_metadata || {}
         let isOnboarded =
           meta.onboarded === true ||
@@ -315,25 +331,12 @@ function AuthGuard({ children }) {
           (meta.world && meta.world.trim().length > 0) ||
           localStorage.getItem('corner-onboarded') === 'true'
 
-        // Fallback: if metadata says no but user already has agents in DB, skip onboarding.
-        // This catches cleared cookies + metadata write failures.
-        if (!isOnboarded && supabase) {
-          try {
-            const { data } = await supabase
-              .from('agent_status')
-              .select('id, client_id')
-              .limit(1)
-            if (data && data.length > 0) {
-              isOnboarded = true
-              // Self-heal: fix the metadata so this check doesn't repeat
-              localStorage.setItem('corner-onboarded', 'true')
-              supabase.auth.updateUser({
-                data: { onboarded: true, has_completed_onboarding: true, world: data[0].client_id }
-              }).catch(() => {})
-            }
-          } catch {
-            // DB check failed, fall through to onboarding
-          }
+        // Self-heal: a person who belongs to a world has been through setup even
+        // if the flag was never written. Write it so this check does not repeat.
+        if (!isOnboarded && session.user.worldSlug) {
+          isOnboarded = true
+          localStorage.setItem('corner-onboarded', 'true')
+          updateUserPreferences({ onboarded: true, has_completed_onboarding: true }).catch(() => {})
         }
 
         if (!isOnboarded) {
@@ -346,16 +349,10 @@ function AuthGuard({ children }) {
           setChecked(true)
         }
       } else {
-        if (!supabase) {
-          // Supabase not configured (local dev without env vars) -- allow through.
-          setAuthed(true)
-          setChecked(true)
-        } else {
-          // Supabase configured, no session -- redirect to login.
-          setAuthed(false)
-          setChecked(true)
-          navigate('/login', { replace: true })
-        }
+        // No session -- redirect to login.
+        setAuthed(false)
+        setChecked(true)
+        navigate('/login', { replace: true })
       }
     }
 
@@ -365,34 +362,34 @@ function AuthGuard({ children }) {
       handleSession(session)
     }
 
-    // Resolve once immediately. In some browser/runtime combinations the auth
-    // listener/session read can miss or hang on the initial state, leaving users
-    // on the boot loading state forever before they ever reach CV6 or Login.
-    if (!supabase) {
+    // Resolve once immediately. A missing token settles as signed out without a
+    // network round trip; a stored token asks users:viewer once, with a timer so
+    // a hung identity read can never leave the boot skeleton up forever.
+    if (!hasSession()) {
       settleInitial(null)
-      return () => { cancelled = true }
+    } else {
+      const initialTimer = window.setTimeout(() => {
+        // Still waiting on the identity read: render with what we have. The
+        // listener below re-checks the moment the session store changes.
+        settleInitial({ user: null, degraded: true })
+      }, 4000)
+      getSession()
+        .then((session) => {
+          window.clearTimeout(initialTimer)
+          settleInitial(session)
+        })
+        .catch(() => {
+          window.clearTimeout(initialTimer)
+          settleInitial({ user: null, degraded: true })
+        })
     }
 
-    const initialTimer = window.setTimeout(() => settleInitial(null), 4000)
-
-    supabase.auth.getSession()
-      .then(({ data }) => {
-        window.clearTimeout(initialTimer)
-        settleInitial(data?.session || null)
-      })
-      .catch(() => {
-        window.clearTimeout(initialTimer)
-        settleInitial(null)
-      })
-
     const unsubscribe = onAuthStateChange((session) => {
-      window.clearTimeout(initialTimer)
       if (!initialSettled) settleInitial(session)
       else handleSession(session)
     })
     return () => {
       cancelled = true
-      window.clearTimeout(initialTimer)
       unsubscribe()
     }
   }, [navigate])
@@ -677,12 +674,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/onboarding/voice" element={<OnboardingVoice />} />
           <Route path="/accept-invite" element={<AcceptInvite />} />
-          {/* R7.21 CUTOVER: /dashboard now renders CV4. /cv3 keeps CornerV3
-              available as an escape hatch — visit /cv3 (or /cv3/project/:id)
-              for the legacy shell. /cv4 paths are preserved (alias to CV4)
-              so links & worker phonebooks that still point at /cv4 keep
-              working through the transition. /dashboard/cv3 also keeps
-              CornerV3 mounted as a sub-route escape hatch. */}
+          {/* corner:retire-supabase: the CV3 / CV4 / CVG shells and the legacy
+              mission room are deleted (they read the retired backend). Their
+              paths redirect to the live CV6 dashboard below so old links and
+              worker phonebooks still land somewhere real. */}
           <Route path="/reports" element={<AuthGuard><ReportsEditor /></AuthGuard>} />
           <Route path="/reports/:client" element={<AuthGuard><ReportsEditor /></AuthGuard>} />
           <Route path="/dashboard" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
@@ -699,40 +694,36 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/dashboard/agent/:agentId" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
           <Route path="/dashboard/agents/:agentId/chat" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
           <Route path="/dashboard/chat/agent/:agentId" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
-          <Route path="/dashboard/legacy/mission/:missionSlug" element={<AuthGuard><MissionRoom /></AuthGuard>} />
           {/* corner:mission-rooms R5 — missions index. Demotes the task table
               by giving missions their own primary navigation surface. */}
           <Route path="/dashboard/missions" element={<AuthGuard><MissionsIndex /></AuthGuard>} />
-          <Route path="/dashboard/v2" element={<AuthGuard><CornerV3 /></AuthGuard>} />
-          <Route path="/dashboard/cv3" element={<AuthGuard><CornerV3 /></AuthGuard>} />
+          <Route path="/dashboard/legacy/mission/:missionSlug" element={<LegacyMissionRedirect />} />
+          <Route path="/dashboard/v2" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard/cv3" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard/cleo/workspaces" element={<AuthGuard><CleoWorkspacesIndex /></AuthGuard>} />
           <Route path="/dashboard/cleo/workspaces/:slug" element={<AuthGuard><CleoWorkspaceDetail /></AuthGuard>} />
-          {/* CV4 alias paths (kept during transition) */}
+          {/* Legacy shell paths: redirect into the live dashboard. */}
           {/* corner:files-in-app R79-f2 — reader primitive demo. No AuthGuard
               so the demo renders against bundled fixtures without needing a
               signed-in session. Real production wiring lands in R79-f3. */}
           <Route path="/cv4/reader-demo" element={<ReaderDemo />} />
-          <Route path="/cv4/files-demo" element={<FilesPanelDemo />} />
-          <Route path="/cv4" element={<AuthGuard><CornerV4 /></AuthGuard>} />
-          <Route path="/cv4/project/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
-          <Route path="/cv4/projects/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
-          <Route path="/cv4/projects/:projectId/chat" element={<AuthGuard><CornerV4 /></AuthGuard>} />
-          {/* corner:gemini-workers R10 — /cvg Gemini workbench. Duplicate of
-              the live dashboard; every send carries a Gemini model override. */}
-          <Route path="/cvg" element={<AuthGuard><CornerVG /></AuthGuard>} />
-          <Route path="/cvg/project/:projectId" element={<AuthGuard><CornerVG /></AuthGuard>} />
-          <Route path="/cvg/projects/:projectId" element={<AuthGuard><CornerVG /></AuthGuard>} />
-          <Route path="/cvg/projects/:projectId/chat" element={<AuthGuard><CornerVG /></AuthGuard>} />
+          <Route path="/cv4" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/cv4/project/:projectId" element={<LegacyProjectRedirect />} />
+          <Route path="/cv4/projects/:projectId" element={<LegacyProjectRedirect />} />
+          <Route path="/cv4/projects/:projectId/chat" element={<LegacyProjectRedirect />} />
+          <Route path="/cvg" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/cvg/project/:projectId" element={<LegacyProjectRedirect />} />
+          <Route path="/cvg/projects/:projectId" element={<LegacyProjectRedirect />} />
+          <Route path="/cvg/projects/:projectId/chat" element={<LegacyProjectRedirect />} />
           {/* corner:corner-ui-cv6 — /cv6 component gallery. Public (no user
               data) so it renders frictionlessly for design review. */}
           <Route path="/cv6" element={<CV6Gallery />} />
           {/* corner:corner-ui-cv6 — /cv6kit route removed (Patrik 2026-06-22): the design
               mockups now mount on the live /dashboard surface itself; no parallel preview. */}
-          {/* CV3 escape hatch — rollback path during R7.21 transition. */}
-          <Route path="/cv3" element={<AuthGuard><CornerV3 /></AuthGuard>} />
-          <Route path="/cv3/project/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
-          <Route path="/cv3/projects/:projectId/chat" element={<AuthGuard><CornerV3 /></AuthGuard>} />
-          <Route path="/cv3/projects/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
+          <Route path="/cv3" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/cv3/project/:projectId" element={<LegacyProjectRedirect />} />
+          <Route path="/cv3/projects/:projectId/chat" element={<LegacyProjectRedirect />} />
+          <Route path="/cv3/projects/:projectId" element={<LegacyProjectRedirect />} />
         </Routes>
       </Suspense>
       </SystemToastProvider>

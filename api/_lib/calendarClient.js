@@ -1,45 +1,46 @@
-// Google Calendar API client — loads + decrypts + auto-refreshes a user's Google
-// Calendar OAuth tokens, then exposes helpers for freeBusy queries and event creation
-// against https://www.googleapis.com/calendar/v3.
+// Google Calendar API client: loads, decrypts and auto-refreshes a user's
+// Google Calendar OAuth tokens, then exposes helpers for freeBusy queries and
+// event creation against https://www.googleapis.com/calendar/v3.
 //
-// The token blob lives in supabase: account_integrations.config.tokens
-// (AES-GCM-encrypted JSON, see api/_lib/oauthCrypto.js). When the access_token
-// is past its expiry we POST to Google's token endpoint with the refresh_token
-// and write the new blob back to supabase before returning the bearer.
+// corner:retire-supabase R3: the encrypted token blob lives in the Convex
+// integrations table (integrations:getOAuthTokens / setOAuthTokens, slug
+// "google-calendar"), keyed by the user.
 
 import { decryptJson, encryptJson } from './oauthCrypto.js'
-import { extractJwt } from './verifyTenant.js'
+import { convexQuery, convexMutation } from './verifyTenant.js'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const CALENDAR_BASE = 'https://www.googleapis.com/calendar/v3'
+const SLUG = 'google-calendar'
 
 async function loadRow(userId) {
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.google-calendar&select=config,connected_at,updated_at&limit=1`,
-    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
-  )
-  if (!r.ok) return null
-  const rows = await r.json()
-  return Array.isArray(rows) && rows.length ? rows[0] : null
+  const row = await convexQuery('integrations:getOAuthTokens', { userId, slug: SLUG })
+  if (!row || !row.ciphertext) return null
+  const email = row.email || null
+  return {
+    workspace_id: row.workspaceId || null,
+    config: {
+      tokens: row.ciphertext,
+      account_email: email,
+      profile: email ? { emailAddress: email, email } : null,
+    },
+  }
 }
 
-async function writeRow(userId, configPatch) {
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.google-calendar`,
-    {
-      method: 'PATCH',
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=minimal',
-      },
-      body: JSON.stringify({ config: configPatch, updated_at: new Date().toISOString() }),
-    },
-  )
-  return r.ok
+async function writeTokens(userId, row, tokens) {
+  try {
+    const r = await convexMutation('integrations:setOAuthTokens', {
+      userId,
+      slug: SLUG,
+      ciphertext: encryptJson(tokens),
+      email: row?.config?.account_email || undefined,
+      expiresAt: tokens.expires_at || undefined,
+      workspaceId: row?.workspace_id || undefined,
+    })
+    return !!(r && r.ok)
+  } catch {
+    return false
+  }
 }
 
 async function refresh(refreshToken) {
@@ -69,19 +70,16 @@ async function refresh(refreshToken) {
   return r.json()
 }
 
-// Returns { accessToken, profile } or null if Google Calendar isn't connected.
-// Caller should respond with appropriate error state (graceful fallback to mock slots).
+// Returns { accessToken, profile } or null if Google Calendar is not connected.
+// Caller should fall back gracefully (mock slots) in that case.
 export async function getCalendarToken(userId) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return null
+  if (!userId) return null
   const row = await loadRow(userId)
-  if (!row || !row.config || !row.config.tokens) return null
+  if (!row) return null
 
   const tokens = decryptJson(row.config.tokens)
   const now = Date.now()
-  const expiresAt = tokens.expires_at
-    || (tokens.expires_in && row.connected_at
-        ? new Date(row.connected_at).getTime() + tokens.expires_in * 1000
-        : 0)
+  const expiresAt = tokens.expires_at || 0
 
   if (tokens.access_token && (!expiresAt || expiresAt - now > 60_000)) {
     return { accessToken: tokens.access_token, profile: row.config.profile || null }
@@ -98,10 +96,7 @@ export async function getCalendarToken(userId) {
     token_type: refreshed.token_type || tokens.token_type,
     scope: refreshed.scope || tokens.scope,
   }
-  await writeRow(userId, {
-    ...row.config,
-    tokens: encryptJson(merged),
-  })
+  await writeTokens(userId, row, merged)
   return { accessToken: merged.access_token, profile: row.config.profile || null }
 }
 

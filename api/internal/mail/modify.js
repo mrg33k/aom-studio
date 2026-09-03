@@ -9,6 +9,9 @@
 // This endpoint refuses any operation that would move messages to TRASH or
 // permanently delete them.
 //
+// Auth: X-Internal-Key must equal CORNER_INTERNAL_KEY (corner:retire-supabase,
+// 2026-09-03: was the Supabase service role key).
+//
 // Body: { connection_id?, account_email?, message_id, action, addLabels?, removeLabels? }
 //   (connection_id or account_email required — account_email resolves the row at runtime)
 // action: archive | mark-read | mark-unread | star | unstar
@@ -16,7 +19,7 @@
 
 import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch } from '../../_lib/gmailClient.js'
 
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const INTERNAL_KEY = process.env.CORNER_INTERNAL_KEY
 
 const ACTION_MAP = {
   'archive':     { add: [],          remove: ['INBOX'] },
@@ -40,7 +43,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
   const internalKey = (req.headers['x-internal-key'] || '').trim()
-  if (!SUPABASE_SERVICE_ROLE_KEY || !internalKey || internalKey !== SUPABASE_SERVICE_ROLE_KEY) {
+  if (!INTERNAL_KEY || !internalKey || internalKey !== INTERNAL_KEY) {
     return res.status(401).json({ error: 'unauthorized' })
   }
 

@@ -1,6 +1,5 @@
-// GET /api/support/suggest?wish_id=... (or ?access_code=...) — everything the
-// Support reply pane needs for ONE ask (corner:corner-ui-cv6:support, R1 of the
-// suggested-reply UI from the CV6 design system wired/tools/support.html):
+// GET /api/support/suggest?wish_id=... (or ?access_code=...) - everything the
+// Support reply pane needs for ONE ask (corner:corner-ui-cv6:support):
 //
 //   {
 //     ok, summary: [ "bullet", ... ],          // the ask, summarized (from the wish message)
@@ -11,36 +10,27 @@
 //   }
 //
 // Sources, in order of trust:
-//   1. The wish row's recommendation/reply_options columns (written by
+//   1. The wish meta's recommendation/reply_options (written by
 //      support-triage.py's Gemini lane for new wishes).
-//   2. The staged Gmail draft tagged in the message ([staged_draft:ID|conn:ID]) —
+//   2. The staged Gmail draft tagged in the message ([staged_draft:ID|conn:ID]),
 //      its real body is fetched from Gmail so "Send it as me" shows what will send.
 //   3. On-demand Gemini (same key/model as analyze-logs.js) for older wishes that
-//      predate the columns — the result is PATCHed back onto the wish as cache.
+//      predate the columns. The result is written back to the wish meta as cache.
 //
 // Never sends anything. Sending stays behind send-staged.js / reply.js.
+//
+// corner:retire-supabase (2026-09-03): wish + timeline from Convex via wishes.js;
+// the extras (recommendation, reply_options, agent_read, auto_send_at) come from
+// the wish meta store.
 
 import { requiredTenantFromEnv, resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js'
 import { getGmailTokenByConnection, gmailFetch } from '../_lib/gmailClient.js'
+import { loadWish, patchWishMeta, parseJsonish } from './wishes.js'
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 
 const ORIGINAL_DELIM = '--- ORIGINAL MESSAGE ---'
 const STAGED_TAG = /\[staged_draft:([^|\]]+)\|conn:([^\]]+)\]/
-
-function supa(path, opts = {}) {
-  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    ...opts,
-    headers: {
-      apikey: SERVICE_KEY,
-      Authorization: `Bearer ${SERVICE_KEY}`,
-      'Content-Type': 'application/json',
-      ...(opts.headers || {}),
-    },
-  })
-}
 
 // wish.message = summary bullets + ORIGINAL_DELIM + original text + optional staged tag
 function parseWishMessage(message) {
@@ -49,7 +39,7 @@ function parseWishMessage(message) {
   const cleaned = raw.replace(STAGED_TAG, '').trim()
   const [head, ...rest] = cleaned.split(ORIGINAL_DELIM)
   const lines = head.split('\n').map((l) => l.trim()).filter(Boolean)
-  // The watcher writes: subject line, then • bullets. Fall back to the first
+  // The watcher writes: subject line, then bullets. Fall back to the first
   // body lines for hand-entered wishes that never got the bullet treatment.
   const bullets = lines.filter((l) => /^[•·]/.test(l)).map((l) => l.replace(/^[•·]\s*/, ''))
   return {
@@ -61,7 +51,7 @@ function parseWishMessage(message) {
 }
 
 // Pull the staged Gmail draft's plain-text body so the pane shows exactly what
-// "Send it as me" will fire. Best effort — a revoked draft returns null.
+// "Send it as me" will fire. Best effort: a revoked draft returns null.
 async function stagedDraftBody(staged) {
   try {
     const creds = await getGmailTokenByConnection(staged.connection_id)
@@ -85,12 +75,6 @@ async function stagedDraftBody(staged) {
   } catch {
     return null
   }
-}
-
-const parseJsonish = (s) => {
-  if (!s) return null
-  if (typeof s === 'object') return s
-  try { return JSON.parse(s) } catch { return null }
 }
 
 // On-demand generation for wishes that predate the triage columns. Same model
@@ -151,51 +135,43 @@ export default async function handler(req, res) {
 
   const { wish_id, access_code } = req.query
   if (!wish_id && !access_code) return res.status(400).json({ ok: false, error: 'wish_id or access_code required' })
-  const sel = wish_id ? `id=eq.${encodeURIComponent(wish_id)}` : `access_code=eq.${encodeURIComponent(String(access_code).toUpperCase())}`
-  const wr = await supa(`support_wishes?select=*&${sel}&limit=1`)
-  const rows = wr.ok ? await wr.json() : []
-  const wish = Array.isArray(rows) && rows.length ? rows[0] : null
-  if (!wish) return res.status(404).json({ ok: false, error: 'wish not found' })
+  const found = await loadWish(wish_id ? { id: wish_id, includeHidden: true } : { accessCode: access_code, includeHidden: true })
+  if (!found) return res.status(404).json({ ok: false, error: 'wish not found' })
+  const { wish, updates } = found
 
   const parsed = parseWishMessage(wish.message)
 
   let recommendation = parseJsonish(wish.recommendation) || []
   let options = parseJsonish(wish.reply_options) || []
+  if (!Array.isArray(recommendation)) recommendation = []
+  if (!Array.isArray(options)) options = []
 
   // Latest internal worker receipt ("fixed the page and checked it live") so the
   // pane can show WHAT the agent did under the staged draft (M27 Stage 4).
   let workerNote = null
-  try {
-    const nr = await supa(`support_wish_updates?select=body,created_at&wish_id=eq.${wish.id}&kind=eq.worker_note&order=created_at.desc&limit=1`)
-    if (nr.ok) {
-      const nrows = await nr.json()
-      if (Array.isArray(nrows) && nrows.length) workerNote = { body: nrows[0].body || '', created_at: nrows[0].created_at }
-    }
-  } catch { /* receipt is optional */ }
+  const notes = updates.filter((u) => u.kind === 'worker_note')
+  if (notes.length) {
+    const last = notes[notes.length - 1]
+    workerNote = { body: last.body || '', created_at: last.created_at }
+  }
 
   let staged = null
   if (parsed.staged) {
     const body = await stagedDraftBody(parsed.staged)
     staged = { ...parsed.staged, body }
-    // A staged draft IS the primary suggested reply — surface it first.
+    // A staged draft IS the primary suggested reply, so it goes first.
     if (body && !options.some((o) => o.text === body)) {
       options = [{ label: 'Staged by your agent', text: body }, ...options]
     }
   }
 
-  // Older wish with nothing stored → generate once, cache on the row.
+  // Older wish with nothing stored: generate once, cache on the wish meta.
   if (!options.length) {
     const gen = await generateSuggestions(wish, parsed.original)
     if (gen) {
       recommendation = recommendation.length ? recommendation : gen.recommendation
       options = gen.options
-      await supa(`support_wishes?id=eq.${wish.id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          recommendation: JSON.stringify(recommendation),
-          reply_options: JSON.stringify(options),
-        }),
-      }).catch(() => {})
+      await patchWishMeta(wish.id, { recommendation, reply_options: options }).catch(() => {})
     }
   }
 
@@ -206,7 +182,7 @@ export default async function handler(req, res) {
     options,
     staged,
     original: parsed.original || String(wish.message || ''),
-    // The worker's actual read {who, ask, state, did, next} — when present the
+    // The worker's actual read {who, ask, state, did, next}. When present the
     // board renders THIS as the summary, not the ingest-time paraphrase (M27).
     agent_read: parseJsonish(wish.agent_read),
     worker_note: workerNote,

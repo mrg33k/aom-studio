@@ -1,31 +1,22 @@
 // GET /api/support/activity?wish_id=...&access_code=...
 //
 // Read-only bridge between the Email desk and the agent room. A support wish is
-// dispatched to the agent by writing a row to `messages` with
-// metadata.support_wish_id/support_access_code; the agent's live work is written
-// to `events` as message_step rows keyed to that parent message. The Email pane
-// needs both sources to answer "what is being done on this thread?"
+// handed to the agent as a message (source support-desk) carrying
+// metadata.support_wish_id / support_access_code; the agent's live work lands
+// in the events ledger as message_step rows keyed to that parent message. The
+// Email pane needs both sources to answer "what is being done on this thread?"
+//
+// corner:retire-supabase (2026-09-03): the trigger comes from
+// messages:findBySource, the room thread from messages:list, the steps from
+// events:find and the wish timeline from support:get.
 
 import { requiredTenantFromEnv, resolveTenantContext, sendTenantContextError } from '../_lib/tenantContext.js'
+import { convexQuery } from '../_lib/verifyTenant.js'
+import { loadWish } from './wishes.js'
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const SUPPORT_AGENT = process.env.SUPPORT_AGENT_SLUG || 'elon'
 
-function headers(prefer = false) {
-  return {
-    apikey: SERVICE_KEY,
-    Authorization: `Bearer ${SERVICE_KEY}`,
-    'Content-Type': 'application/json',
-    ...(prefer ? { Prefer: 'return=representation' } : {}),
-  }
-}
-
-async function supa(path) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: headers() })
-  if (!r.ok) return []
-  return r.json().catch(() => [])
-}
+const iso = (ms) => (typeof ms === 'number' && Number.isFinite(ms) ? new Date(ms).toISOString() : null)
 
 function cleanStep(raw) {
   let t = String(raw || '').trim()
@@ -48,12 +39,12 @@ function cleanStep(raw) {
 
 function publicMessage(row) {
   return {
-    id: row.id,
-    role: row.role || '',
+    id: String(row._id),
+    role: row.role || (row.agentSlug ? 'assistant' : 'user'),
     source: row.source || '',
-    agent: row.agent || '',
+    agent: row.agentSlug || '',
     text: String(row.text || '').slice(0, 4000),
-    timestamp: row.timestamp || null,
+    timestamp: iso(row.createdAt),
   }
 }
 
@@ -64,7 +55,6 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'GET') return res.status(405).json({ ok: false, error: 'GET only' })
-  if (!SUPABASE_URL || !SERVICE_KEY) return res.status(500).json({ ok: false, error: 'Supabase not configured' })
 
   let tenantContext
   try {
@@ -80,26 +70,27 @@ export default async function handler(req, res) {
   const accessCode = String(req.query.access_code || '').trim().toUpperCase()
   if (!wishId && !accessCode) return res.status(400).json({ ok: false, error: 'wish_id or access_code required' })
 
-  const triggerFilters = [
-    'select=*',
-    `client_id=eq.${encodeURIComponent(tenantId)}`,
-    `agent=eq.${encodeURIComponent(String(req.query.agent || SUPPORT_AGENT).toLowerCase())}`,
-    'order=timestamp.asc',
-    'limit=1',
-  ]
-  if (wishId) triggerFilters.push(`metadata->>support_wish_id=eq.${encodeURIComponent(wishId)}`)
-  else triggerFilters.push(`metadata->>support_access_code=eq.${encodeURIComponent(accessCode)}`)
-  const triggers = await supa(`messages?${triggerFilters.join('&')}`)
-  const trigger = Array.isArray(triggers) && triggers.length ? triggers[0] : null
+  const wantedAgent = String(req.query.agent || SUPPORT_AGENT).toLowerCase()
 
-  const updatesWhere = wishId
-    ? `wish_id=eq.${encodeURIComponent(wishId)}`
-    : ''
-  const updates = updatesWhere
-    ? await supa(`support_wish_updates?select=kind,body,status,author,created_at&${updatesWhere}&order=created_at.asc&limit=50`)
-    : []
-  const publicUpdates = (Array.isArray(updates) ? updates : [])
+  // The trigger: the oldest support-desk message that names this wish.
+  let candidates = []
+  try {
+    candidates = await convexQuery('messages:findBySource', { worldId: tenantId, source: 'support-desk', limit: 500 })
+  } catch {
+    candidates = []
+  }
+  const trigger = (Array.isArray(candidates) ? candidates : [])
+    .filter((m) => {
+      const md = m.metadata || {}
+      return wishId ? String(md.support_wish_id || '') === wishId : String(md.support_access_code || '').toUpperCase() === accessCode
+    })
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))[0] || null
+
+  // The wish's own timeline (hidden bookkeeping rows stay hidden).
+  const found = await loadWish(wishId ? { id: wishId, includeHidden: true } : { accessCode, includeHidden: true })
+  const publicUpdates = (found ? found.updates : [])
     .filter((u) => !['thread_cache', 'thread_meta'].includes(u.kind))
+    .slice(0, 50)
     .map((u) => ({
       kind: u.kind || '',
       body: String(u.body || '').slice(0, 2000),
@@ -112,25 +103,36 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, trigger: null, messages: [], steps: [], updates: publicUpdates })
   }
 
-  const agent = trigger.agent || SUPPORT_AGENT
-  const since = encodeURIComponent(trigger.timestamp || new Date(0).toISOString())
-  const roomRows = await supa(`messages?select=*&client_id=eq.${encodeURIComponent(tenantId)}&agent=eq.${encodeURIComponent(agent)}&timestamp=gte.${since}&order=timestamp.asc&limit=40`)
+  // The room thread from the trigger onward, up to the next human message.
+  let roomRows = []
+  try {
+    roomRows = await convexQuery('messages:list', { roomId: String(trigger.roomId), limit: 200 })
+  } catch {
+    roomRows = []
+  }
   const scoped = []
-  for (const row of Array.isArray(roomRows) ? roomRows : []) {
-    if (row.id !== trigger.id && (row.role === 'user' || row.user_name)) break
+  for (const row of (Array.isArray(roomRows) ? roomRows : []).filter((r) => (r.createdAt || 0) >= (trigger.createdAt || 0))) {
+    const isHuman = (row.role || (row.agentSlug ? 'assistant' : 'user')) === 'user'
+    if (String(row._id) !== String(trigger._id) && isHuman) break
     scoped.push(row)
   }
+  if (!scoped.length) scoped.push(trigger)
 
-  const eventRows = await supa([
-    'events?select=id,agent,payload,timestamp',
-    'event_type=eq.message_step',
-    `agent=eq.${encodeURIComponent(agent)}`,
-    `payload->>client_id=eq.${encodeURIComponent(tenantId)}`,
-    `payload->>parent_message_id=eq.${encodeURIComponent(trigger.id)}`,
-    'order=timestamp.asc',
-    'limit=100',
-  ].join('&'))
+  // The agent's steps on that message.
+  const agent = wantedAgent
+  let eventRows = []
+  try {
+    eventRows = await convexQuery('events:find', {
+      event_type: 'message_step',
+      payload_eq: { key: 'parent_message_id', value: String(trigger._id) },
+      order: 'asc',
+      limit: 100,
+    })
+  } catch {
+    eventRows = []
+  }
   const steps = (Array.isArray(eventRows) ? eventRows : [])
+    .filter((row) => !row.payload || !row.payload.client_id || String(row.payload.client_id) === tenantId)
     .map((row) => {
       const p = row.payload || {}
       return {
@@ -145,6 +147,7 @@ export default async function handler(req, res) {
 
   return res.status(200).json({
     ok: true,
+    agent,
     trigger: publicMessage(trigger),
     messages: scoped.map(publicMessage),
     steps,

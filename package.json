@@ -32,7 +32,6 @@
     "@capacitor/ios": "^8.5.0",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
-    "@supabase/supabase-js": "^2.99.2",
     "convex": "^1.44.0",
     "d3-force": "^3.0.0",
     "firebase": "^10.8.0",

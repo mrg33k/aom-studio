@@ -5,25 +5,26 @@
 //   1. Client welcome email with access code + login URL
 //   2. Facilitator confirmation to courtney@aom-inhouse.com
 //
-// Auth: requires verifyTenant('aom', req) — caller must hold a valid JWT for the
-// aom tenant. This prevents an unauthenticated attacker who brute-forces a
-// low-entropy access_code from triggering arbitrary Gmail sends via AOM's
-// OAuth connection (spam via trusted domain).
+// Auth: requires verifyTenant('aom', req). This prevents an unauthenticated
+// caller who guesses an access code from triggering Gmail sends through AOM's
+// OAuth connection.
+//
+// corner:retire-supabase R3: the client check reads Convex (aiHours:getClient)
+// and the Gmail connection is resolved by the sending account's email
+// (AOM_GMAIL_ACCOUNT, default hello@aom-inhouse.com) instead of a hardcoded
+// Supabase row id. AOM_GMAIL_CONNECTION_ID still wins when set.
 //
 // Body: { client_name, client_email, access_code }
-//
 // Response: { ok: true } on success.
 
-import { getGmailTokenByConnection, gmailFetch } from '../_lib/gmailClient.js'
-import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
+import { getGmailTokenByConnection, gmailFetch, resolveConnectionIdByEmail } from '../_lib/gmailClient.js'
+import { verifyTenant, TenantAuthError, convexQuery } from '../_lib/verifyTenant.js'
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const AOM_CONNECTION_ID = '2883ada2-14bd-4792-9b39-eeb570bbd498'
+const AOM_GMAIL_ACCOUNT = process.env.AOM_GMAIL_ACCOUNT || 'hello@aom-inhouse.com'
 const FACILITATOR_EMAIL = 'courtney@aom-inhouse.com'
 const AI_HOURS_URL = 'https://www.aheadofmarket.com/ai-hours'
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// Helpers
 
 function encB64Url(buf) {
   return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
@@ -83,22 +84,19 @@ async function sendEmail({ accessToken, fromHeader, to, subject, bodyHtml }) {
 }
 
 async function verifyClientExists(access_code) {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return false
-  const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/ai_hours_clients?access_code=eq.${encodeURIComponent(access_code)}&select=id&limit=1`,
-    {
-      headers: {
-        apikey: SUPABASE_SERVICE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    }
-  )
-  if (!r.ok) return false
-  const rows = await r.json()
-  return Array.isArray(rows) && rows.length > 0
+  const code = String(access_code || '').trim().toUpperCase()
+  if (!code) return false
+  try {
+    const bySlug = await convexQuery('aiHours:getClient', { slug: code })
+    if (bySlug) return true
+    const byCode = await convexQuery('aiHours:getClient', { accessCode: code })
+    return !!byCode
+  } catch {
+    return false
+  }
 }
 
-// ─── Email bodies ────────────────────────────────────────────────────────────
+// Email bodies
 
 function clientEmailHtml({ client_name, access_code }) {
   return `
@@ -137,7 +135,7 @@ function facilitatorEmailHtml({ client_name, client_email, access_code }) {
 `.trim()
 }
 
-// ─── Handler ────────────────────────────────────────────────────────────────
+// Handler
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -146,7 +144,6 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' })
 
-  // ── Require verifyTenant — prevents Gmail spam via guessed access_code ──
   try {
     await verifyTenant('aom', req);
   } catch (err) {
@@ -168,26 +165,24 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'client_name, client_email, and access_code are required' })
   }
 
-  // Verify the client actually exists in the DB before sending email
   const exists = await verifyClientExists(access_code)
   if (!exists) {
     return res.status(404).json({ error: 'client-not-found' })
   }
 
-  // Load Gmail credentials
-  const creds = await getGmailTokenByConnection(AOM_CONNECTION_ID)
+  // Load Gmail credentials for the sending account.
+  const connectionId = process.env.AOM_GMAIL_CONNECTION_ID || await resolveConnectionIdByEmail(AOM_GMAIL_ACCOUNT)
+  const creds = connectionId ? await getGmailTokenByConnection(connectionId) : null
   if (!creds) {
     return res.status(503).json({ error: 'gmail-not-connected' })
   }
 
-  // Build From header
-  const fromHeader = creds.profile?.email
-    ? `AOM <${creds.profile.email}>`
-    : 'AOM <hello@aom-inhouse.com>'
+  const fromEmail = creds.profile?.emailAddress || creds.profile?.email || AOM_GMAIL_ACCOUNT
+  const fromHeader = `AOM <${fromEmail}>`
 
   const errors = []
 
-  // EMAIL 1 — client welcome
+  // EMAIL 1: client welcome
   try {
     await sendEmail({
       accessToken: creds.accessToken,
@@ -201,7 +196,7 @@ export default async function handler(req, res) {
     errors.push({ recipient: 'client', error: err.message })
   }
 
-  // EMAIL 2 — facilitator confirmation
+  // EMAIL 2: facilitator confirmation
   try {
     await sendEmail({
       accessToken: creds.accessToken,

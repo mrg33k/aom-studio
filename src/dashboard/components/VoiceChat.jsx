@@ -219,7 +219,7 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
   }, [])
 
   // NOTE (corner:voice-chat, 2026-07-27): a dead `saveTranscript` helper used to
-  // live here. It wrote voice turns straight to /api/dashboard/supabase-messages
+  // live here. It wrote voice turns straight to the old messages API route
   // with NO author — and nothing called it, so it was a landmine waiting for
   // someone to wire it up and reintroduce unattributed rows. Removed. Persisting
   // a turn is the HOST's job, through onTranscript: the host is the only layer
@@ -462,8 +462,8 @@ const VoiceChat = forwardRef(function VoiceChat({ agentSlug, agentName = null, a
     // R28 (2026-04-21): close the loop so the agent actually learns what was
     // said. Every voice call -- terminal room or not -- AWAITS a POST to
     // /api/dashboard/voice-handoff before tearing down. The endpoint writes
-    // a messages row with source='voice-handoff'; supabase-listener forwards
-    // it to the agent's relay inbox. No fire-and-forget -- that was the bug
+    // a Convex messages row with source='voice-handoff' (messages:send), and
+    // the Convex dispatcher hands it to the agent. No fire-and-forget -- that was the bug
     // (typing indicator fires, nothing reaches the agent).
     //
     // Terminal rooms (elon, gary) ALSO get the existing voice-summary

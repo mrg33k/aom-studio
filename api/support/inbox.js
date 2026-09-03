@@ -1,4 +1,4 @@
-// POST /api/support/inbox — cross-mailbox inbox tracking for the support board.
+// POST /api/support/inbox - cross-mailbox inbox tracking for the support board.
 //
 // Server-side port of scripts/inbox-tracker.py. For each connected Gmail account
 // it scans the last N days of inbox mail, drops automated/self senders, and tells
@@ -10,33 +10,37 @@
 // this endpoint requires the team password the board already collected at login.)
 //
 // Body: { email, password, days?=3, all?=false }
-//   → { ok, days, mailboxes: [ { email, error?, needs:[...], replied:[...] } ] }
+//   -> { ok, days, mailboxes: [ { email, error?, needs:[...], replied:[...] } ] }
 // Each item: { from, email, subject, threadId, date,
 //              lastInbound: { snippet, date },        // what they wrote
 //              lastReply:   { snippet, date } | null, // what we wrote back
 //              replied }
-// The snippets are what make "the support emails we responded to" actually
-// visible — the board now shows their message AND our reply, not just a flag.
+//
+// corner:retire-supabase (2026-09-03): the connected-account list used to be a
+// scan of account_integrations. Convex keeps OAuth rows per user with no
+// cross-user listing, so the mailboxes are the pinned support inboxes below and
+// each one is resolved to its connection through gmailClient
+// (resolveConnectionIdByEmail). `all` scans the same set with inbox + sent.
 
-import { getGmailTokenByConnection, gmailFetch } from '../_lib/gmailClient.js'
+import { getGmailTokenByConnection, gmailFetch, resolveConnectionIdByEmail } from '../_lib/gmailClient.js'
 import { requiredTenantFromEnv, resolveTenantContext } from '../_lib/tenantContext.js'
 import { isNoiseMail, getKnownSenders, isKnownSender, isBlockedSender } from '../_lib/mailNoise.js'
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const ADMIN_PASSWORD = process.env.SUPPORT_ADMIN_PASSWORD || 'aom-support-admin'
 
 const ADMIN_ALLOWLIST = ['patrikmatheson@gmail.com']
 // Two different scopes, because "Needs reply" and "Responded" have different noise:
 //  - NEEDS-REPLY (inbound) scans only the support workspace mailbox. Personal Gmail's
-//    inbox is full of Nextdoor/Flipboard newsletters — noise on a support board.
+//    inbox is full of Nextdoor/Flipboard newsletters, noise on a support board.
 //  - RESPONDED (sent) ALSO scans personal Gmail, because the agent's actual support
 //    replies go out from patrikmatheson@gmail.com. Sent mail is noise-free (we never
 //    reply to newsletters), so including it here is safe and is what finally makes
 //    "the support emails we responded to" show up.
-// Pass all:true to scan every connected account's inbox + sent.
+// Pass all:true to scan every mailbox's inbox + sent. Extra mailboxes can be
+// added with SUPPORT_MAILBOXES (comma separated emails).
 const INBOUND_MAILBOXES = ['hello@aom-inhouse.com']
 const RESPONDED_MAILBOXES = ['hello@aom-inhouse.com', 'patrikmatheson@gmail.com']
+const EXTRA_MAILBOXES = String(process.env.SUPPORT_MAILBOXES || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
 
 // Mirrors inbox-tracker's AUTOMATED regex: senders Gmail still files in the inbox
 // that aren't real people (receipts, notifications, calendar, docusign, etc.).
@@ -61,27 +65,18 @@ function headerVal(headers, name) {
   return h?.value || ''
 }
 
-function supa(path) {
-  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-  })
-}
-
-// Distinct connected Gmail accounts (dedupe by account_email), mirroring
-// inbox-tracker.connected_gmail().
-async function connectedGmail() {
-  const r = await supa(
-    'account_integrations?integration_slug=eq.gmail&status=eq.connected&select=id,config',
-  )
-  const rows = await r.json()
+// The connected Gmail accounts we know about, each with its connection id.
+// Mailboxes with no live connection are skipped.
+async function connectedGmail(emails) {
   const out = []
   const seen = new Set()
-  for (const row of rows || []) {
-    const em = (row.config || {}).account_email
-    if (em && !seen.has(em.toLowerCase())) {
-      seen.add(em.toLowerCase())
-      out.push({ id: row.id, email: em })
-    }
+  for (const em of emails) {
+    const key = String(em || '').toLowerCase()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    let id = null
+    try { id = await resolveConnectionIdByEmail(key) } catch { id = null }
+    if (id) out.push({ id, email: key })
   }
   return out
 }
@@ -95,9 +90,9 @@ async function gmailSearchIds(accessToken, q, max = 25) {
 
 // The "Responded" list IS our sent replies. Scan `in:sent` directly (one item per
 // thread, newest reply kept) so the board shows every support email we actually
-// answered — with our reply text. This is noise-free by nature: we don't reply to
-// newsletters/sales, so scanning sent never surfaces Nextdoor/Apollo junk. This is
-// why personal Gmail's SENT is safe to include even though its inbox is noisy.
+// answered, with our reply text. This is noise-free by nature: we don't reply to
+// newsletters/sales, so scanning sent never surfaces junk. This is why personal
+// Gmail's SENT is safe to include even though its inbox is noisy.
 async function scanSentReplies(accessToken, days) {
   const ids = await gmailSearchIds(accessToken, `in:sent newer_than:${days}d`, 25)
   if (!Array.isArray(ids) || !ids.length) return []
@@ -133,7 +128,7 @@ async function scanSentReplies(accessToken, days) {
   return [...byThread.values()].sort((a, b) => (b.date || 0) - (a.date || 0))
 }
 
-// scanInbound=false → only collect what we've Responded to (sent scan), skip the
+// scanInbound=false -> only collect what we've Responded to (sent scan), skip the
 // inbox entirely. Used for personal Gmail: its SENT carries real support replies,
 // but its inbox is full of newsletters we don't want in "Needs reply".
 async function trackAccount(connId, email, days, opts = {}) {
@@ -142,7 +137,7 @@ async function trackAccount(connId, email, days, opts = {}) {
   try {
     creds = await getGmailTokenByConnection(connId)
   } catch (e) {
-    return { email, error: 'unhealthy — reconnect this account', needs: [], replied: [] }
+    return { email, error: 'unhealthy: reconnect this account', needs: [], replied: [] }
   }
   if (!creds) return { email, error: 'not connected', needs: [], replied: [] }
 
@@ -154,7 +149,7 @@ async function trackAccount(connId, email, days, opts = {}) {
   let needs = []
   if (scanInbound) {
     const ids = await gmailSearchIds(creds.accessToken, `in:inbox newer_than:${days}d`, 25)
-    if (ids === null) return { email, error: 'unhealthy — reconnect this account', needs: [], replied }
+    if (ids === null) return { email, error: 'unhealthy: reconnect this account', needs: [], replied }
     if (ids.length) {
       const wanted = ['From', 'Subject', 'Date', 'List-Unsubscribe']
       const metaQS = `format=metadata&${wanted.map((h) => `metadataHeaders=${encodeURIComponent(h)}`).join('&')}`
@@ -206,7 +201,6 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST only' })
-  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(503).json({ ok: false, error: 'Service unavailable' })
 
   let body
   try {
@@ -217,12 +211,10 @@ export default async function handler(req, res) {
 
   const { email, password, days, all } = body || {}
 
-  // Auth path 1 — a verified Supabase session in the configured support tenant
-  // Patrik). This is STRONGER than the shared password: it requires a real JWT
-  // proving who you are. When the dashboard opens the Inbox tab in Patrik's own
-  // logged-in session, the token rides via Authorization and we skip the
-  // password entirely (no friction). The tenant resolver throws on any invalid
-  // session, so we fall through to the password path for everyone else.
+  // Auth path 1: a verified dashboard session in the configured support tenant.
+  // This is STRONGER than the shared password: it requires a real token proving
+  // who you are. The tenant resolver throws on any invalid session, so we fall
+  // through to the password path for everyone else.
   let authed = false
   try {
     await resolveTenantContext(req, {
@@ -233,7 +225,7 @@ export default async function handler(req, res) {
     authed = false
   }
 
-  // Auth path 2 — AOM team email + the shared admin password (for callers
+  // Auth path 2: AOM team email + the shared admin password (for callers
   // without a dashboard session: scripts, the standalone /support/admin door).
   if (!authed) {
     const n = (email || '').trim().toLowerCase()
@@ -244,20 +236,21 @@ export default async function handler(req, res) {
 
   const window = Math.max(1, Math.min(Number(days) > 0 ? Number(days) : 3, 14))
 
-  const conns = await connectedGmail()
+  const union = [...new Set([...INBOUND_MAILBOXES, ...RESPONDED_MAILBOXES, ...EXTRA_MAILBOXES].map((m) => m.toLowerCase()))]
+  const conns = await connectedGmail(union)
   const byEmail = {}
   for (const c of conns) byEmail[c.email.toLowerCase()] = c
 
   let targets
   if (all) {
-    // Every connected account, full inbox + sent.
+    // Every known mailbox, full inbox + sent.
     targets = conns.map((c) => ({ id: c.id, email: c.email, scanInbound: true }))
   } else {
     // Union of the inbound + responded scopes; inbound scan only where it's wanted.
     const inboundSet = new Set(INBOUND_MAILBOXES.map((m) => m.toLowerCase()))
-    const union = new Set([...INBOUND_MAILBOXES, ...RESPONDED_MAILBOXES].map((m) => m.toLowerCase()))
     targets = []
     for (const mb of union) {
+      if (EXTRA_MAILBOXES.includes(mb) && !inboundSet.has(mb) && !RESPONDED_MAILBOXES.includes(mb)) continue
       const c = byEmail[mb]
       if (!c) continue
       targets.push({ id: c.id, email: c.email, scanInbound: inboundSet.has(mb) })

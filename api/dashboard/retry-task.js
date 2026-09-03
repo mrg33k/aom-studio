@@ -2,7 +2,11 @@
 // Re-queue a failed task as a NEW queued task row that references the failed
 // row via metadata.parent_id. Inherits title/text/description/project/agent
 // and metadata.model from the failed row so the worker runs the same brief.
-// R5b — failure-card UX: one-click retry from the dashboard.
+// R5b: failure-card UX, one-click retry from the dashboard.
+//
+// corner:retire-supabase (2026-09-03): reads and writes the Convex task queue
+// (tasks:get, tasks:queue, tasks:logEvent). Was the Supabase tasks and events
+// tables.
 //
 // Body: { taskId: <failed-row-uuid> }
 // Returns: { ok: true, newTask: {...} }
@@ -10,14 +14,12 @@
 // AUTH (corner:identity-attribution, 2026-07-27). A retry re-queues a brief that
 // a live Claude Code worker then executes, and explicitly wakes the runner. Task
 // UUIDs leak through several read surfaces, so the UUID is not a secret. The
-// task's own client_id is now resolved first and verifyTenant runs against it,
-// so only someone in the owning world can re-run the work. CORS is the dashboard
+// task's own client_id is resolved first and verifyTenant runs against it, so
+// only someone in the owning world can re-run the work. CORS is the dashboard
 // origins rather than `*`.
 
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js';
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+import { convexQuery, convexMutation } from '../_lib/verifyTenant.js';
 
 const ALLOWED_ORIGIN_PATTERNS = [
   /^https:\/\/lab\.aheadofmarket\.com$/i,
@@ -50,7 +52,6 @@ export default async function handler(req, res) {
   applyCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-  if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(500).json({ error: 'Supabase not configured' });
 
   const { taskId } = req.body || {};
   if (!taskId || !/^[0-9a-f-]{36}$/i.test(taskId)) {
@@ -58,19 +59,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const fetchResp = await fetch(
-      `${SUPABASE_URL}/rest/v1/tasks?id=eq.${encodeURIComponent(taskId)}&select=id,title,text,description,project,agent,client_id,created_by,source,metadata,error,status`,
-      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } },
-    );
-    if (!fetchResp.ok) {
-      const errText = await fetchResp.text();
-      return res.status(502).json({ error: `Supabase fetch failed: ${errText}` });
+    let failed;
+    try {
+      failed = await convexQuery('tasks:get', { id: taskId });
+    } catch (err) {
+      return res.status(502).json({ error: `task fetch failed: ${err.message}` });
     }
-    const rows = await fetchResp.json();
-    const failed = Array.isArray(rows) && rows[0];
     if (!failed) return res.status(404).json({ error: 'task not found' });
 
-    // Gate on the world that OWNS the task, read off the row — never on
+    // Gate on the world that OWNS the task, read off the row, never on
     // anything the caller supplied.
     const _rowClient = failed.client_id && String(failed.client_id).trim();
     if (!_rowClient) return res.status(401).json({ error: 'Missing client' });
@@ -84,21 +81,15 @@ export default async function handler(req, res) {
     const identity = await callerIdentity(req).catch(() => null);
 
     const prevMeta = (failed.metadata && typeof failed.metadata === 'object') ? failed.metadata : {};
-    const crypto = await import('crypto');
     const now = new Date().toISOString();
 
     const retryCount = (prevMeta.retry_count || 0) + 1;
-    const newRow = {
-      id: crypto.randomUUID(),
-      title: failed.title || null,
-      text: failed.text || null,
-      description: failed.description || null,
+    const row = {
+      title: failed.title || 'Untitled task',
       status: 'queued',
       source: 'retry',
       client_id: verified.tenant,
-      created_by: failed.created_by || null,
       project: failed.project || null,
-      agent: failed.agent || null,
       created_at: now,
       metadata: {
         model: prevMeta.model || 'sonnet',
@@ -110,46 +101,35 @@ export default async function handler(req, res) {
         retry_count: retryCount,
         retry_of_error: failed.error || null,
         requested_by_agent: prevMeta.requested_by_agent || null,
-        // Who pressed retry — verified, and null rather than a borrowed name.
+        // Who pressed retry: verified, and null rather than a borrowed name.
         retried_by: identity?.userId || verified.userId || null,
         retried_by_name: identity?.userName || null,
       },
     };
+    // The queue validator refuses undefined fields; copy only what is set.
+    if (failed.text) row.text = failed.text;
+    if (failed.description) row.description = failed.description;
+    if (failed.agent) row.agent = failed.agent;
+    if (failed.created_by) row.created_by = failed.created_by;
+    if (failed.project_path) row.project_path = failed.project_path;
 
-    const postResp = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
-      },
-      body: JSON.stringify(newRow),
-    });
-    if (!postResp.ok) {
-      const errText = await postResp.text();
-      return res.status(502).json({ error: `Supabase insert failed: ${errText}` });
+    let newTask;
+    try {
+      newTask = await convexMutation('tasks:queue', { row });
+    } catch (err) {
+      return res.status(502).json({ error: `task insert failed: ${err.message}` });
     }
-    const inserted = await postResp.json();
-    const newTask = Array.isArray(inserted) && inserted[0] ? inserted[0] : newRow;
+    if (!newTask) newTask = row;
 
     // Wake the runner so the retry is claimed promptly.
     try {
-      await fetch(`${SUPABASE_URL}/rest/v1/events`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        },
-        body: JSON.stringify({
-          id: crypto.randomUUID(),
+      await convexMutation('tasks:logEvent', {
+        event: {
           agent: 'system',
           event_type: 'runner_start_requested',
           payload: { source: 'retry-task', parent_task_id: failed.id, new_task_id: newTask.id, requested_at: now },
           timestamp: now,
-        }),
+        },
       });
     } catch {}
 

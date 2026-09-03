@@ -1,10 +1,14 @@
-// useCampaign — data hooks for the Email > Campaign tool (corner:campaign-tool R6).
+// useCampaign: data hooks for the Email > Campaign tool (corner:campaign-tool R6).
 // Follows the useCommandTracker pattern: authFetch + world param + polling.
 // Health polls FAST (5s, light payload) because the health strip is the
 // product; detail polls at 20s. Nothing here touches the chat bridge.
+//
+// The endpoints read the campaignTruth lib on the server, not a database. The
+// only gate here is "is someone signed in": a signed-out render-only page shows
+// the honest not-configured state instead of firing tenant-gated reads.
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
-import { supabase } from '../../lib/supabase';
+import { hasSession } from '../../lib/convex.js';
 
 async function getJson(url) {
   const r = await authFetch(url, { credentials: 'include' });
@@ -18,7 +22,7 @@ export function useCampaignList(worldId) {
   const [error, setError] = useState(null);
   const load = useCallback(() => {
     if (!worldId) return;
-    if (!supabase) {
+    if (!hasSession()) {
       setCampaigns([]);
       setCampaignSetup({
         contract: 'corner.campaign_setup_truth.v1',
@@ -26,7 +30,7 @@ export function useCampaignList(worldId) {
         configured: false,
         campaign_count: 0,
         misfiled_count: 0,
-        reason: 'local_render_no_supabase',
+        reason: 'local_render_signed_out',
       });
       setError(null);
       return;
@@ -44,7 +48,7 @@ export function useCampaignList(worldId) {
     const t = setInterval(load, 20000);
     return () => clearInterval(t);
   }, [load]);
-  return { campaigns, campaignSetup, error, reload: load, localMode: !supabase };
+  return { campaigns, campaignSetup, error, reload: load, localMode: !hasSession() };
 }
 
 export function useCampaignDetail(campaignId, worldId) {

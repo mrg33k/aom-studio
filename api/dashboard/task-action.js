@@ -1,108 +1,101 @@
 // POST /api/dashboard/task-action
 // Unified endpoint for all task mutations from the Corner dashboard.
-// Handles: toggle (done/undone), reassign, delete, priority, moveToProject, addContext, addToRightNow
+// Handles: toggle, reassign, delete, priority, moveToProject, addContext,
+// addToRightNow, markDone, markUndone, approve, reject, editText, setLabel,
+// dismiss, requeue, resume, startRunner.
 //
-// Body: { action, taskText, taskId?, agent?, payload?, clientId? }
-// All writes go to the Supabase `tasks` table.
+// Body: { action, taskText, taskId?, agent?, payload?, clientId?, project? }
+//
+// Backend: the Convex task queue (corner:retire-supabase R1/R2, 2026-09-03):
+// tasks:get / tasks:find to read, tasks:update to patch, tasks:queue to
+// create, tasks:logEvent for the audit ledger.
+//
+// The queue keeps one status vocabulary (queued, running, building, done,
+// failed, needs_input, blocked, cancelled). The old dashboard-only statuses
+// map onto it: active -> queued, completed -> done, deleted -> cancelled.
+// Columns the old table had and the queue does not (context_note, label,
+// priority label, lock fields) live under metadata.
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
-import { authorizeTaskProject, taskScopeDenialMessage } from '../_lib/taskScope.js';
+import { convexQuery, convexMutation } from '../_lib/reportsStore.js';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const UUID_RE = /^[0-9a-f-]{36}$/i;
 
-// The world that OWNS a task row. Read off the row, never from the caller —
-// same shape agent-status.js already uses (clientIdOfRow). Returns null when
-// the row is missing or unreadable.
-async function clientIdOfTask(taskId) {
-  if (!taskId || !SUPABASE_URL || !SUPABASE_KEY) return null;
-  try {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/tasks?id=eq.${encodeURIComponent(taskId)}&select=client_id&limit=1`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
-    );
-    if (!r.ok) return null;
-    const rows = await r.json();
-    const c = Array.isArray(rows) ? rows[0]?.client_id : null;
-    return c ? String(c).toLowerCase() : null;
-  } catch {
-    return null;
+// Optional write key for the gated queue mutations (tasks:update, tasks:queue,
+// tasks:logEvent). Unset on dev today; JSON drops an undefined field.
+const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || undefined;
+
+// Columns the queue row carries. Anything else in a patch goes to metadata.
+const ROW_FIELDS = new Set([
+  'title', 'text', 'description', 'status', 'source', 'client_id', 'project', 'project_path',
+  'priority', 'sort_order', 'agent', 'agent_identity', 'builder', 'planner', 'complexity',
+  'created_by', 'created_at', 'started_at', 'completed_at', 'worker_id', 'result', 'error',
+  'qa_score', 'token_cost', 'metadata',
+]);
+const STATUS_MAP = { active: 'queued', completed: 'done', deleted: 'cancelled', superseded: 'cancelled', todo: 'queued' };
+const PRIORITY_MAP = { high: 100, med: 50, medium: 50, low: 10 };
+
+function toQueuePatch(body) {
+  const patch = {};
+  const meta = {};
+  for (const [k, v] of Object.entries(body || {})) {
+    if (k === 'status') { patch.status = STATUS_MAP[v] || v; continue; }
+    if (ROW_FIELDS.has(k)) patch[k] = v;
+    else meta[k] = v;
   }
+  if (Object.keys(meta).length) patch.metadata = { ...(patch.metadata || {}), ...meta };
+  return patch;
 }
 
-async function supabasePatch(filter, body) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?${filter}`, {
-    method: 'PATCH',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-    },
-    body: JSON.stringify(body),
-  });
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`Supabase PATCH failed (${resp.status}): ${errText}`);
-  }
-  return resp.json();
+// The world that owns a task row. Read off the row, never from the caller.
+async function taskById(taskId) {
+  if (!taskId) return null;
+  try { return await convexQuery('tasks:get', { id: taskId }); } catch { return null; }
 }
 
-async function supabasePostEvent(agent, eventType, description, taskId) {
-  if (!SUPABASE_URL || !SUPABASE_KEY) return;
+async function patchTask(taskId, body) {
+  const rows = await convexMutation('tasks:update', { key: CONVEX_KEY, id: taskId, patch: toQueuePatch(body) });
+  return Array.isArray(rows) ? rows : [];
+}
+
+async function logEvent(agent, eventType, description, taskId, extra = {}) {
   try {
-    const crypto = await import('crypto');
-    const payload = { description: description || '' };
+    const payload = { description: description || '', ...extra };
     if (taskId) payload.task_id = taskId;
-    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal',
-      },
-      body: JSON.stringify({
-        id: crypto.randomUUID(),
-        agent: agent || 'system',
-        event_type: eventType,
-        payload,
-        timestamp: new Date().toISOString(),
-      }),
-    });
+    await convexMutation('tasks:logEvent', { key: CONVEX_KEY, event: { agent: agent || 'system', event_type: eventType, payload } });
   } catch {}
 }
 
-async function supabasePost(body) {
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-    },
-    body: JSON.stringify(body),
-  });
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`Supabase POST failed (${resp.status}): ${errText}`);
-  }
-  return resp.json();
+// Find a task by text match (when we don't have a uuid), newest first.
+async function findTaskByText(text, clientId) {
+  try {
+    const rows = await convexQuery('tasks:find', { client_id: clientId, order: 'created_at.desc' });
+    return (Array.isArray(rows) ? rows : []).find((t) => t.text === text || t.title === text) || null;
+  } catch { return null; }
 }
 
-// Find a task by text match (when we don't have a UUID)
-async function findTaskByText(text, clientId) {
-  const filter = `text=eq.${encodeURIComponent(text)}&client_id=eq.${encodeURIComponent(clientId)}&order=created_at.desc&limit=1`;
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?${filter}`, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-    },
-  });
-  if (!resp.ok) return null;
-  const rows = await resp.json();
-  return rows.length > 0 ? rows[0] : null;
+// May this world queue work under this project? A task runs a brief inside
+// that project's checkout, so the project must be one this world already
+// reaches: the holder world, a grant, or a world admin. A slug nobody has
+// registered is refused; a first claim admits a chat tag, never a checkout.
+async function authorizeTaskProject({ clientId, isAdmin, projectSlug }) {
+  const slug = String(projectSlug || '').trim().toLowerCase();
+  if (!slug) return { ok: true, via: 'no-scope' };
+  if (isAdmin) return { ok: true, via: 'world-admin' };
+  const access = await convexQuery('projects:hasAccess', { slug, worldId: clientId }).catch(() => null);
+  if (access?.ok) return { ok: true, via: access.role === 'owner' ? 'holder-world' : 'project-access-grant' };
+  const registered = await convexQuery('projects:lookupBySlug', { slug }).catch(() => null);
+  if (!registered) {
+    return { ok: false, via: 'first-claim-not-a-checkout', reason: `project "${slug}" is not registered, so nothing proves whose checkout it is. Register the project before queueing work under it.` };
+  }
+  return { ok: false, via: 'denied', reason: `project "${slug}" belongs to world "${registered.ownerWorld}"` };
+}
+
+function taskScopeDenialMessage({ clientId, projectSlug, reason }) {
+  return (
+    `forbidden: world "${clientId}" may not queue work under project "${projectSlug}": ${reason}. ` +
+    `A queued task runs a brief inside that project's checkout, so the project must be one this world already reaches.`
+  );
 }
 
 export default async function handler(req, res) {
@@ -113,105 +106,41 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return res.status(500).json({ error: 'Supabase not configured' });
-  }
-
   const { action, taskText, taskId, agent, payload, clientId: rawClientId, project } = req.body || {};
   const requestedTenant = (rawClientId || '').toString().trim().toLowerCase();
 
-  // --- WORLD GATE (r7) ------------------------------------------------------
-  // The gate used to run against the tenant the CALLER named, while the row
-  // filter below was `id=eq.<uuid>` with no client_id at all. So passing your
-  // own world plus somebody else's task uuid was a full cross-world write:
-  //   editText  -> rewrite the brief a worker executes
-  //   requeue   -> flip that row back to 'queued' so task-runner claims it
-  //   resume    -> same, through the checkpoint path
-  //   moveToProject -> repoint tasks.project at another world's checkout
-  // VERIFIED live: an arsenal session PATCHed {text} then {status:'queued'} onto
-  // an AOM-owned task id and both writes went through. editText + requeue is
-  // arbitrary brief execution inside AOM's repo from an ordinary cross-world
-  // login — the same escalation as create-project-task, one endpoint over.
-  //
-  // Fix: when the caller names a task id, the world that owns THAT ROW is the
-  // world we gate on, and the verified world is pinned onto the row filter so
-  // the PATCH cannot reach outside it even if the gate is ever loosened.
-  const rowWorld = (taskId && /^[0-9a-f-]{36}$/i.test(taskId)) ? await clientIdOfTask(taskId) : null;
-  let clientId;
+  // World gate: when the caller names a task id, the world that owns that row
+  // is the world we gate on, and the verified world is pinned onto every
+  // write so a borrowed uuid cannot reach outside it.
+  const row = (taskId && UUID_RE.test(taskId)) ? await taskById(taskId) : null;
+  const rowWorld = row?.client_id ? String(row.client_id).toLowerCase() : null;
+  let verified;
   try {
-    ({ tenant: clientId } = await verifyTenant(rowWorld || requestedTenant, req));
+    verified = await verifyTenant(rowWorld || requestedTenant, req);
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     throw err;
   }
+  const clientId = verified.tenant;
+  const isAdmin = !!verified.isAdmin;
 
   if (!action) return res.status(400).json({ error: 'action required' });
 
-  // startRunner: signal watcher + reclaim stale tasks
+  // startRunner: signal the watcher + reclaim stale tasks in this world.
   if (action === 'startRunner') {
     try {
-      const crypto = await import('crypto');
       const now = new Date().toISOString();
-
-      // 1. Signal the runner watcher
-      await fetch(`${SUPABASE_URL}/rest/v1/events`, {
-        method: 'POST',
-        headers: {
-          'apikey': SUPABASE_KEY,
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal',
-        },
-        body: JSON.stringify({
-          id: crypto.randomUUID(),
-          agent: 'system',
-          event_type: 'runner_start_requested',
-          payload: { source: 'tasks-tab', requested_at: now },
-          timestamp: now,
-        }),
-      });
-
-      // 2. Reclaim stale tasks: stuck in building/qa/classifying/planning for >10 minutes
-      //    Reset them to queued so the runner picks them up again.
-      //    r7: SCOPED to the verified world. Unscoped, this reset every stale
-      //    task in EVERY world to 'queued' — one authenticated click from any
-      //    world re-dispatching workers across the whole system. Nothing about
-      //    "my runner is stuck" justifies touching another world's queue.
-      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-      const staleScope = `&client_id=eq.${encodeURIComponent(clientId)}`;
-      const staleResp = await fetch(
-        `${SUPABASE_URL}/rest/v1/tasks?status=in.(building,qa,classifying,planning)&updated_at=lt.${tenMinAgo}${staleScope}&select=id,title,status`,
-        {
-          headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=representation',
-          },
-        }
-      );
+      await logEvent('system', 'runner_start_requested', '', null, { source: 'tasks-tab', requested_at: now });
+      // Stuck in building/running for more than 10 minutes goes back to queued.
+      const tenMinAgo = Date.now() - 10 * 60 * 1000;
+      const stale = await convexQuery('tasks:find', { client_id: clientId, status_in: ['building', 'running'] }).catch(() => []);
       let reclaimed = 0;
-      if (staleResp.ok) {
-        const staleTasks = await staleResp.json();
-        if (staleTasks.length > 0) {
-          const ids = staleTasks.map(t => t.id).join(',');
-          await fetch(
-            `${SUPABASE_URL}/rest/v1/tasks?id=in.(${ids})${staleScope}`,
-            {
-              method: 'PATCH',
-              headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal',
-              },
-              body: JSON.stringify({ status: 'queued', updated_at: now }),
-            }
-          );
-          reclaimed = staleTasks.length;
-        }
+      for (const t of Array.isArray(stale) ? stale : []) {
+        const stamp = Date.parse(t.started_at || t.created_at || '');
+        if (!Number.isFinite(stamp) || stamp >= tenMinAgo) continue;
+        await convexMutation('tasks:update', { key: CONVEX_KEY, id: t.id, require_status: t.status, patch: { status: 'queued', worker_id: null } });
+        reclaimed += 1;
       }
-
       return res.status(200).json({ ok: true, action: 'startRunner', reclaimed });
     } catch (err) {
       return res.status(500).json({ error: err.message });
@@ -221,201 +150,149 @@ export default async function handler(req, res) {
   if (!taskText && !taskId) return res.status(400).json({ error: 'taskText or taskId required' });
 
   try {
-    // Build filter: prefer taskId (UUID) when available, fall back to text match
-    let filter;
-    if (taskId && /^[0-9a-f-]{36}$/i.test(taskId)) {
-      // World-scoped, always. `clientId` is the verified tenant, and when the
-      // row was found it IS that row's own world — so this is a no-op for every
-      // legitimate call and a hard stop for a borrowed uuid. When the row could
-      // not be read at all, the scope falls back to the caller's verified world,
-      // which is strictly narrower than the unscoped filter that stood here.
-      filter = `id=eq.${encodeURIComponent(taskId)}&client_id=eq.${encodeURIComponent(clientId)}`;
-    } else if (taskText) {
-      filter = `text=eq.${encodeURIComponent(taskText)}&client_id=eq.${encodeURIComponent(clientId)}`;
-    } else {
-      return res.status(400).json({ error: 'Cannot identify task' });
+    // Identify the row: uuid first, else the newest row with this text.
+    let target = row;
+    if (!target && taskText) target = await findTaskByText(taskText, clientId);
+    if (target && String(target.client_id || '').toLowerCase() !== clientId) {
+      return res.status(403).json({ error: 'task belongs to another world' });
     }
+    const id = target?.id || null;
+    const patch = async (body) => (id ? patchTask(id, body) : []);
 
     switch (action) {
       case 'toggle': {
-        // Toggle done/undone. payload = true (mark done) or false (mark undone)
-        const isDone = payload === true || payload === 'done'
+        const isDone = payload === true || payload === 'done';
         const body = isDone
           ? { status: 'done', completed_at: new Date().toISOString() }
-          : { status: 'active', completed_at: null }
-        const result = await supabasePatch(filter, body);
-        return res.status(200).json({ ok: true, action: 'toggle', result });
+          : { status: 'queued', completed_at: null };
+        return res.status(200).json({ ok: true, action: 'toggle', result: await patch(body) });
       }
 
       case 'reassign': {
-        // payload = new agent slug
         if (!payload) return res.status(400).json({ error: 'payload (agent slug) required for reassign' });
-        const result = await supabasePatch(filter, { agent: payload });
-        return res.status(200).json({ ok: true, action: 'reassign', result });
+        return res.status(200).json({ ok: true, action: 'reassign', result: await patch({ agent: payload, agent_identity: payload }) });
       }
 
       case 'delete': {
-        // Soft-delete: set status to 'deleted'
-        const result = await supabasePatch(filter, { status: 'deleted' });
-        return res.status(200).json({ ok: true, action: 'delete', result });
+        // Soft delete: the row stays, marked cancelled and hidden.
+        return res.status(200).json({ ok: true, action: 'delete', result: await patch({ status: 'cancelled', deleted: true, dismissed: true }) });
       }
 
       case 'priority': {
-        // payload = 'high' | 'med' | 'low'
         if (!payload) return res.status(400).json({ error: 'payload (priority) required' });
-        const result = await supabasePatch(filter, { priority: payload });
-        return res.status(200).json({ ok: true, action: 'priority', result });
+        const label = String(payload).toLowerCase();
+        const numeric = Number.isFinite(Number(payload)) ? Number(payload) : (PRIORITY_MAP[label] ?? 50);
+        return res.status(200).json({ ok: true, action: 'priority', result: await patch({ priority: numeric, priority_label: label }) });
       }
 
       case 'moveToProject': {
-        // payload = project section slug
         if (!payload) return res.status(400).json({ error: 'payload (project) required for moveToProject' });
-        // tasks.project is a checkout selector, not a label: task-runner.sh
-        // normalizes it to a repo and project_activity.py writes into that
-        // project's CONTEXT.md. So the destination has to be a project this
-        // world already reaches — same gate as creating the task there.
+        // tasks.project is a checkout selector, not a label, so the
+        // destination has to be a project this world already reaches.
         const destSlug = String(payload).trim().toLowerCase();
-        const verdict = await authorizeTaskProject({ req, clientId, projectSlug: destSlug });
+        const verdict = await authorizeTaskProject({ clientId, isAdmin, projectSlug: destSlug });
         if (!verdict.ok) {
-          console.warn(`[task-action] moveToProject DENIED: tenant "${clientId}" slug "${destSlug}" — ${verdict.reason}`);
+          console.warn(`[task-action] moveToProject DENIED: tenant "${clientId}" slug "${destSlug}": ${verdict.reason}`);
           return res.status(403).json({
             error: taskScopeDenialMessage({ clientId, projectSlug: destSlug, reason: verdict.reason }),
             code: 'PROJECT_SCOPE_DENIED',
           });
         }
-        const result = await supabasePatch(filter, { project: destSlug });
-        return res.status(200).json({ ok: true, action: 'moveToProject', result });
+        return res.status(200).json({ ok: true, action: 'moveToProject', result: await patch({ project: destSlug }) });
       }
 
       case 'addContext': {
-        // payload = context note text
         if (!payload) return res.status(400).json({ error: 'payload (note) required for addContext' });
-        const result = await supabasePatch(filter, { context_note: payload });
-        return res.status(200).json({ ok: true, action: 'addContext', result });
+        return res.status(200).json({ ok: true, action: 'addContext', result: await patch({ context_note: payload }) });
       }
 
       case 'addToRightNow': {
-        // Two paths: if the task exists in Supabase, PATCH to active. If not, POST a new one.
-        const existing = taskId ? null : await findTaskByText(taskText, clientId);
+        // If the task exists, flip it to queued. If not, create it queued.
         let addResult;
-        if (existing || taskId) {
-          addResult = await supabasePatch(filter, { status: 'active' });
+        if (id) {
+          addResult = await patch({ status: 'queued' });
         } else {
-          // Task doesn't exist in Supabase yet -- create it as active
-          const crypto = await import('crypto');
-          let projectSlug = (project || '').trim().toLowerCase() || null
-          // Same gate as every other task writer. This row lands status='active'
-          // rather than 'queued', so the runner does not claim it directly — but
-          // `requeue`/`resume` above will flip exactly this row to 'queued', so
-          // an ungated project here is a two-request version of the same
-          // escalation. Denied => the task is still created, just unscoped
-          // (nothing is lost, it simply has no checkout to steer).
+          let projectSlug = (project || '').trim().toLowerCase() || null;
+          // Same gate as every other task writer. Denied means the task is
+          // still created, just unscoped (it has no checkout to steer).
           if (projectSlug) {
-            const verdict = await authorizeTaskProject({ req, clientId, projectSlug })
+            const verdict = await authorizeTaskProject({ clientId, isAdmin, projectSlug });
             if (!verdict.ok) {
-              console.warn(`[task-action] addToRightNow project DENIED: tenant "${clientId}" slug "${projectSlug}" — ${verdict.reason}`)
-              projectSlug = null
+              console.warn(`[task-action] addToRightNow project DENIED: tenant "${clientId}" slug "${projectSlug}": ${verdict.reason}`);
+              projectSlug = null;
             }
           }
-          const newTask = {
-            id: crypto.randomUUID(),
-            text: taskText,
-            agent: agent || 'elon',
-            status: 'active',
-            source: 'user',
-            client_id: clientId,
-            ...(projectSlug ? { project: projectSlug } : {}),
-          };
-          addResult = await supabasePost(newTask);
+          const created = await convexMutation('tasks:queue', {
+            key: CONVEX_KEY,
+            row: {
+              title: String(taskText).slice(0, 200),
+              text: taskText,
+              agent: agent || 'elon',
+              agent_identity: agent || 'elon',
+              status: 'queued',
+              source: 'user',
+              client_id: clientId,
+              ...(projectSlug ? { project: projectSlug } : {}),
+              created_by: verified.email || verified.userName || null,
+            },
+          });
+          addResult = created ? [created] : [];
         }
-        // Log task_started event so Right Now bar updates immediately
-        await supabasePostEvent(agent || 'elon', 'task_started', taskText, taskId || null);
+        await logEvent(agent || 'elon', 'task_started', taskText, id || (addResult[0] && addResult[0].id) || null);
         return res.status(200).json({ ok: true, action: 'addToRightNow', result: addResult });
       }
 
       case 'markDone': {
-        // Alias for toggle(done=true) for convenience from BoardView
-        const result = await supabasePatch(filter, { status: 'done', completed_at: new Date().toISOString() });
-        // Log task_completed event so activity feed + agent status update
-        await supabasePostEvent(agent || 'elon', 'task_completed', taskText, taskId || null);
+        const result = await patch({ status: 'done', completed_at: new Date().toISOString() });
+        await logEvent(agent || 'elon', 'task_completed', taskText, id);
         return res.status(200).json({ ok: true, action: 'markDone', result });
       }
 
       case 'markUndone': {
-        const result = await supabasePatch(filter, { status: 'active', completed_at: null });
-        return res.status(200).json({ ok: true, action: 'markUndone', result });
+        return res.status(200).json({ ok: true, action: 'markUndone', result: await patch({ status: 'queued', completed_at: null }) });
       }
 
       case 'approve': {
-        // Patrik approved a done task -- mark as completed
-        const result = await supabasePatch(filter, { status: 'completed', completed_at: new Date().toISOString() });
-        return res.status(200).json({ ok: true, action: 'approve', result });
+        // Patrik approved a done task.
+        return res.status(200).json({ ok: true, action: 'approve', result: await patch({ status: 'done', approved: true, completed_at: new Date().toISOString() }) });
       }
 
       case 'reject': {
-        // Patrik rejected a done task -- send back to active so agent can redo
-        const result = await supabasePatch(filter, { status: 'active', completed_at: null });
-        return res.status(200).json({ ok: true, action: 'reject', result });
+        // Patrik rejected a done task: back to the queue so the agent can redo it.
+        return res.status(200).json({ ok: true, action: 'reject', result: await patch({ status: 'queued', approved: false, completed_at: null }) });
       }
 
       case 'editText': {
-        // payload = new task text string
         if (!payload || typeof payload !== 'string' || !payload.trim()) {
           return res.status(400).json({ error: 'payload (new text) required for editText' });
         }
-        const result = await supabasePatch(filter, { text: payload.trim() });
-        return res.status(200).json({ ok: true, action: 'editText', result });
+        return res.status(200).json({ ok: true, action: 'editText', result: await patch({ text: payload.trim() }) });
       }
 
       case 'setLabel': {
-        // payload = label id string ('bug'|'feature'|'polish'|'urgent'|'blocked') or null to clear
         const validLabels = ['bug', 'feature', 'polish', 'urgent', 'blocked'];
         const labelValue = payload && validLabels.includes(payload) ? payload : null;
-        try {
-          const result = await supabasePatch(filter, { label: labelValue });
-          return res.status(200).json({ ok: true, action: 'setLabel', result });
-        } catch {
-          // label column may not exist yet in Supabase -- silently succeed
-          // localStorage is the source of truth until column is added
-          return res.status(200).json({ ok: true, action: 'setLabel', note: 'label column not in schema yet' });
-        }
+        return res.status(200).json({ ok: true, action: 'setLabel', result: await patch({ label: labelValue }) });
       }
 
       case 'dismiss': {
-        // Hide a task from the dashboard without rewriting its history. Previously
-        // this flipped status -> 'done', which masked timeouts + worker failures
-        // as if they had succeeded (e.g. e64cf748 chain parent ended up status=done
-        // even though it errored with 'timeout after 20 minutes'). Now we preserve
-        // the existing status + error and just merge metadata.dismissed=true so
-        // filteredFailed (status==='failed' && !isDismissed) hides it. For tasks
-        // not yet in a terminal state, escalate to 'cancelled' so they stop being
-        // worked, but never overwrite 'failed'.
-        const fetchResp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?${filter}&select=status,metadata`, {
-          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
-        });
-        const existing = fetchResp.ok ? await fetchResp.json() : [];
-        const current = Array.isArray(existing) && existing[0] ? existing[0] : { status: null, metadata: {} };
-        const mergedMeta = { ...(current.metadata || {}), dismissed: true };
-        const TERMINAL = new Set(['failed', 'done', 'completed', 'cancelled']);
-        const body = TERMINAL.has((current.status || '').toLowerCase())
-          ? { metadata: mergedMeta }
-          : { status: 'cancelled', metadata: mergedMeta };
-        const result = await supabasePatch(filter, body);
-        return res.status(200).json({ ok: true, action: 'dismiss', result });
+        // Hide a task without rewriting its history: keep status and error,
+        // merge metadata.dismissed=true. A task not yet in a terminal state is
+        // cancelled so it stops being worked, but 'failed' is never overwritten.
+        const current = target || { status: null };
+        const TERMINAL = new Set(['failed', 'done', 'cancelled']);
+        const body = TERMINAL.has(String(current.status || '').toLowerCase())
+          ? { dismissed: true }
+          : { status: 'cancelled', dismissed: true };
+        return res.status(200).json({ ok: true, action: 'dismiss', result: await patch(body) });
       }
 
       case 'requeue': {
-        // Fetch existing task to build fix suggestions from QA notes/errors
-        const requeueResp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?${filter}&select=description,qa_notes,error,metadata,title`, {
-          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
-        });
-        const requeueRows = await requeueResp.json();
-        const requeueTask = Array.isArray(requeueRows) && requeueRows[0] ? requeueRows[0] : {};
-
-        // Build retry context from previous failure
-        const prevNotes = requeueTask.qa_notes || '';
-        const prevError = requeueTask.error || '';
-        const prevMeta = requeueTask.metadata || {};
+        // Build retry context from the previous failure and put it back in line.
+        const prev = target || {};
+        const prevMeta = (prev.metadata && typeof prev.metadata === 'object') ? prev.metadata : {};
+        const prevNotes = prevMeta.qa_notes || '';
+        const prevError = prev.error || '';
         let retryHint = '';
         if (prevNotes) retryHint += `Previous QA notes: ${prevNotes}\n`;
         if (prevError) retryHint += `Previous error: ${prevError}\n`;
@@ -426,89 +303,24 @@ export default async function handler(req, res) {
           qa_score: null,
           error: null,
           worker_id: null,
-          locked_at: null,
-          lease_expires_at: null,
+          requeue_count: (prevMeta.requeue_count || 0) + 1,
         };
-        // Append retry context to description if there are fix suggestions
-        if (retryHint && requeueTask.description) {
-          updates.description = requeueTask.description.replace(/\n\n--- RETRY CONTEXT.*$/s, '') + retryHint;
+        if (retryHint && prev.description) {
+          updates.description = prev.description.replace(/\n\n--- RETRY CONTEXT.*$/s, '') + retryHint;
         }
-        // Track requeue count in metadata
-        prevMeta.requeue_count = (prevMeta.requeue_count || 0) + 1;
-        updates.metadata = prevMeta;
-
-        const result = await supabasePatch(filter, updates);
-
-        // Fire runner_start_requested event
-        try {
-          const crypto = await import('crypto');
-          await fetch(`${SUPABASE_URL}/rest/v1/events`, {
-            method: 'POST',
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=minimal',
-            },
-            body: JSON.stringify({
-              id: crypto.randomUUID(),
-              agent: 'system',
-              event_type: 'runner_start_requested',
-              payload: { source: 'requeue', task_id: taskId, requested_at: new Date().toISOString() },
-              timestamp: new Date().toISOString(),
-            }),
-          });
-        } catch {}
-
+        const result = await patch(updates);
+        await logEvent('system', 'runner_start_requested', '', id, { source: 'requeue', requested_at: new Date().toISOString() });
         return res.status(200).json({ ok: true, action: 'requeue', result });
       }
 
       case 'resume': {
-        // Human replied to a waiting task -- store answer, requeue for runner
-        // payload = { answer: "Use the DJI audio track" }
+        // Human replied to a waiting task: store the answer, requeue for the runner.
         const answer = typeof payload === 'string' ? payload : payload?.answer;
         if (!answer) return res.status(400).json({ error: 'resume requires an answer in payload' });
-
-        // Fetch existing task to merge metadata
-        const taskResp = await fetch(`${SUPABASE_URL}/rest/v1/tasks?${filter}&select=metadata`, {
-          headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` },
-        });
-        const taskRows = await taskResp.json();
-        const existingMeta = (Array.isArray(taskRows) && taskRows[0]?.metadata) || {};
-        const checkpoint = existingMeta.checkpoint || {};
-        checkpoint.answer = answer;
-        checkpoint.answered_at = new Date().toISOString();
-        existingMeta.checkpoint = checkpoint;
-
-        const result = await supabasePatch(filter, {
-          status: 'queued',
-          worker_id: null,
-          locked_at: null,
-          lease_expires_at: null,
-          metadata: existingMeta,
-        });
-
-        // Fire runner_start_requested event so the runner wakes up
-        try {
-          const crypto = await import('crypto');
-          await fetch(`${SUPABASE_URL}/rest/v1/events`, {
-            method: 'POST',
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'Content-Type': 'application/json',
-              'Prefer': 'return=minimal',
-            },
-            body: JSON.stringify({
-              id: crypto.randomUUID(),
-              agent: 'system',
-              event_type: 'runner_start_requested',
-              payload: { source: 'checkpoint-resume', task_id: taskId, requested_at: new Date().toISOString() },
-              timestamp: new Date().toISOString(),
-            }),
-          });
-        } catch {}
-
+        const prevMeta = (target?.metadata && typeof target.metadata === 'object') ? target.metadata : {};
+        const checkpoint = { ...(prevMeta.checkpoint || {}), answer, answered_at: new Date().toISOString() };
+        const result = await patch({ status: 'queued', worker_id: null, checkpoint });
+        await logEvent('system', 'runner_start_requested', '', id, { source: 'checkpoint-resume', requested_at: new Date().toISOString() });
         return res.status(200).json({ ok: true, action: 'resume', result });
       }
 
