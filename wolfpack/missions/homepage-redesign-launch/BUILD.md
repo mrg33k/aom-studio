@@ -135,3 +135,21 @@ meta present, https://wolfpackcompanies.com/assets/og.jpg?v=0d6bb414b6 returns 2
 image/jpeg and renders the full composite.
 
 **Status:** shipped — LIVE.
+
+### R11 — Google review button in the top bar (2026-09-03)
+
+Patrik: invite customers by sending the site; they tap a standout, Google-official
+button in the top bar that takes them straight to leaving a review. Place ID pulled
+live from Maps (ChIJWViif6VtK4cRNK7_zrcm320, hex 0x872b6da57fa25859:0x6ddf26b7ceffae34,
+verified: writereview URL resolves to the Wolfpack rate-and-review dialog).
+Shipped: white pill with the real 4-color G mark + gold ★★★★★ "5.0 rated" next to the
+blue call CTA on desktop (compact one-line variant in the 860–1099 band); full-width
+white review strip directly under the header row on mobile — non-sticky, sits at the
+top where an invited customer lands, scrolls away for browsing prospects; labeled
+entry in the mobile menu above the call button. Fixed-white ground in both themes so
+it reads as Google's surface. Opens in a new tab; existing GA click handler tracks it
+as button_click automatically. 43/43 tests pass, all 27 routes carry it, no overflow
+at 390/1000/1440. Deployed via `vercel --prod` and live-verified on
+wolfpackcompanies.com (pill at desktop, strip at 390px, versioned CSS served).
+
+**Status:** shipped — LIVE.

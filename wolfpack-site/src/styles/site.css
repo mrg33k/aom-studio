@@ -94,6 +94,20 @@ img { display: block; max-width: 100%; }
 .menu-button-label { position: absolute; overflow: hidden; width: 1px; height: 1px; clip: rect(0 0 0 0); }
 .menu-bars { display: grid; gap: 4px; }
 .menu-bars i { display: block; width: 18px; height: 2px; background: currentcolor; }
+/* Google review CTA — fixed white ground in both themes so it reads as Google's
+   surface, not ours. Official G mark, Google-gold stars. */
+.header-review { display: flex; flex: none; align-items: center; gap: 10px; min-height: 48px; padding: 8px clamp(12px, 1.3vw, 18px); border: 1px solid #DADCE0; background: #fff; color: #1f1f1f; white-space: nowrap; }
+.header-review:hover { border-color: #4285F4; color: #1f1f1f; box-shadow: 0 1px 6px rgba(66, 133, 244, .28); }
+.google-g { flex: none; display: block; }
+.header-review-text { display: flex; flex-direction: column; text-align: left; }
+.header-review-text strong { font-family: Archivo, sans-serif; font-size: clamp(12px, .95vw, 14px); font-variation-settings: "wdth" 85, "wght" 700; letter-spacing: .02em; line-height: 1.15; }
+.header-review-text > span { margin-top: 2px; color: #5f6368; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.review-stars { color: #FBBC05; letter-spacing: .08em; }
+.review-strip { display: none; align-items: center; justify-content: center; gap: 9px; padding: 11px var(--gutter); border-bottom: 1px solid #DADCE0; background: #fff; color: #1f1f1f; }
+.review-strip strong { font-family: Archivo, sans-serif; font-size: 13px; font-variation-settings: "wdth" 85, "wght" 700; letter-spacing: .04em; }
+.review-strip .review-stars { font-size: 13px; }
+.mobile-review { display: flex; align-items: center; gap: 10px; padding: 13px 0; border-bottom: 1px solid var(--rule); font-size: 15px; font-weight: 600; }
+.mobile-review .review-stars { margin-left: auto; font-size: 13px; }
 .header-call { display: flex; flex: none; flex-direction: column; justify-content: center; min-height: 48px; padding: 8px clamp(12px, 1.5vw, 22px); background: var(--blue); color: #fff; text-align: center; white-space: nowrap; }
 .header-call:hover { background: var(--blue-dark); color: #fff; }
 .header-call strong { font-family: Archivo, sans-serif; font-size: clamp(14px, 1.15vw, 17px); font-variation-settings: "wdth" 85, "wght" 700; line-height: 1.1; }
@@ -324,10 +338,14 @@ img { display: block; max-width: 100%; }
   .brand-wordmark { display: none; }
   .desktop-nav { gap: 14px; }
   .nav-link { font-size: 12px; }
+  .header-review { gap: 8px; padding: 8px 12px; }
+  .header-review-text > span { display: none; }
 }
 
 @media (max-width: 859px) {
   .header-main { min-height: 64px; gap: 14px; }
+  .header-review { display: none; }
+  .review-strip { display: flex; }
   .desktop-nav { display: none; }
   .service-rail { display: none; }
   .theme-button { display: none; }

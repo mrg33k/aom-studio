@@ -70,3 +70,17 @@ site.css/site.js now get content-hash URLs, so redeploys actually reach returnin
 Update ~1:45 PM: OG share image live — brand-recipe generation (real refs, letter-perfect
 livery) + real logo/wordmark composite, 1200x630, og:*/twitter tags on all 27 routes,
 content-hash versioned. Verified serving live.
+
+---
+
+## 2026-09-03 — R11: Google review button in the top bar (rex, background session)
+
+Patrik asked for a top-bar option where customers invited by link can leave a Google
+review — standout, Google-official, straight to the review form. Pulled the live place
+ID from Maps (ChIJWViif6VtK4cRNK7_zrcm320) and verified the writereview URL opens the
+Wolfpack rate-and-review dialog. Added three placements in shell.mjs + site.css:
+desktop white pill (real G mark, gold stars, "5.0 rated") beside the call CTA, mobile
+full-width white strip under the header (non-sticky by design), mobile-menu entry.
+Built, 43/43 tests, deployed `vercel --prod`, live-verified desktop + 390px on
+wolfpackcompanies.com. GA tracks clicks via the existing handler (button_click with
+link_url = writereview URL).
