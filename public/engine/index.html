@@ -1361,7 +1361,7 @@ function topbar(){
     <div class="st">${st}</div>
   </div><div id="notice">${noticeHtml()}</div>`;
 }
-function headHtml(){ const k=S.cur, doc=D(k), m=S.meta[k]||{}; return `<div class="hd ${window.scrollY>60?"shrink":""}"><div class="head"><h1 class="druk" contenteditable data-docname>${esc(doc.name||META[k].name)}</h1><div class="r">Next touch<b contenteditable data-docwho>${esc(doc.who||"")}</b>${m.updatedAt?`<small>saved ${rel(m.updatedAt)}${m.updatedBy&&m.updatedBy!=="page"?" by "+esc(m.updatedBy):""}</small>`:""}</div></div>${latestStrip(k)}</div>`; }
+function headHtml(){ const k=S.cur, doc=D(k), m=S.meta[k]||{}; return `<div class="hd ${window.scrollY>60?"shrink":""}"><div class="head"><h1 class="druk" contenteditable data-docname>${esc(doc.name||META[k].name)}</h1><div class="r">Next touch<b contenteditable data-docwho>${esc(doc.who||"")}</b>${m.updatedAt?`<small>saved ${rel(m.updatedAt)}</small>`:""}</div></div>${latestStrip(k)}</div>`; }
 function wireHead(){ const k=S.cur, doc=D(k); const n=document.querySelector("[data-docname]"); if(n) n.addEventListener("blur",()=>{ doc.name=n.textContent.trim()||META[k].name; save(k); toast("Saved."); }); const w=document.querySelector("[data-docwho]"); if(w) w.addEventListener("blur",()=>{ doc.who=w.textContent.trim(); save(k); toast("Saved."); }); }
 
 // ---- Report tab = the live client page on the real reports store ----
