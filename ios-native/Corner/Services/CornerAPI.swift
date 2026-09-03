@@ -208,12 +208,12 @@ final class CornerAPI: ObservableObject {
 
     // MARK: - Thread
 
-    /// GET /api/dashboard/supabase-messages. Returns oldest-first.
+    /// GET /api/dashboard/messages. Returns oldest-first.
     func fetchMessages(room: Room, limit: Int = 100) async throws -> [MessageRow] {
         var items = room.historyQueryItems
         items.append(URLQueryItem(name: "limit", value: String(limit)))
         let request = try await authorizedRequest(
-            path: "/api/dashboard/supabase-messages",
+            path: "/api/dashboard/messages",
             queryItems: items
         )
         let data = try await run(request)
@@ -223,7 +223,7 @@ final class CornerAPI: ObservableObject {
         return envelope.messages
     }
 
-    /// POST /api/dashboard/supabase-messages — the user row whose arrival dispatches
+    /// POST /api/dashboard/messages — the user row whose arrival dispatches
     /// the agent. Returns the created row; its id is the parent the bridge keys every
     /// step heartbeat to, which is what makes the working indicator honest.
     ///
@@ -296,7 +296,7 @@ final class CornerAPI: ObservableObject {
         clientMessageID: String? = nil
     ) async throws -> MessageRow? {
         let request = try await authorizedRequest(
-            path: "/api/dashboard/supabase-messages",
+            path: "/api/dashboard/messages",
             method: "POST",
             jsonBody: room.sendBody(
                 text: text, interactionMode: interactionMode,
@@ -1045,7 +1045,7 @@ final class CornerAPI: ObservableObject {
         items.append(URLQueryItem(name: "attachments", value: "1"))
         items.append(URLQueryItem(name: "limit", value: String(limit)))
         let request = try await authorizedRequest(
-            path: "/api/dashboard/supabase-messages",
+            path: "/api/dashboard/messages",
             queryItems: items
         )
         let data = try await run(request)
@@ -1317,7 +1317,7 @@ final class CornerAPI: ObservableObject {
             "metadata": ["assign": assign],
         ]
         let request = try await authorizedRequest(
-            path: "/api/dashboard/supabase-messages",
+            path: "/api/dashboard/messages",
             method: "POST",
             jsonBody: body
         )
@@ -1573,7 +1573,7 @@ final class CornerAPI: ObservableObject {
     /// `createMissionInProject`. Returns the newly created Room on success.
     ///
     /// 1. POST /api/dashboard/create-mission-from-drawer (scaffolds stubs + kickoff)
-    /// 2. POST /api/dashboard/supabase-messages with the opening note (goal, agent,
+    /// 2. POST /api/dashboard/messages with the opening note (goal, agent,
     ///    priority, when) — the same "nothing typed is lost" guarantee the web has.
     @discardableResult
     func createMission(
@@ -1636,7 +1636,7 @@ final class CornerAPI: ObservableObject {
     /// `createProjectFromHome`. Returns the newly created Room on success.
     ///
     /// 1. POST /api/dashboard/create-project-from-chat (scaffolds + kickoff + forward link)
-    /// 2. POST /api/dashboard/supabase-messages with the about text if the user gave one.
+    /// 2. POST /api/dashboard/messages with the about text if the user gave one.
     @discardableResult
     func createProject(name: String, about: String) async throws -> Room {
         let worldId = try requireWorld()
@@ -1761,7 +1761,7 @@ final class CornerAPI: ObservableObject {
         }
         body["metadata"] = metadata
         guard let request = try? await authorizedRequest(
-            path: "/api/dashboard/supabase-messages",
+            path: "/api/dashboard/messages",
             method: "POST",
             jsonBody: body
         ) else { return false }
