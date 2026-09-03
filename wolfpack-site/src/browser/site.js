@@ -4,6 +4,24 @@ document.documentElement.setAttribute('data-js', 'true')
 // Resend key; flip back to '/api/lead' once RESEND_API_KEY is set on wolfpack-companies.
 const LEAD_ENDPOINT = 'https://www.aheadofmarket.com/api/wolfpack-lead'
 
+// High-intent CTA clicks (call, Google review) ping AOM for a same-hour heads-up.
+// sendBeacon so the ping survives the navigation; server dedupes per visitor.
+const CTA_ENDPOINT = 'https://www.aheadofmarket.com/api/wolfpack-cta'
+document.addEventListener('click', event => {
+  const el = event.target.closest ? event.target.closest('a') : null
+  if (!el || !el.href) return
+  let cta = null
+  if (el.href.indexOf('tel:') === 0) cta = 'call'
+  else if (el.href.indexOf('search.google.com/local/writereview') !== -1) cta = 'review'
+  if (!cta) return
+  const payload = JSON.stringify({ cta, page: location.pathname })
+  try {
+    if (!navigator.sendBeacon || !navigator.sendBeacon(CTA_ENDPOINT, new Blob([payload], { type: 'text/plain' }))) {
+      fetch(CTA_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: payload, keepalive: true })
+    }
+  } catch { /* notification ping must never break the click */ }
+}, true)
+
 const themeKey = 'wp-v2-theme'
 const savedTheme = (() => {
   try {
