@@ -13,6 +13,7 @@ document.addEventListener('click', event => {
   let cta = null
   if (el.href.indexOf('tel:') === 0) cta = 'call'
   else if (el.href.indexOf('search.google.com/local/writereview') !== -1) cta = 'review'
+  else if (el.hasAttribute('data-lead-open') || el.getAttribute('href') === '#contact') cta = 'walkthrough'
   if (!cta) return
   const payload = JSON.stringify({ cta, page: location.pathname })
   try {
