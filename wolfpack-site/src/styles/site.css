@@ -15,8 +15,8 @@
   --tx3: #9298a3;
   --rule: rgb(255 255 255 / 14%);
   --nav: rgb(10 12 16 / 88%);
-  --hero-grad: linear-gradient(180deg, rgb(10 12 16 / 38%) 0%, rgb(10 12 16 / 24%) 45%, rgb(10 12 16 / 96%) 100%);
-  --hero-op: .42;
+  --hero-grad: linear-gradient(180deg, rgb(10 12 16 / 30%) 0%, rgb(10 12 16 / 18%) 45%, rgb(10 12 16 / 94%) 100%);
+  --hero-op: .62;
   --btn2: #0a0c10;
   --wm-k: .08;
   --wm-b: 0;
@@ -39,8 +39,8 @@
   --tx3: #6e7168;
   --rule: rgb(18 20 15 / 16%);
   --nav: rgb(241 239 233 / 92%);
-  --hero-grad: linear-gradient(180deg, rgb(241 239 233 / 78%) 0%, rgb(241 239 233 / 84%) 45%, rgb(241 239 233 / 98%) 100%);
-  --hero-op: .55;
+  --hero-grad: linear-gradient(180deg, rgb(241 239 233 / 22%) 0%, rgb(241 239 233 / 38%) 45%, rgb(241 239 233 / 96%) 100%);
+  --hero-op: 1;
   --btn2: #12140f;
   --wm-k: 0;
   --wm-b: .07;
@@ -364,6 +364,9 @@ img { display: block; max-width: 100%; }
 }
 
 @media (max-width: 767px) {
+  /* Tall phone crop shows the 3:2 photos full-height (tree-heavy top). Anchor the
+     photo to the bottom and oversize it so the visible band is the crew + trucks. */
+  .home-hero-photo { inset: auto 0 0 0; height: 125%; }
   .home-hero-title { font-size: clamp(2.55rem, 12.5vw, 3.6rem); overflow-wrap: anywhere; }
   .home-hero-wm { height: 58%; right: -22%; }
   .home-offer-wm { height: 380px; }

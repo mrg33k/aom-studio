@@ -53,9 +53,22 @@ function loader() {
   </div>`
 }
 
+// Real photos from the 2026-08-22 fleet/team shoot. One is picked at random
+// per page load by the inline script below; the first entry is the no-JS fallback.
+const heroShots = [
+  ['hero/crew-hivis-wide.jpg', 'Wolfpack service techs standing in front of the truck fleet'],
+  ['hero/crew-hivis-tight.jpg', 'Wolfpack crew in front of a branded box truck'],
+  ['hero/full-team-fleet.jpg', 'The full Wolfpack team lined up with the service fleet'],
+  ['hero/fleet-lineup-wide.jpg', 'Wolfpack service trucks and crew lined up outside'],
+  ['hero/owners-fleet.jpg', 'Wolfpack owners in front of the company trucks'],
+]
+
 function hero() {
+  const shots = JSON.stringify(heroShots.map(([file, alt]) => [asset(file), alt]))
   return `<section class="home-hero">
-    <img class="home-hero-photo" src="${asset('work/01-hydro-jetting-v2-brand.jpg')}" alt="Wolfpack crew jetting a commercial line" fetchpriority="high">
+    <img class="home-hero-photo" alt="" fetchpriority="high" data-hero-shots='${shots}'>
+    <script>(function(){var img=document.querySelector('.home-hero-photo');var shots=JSON.parse(img.dataset.heroShots);var pick=shots[Math.floor(Math.random()*shots.length)];img.src=pick[0];img.alt=pick[1];})()</script>
+    <noscript><img class="home-hero-photo" src="${asset(heroShots[0][0])}" alt="${escapeHtml(heroShots[0][1])}"></noscript>
     <div class="home-hero-shade" aria-hidden="true"></div>
     <img class="home-hero-wm home-hero-wm-k" src="${asset('brand/wolfpack-icon-knockout.png')}" alt="" aria-hidden="true">
     <img class="home-hero-wm home-hero-wm-b" src="${asset('brand/wolfpack-icon-knockout.png')}" alt="" aria-hidden="true">

@@ -118,7 +118,11 @@ test('homepage carries the approved Evolution B v2 structure', async () => {
   }
   assert.match(html, /Before<\/span>[\s\S]+After<\/span>/)
   assert.match(html, /data-loader/)
-  assert.match(html, /work\/01-hydro-jetting-v2-brand\.jpg/)
+  // Hero rotates 5 real team/fleet photos; all must be in the pool and the picker script present
+  for (const shot of ['crew-hivis-wide', 'crew-hivis-tight', 'full-team-fleet', 'fleet-lineup-wide', 'owners-fleet']) {
+    assert.ok(html.includes(`hero/${shot}.jpg`), `hero pool missing ${shot}`)
+  }
+  assert.match(html, /data-hero-shots/)
   assert.ok(!html.includes('page-placeholder'), 'homepage must not render the placeholder body')
 })
 
