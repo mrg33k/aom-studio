@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { createHash } from 'node:crypto'
-import { cp, mkdir, rm, writeFile, readFile } from 'node:fs/promises'
+import { cp, mkdir, rm, writeFile, readFile, readdir } from 'node:fs/promises'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { pages } from './data/pages.mjs'
 import { asset, setAssetVersion } from './lib/html.mjs'
@@ -37,13 +37,27 @@ async function copySharedAssets(outDir) {
   await cp(path.join(sourceDir, 'assets'), assetDir, { recursive: true })
 }
 
-// site.css and site.js are served with a one-year immutable Cache-Control header,
-// so their URLs must change whenever their content does.
+// Everything under /assets is served with a one-year immutable Cache-Control
+// header, so every asset URL must change whenever its content does — not just
+// site.css/site.js. Replacing an image under the same filename without this
+// leaves returning visitors on the stale version indefinitely.
 async function registerAssetVersions() {
-  for (const [name, file] of [['site.css', ['styles', 'site.css']], ['site.js', ['browser', 'site.js']], ['og.jpg', ['assets', 'og.jpg']]]) {
+  for (const [name, file] of [['site.css', ['styles', 'site.css']], ['site.js', ['browser', 'site.js']]]) {
     const content = await readFile(path.join(sourceDir, ...file))
     setAssetVersion(name, createHash('sha1').update(content).digest('hex').slice(0, 10))
   }
+  const assetRoot = path.join(sourceDir, 'assets')
+  async function walk(dir) {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) await walk(full)
+      else {
+        const content = await readFile(full)
+        setAssetVersion(path.relative(assetRoot, full), createHash('sha1').update(content).digest('hex').slice(0, 10))
+      }
+    }
+  }
+  await walk(assetRoot)
 }
 
 export async function buildSite({ outDir = defaultOutDir } = {}) {

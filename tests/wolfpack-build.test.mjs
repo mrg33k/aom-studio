@@ -94,7 +94,9 @@ test('every page shares accessible launch chrome', async () => {
 
 test('escapes HTML and serves shared assets from the root', () => {
   assert.equal(escapeHtml('<Wolfpack & "Co">'), '&lt;Wolfpack &amp; &quot;Co&quot;&gt;')
-  assert.equal(asset('brand/wolfpack-icon.png'), '/assets/brand/wolfpack-icon.png')
+  // Every asset is content-hash versioned after build (immutable cache header),
+  // so image swaps under the same filename reach returning visitors.
+  assert.match(asset('brand/wolfpack-icon.png'), /^\/assets\/brand\/wolfpack-icon\.png(\?v=[0-9a-f]{10})?$/)
   assert.match(asset('site.css'), /^\/assets\/site\.css(\?v=[0-9a-f]{10})?$/)
 })
 
