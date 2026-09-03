@@ -187,3 +187,19 @@ asset file is hashed. Test updated (asset URLs may carry ?v=). 43/43.
 **Status:** shipped — LIVE. Hero centering awaiting Patrik's live eyeball;
 19-emergency-a (page hero, Spartan cart) left as-is — flag if client wants
 that one beefed up too.
+
+### R14 — CTA click notifications (2026-09-03)
+
+Patrik wants a notification when someone clicks a call to action. New endpoint
+`api/wolfpack-cta.js` on aom-studio (commit 3aaffe2e on main — that project holds
+the Resend key): POSTs {cta: call|review, page} email a short heads-up to
+hello@aom-inhouse.com only. One email per visitor per CTA per hour, 40/day cap,
+CORS-locked to wolfpackcompanies.com. Client: sendBeacon (text/plain to dodge
+preflight) on tel: and Google-review clicks, wired in site.js. Verified live
+end-to-end: curl from allowed origin returned sent:true (real email delivered),
+then a real click on the live site fired both the beacon (200) and GA phone_click.
+His second ask — capturing visitor emails from cookies — declined: not technically
+possible and a privacy-law violation; offered form-captures and company-level
+visitor ID (Leadfeeder-class) as the legit routes.
+
+**Status:** shipped — LIVE.
