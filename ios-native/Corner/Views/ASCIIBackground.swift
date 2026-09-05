@@ -20,6 +20,87 @@
 // nothing. No third-party dependency.
 
 import SwiftUI
+import UIKit
+
+// MARK: - Glyph atlas (P005)
+//
+// The old field drew ~1500 live Text views per frame, and `sample` showed
+// every one re-running CoreText typesetting plus software raster through
+// RenderBox — that was the 56% CPU. Each ramp glyph is rasterized ONCE per
+// tint into a tiny bitmap and cached; every frame after that is cheap image
+// blits. Same typeface and size, same cell origins, same opacities — the
+// field looks the same, it just stops re-typesetting itself 12 times a
+// second. Plain CoreGraphics (not ImageRenderer) so the atlas has no actor
+// requirements — Canvas may call it from any thread it draws on.
+private final class GlyphAtlas {
+    static let shared = GlyphAtlas()
+
+    struct Set {
+        let cream: [Image]
+        let ember: [Image]
+        let size: CGSize
+    }
+
+    private let lock = NSLock()
+    private var cache: [String: Set] = [:]
+
+    private init() {}
+
+    func set(ramp: [String], uiFont: UIFont, ember: UIColor) -> Set {
+        let key = Self.colorKey(ember)
+        lock.lock()
+        if let hit = cache[key] { lock.unlock(); return hit }
+        lock.unlock()
+        // 26 tiny renders, once, instead of ~1500 text draws per frame.
+        var cream: [Image] = []
+        var emberImgs: [Image] = []
+        // One monospace font, so one probe gives the point size every blit
+        // rect uses. Fallback keeps the old pitch box.
+        var size = CGSize(width: 16, height: 18)
+        for glyph in ramp {
+            let (c, probe) = render(glyph, uiFont: uiFont, color: .white)
+            let (e, _) = render(glyph, uiFont: uiFont, color: ember)
+            if glyph != " ", let probe { size = probe }
+            cream.append(c)
+            emberImgs.append(e)
+        }
+        let set = Set(cream: cream, ember: emberImgs, size: size)
+        lock.lock()
+        cache[key] = set
+        lock.unlock()
+        return set
+    }
+
+    /// Rasterized image plus the point size its blit rects use (nil for the
+    /// space glyph's empty bitmap — never drawn anyway).
+    private func render(_ glyph: String, uiFont: UIFont, color: UIColor) -> (Image, CGSize?) {
+        let attrs: [NSAttributedString.Key: Any] = [.font: uiFont, .foregroundColor: color]
+        let str = NSAttributedString(string: glyph, attributes: attrs)
+        var box = str.boundingRect(
+            with: CGSize(width: 64, height: 64),
+            options: [.usesLineFragmentOrigin, .usesFontLeading], context: nil
+        )
+        box.origin = .zero
+        box.size.width = ceil(box.size.width)
+        box.size.height = ceil(box.size.height)
+        guard box.size.width >= 1, box.size.height >= 1 else {
+            return (Image(uiImage: UIImage()), nil)
+        }
+        let renderer = UIGraphicsImageRenderer(size: box.size)
+        let ui = renderer.image { _ in
+            str.draw(at: .zero)
+        }
+        return (Image(uiImage: ui), ui.size)
+    }
+
+    private static func colorKey(_ c: UIColor) -> String {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        if c.getRed(&r, green: &g, blue: &b, alpha: &a) {
+            return String(format: "%.3f,%.3f,%.3f,%.3f", r, g, b, a)
+        }
+        return String(describing: c)
+    }
+}
 
 struct ASCIIBackground: View {
     /// The ember tint riding the wave crests. The login passes its own emerald;
@@ -33,22 +114,39 @@ struct ASCIIBackground: View {
     private let cell: CGFloat = 15          // glyph pitch in points
     private let font = Font.system(size: 13, weight: .semibold, design: .monospaced)
 
+    /// P005: 12 fps is plenty for a slow drift (the noise terms move at
+    /// 0.4–0.9 rad/s, so a frame step shifts the field by a fraction of a
+    /// cell — it still visibly flows) and cuts full-screen CoreText raster
+    /// work to roughly a fifth of the old every-display-refresh cadence.
+    private static let frameInterval = 1.0 / 12.0
+
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The field only moves while the scene is frontmost. Backgrounded (or a
+    /// Reduce Motion user, or the screen tour) gets one static frame — the
+    /// same field at a fixed instant — so the main thread idles.
+    private var isStatic: Bool {
+        Config.screenTour || reduceMotion || scenePhase != .active
+    }
+
     var body: some View {
         Group {
-            if Config.screenTour {
-                // One static frame for the screen tour: the same field at a
-                // fixed instant, no timeline, so the main thread idles.
+            if isStatic {
+                // One static frame: the same field at a fixed instant, no
+                // timeline, so the main thread idles.
                 Canvas { ctx, size in
                     drawField(ctx: &ctx, size: size, t: 1.0)
                 }
             } else {
-                TimelineView(.animation) { timeline in
+                TimelineView(.periodic(from: .now, by: Self.frameInterval)) { timeline in
                     Canvas { ctx, size in
                         // Seconds since an arbitrary epoch; only deltas matter, so the
                         // Date.now here is fine (this file never runs in a workflow).
                         drawField(ctx: &ctx, size: size, t: timeline.date.timeIntervalSinceReferenceDate)
                     }
-                    .drawingGroup()                 // render off-screen on the GPU
+                    // No .drawingGroup(): frames are cheap blits now, and an
+                    // off-screen flatten per frame cost more than it saved.
                 }
             }
         }
@@ -72,9 +170,14 @@ struct ASCIIBackground: View {
         let cx = Double(cols) * 0.5
         let cy = Double(rows) * 0.42   // optical center, biased up toward the wordmark
 
-        let resolved = Self.ramp.map {
-            ctx.resolve(Text(String($0)).font(font))
-        }
+        // P005: blit pre-rasterized glyphs (see GlyphAtlas) instead of
+        // drawing live Text per cell — no CoreText work left in the loop.
+        // (UIFont mirrors the SwiftUI font above: 13pt semibold SF Mono.)
+        let atlas = GlyphAtlas.shared.set(
+            ramp: Self.ramp.map(String.init),
+            uiFont: .monospacedSystemFont(ofSize: 13, weight: .semibold),
+            ember: UIColor(ember)
+        )
 
         for r in 0..<rows {
             for c in 0..<cols {
@@ -116,14 +219,14 @@ struct ASCIIBackground: View {
                 // instead of dissolving into it. `glow` fades an ember UP from that
                 // floor to a confident crest so it is a scatter, never a gold slab.
                 let goldScore = v + gather * 0.28
+                let rect = CGRect(origin: pt, size: atlas.size)
                 if goldScore > 1.05 {
                     let glow = min(1, (goldScore - 1.05) * 5)
                     ctx.opacity = 0.32 + glow * 0.44
-                    ctx.draw(ctx.resolve(Text(String(Self.ramp[idx]))
-                        .font(font).foregroundStyle(ember)), at: pt, anchor: .topLeading)
+                    ctx.draw(atlas.ember[idx], in: rect)
                 } else {
                     ctx.opacity = 0.05 + level * 0.16
-                    ctx.draw(resolved[idx], at: pt, anchor: .topLeading)
+                    ctx.draw(atlas.cream[idx], in: rect)
                 }
             }
         }

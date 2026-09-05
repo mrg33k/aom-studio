@@ -289,6 +289,7 @@ private struct PromiseRow: View {
 struct BackgroundWorkView: View {
     @ObservedObject private var store = BackgroundWorkStore.shared
     @EnvironmentObject private var theme: ThemeManager
+    @Environment(\.dismiss) private var dismiss
     @State private var now = Date()
 
     var body: some View {
@@ -307,6 +308,12 @@ struct BackgroundWorkView: View {
             .navigationTitle("Background work")
             .accessibilityIdentifier("background-work-sheet")
             .navigationBarTitleDisplayMode(.inline)
+            // P007 (R1): a visible way out, like the other sheets.
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
             .background(Theme.ground)
         }
         .task {

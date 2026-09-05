@@ -15,3 +15,10 @@ succeed, no busy errors); the tour photographed 00/01/01c on all three
 simulators via real typing, caught the inline credential rejection, and
 stopped with 23 later frames MISSING (credentials). Still needs a working tour
 account before the full 02-22 walk; full evidence in rounds/R0b-ios.md.
+
+2026-09-05 ~12:35 PM Phoenix: R1-ios worker done. Sign-in CPU is 56% -> ~12-15%
+(glyph atlas blits + 12 fps field + 15 fps mesh, all frames opened on 17 Pro and
+SE); the form now sits on a soft opaque scrim with the field above and below.
+Waiting row and Background-Work Done button are wired but need a signed-in tour
+to photograph (frames 16/20). Still needs a working tour account; full evidence
+in rounds/R1-ios-fix.md.

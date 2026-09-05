@@ -93,7 +93,24 @@ struct SignInView: View {
                     signInButton
                         .padding(.top, Theme.s5 + Theme.s1)
                 }
-                .frame(maxWidth: 320)
+                // P031: a soft opaque scrim behind the form column so labels,
+                // fields, and the error strip sit on a clean surface. A solid
+                // core (~80% ground over the already-dimmed centre) plus a
+                // blurred twin feather the edge; the field stays fully visible
+                // above and below the form. Wordmark and INVITE ONLY styling
+                // untouched.
+                .padding(Theme.s4)
+                .frame(maxWidth: 320 + Theme.s4 * 2)
+                .background {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(Self.bg.opacity(0.8))
+                            .padding(-10)
+                            .blur(radius: 18)
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .fill(Self.bg.opacity(0.8))
+                    }
+                }
 
                 Spacer()
 
@@ -245,28 +262,49 @@ private struct MeshBlobBackground: View {
              cx: 0.30, cy: 0.88, ax: 0.07, ay: 0.09, speed: 0.07, phase: 5.2),
     ]
 
+    // P005: the mesh only drifts while the scene is frontmost. Backgrounded
+    // (or a Reduce Motion user) gets one static frame so the GPU idles.
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
-            Canvas { context, size in
-                let t = timeline.date.timeIntervalSinceReferenceDate
-                for blob in blobs {
-                    let x = (blob.cx + blob.ax * sin(t * blob.speed * 2 * .pi + blob.phase)) * size.width
-                    let y = (blob.cy + blob.ay * cos(t * blob.speed * 2 * .pi + blob.phase)) * size.height
-                    let r = blob.radius * min(size.width, size.height)
-                    let rect = CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r)
-                    context.fill(
-                        Path(ellipseIn: rect),
-                        with: .radialGradient(
-                            Gradient(colors: [blob.color.opacity(blob.opacity), .clear]),
-                            center: CGPoint(x: x, y: y),
-                            startRadius: 0, endRadius: r
+        Group {
+            if reduceMotion || scenePhase != .active {
+                Canvas { context, size in
+                    drawBlobs(context: &context, size: size, t: 1.0)
+                }
+            } else {
+                // P005: 15 fps — the blobs orbit at ~0.1 Hz, so this is
+                // visually identical to 30 fps at half the view-graph churn.
+                TimelineView(.periodic(from: .now, by: 1.0 / 15.0)) { timeline in
+                    Canvas { context, size in
+                        drawBlobs(
+                            context: &context, size: size,
+                            t: timeline.date.timeIntervalSinceReferenceDate
                         )
-                    )
+                    }
                 }
             }
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
+    }
+
+    private func drawBlobs(context: inout GraphicsContext, size: CGSize, t: Double) {
+        for blob in blobs {
+            let x = (blob.cx + blob.ax * sin(t * blob.speed * 2 * .pi + blob.phase)) * size.width
+            let y = (blob.cy + blob.ay * cos(t * blob.speed * 2 * .pi + blob.phase)) * size.height
+            let r = blob.radius * min(size.width, size.height)
+            let rect = CGRect(x: x - r, y: y - r, width: 2 * r, height: 2 * r)
+            context.fill(
+                Path(ellipseIn: rect),
+                with: .radialGradient(
+                    Gradient(colors: [blob.color.opacity(blob.opacity), .clear]),
+                    center: CGPoint(x: x, y: y),
+                    startRadius: 0, endRadius: r
+                )
+            )
+        }
     }
 }
 

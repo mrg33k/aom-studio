@@ -646,6 +646,9 @@ struct RoomListView: View {
     @ViewBuilder
     private var toolsRows: some View {
         sectionLabel("Tools")
+        // P006 (R1): the review queue's entry point — visible only while work
+        // is waiting, so a permanent zero never becomes ignored furniture.
+        if review.waitingCount > 0 { waitingRow }
         Button { router.open(.organize) } label: {
             UtilityRow(title: "Files", subtitle: "Your files and deliverables", symbol: "folder")
         }
