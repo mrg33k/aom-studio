@@ -10,9 +10,13 @@
 # runs unattended, so approval prompts are off; the OS sandbox is off because xcodebuild, simctl and
 # the vite dev server need it. Scope is held by the brief (no push, no deploy, no deletes, scoped
 # git add), and the orchestrator verifies every claim before anything is pushed.
+#   --safe     : read-only reviewer mode. Keeps the OS sandbox ON (no writes outside the session,
+#                no network); only the headless approval prompt is disabled. Use for review briefs.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 NAME="${1:?brief name}"; EFFORT="${2:-xhigh}"; STEPS="${3:-600}"
+SANDBOX_FLAG="--disable-sandbox"
+[[ "${4:-}" == "--safe" ]] && SANDBOX_FLAG=""
 BRIEF="$HERE/briefs/$NAME.md"; LOG="$HERE/rounds/logs/$NAME.log"
 [[ -f "$BRIEF" ]] || { echo "no brief: $BRIEF" >&2; exit 2; }
 mkdir -p "$HERE/rounds/logs"
@@ -28,7 +32,7 @@ echo "start $(date '+%Y-%m-%d %H:%M:%S') effort=$EFFORT steps=$STEPS" > "$LOG"
   --disable-approval \
   --user-input-auto-resolve \
   --trust-workspace \
-  --disable-sandbox \
+  $SANDBOX_FLAG \
   >> "$LOG" 2>&1
 rc=$?
 echo "exit=$rc at $(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG"
