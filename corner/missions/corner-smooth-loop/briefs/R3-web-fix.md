@@ -69,6 +69,9 @@ dim the background. Regenerate `home-palette.png`, `palette-query.png`.
 **P029 Home composer clips the first glyph on SE** (`src/routes/Home.tsx:257-266`): left padding on the
 input; regenerate `home-composer-typed.png` (SE).
 
+**P032 Email sender collapses to one letter** (`src/routes/Email.tsx` inbox row): give the sender a
+minimum width (~9ch) and let the subject truncate first, on all sizes; regenerate `email-inbox.png`.
+
 **Unidentified tinted strip under the room header** (room-light / room-glass / room-files-sheet on
 iphone-15-pro): find what draws it. If it is a bubble edge clipped under the header, add the header's
 surface as an opaque backdrop or clip the thread; if it is chrome, say what and fix. Photograph.
