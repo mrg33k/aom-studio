@@ -39,9 +39,11 @@ races, keyboard handling) is Track 2 priority one.
 
 - **Orchestrator (Fable 5.1, this session):** briefs agents, verifies claims by looking at output, merges,
   commits/pushes, keeps this ledger, decides what reaches Patrik.
-- **Workers (Opus 5, `general-purpose` agents with `model: opus`):** per platform, a *reviewer* (reads every
-  frame + failure, writes the ranked punch list with file:line and a proposed fix) and a *builder* (fixes, adds
-  coverage, re-runs, reports with evidence paths).
+- **Workers (Muse Spark 1.3 via `run-worker.sh <brief>`; Patrik switched from Opus 5 to Muse for cost at
+  10:45 AM):** per platform, a *reviewer* (reads every frame + failure, writes the ranked punch list with
+  file:line and a proposed fix; launched with `--safe`, sandbox on) and a *builder* (fixes, adds coverage,
+  re-runs, reports with evidence paths). Muse needs extremely detailed briefs: every path, command, guardrail
+  and acceptance check spelled out. Watch each one with `watch-muse.py` through the Monitor tool.
 - Web team and iOS team run **in parallel** (separate repos). Inside one repo, reviewer then builder,
   **sequentially** (one dev server on :5173, one Xcode DerivedData).
 
