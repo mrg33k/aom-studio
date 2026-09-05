@@ -37,5 +37,8 @@ src/dashboard/__fixtures__/
 /corner/missions/*
 !/corner/missions/airpods-mode/
 !/corner/missions/airpods-mode/**
+!/corner/missions/corner-smooth-loop/
+!/corner/missions/corner-smooth-loop/**
+/corner/missions/corner-smooth-loop/rounds/logs/
 public/__screens-board.html
 !public/summerschool/**/*.png

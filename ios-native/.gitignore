@@ -9,3 +9,7 @@ build/
 # Render-gallery output (CornerTests/RenderGalleryTests). Images are for looking at,
 # not for diffing — there are no golden files here to keep in sync.
 RenderGallery/
+
+# corner:corner-smooth-loop — tour credentials and tour output stay out of git
+.tour.env
+deliverables/screen-tour/
