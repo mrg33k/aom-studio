@@ -21,3 +21,7 @@ corner-convex `2efc452` pushed: 38 baselines regenerated on this Mac, composer a
 ### R0-ios — built, blocked on credentials (2026-09-05, 11:18 AM Phoenix)
 aom-studio `ec008095`: `CornerUITests/ScreenTour.swift` (25-frame tour), `scripts/screenshot-tour.sh` (3 devices), 11 accessibility identifiers, project regenerated. Zero frames: both repo test accounts return `InvalidSecret` from neat-pony-216, and the sign-in canvas saturates the main thread so XCUITest cannot snapshot (P005). Follow-up brief `briefs/R0b-ios.md` adds a `-screenTour` gate on ambient animation; needs a working tour account first.
 **Status:** blocked (credentials), R0b queued
+
+### R1-web — shipped (2026-09-05, 11:45 AM Phoenix)
+corner-convex `bb9bb2e` (P001 unread selector + fixture, P002 send-failure UI with retry, P004 dead CSS) and `8455154` (24 new tests, 83 baselines: sign-in, new room, upload, send failure, settings, email, themes everywhere, palette, empty list, skeleton, wrapping). 125 passed, verified independently. Sign-in timing baseline: ~1.4-1.5 s to first paint, dominated by a fixed 1200 ms splash. New items P008-P014.
+**Status:** shipped, pushed
