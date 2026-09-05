@@ -73,3 +73,7 @@ Patrik: "Web should be desktop only, iOS should be simulator only." R3-web-fix s
 ### R1-ios-fix — shipped (2026-09-05, 12:37 PM Phoenix)
 aom-studio `72636721`: P005 sign-in CPU 56% -> ~12% (orchestrator measured 12.2-12.7% on iPhone 17 Pro sim; 12 fps timeline + glyph atlas, static under Reduce Motion / inactive scene), P031 form scrim (orchestrator viewed 17 Pro frame), P006 waiting row wired, P007 Done button; both pending a signed-in tour. 308 unit tests green. Note: my brief commit swept the worker's staged files (shared index); reworded, nothing lost. Orchestrator commits now use pathspec commits (`git commit -m … -- <paths>`), never `git add` + bare commit, while a worker shares the checkout.
 **Status:** shipped, pushed
+
+### Outage found by the simulator walk (2026-09-05, 12:47 PM Phoenix)
+Signed the iPhone 17 Pro simulator in as Patrik (auto-sign-in launch env) and deep-linked review/organize/tracker/email: all four fail with `402 Payment required`. Root cause is outside the app: Vercel team "Ahead's projects" (team_r9yA0tZDcSjy3c49ZY5AMQ0z) serves `DEPLOYMENT_DISABLED` on aheadofmarket.com (site + every API), corner-convex.vercel.app, and the client site wolfpackcompanies.com. Patrik alerted by push twice. Native REST surfaces cannot be reviewed until billing is restored; Convex-backed surfaces (home, rooms, chat) still work. P033, P034 filed.
+**Status:** blocked on Vercel billing (Patrik)
