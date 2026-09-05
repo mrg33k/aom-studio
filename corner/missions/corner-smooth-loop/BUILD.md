@@ -43,3 +43,7 @@ corner-convex `bb9bb2e` (P001 unread selector + fixture, P002 send-failure UI wi
 ### R2-web-review — shipped (2026-09-05, 12:03 PM Phoenix)
 All 140 web frames reviewed by a read-only worker. 15 new items P015-P029 (6 first-minute), plus P030 from the orchestrator's own look. Worst: notifications leak raw event types and timestamps with unreadable titles, Settings ignores the Light theme on its own page, tool follow-up garbles and echoes, composer covers the last agent row. R3-web-fix queued behind R2-web-fix.
 **Status:** shipped
+
+### R0b-ios — shipped (2026-09-05, 12:09 PM Phoenix)
+aom-studio `28f6ba10`: `-screenTour` launch argument freezes ambient animation (ASCII canvas static frame, repeatForever pulses off); sign-in screen CPU 56% -> 3% under the flag; XCUITest queries succeed on all three simulators. Script fixes: Xcode 26 attachment suffix, `01c` glob. Run of record `ios-native/deliverables/screen-tour/20260905-114750/` (3 frames per device, 23 MISSING for credentials). Orchestrator viewed 17 Pro and SE frames: P031 filed. Note: the 9:41 status-bar override applies on 17 Pro and iPad but not on the SE simulator (cosmetic).
+**Status:** shipped; full tour waits on a working `.tour.env` (Patrik running `set-tour-account.sh`)
