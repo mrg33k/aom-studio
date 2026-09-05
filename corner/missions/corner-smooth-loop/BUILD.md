@@ -25,3 +25,7 @@ aom-studio `ec008095`: `CornerUITests/ScreenTour.swift` (25-frame tour), `script
 ### R1-web — shipped (2026-09-05, 11:45 AM Phoenix)
 corner-convex `bb9bb2e` (P001 unread selector + fixture, P002 send-failure UI with retry, P004 dead CSS) and `8455154` (24 new tests, 83 baselines: sign-in, new room, upload, send failure, settings, email, themes everywhere, palette, empty list, skeleton, wrapping). 125 passed, verified independently. Sign-in timing baseline: ~1.4-1.5 s to first paint, dominated by a fixed 1200 ms splash. New items P008-P014.
 **Status:** shipped, pushed
+
+### R2-web-review — shipped (2026-09-05, 12:03 PM Phoenix)
+All 140 web frames reviewed by a read-only worker. 15 new items P015-P029 (6 first-minute), plus P030 from the orchestrator's own look. Worst: notifications leak raw event types and timestamps with unreadable titles, Settings ignores the Light theme on its own page, tool follow-up garbles and echoes, composer covers the last agent row. R3-web-fix queued behind R2-web-fix.
+**Status:** shipped
