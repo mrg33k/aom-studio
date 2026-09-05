@@ -17,3 +17,7 @@ snapshots (hard-aborts the test). Evidence + next steps: `rounds/R0-ios.md`.
 ### R0-web — shipped (2026-09-05, 11:09 AM Phoenix)
 corner-convex `2efc452` pushed: 38 baselines regenerated on this Mac, composer assertion now waits for the 0.2 s enter animation to settle. 36/36 green, verified by the orchestrator independently. Report `rounds/R0-web.md`. New punch items P003, P004.
 **Status:** shipped
+
+### R0-ios — built, blocked on credentials (2026-09-05, 11:18 AM Phoenix)
+aom-studio `ec008095`: `CornerUITests/ScreenTour.swift` (25-frame tour), `scripts/screenshot-tour.sh` (3 devices), 11 accessibility identifiers, project regenerated. Zero frames: both repo test accounts return `InvalidSecret` from neat-pony-216, and the sign-in canvas saturates the main thread so XCUITest cannot snapshot (P005). Follow-up brief `briefs/R0b-ios.md` adds a `-screenTour` gate on ambient animation; needs a working tour account first.
+**Status:** blocked (credentials), R0b queued
