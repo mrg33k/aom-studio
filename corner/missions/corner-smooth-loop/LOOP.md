@@ -16,8 +16,12 @@ If yes, it is a punch-list item and it gets fixed in the same round it is found.
 
 | Platform | Repo | Harness | Devices |
 |---|---|---|---|
-| Desktop web + iOS web | `~/aom-studio-transfer/corner-convex` (main) | `npm run e2e` (Playwright, offline Convex stand-in via `scripts/audit/vite.config.ts`) | desktop 1440x900, iPhone 15 Pro, iPhone SE |
+| Desktop web | `~/aom-studio-transfer/corner-convex` (main) | `npm run e2e` (Playwright, offline Convex stand-in via `scripts/audit/vite.config.ts`) | desktop 1440x900 only |
 | Native iOS | `~/aom-studio-transfer/AOM-EA/aom-studio/ios-native` (main) | `scripts/screenshot-tour.sh` (XCUITest `CornerUITests/ScreenTour.swift`) | iPhone 17 Pro, iPhone SE (3rd generation), iPad Pro 13-inch (M5) |
+
+**Scope decision (Patrik, 2026-09-05, 12:33 PM Phoenix): "Web should be desktop only, iOS should be
+simulator only."** No phone-sized browser emulation in the web suite; anything phone-shaped is proven on
+the native app in the iOS Simulator. Phone-only web punch items are closed as out of scope.
 
 Reference docs: `corner-convex/FRONTEND-AUDIT.md`, `corner-convex/NATIVE-IOS-AUDIT.md`, `corner-convex/e2e/visual.spec.ts`.
 

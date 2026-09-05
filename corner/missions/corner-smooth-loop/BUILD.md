@@ -51,3 +51,7 @@ aom-studio `28f6ba10`: `-screenTour` launch argument freezes ambient animation (
 ### R2-web-fix — shipped (2026-09-05, 12:20 PM Phoenix)
 corner-convex `0d4dc76`..`d2db18d` pushed: P008 email chips scroll, P009 files chips truncate, P010 light headings (`var(--fg)` direct; `--ink` alias resolved against :root), P011 Settings sign-out, P012 upload chip + failure retry, P013 follow-up posts as agent via `messages:agentReply`, P014 sent-card hold. 131 passed, verified independently; 26 baselines regenerated, all mapped to items. Orchestrator viewed email-inbox (SE) and room-tool (15 Pro): fixed; P032 filed.
 **Status:** shipped, pushed
+
+### Scope change — web desktop only, iOS simulator only (2026-09-05, 12:33 PM Phoenix)
+Patrik: "Web should be desktop only, iOS should be simulator only." R3-web-fix stopped (no edits landed). Next web round removes the iPhone 15 Pro and iPhone SE Playwright projects and their baselines; P024, P025, P029 closed as out of scope. Phone layouts are proven on the native app only.
+**Status:** applied
