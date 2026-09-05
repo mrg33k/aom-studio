@@ -67,3 +67,8 @@ credentials, push access, Apple signing). Everything else gets fixed and shows u
 - Both harnesses green on this Mac.
 - `punch-list.md` has zero open items rated "Patrik would mention this".
 - Sign-in -> first useful screen feels immediate on both platforms (measured: time from launch to first room list paint, recorded in the round ledger).
+
+## Orchestrator working notes
+
+- Commit with pathspecs (`git commit -m "…" -- <paths>`), never `git add` + bare `git commit`, while a worker shares the checkout: a bare commit sweeps whatever the worker has staged (happened 2026-09-05 12:36 PM, reworded).
+- Patrik (2026-09-05, 12:34 PM): the orchestrator walks the iOS Simulator as the tester (simulator tool, own eyes), then hands Muse exact per-round fix briefs. The XCUITest tour is the repeatable regression photo set, not the review.
