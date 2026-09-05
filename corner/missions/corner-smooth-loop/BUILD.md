@@ -47,3 +47,7 @@ All 140 web frames reviewed by a read-only worker. 15 new items P015-P029 (6 fir
 ### R0b-ios — shipped (2026-09-05, 12:09 PM Phoenix)
 aom-studio `28f6ba10`: `-screenTour` launch argument freezes ambient animation (ASCII canvas static frame, repeatForever pulses off); sign-in screen CPU 56% -> 3% under the flag; XCUITest queries succeed on all three simulators. Script fixes: Xcode 26 attachment suffix, `01c` glob. Run of record `ios-native/deliverables/screen-tour/20260905-114750/` (3 frames per device, 23 MISSING for credentials). Orchestrator viewed 17 Pro and SE frames: P031 filed. Note: the 9:41 status-bar override applies on 17 Pro and iPad but not on the SE simulator (cosmetic).
 **Status:** shipped; full tour waits on a working `.tour.env` (Patrik running `set-tour-account.sh`)
+
+### R2-web-fix — shipped (2026-09-05, 12:20 PM Phoenix)
+corner-convex `0d4dc76`..`d2db18d` pushed: P008 email chips scroll, P009 files chips truncate, P010 light headings (`var(--fg)` direct; `--ink` alias resolved against :root), P011 Settings sign-out, P012 upload chip + failure retry, P013 follow-up posts as agent via `messages:agentReply`, P014 sent-card hold. 131 passed, verified independently; 26 baselines regenerated, all mapped to items. Orchestrator viewed email-inbox (SE) and room-tool (15 Pro): fixed; P032 filed.
+**Status:** shipped, pushed
