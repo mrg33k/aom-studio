@@ -168,6 +168,7 @@ struct NewRoomSheet: View {
                 }
             }
         }
+        .accessibilityIdentifier("new-room-sheet")
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .task { await model.loadProjects() }

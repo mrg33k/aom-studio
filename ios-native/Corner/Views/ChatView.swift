@@ -204,6 +204,7 @@ struct ChatView: View {
                             .font(.system(size: 15, weight: .medium))
                             .foregroundStyle(Theme.inkSoft)
                     }
+                    .accessibilityIdentifier("room-more-options")
                     .accessibilityLabel("More options")
                 }
             }

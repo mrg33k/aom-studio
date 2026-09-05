@@ -305,6 +305,7 @@ struct BackgroundWorkView: View {
                 }
             }
             .navigationTitle("Background work")
+            .accessibilityIdentifier("background-work-sheet")
             .navigationBarTitleDisplayMode(.inline)
             .background(Theme.ground)
         }

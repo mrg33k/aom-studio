@@ -98,6 +98,7 @@ struct AccountView: View {
             .scrollContentBackground(.hidden)
             .background(Theme.ground)
             .navigationTitle("Settings")
+            .accessibilityIdentifier("settings-sheet")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

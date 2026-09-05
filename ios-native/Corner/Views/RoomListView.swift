@@ -219,6 +219,7 @@ struct RoomListView: View {
             } label: {
                 TopBarChip(symbol: "magnifyingglass", active: searchOpen)
             }
+            .accessibilityIdentifier("search-chip")
             .accessibilityLabel(searchOpen ? "Close search" : "Search rooms")
 
             // The hamburger — real destinations only. Review's waiting count is
@@ -249,6 +250,7 @@ struct RoomListView: View {
                 }
             } label: {
                 TopBarChip(symbol: "line.3.horizontal", active: false)
+                    .accessibilityIdentifier("home-menu")
                     .overlay(alignment: .topTrailing) {
                         if review.waitingCount > 0 {
                             Circle()
@@ -347,6 +349,7 @@ struct RoomListView: View {
                 .background(Theme.accentWeak, in: Capsule())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("new-room-button")
             .accessibilityLabel("New room")
             Spacer(minLength: 0)
         }
@@ -400,6 +403,7 @@ struct RoomListView: View {
                 .background(Theme.accentWeak, in: Capsule())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("new-room-button")
             .accessibilityLabel("New room")
 
             Spacer(minLength: 0)
@@ -635,6 +639,7 @@ struct RoomListView: View {
         }
         .buttonStyle(CardButtonStyle())
         .plainCardRow()
+        .accessibilityIdentifier("email-card")
         .accessibilityLabel("Email, \(email.needsYou.count) need you")
     }
 
@@ -646,11 +651,13 @@ struct RoomListView: View {
         }
         .buttonStyle(CardButtonStyle())
         .plainCardRow()
+        .accessibilityIdentifier("tools-files")
         Button { router.open(.tracker) } label: {
             UtilityRow(title: "Tracker", subtitle: "Issues and client tickets", symbol: "checklist")
         }
         .buttonStyle(CardButtonStyle())
         .plainCardRow()
+        .accessibilityIdentifier("tools-tracker")
     }
 
     // MARK: - Waiting on you (gated to > 0 — a permanent zero is a signal that stops being read)
@@ -659,6 +666,7 @@ struct RoomListView: View {
         Button { router.open(.review) } label: { waitingCard }
             .buttonStyle(CardButtonStyle())
             .plainCardRow()
+            .accessibilityIdentifier("waiting-card")
     }
 
     private var waitingCard: some View {

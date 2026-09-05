@@ -81,6 +81,7 @@
 		BF6717E93F7830302CD2B2D5 /* StopTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5A28224A37CA4FF1FEAB137 /* StopTests.swift */; };
 		C1939BFDB4B926C8661BC1FB /* RoomStatusTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D108379E9EA1B083B564C0BA /* RoomStatusTests.swift */; };
 		C469971FD6BD6D5B756266ED /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9230C3027553EA9247E87A7B /* ChatView.swift */; };
+		C644233F2D4E81244C9C53FA /* ScreenTour.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC02F83227E2626103FE0917 /* ScreenTour.swift */; };
 		C94D434781585E076EC0AFFB /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23F37A7F1A6A27F7C1FFFBEC /* JSONValue.swift */; };
 		D17AC373E2D97B9925C032F8 /* RoomRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E85B84B4FDE537A6A0F8AFC4 /* RoomRoutingTests.swift */; };
 		D1FFF5E4326042FDCC1D1C95 /* ReviewDecisionSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8CA935ACABC0C1E275A24EE /* ReviewDecisionSheet.swift */; };
@@ -222,6 +223,7 @@
 		A5CFBB6863CA0F004E7A1BF1 /* BlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockView.swift; sourceTree = "<group>"; };
 		A9D2EAFD89EEDF532AC5F081 /* HankenGrotesk-VF.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "HankenGrotesk-VF.ttf"; sourceTree = "<group>"; };
 		AA3BE3F5BD4EDB230E204F21 /* ReadStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadStateStore.swift; sourceTree = "<group>"; };
+		AC02F83227E2626103FE0917 /* ScreenTour.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTour.swift; sourceTree = "<group>"; };
 		ACE25EB01A73281103C7D018 /* ASCIIBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASCIIBackground.swift; sourceTree = "<group>"; };
 		ADE9EA2C183A1DE148D6AC9D /* Attachment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Attachment.swift; sourceTree = "<group>"; };
 		AFB91EBAB88CC0CFBBD574FE /* AirPodsVoiceService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirPodsVoiceService.swift; sourceTree = "<group>"; };
@@ -422,6 +424,7 @@
 			isa = PBXGroup;
 			children = (
 				75ACE47EA6B1C041A0B19583 /* ScreenshotCapture.swift */,
+				AC02F83227E2626103FE0917 /* ScreenTour.swift */,
 				873E8286324C24FC3DC9BCFD /* SharedBackendAcceptance.swift */,
 			);
 			path = CornerUITests;
@@ -627,6 +630,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C644233F2D4E81244C9C53FA /* ScreenTour.swift in Sources */,
 				76BD23C3F1067385C26F7DA5 /* ScreenshotCapture.swift in Sources */,
 				43F10EC3E241028F8499CB7D /* SharedBackendAcceptance.swift in Sources */,
 			);

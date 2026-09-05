@@ -103,6 +103,7 @@ struct NotificationsView: View {
             .scrollContentBackground(.hidden)
             .groundBackground()
             .navigationTitle("Notifications")
+            .accessibilityIdentifier("notifications-sheet")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
