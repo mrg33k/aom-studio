@@ -1389,7 +1389,10 @@ private struct IndeterminateBar: View {
         }
         .frame(height: 4)
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) { travel = true }
+            // Screen tour: no travel so the main thread idles (static bar).
+            if !Config.screenTour {
+                withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) { travel = true }
+            }
         }
     }
 }

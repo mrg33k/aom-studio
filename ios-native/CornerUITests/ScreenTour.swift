@@ -10,6 +10,10 @@ import XCTest
 // The tour never sends a message, never creates a room, never deletes anything,
 // and never leaves a setting changed. Composer typing is always cleared, never
 // sent. The theme round-trip (21/22) restores whatever theme it started from.
+//
+// R0b: launches with -screenTour (frozen ambient animation) and the real
+// backend. Stops after the sign-in verdict (01c) while tour credentials are
+// known bad; every later frame is MISSING with reason `credentials`.
 final class ScreenTour: XCTestCase {
 
     private var app: XCUIApplication!
@@ -24,8 +28,12 @@ final class ScreenTour: XCTestCase {
         // XCTestConfigurationFilePath and silently uses FakeTransport, which
         // would make this tour prove nothing (SharedBackendAcceptance doctrine).
         // AUTO_SIGNIN_* are deliberately NOT set here: the tour must meet the
-        // real sign-in screen unless the Keychain session survived.
+        // real sign-in screen unless the Keychain session survived (or the
+        // fallback relaunch below sets them after a terminate).
         app.launchEnvironment["UITEST_REAL_BACKEND"] = "1"
+        // R0b gate: freeze ambient animation (ASCIIBackground timeline +
+        // repeatForever pulses) so the main thread idles for snapshots.
+        app.launchArguments += ["-screenTour"]
         addUIInterruptionMonitor(withDescription: "System Dialog") { alert in
             for label in ["Allow", "Don't Allow", "OK", "Not Now"] {
                 let button = alert.buttons[label]
@@ -50,6 +58,24 @@ final class ScreenTour: XCTestCase {
         shot("\(frame)-MISSING")
         missingFrames.append(frame)
         XCTFail("\(step): \(element) not found")
+    }
+
+    /// R0b: the tour stops at the sign-in verdict (credentials known bad), so
+    /// every later frame is MISSING for one shared reason. One failure, not
+    /// one per frame — per-frame MISSING shots would all show the same screen.
+    private func markPostSigninMissing(reason: String) {
+        let tail = [
+            "02-home", "03-home-scrolled", "04-home-bottom", "05-search-open",
+            "06-menu-open", "07-new-room-sheet", "08-room", "09-room-scrolled-up",
+            "10-room-keyboard", "11-room-typed", "12a-room-files",
+            "12b-room-settings", "12c-room-history", "13-back-home", "14-files",
+            "15-tracker", "16-review", "17-email", "18-settings-sheet",
+            "19-notifications-sheet", "20-background-work", "21-theme-light",
+            "22-theme-restored",
+        ]
+        missingFrames.append(contentsOf: tail)
+        note("captured=\(capturedFrames.count) missing=\(missingFrames.joined(separator: ","))")
+        XCTFail("tour stops at sign-in (\(reason)): \(tail.count) later frames MISSING")
     }
 
     private func note(_ line: String) {
@@ -223,68 +249,93 @@ final class ScreenTour: XCTestCase {
                 note("signin=skipped (session survived; restored into a room)")
             }
         } else {
-            // Cold sign-in.
+            // Cold sign-in. Primary path: real element interaction on the real
+            // sign-in screen — the -screenTour gate keeps the main thread idle
+            // enough for these queries to snapshot.
             let signInButton = app.buttons["Sign in"].firstMatch
-            guard signInButton.waitForExistence(timeout: 30) else {
-                recordMissing(frame: "00-signin-empty", step: "signin", element: "sign-in screen")
-                attachTiming()
-                return
-            }
-            note("launch_to_signin_ms=\(Int(Date().timeIntervalSince(launchDate) * 1000))")
-            shot("00-signin-empty")
+            if signInButton.waitForExistence(timeout: 10) {
+                note("signin_path=manual (sign-in button found under -screenTour)")
+                note("launch_to_signin_ms=\(Int(Date().timeIntervalSince(launchDate) * 1000))")
+                shot("00-signin-empty")
 
-            let emailField = app.textFields.firstMatch
-            guard emailField.waitForExistence(timeout: 10) else {
-                recordMissing(frame: "01-signin-filled", step: "signin", element: "email field")
-                attachTiming()
-                return
-            }
-            emailField.tap()
-            emailField.typeText(email)
-            settle(1)
+                let emailField = app.textFields.firstMatch
+                guard emailField.waitForExistence(timeout: 10) else {
+                    recordMissing(frame: "01-signin-filled", step: "signin", element: "email field")
+                    attachTiming()
+                    return
+                }
+                emailField.tap()
+                emailField.typeText(email)
+                settle(1)
 
-            let passwordField = app.secureTextFields.firstMatch
-            guard passwordField.waitForExistence(timeout: 10) else {
-                recordMissing(frame: "01-signin-filled", step: "signin", element: "password field")
-                attachTiming()
-                return
-            }
-            passwordField.tap()
-            passwordField.typeText(password)
-            settle(1)
-            shot("01-signin-filled")
+                let passwordField = app.secureTextFields.firstMatch
+                guard passwordField.waitForExistence(timeout: 10) else {
+                    recordMissing(frame: "01-signin-filled", step: "signin", element: "password field")
+                    attachTiming()
+                    return
+                }
+                passwordField.tap()
+                passwordField.typeText(password)
+                settle(1)
+                shot("01-signin-filled")
 
-            let tapDate = Date()
-            if signInButton.exists && signInButton.isHittable {
-                signInButton.tap()
+                let tapDate = Date()
+                if signInButton.exists && signInButton.isHittable {
+                    signInButton.tap()
+                } else {
+                    // The keyboard covers the button: the Go key submits the same form.
+                    app.keyboards.buttons["Go"].firstMatch.tap()
+                }
+
+                // One tap, then up to 20 s for the server verdict. Tour
+                // credentials are known bad, so the inline rejection is the
+                // expected landing; 01c photographs whatever is on screen.
+                // Never retry: one tap, one verdict, stop.
+                var signedIn = false
+                var needsPassword = false
+                let deadline = Date().addingTimeInterval(20)
+                while Date() < deadline {
+                    if roomListUp(timeout: 2) { signedIn = true; break }
+                    if app.staticTexts["Set your password"].firstMatch.exists {
+                        needsPassword = true; break
+                    }
+                }
+                if signedIn {
+                    note("signin_tap_to_home_ms=\(Int(Date().timeIntervalSince(tapDate) * 1000))")
+                } else {
+                    settle(1)
+                    shot("01c-signin-rejected")
+                    let rejected = app.staticTexts.matching(
+                        NSPredicate(format: "label CONTAINS 'did not match'")).firstMatch.exists
+                    note("signin_tap_to_reject_ms=\(Int(Date().timeIntervalSince(tapDate) * 1000)) "
+                        + (needsPassword ? "(set-password gate)"
+                            : rejected ? "(inline rejection shown)" : "(no verdict text seen)"))
+                    markPostSigninMissing(reason: "credentials")
+                    attachTiming()
+                    return
+                }
             } else {
-                // The keyboard covers the button: the Go key submits the same form.
-                app.keyboards.buttons["Go"].firstMatch.tap()
-            }
-
-            // Wait up to 90 s for home, watching for the set-password gate instead.
-            var signedIn = false
-            var needsPassword = false
-            let deadline = Date().addingTimeInterval(90)
-            while Date() < deadline {
-                if roomListUp(timeout: 2) { signedIn = true; break }
-                if app.staticTexts["Set your password"].firstMatch.exists {
-                    needsPassword = true; break
+                // Fallback: even the gate did not free the snapshot service.
+                // No element query is needed for a screenshot, so photograph
+                // the sign-in screen raw, then relaunch with the app's own
+                // auto-sign-in hook and continue from the home screen.
+                note("signin_path=fallback-auto-signin (no sign-in button in 10 s under -screenTour)")
+                shot("00-signin-empty")
+                app.terminate()
+                app.launchEnvironment["AUTO_SIGNIN_EMAIL"] = email
+                app.launchEnvironment["AUTO_SIGNIN_PASSWORD"] = password
+                app.launch()
+                if roomListUp(timeout: 30) {
+                    note("signin=auto (fallback relaunch reached home)")
+                } else {
+                    settle(1)
+                    shot("01c-signin-rejected")
+                    note("signin=fallback relaunch did not reach home")
+                    markPostSigninMissing(reason: "credentials")
+                    attachTiming()
+                    return
                 }
             }
-            if needsPassword {
-                shot("01b-set-password")
-                note("signin_tap_to_home_ms=never (set-password gate)")
-                attachTiming()
-                XCTFail("account needs a password; tour cannot continue")
-                return
-            }
-            if !signedIn {
-                recordMissing(frame: "02-home", step: "signin", element: "room list within 90 s")
-                attachTiming()
-                return
-            }
-            note("signin_tap_to_home_ms=\(Int(Date().timeIntervalSince(tapDate) * 1000))")
         }
 
         // --- 02/03/04 home ---------------------------------------------------

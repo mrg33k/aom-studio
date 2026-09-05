@@ -210,6 +210,12 @@ with open(manifest_path) as f:
     root = json.load(f)
 groups = root if isinstance(root, list) else [root]
 export_root = os.path.dirname(manifest_path)
+# Xcode 26 disambiguates attachment names as <name>_<n>_<UUID>.<ext>;
+# strip that suffix (bare <name>.<ext> still matches, for other Xcodes).
+FRAME_RE = re.compile(
+    r"^(?P<frame>[0-9]{2}[a-z0-9-]*(?:-MISSING)?)"
+    r"(?:_[0-9]+_[0-9A-Fa-f-]+)?(?P<ext>\.png|\.jpg|\.jpeg)$")
+TIMING_RE = re.compile(r"^timing(?:_[0-9]+_[0-9A-Fa-f-]+)?\.txt$")
 timing_written = False
 for group in groups:
     if not isinstance(group, dict):
@@ -222,14 +228,14 @@ for group in groups:
             continue
         if fn.endswith(".mp4"):
             continue
-        stem, ext = os.path.splitext(shr)
-        if stem == "timing":
+        if TIMING_RE.match(shr):
             shutil.copyfile(src, os.path.join(frames, "..", "timing.txt"))
             timing_written = True
             continue
-        if re.fullmatch(r"[0-9]{2}[a-z0-9-]*(-MISSING)?", stem) \
-                and ext.lower() in (".png", ".jpg", ".jpeg"):
-            shutil.copyfile(src, os.path.join(frames, stem + ext))
+        m = FRAME_RE.match(shr)
+        if m:
+            shutil.copyfile(
+                src, os.path.join(frames, m.group("frame") + m.group("ext").lower()))
 if not timing_written:
     open(os.path.join(frames, "..", "timing.txt"), "w").write("(no timing attachment)\n")
 EOF
@@ -241,7 +247,7 @@ EOF
   mv "$DEST"/frames/*.png "$DEST"/ 2>/dev/null || true
   rmdir "$DEST"/frames 2>/dev/null || true
 
-  FRAME_COUNT="$(ls "$DEST"/[0-9][0-9]-*.png 2>/dev/null | wc -l | tr -d ' ')"
+  FRAME_COUNT="$(ls "$DEST"/[0-9][0-9]*-*.png 2>/dev/null | wc -l | tr -d ' ')"
   MISSING="$(ls "$DEST"/*-MISSING.png 2>/dev/null | xargs -n1 basename 2>/dev/null | sed 's/-MISSING\.png//' | tr '\n' ' ' || true)"
   [[ -z "$MISSING" ]] && MISSING="(none)"
 
@@ -266,7 +272,7 @@ EOF
       echo "- skipped: 00-signin-empty, 01-signin-filled (Keychain session survived; the sign-in UI never appeared)"
     fi
     echo "- frames:"
-    for f in "$DEST"/[0-9][0-9]-*.png; do
+    for f in "$DEST"/[0-9][0-9]*-*.png; do
       [[ -e "$f" ]] || continue
       echo "  - $(basename "$f")"
     done

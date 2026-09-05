@@ -438,7 +438,10 @@ private struct PulsingDot: View {
             .frame(width: 7, height: 7)
             .opacity(dim ? 0.3 : 1)
             .onAppear {
-                withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) { dim = true }
+                // Screen tour: stay at full opacity so the main thread idles.
+                if !Config.screenTour {
+                    withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) { dim = true }
+                }
             }
     }
 }

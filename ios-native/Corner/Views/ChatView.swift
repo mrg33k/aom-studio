@@ -1814,8 +1814,11 @@ struct StreamingDraftBubble: View {
             Spacer(minLength: Theme.s3)
         }
         .onAppear {
-            withAnimation(.easeInOut(duration: 0.55).repeatForever(autoreverses: true)) {
-                caretOn = false
+            // Screen tour: caret stays put so the main thread idles.
+            if !Config.screenTour {
+                withAnimation(.easeInOut(duration: 0.55).repeatForever(autoreverses: true)) {
+                    caretOn = false
+                }
             }
         }
         .accessibilityLabel("\(authorTitle) is writing a reply")
@@ -1833,7 +1836,8 @@ private struct WorkingMark: View {
             .frame(width: 8, height: 8)
             .scaleEffect(pulsing ? 1.0 : 0.55)
             .opacity(pulsing ? 1 : 0.45)
-            .animation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulsing)
+            // Screen tour: no pulse so the main thread idles (static end state).
+            .animation(Config.screenTour ? nil : .easeInOut(duration: 0.7).repeatForever(autoreverses: true), value: pulsing)
             .onAppear { pulsing = true }
             .accessibilityHidden(true)
     }

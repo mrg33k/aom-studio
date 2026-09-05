@@ -307,7 +307,9 @@ private struct PulsingDot: View {
             .fill(color)
             .frame(width: 4, height: 4)
             .opacity(on ? 1 : 0.35)
-            .animation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: on)
+            // Screen tour: no pulse so the main thread idles; `on` still flips
+            // on appear, landing on the static end state.
+            .animation(Config.screenTour ? nil : .easeInOut(duration: 1.1).repeatForever(autoreverses: true), value: on)
             .onAppear { on = true }
     }
 }

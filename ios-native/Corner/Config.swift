@@ -102,6 +102,11 @@ enum Config {
             && ProcessInfo.processInfo.environment["UITEST_REAL_BACKEND"] != "1"
     }
 
+    /// Screen-tour gate (R0b). The tour launches the app with `-screenTour`;
+    /// ambient animation (ASCIIBackground, repeatForever pulses) freezes so the
+    /// main thread idles for XCUITest snapshots. Real users never pass it.
+    static let screenTour = ProcessInfo.processInfo.arguments.contains("-screenTour")
+
     /// Which APNs environment this binary's tokens belong to. It must agree with the
     /// `aps-environment` entitlement (development in Debug, production in Release) —
     /// a sandbox token offered to the production APNs host is rejected as
