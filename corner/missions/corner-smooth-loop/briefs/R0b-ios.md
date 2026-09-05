@@ -52,7 +52,24 @@ The app already has UI-test hooks: `Corner/CornerApp.swift:67` signs in automati
 3. **Terminate, do not reuse:** `app.terminate()` before any relaunch; the Keychain session persists,
    which is fine (the tour's auth branch handles a surviving session).
 
-## Then finish R0-ios as originally briefed
+## Credentials status: KNOWN BAD. Do not spend attempts on sign-in.
+
+The orchestrator verified directly against `neat-pony-216` that BOTH test accounts in
+`ScreenshotCapture.swift` return `InvalidSecret`. Patrik has been asked for a working tour account.
+Until `.tour.env` changes, the tour cannot get past the sign-in screen. So this round proves the gate:
+
+- With `-screenTour`, element queries on the sign-in screen must succeed (`app.textFields.firstMatch`
+  within 10 s, no "main thread busy" error). Photograph `00-signin-empty` and `01-signin-filled` via
+  real element interaction, and record the launch-to-sign-in-screen timing.
+- Then tap "Sign in" ONCE, wait up to 20 s, and photograph whatever appears as `01c-signin-rejected`
+  (expected: the inline "did not match" error). This frame is the evidence for the credential blocker
+  and also a real screen worth reviewing.
+- Stop there. Mark every later frame MISSING with reason `credentials`. Do not retry sign-in, do not
+  try other passwords, do not touch the backend.
+- Also `sample` the app process for 5 s on the sign-in screen with and without `-screenTour` and put
+  both CPU percentages in the report (the R0 worker measured ~57% without the gate).
+
+## Then finish what can be finished
 
 - `xcodegen generate`, build-for-testing on iPhone 17 Pro, run the script on iPhone 17 Pro, open every
   PNG produced and check it is a real frame. Then run all three devices in one script call.
