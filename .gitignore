@@ -40,5 +40,8 @@ src/dashboard/__fixtures__/
 !/corner/missions/corner-smooth-loop/
 !/corner/missions/corner-smooth-loop/**
 /corner/missions/corner-smooth-loop/rounds/logs/
+!/corner/missions/corner-v2/
+!/corner/missions/corner-v2/**
+/corner/missions/corner-v2/rounds/logs/
 public/__screens-board.html
 !public/summerschool/**/*.png
