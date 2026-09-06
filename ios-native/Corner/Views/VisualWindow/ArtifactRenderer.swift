@@ -124,21 +124,7 @@ struct PhotoArtifactView: View {
                         }
                         .overlay(alignment: .topLeading) {
                             if let review {
-                                ForEach(Array(review.pins.enumerated()), id: \.element.clientID) { index, pin in
-                                    if case .point(_, let x, let y) = pin.anchor {
-                                        PinMarkerButton(
-                                            number: index + 1,
-                                            selected: review.selectedPinID == pin.clientID,
-                                            done: pin.isDone
-                                        ) {
-                                            review.selectedPinID = pin.clientID
-                                        }
-                                        .position(
-                                            x: CGFloat(x) / 100 * stage.size.width,
-                                            y: CGFloat(y) / 100 * stage.size.height
-                                        )
-                                    }
-                                }
+                                ObservedStageMarkers(review: review, size: stage.size, page: nil)
                             }
                         }
                 }
@@ -179,15 +165,6 @@ struct CodeArtifactView: View {
 
     private static let maximumBytes = 400_000
 
-    /// Lines carrying pins, highlighted in the gutter.
-    private var pinnedLines: Set<Int> {
-        guard let review else { return [] }
-        return Set(review.pins.compactMap {
-            if case .line(let number) = $0.anchor { return number }
-            return nil
-        })
-    }
-
     var body: some View {
         Group {
             if failed {
@@ -202,20 +179,8 @@ struct CodeArtifactView: View {
                         }
                         ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                             HStack(alignment: .top, spacing: 12) {
-                                Group {
-                                    if review != nil {
-                                        Button("\(index + 1)") {
-                                            review?.addPin(.line(number: index + 1), text: "")
-                                        }
-                                        .accessibilityIdentifier("visual-code-line")
-                                        .accessibilityLabel("Pin line \(index + 1)")
-                                    } else {
-                                        Text("\(index + 1)")
-                                    }
-                                }
-                                .font(.system(.caption, design: .monospaced))
-                                .foregroundStyle(pinnedLines.contains(index + 1) ? Theme.accent : Theme.inkFaint)
-                                .frame(minWidth: 28, alignment: .trailing)
+                                CodeGutterNumber(review: review, number: index + 1)
+                                    .frame(minWidth: 28, alignment: .trailing)
                                 Text(line.isEmpty ? " " : line)
                                     .font(.system(.footnote, design: .monospaced))
                                     .foregroundStyle(Theme.ink)
@@ -260,6 +225,49 @@ struct CodeArtifactView: View {
         // lines keep their numbers so pins stay aligned.
         lines = result.0.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         truncated = result.1
+    }
+}
+
+/// A code gutter number: plain text without review, a pinning button with a
+/// pinned highlight under review. The highlight reads through the observed
+/// child (see `ObservedStageMarkers`): the list holds the store in a plain
+/// property and would otherwise freeze.
+private struct CodeGutterNumber: View {
+    var review: V2ReviewStore?
+    let number: Int
+
+    var body: some View {
+        Group {
+            if let review {
+                ObservedGutterNumber(review: review, number: number)
+            } else {
+                Text("\(number)")
+                    .font(.system(.caption, design: .monospaced))
+                    .foregroundStyle(Theme.inkFaint)
+            }
+        }
+    }
+}
+
+private struct ObservedGutterNumber: View {
+    @ObservedObject var review: V2ReviewStore
+    let number: Int
+
+    private var isPinned: Bool {
+        review.pins.contains {
+            if case .line(let n) = $0.anchor { return n == number }
+            return false
+        }
+    }
+
+    var body: some View {
+        Button("\(number)") {
+            review.addPin(.line(number: number), text: "")
+        }
+        .font(.system(.caption, design: .monospaced))
+        .foregroundStyle(isPinned ? Theme.accent : Theme.inkFaint)
+        .accessibilityIdentifier("visual-code-line")
+        .accessibilityLabel("Pin line \(number)")
     }
 }
 

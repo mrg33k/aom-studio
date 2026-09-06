@@ -150,6 +150,38 @@ struct ReviewPanelView: View {
 }
 
 // MARK: - stage markers (HANDOFF §6: numbered, selected white, done green)
+//
+// `ObservedStageMarkers` owns the store subscription. Renderer views hold
+// the store in a plain property, and SwiftUI skips re-rendering children
+// whose inputs are unchanged (measured: the video count froze at "3 pins"
+// after a sent reset) — reads through this view can never freeze.
+
+/// Point-pin markers for a stage of known size. `page` filters page-aware
+/// markers (PDF); nil shows every point pin (photo).
+struct ObservedStageMarkers: View {
+    @ObservedObject var review: V2ReviewStore
+    let size: CGSize
+    let page: Int?
+
+    var body: some View {
+        ForEach(Array(review.pins.enumerated()), id: \.element.clientID) { index, pin in
+            if case .point(let pinPage, let x, let y) = pin.anchor,
+               page == nil || pinPage == nil || pinPage == page {
+                PinMarkerButton(
+                    number: index + 1,
+                    selected: review.selectedPinID == pin.clientID,
+                    done: pin.isDone
+                ) {
+                    review.selectedPinID = pin.clientID
+                }
+                .position(
+                    x: CGFloat(x) / 100 * size.width,
+                    y: CGFloat(y) / 100 * size.height
+                )
+            }
+        }
+    }
+}
 
 /// A numbered pin marker on an artifact stage. A leaf button: tap selects.
 struct PinMarkerButton: View {

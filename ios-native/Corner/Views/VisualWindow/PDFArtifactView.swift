@@ -54,22 +54,7 @@ struct PDFArtifactView: View {
                             }
                             .overlay(alignment: .topLeading) {
                                 if let review {
-                                    ForEach(Array(review.pins.enumerated()), id: \.element.clientID) { index, pin in
-                                        if case .point(let page, let x, let y) = pin.anchor,
-                                           page == nil || page == currentPage {
-                                            PinMarkerButton(
-                                                number: index + 1,
-                                                selected: review.selectedPinID == pin.clientID,
-                                                done: pin.isDone
-                                            ) {
-                                                review.selectedPinID = pin.clientID
-                                            }
-                                            .position(
-                                                x: CGFloat(x) / 100 * stage.size.width,
-                                                y: CGFloat(y) / 100 * stage.size.height
-                                            )
-                                        }
-                                    }
+                                    ObservedStageMarkers(review: review, size: stage.size, page: currentPage)
                                 }
                             }
                     }

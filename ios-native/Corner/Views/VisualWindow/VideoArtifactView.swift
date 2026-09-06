@@ -28,27 +28,16 @@ struct VideoArtifactView: View {
                     PlayerView(player: player)
                         .accessibilityIdentifier("visual-stage-video")
                     if let review {
-                        HStack(spacing: Theme.s2) {
-                            Text(clock(player.currentTime().seconds))
-                                .font(.hanken(12).monospacedDigit())
-                                .foregroundStyle(Theme.inkSoft)
-                                .accessibilityIdentifier("visual-video-time")
-                            Spacer(minLength: 0)
-                            Text("\(review.pins.count) pin\(review.pins.count == 1 ? "" : "s")")
-                                .font(.hanken(12))
-                                .foregroundStyle(Theme.inkSoft)
-                            Button("Pin moment") {
+                        VideoReviewBar(
+                            review: review,
+                            seconds: player.currentTime().seconds,
+                            onPin: {
                                 review.addPin(
                                     .time(seconds: max(player.currentTime().seconds, 0), x: nil, y: nil),
                                     text: ""
                                 )
                             }
-                            .font(.hanken(13).weight(.semibold))
-                            .foregroundStyle(Theme.accent)
-                            .accessibilityIdentifier("visual-pin-moment")
-                        }
-                        .padding(.horizontal, Theme.s3)
-                        .padding(.vertical, Theme.s2)
+                        )
                     }
                 }
             } else {
@@ -75,6 +64,43 @@ struct VideoArtifactView: View {
             }
         }
         player = AVPlayer(url: url)
+    }
+}
+
+// MARK: - review bar (observed)
+
+/// The clock + pin count + Pin moment row. Owns an `@ObservedObject`
+/// subscription: the parent renderer holds the store in a plain property, so
+/// without this the count would freeze at whatever the last parent render
+/// saw (measured: "3 pins" after a sent reset).
+struct VideoReviewBar: View {
+    @ObservedObject var review: V2ReviewStore
+    let seconds: Double
+    let onPin: () -> Void
+
+    var body: some View {
+        HStack(spacing: Theme.s2) {
+            Text(Self.clock(seconds))
+                .font(.hanken(12).monospacedDigit())
+                .foregroundStyle(Theme.inkSoft)
+                .accessibilityIdentifier("visual-video-time")
+            Spacer(minLength: 0)
+            Text("\(review.pins.count) pin\(review.pins.count == 1 ? "" : "s")")
+                .font(.hanken(12))
+                .foregroundStyle(Theme.inkSoft)
+            Button("Pin moment", action: onPin)
+                .font(.hanken(13).weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .accessibilityIdentifier("visual-pin-moment")
+        }
+        .padding(.horizontal, Theme.s3)
+        .padding(.vertical, Theme.s2)
+    }
+
+    private static func clock(_ seconds: Double) -> String {
+        guard seconds.isFinite else { return "0:00" }
+        let total = Int(max(seconds, 0))
+        return String(format: "%d:%02d", total / 60, total % 60)
     }
 }
 
