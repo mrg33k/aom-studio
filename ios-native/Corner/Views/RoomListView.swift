@@ -20,6 +20,18 @@ struct RoomListView: View {
 
     @StateObject private var review = ReviewStore.shared
     @StateObject private var email = EmailStore()
+    /// Corner v2 workspace tree (native Task 4): the rail's primary list.
+    @StateObject private var v2 = WorkspaceStore.shared
+    @State private var expandedProjectIDs: Set<String> = []
+    @State private var v2IntakeText = ""
+    @State private var v2IntakeProjectID: String?
+    @State private var v2Sending = false
+    @State private var v2IntakeError: String?
+    @State private var v2PendingDecision: RouteDecision?
+    @State private var v2ShowingConfirm = false
+    @State private var v2ConfirmBusy = false
+    @State private var v2ConfirmError: String?
+    @FocusState private var v2IntakeFocused: Bool
     /// The front-door router: turns a room-less message typed into the pinned composer
     /// into an opened, seeded room, the same way the web front door does.
     @StateObject private var intake = IntakeRouter()
@@ -36,11 +48,12 @@ struct RoomListView: View {
     @State private var searchOpen = false
     @FocusState private var searchFocused: Bool
 
-    /// The home filters, Patrik's final cut (2026-08-11): ALL is the recency-sorted
-    /// feed (Recent folded into it — one default view), Agents IS the per-conversation
-    /// agent picker, Projects is the swipeable carousel. + New rides the same pill row.
+    /// The home filters (legacy rail fallback only). Agents were removed in the
+    /// Corner v2 navigation (native Task 4): brains are capabilities, never
+    /// destinations, so there is no agent filter and no agent-room creation.
+    /// Migrated agent rooms live only behind `Route.legacyArchive`.
     private enum HomeFilter: String, CaseIterable {
-        case all = "All", agents = "Agents", projects = "Projects"
+        case all = "All", projects = "Projects"
     }
     @State private var filter: HomeFilter = .all
     /// Bumped by the top bar's voice chip; the home composer starts dictation on change.
@@ -66,26 +79,38 @@ struct RoomListView: View {
             if api.world == nil {
                 noWorldNotice
             } else if query.isEmpty {
-                eyebrowRow
-                if showFilterChips {
-                    filterChips
+                if v2.workspace != nil {
+                    // Corner v2 home: the workspace tree owns the list role.
+                    workspaceHome
                 } else {
-                    standaloneNewButton
-                }
-                switch filter {
-                case .all:
-                    if api.isEmailOwner { emailRow }
-                    recencyRows
-                    toolsRows
-                    if let error = store.railError { railErrorRow(error) }
-                case .agents:
-                    agentRows
-                case .projects:
-                    projectCarousel
+                    if v2.isLoading {
+                        loadingRow
+                    } else {
+                        if let error = v2.errorText { v2ErrorRow(error) }
+                        eyebrowRow
+                        if showFilterChips {
+                            filterChips
+                        } else {
+                            standaloneNewButton
+                        }
+                        switch filter {
+                        case .all:
+                            if api.isEmailOwner { emailRow }
+                            recencyRows
+                            toolsRows
+                            if let error = store.railError { railErrorRow(error) }
+                        case .projects:
+                            projectCarousel
+                        }
+                    }
                 }
                 // No inline composer here — it's pinned to the bottom via safeAreaInset.
             } else {
-                searchRows
+                if v2.workspace != nil {
+                    workspaceSearchRows
+                } else {
+                    searchRows
+                }
             }
         }
         .accessibilityIdentifier("room-list-screen")
@@ -96,7 +121,10 @@ struct RoomListView: View {
         // every item in its own capsule, which shrinks the logo into a chip and
         // double-chromes the buttons. The web bar is drawn by hand instead.
         .toolbar(.hidden, for: .navigationBar)
-        .refreshable { await store.load() }
+        .refreshable {
+            await v2.refresh()
+            await store.load()
+        }
         // The web mobile home's top bar, one row (Patrik 2026-08-11 — the big title
         // sat "too low"): logo + wordmark leading, then [+ New] [search] [menu]
         // trailing. Theme, bell, and avatar fold into the hamburger menu; every item
@@ -116,8 +144,10 @@ struct RoomListView: View {
         }
         // The front-door composer, pinned above the timeline (and above the keyboard).
         // Hidden while searching — search is a different intent from starting work.
+        // Hidden once the v2 tree owns the home: the global intake row in-list
+        // replaces the room composer there.
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if api.world != nil && query.isEmpty && !searchOpen {
+            if api.world != nil && query.isEmpty && !searchOpen && v2.workspace == nil {
                 HomeComposerBar(
                     intake: intake, candidates: intakeCandidates,
                     recentRooms: intakeRecentRooms, voiceTrigger: voiceTrigger
@@ -127,6 +157,32 @@ struct RoomListView: View {
         }
         .sheet(isPresented: $intake.showConfirm) {
             IntakeConfirmSheet(intake: intake, allRooms: store.allRooms)
+        }
+        .sheet(isPresented: $v2ShowingConfirm) {
+            if let decision = v2PendingDecision {
+                V2IntakeConfirmSheet(
+                    decision: decision,
+                    workspace: v2.workspace,
+                    busy: v2ConfirmBusy,
+                    errorText: v2ConfirmError,
+                    onConfirm: { v2ConfirmCreate() },
+                    onCancel: {
+                        v2ShowingConfirm = false
+                        v2PendingDecision = nil
+                    },
+                    onOpenThread: { threadID in
+                        v2ShowingConfirm = false
+                        v2PendingDecision = nil
+                        if let context = v2.context(threadID: threadID) {
+                            if let mission = context.mission {
+                                router.open(.mission(missionID: mission.id))
+                            } else {
+                                router.open(.project(projectID: context.project.id))
+                            }
+                        }
+                    }
+                )
+            }
         }
         .sheet(isPresented: $showingNewRoom) {
             NewRoomSheet { newRoom in
@@ -175,11 +231,23 @@ struct RoomListView: View {
         .task {
             intake.onOpen = { router.open($0) }
             if !store.hasLoadedOnce { await store.load() }
+            await v2.refresh()
+            if v2.workspace != nil {
+                expandedProjectIDs = Set(v2.workspace?.projects.map(\.id) ?? [])
+                await v2.refreshFileCounts()
+            }
             review.startPolling()
             bgWork.startPolling()
             if api.isEmailOwner { await email.load() }
         }
-        .onChange(of: api.world) { _, _ in store.refresh() }
+        .onChange(of: api.world) { _, world in
+            store.refresh()
+            if world == nil {
+                v2.signOutCleanup()
+            } else {
+                Task { await v2.refresh() }
+            }
+        }
     }
 
     // MARK: - The top bar (the web mobile home's logo row, drawn by hand)
@@ -323,7 +391,6 @@ struct RoomListView: View {
     private var chipCount: [HomeFilter: Int] {
         [
             .all: store.recent.filter { !hiddenRoomIDs.contains($0.room.roomID) }.count,
-            .agents: store.agents.count,
             .projects: store.projects.count,
         ]
     }
@@ -447,32 +514,6 @@ struct RoomListView: View {
             .foregroundStyle(Theme.inkFaint)
             .padding(.top, Theme.s2)
             .plainCardRow()
-    }
-
-    // MARK: - The agent picker (2-column grid with icons & tints, per conversation)
-
-    private let agentGridColumns = [
-        GridItem(.flexible(), spacing: Theme.s2),
-        GridItem(.flexible(), spacing: Theme.s2),
-    ]
-
-    @ViewBuilder
-    private var agentRows: some View {
-        sectionLabel("Agents")
-        LazyVGrid(columns: agentGridColumns, spacing: Theme.s2) {
-            ForEach(AgentRoster.resolved, id: \.slug) { entry in
-                Button {
-                    if let world = api.world {
-                        router.open(Room(world: world, kind: .agent(slug: entry.slug), title: entry.title, subtitle: entry.subtitle))
-                    }
-                } label: {
-                    AgentGridTile(entry: entry)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(.vertical, Theme.s1)
-        .plainCardRow()
     }
 
     @ViewBuilder
@@ -728,6 +769,340 @@ struct RoomListView: View {
                         .tint(Theme.accent)
                     }
                 }
+            }
+        }
+    }
+
+    // MARK: - Corner v2 workspace home (native Task 4)
+
+    /// The v2 home: global intake, the project tree, and the legacy archive
+    /// link. General renders with the normal projects, exactly once — the
+    /// server sorts it first and guarantees one per workspace.
+    private var workspaceHome: some View {
+        Group {
+            v2IntakeRow
+            workspaceTreeSection
+            legacyArchiveRow
+        }
+    }
+
+    private var v2IntakeRow: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: Theme.s2) {
+                TextField("Message Corner…", text: $v2IntakeText)
+                    .font(.hkBody)
+                    .foregroundStyle(Theme.ink)
+                    .focused($v2IntakeFocused)
+                    .submitLabel(.send)
+                    .autocorrectionDisabled()
+                    .textInputAutocapitalization(.sentences)
+                    .accessibilityIdentifier("global-intake-field")
+                    .accessibilityLabel(v2IntakeProjectID == nil
+                        ? "Message Corner"
+                        : "New mission in \(v2.projectName(id: v2IntakeProjectID) ?? "project")")
+                    .onSubmit { v2Submit() }
+                Button { v2Submit() } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(v2IntakeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || v2Sending ? Theme.inkFaint : Theme.accent)
+                }
+                .buttonStyle(.plain)
+                .disabled(v2IntakeText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || v2Sending)
+                .accessibilityIdentifier("global-intake-send")
+                .accessibilityLabel("Send")
+            }
+            .padding(.horizontal, Theme.s3)
+            .frame(minHeight: 48)
+            .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Theme.hairline, lineWidth: 1)
+            )
+            if let projectID = v2IntakeProjectID {
+                Button { v2IntakeProjectID = nil } label: {
+                    HStack(spacing: 4) {
+                        Text("New mission in \(v2.projectName(id: projectID) ?? "project")")
+                            .font(.hkCaption)
+                            .foregroundStyle(Theme.accent)
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("intake-project-context")
+            }
+            if let error = v2IntakeError {
+                Text(error)
+                    .font(.hkCaption)
+                    .foregroundStyle(Theme.warning)
+            }
+        }
+        .padding(.horizontal, Theme.s4)
+        .padding(.vertical, Theme.s2)
+        .plainCardRow()
+    }
+
+    private var workspaceTreeSection: some View {
+        // NOTE: no identifier on this container — an explicit identifier on a
+        // SwiftUI container overrides the row buttons' own identifiers in the
+        // accessibility hierarchy, which blinds the UI tests. Rows identify
+        // themselves; the tree's presence is read off the project names.
+        VStack(alignment: .leading, spacing: 0) {
+            sectionLabel("Workspace")
+            if let workspace = v2.workspace {
+                ForEach(workspace.projects) { project in
+                    projectTreeRow(project)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func projectTreeRow(_ project: ProjectSummary) -> some View {
+        let expanded = expandedProjectIDs.contains(project.id)
+        HStack(spacing: 0) {
+            Button { router.open(.project(projectID: project.id)) } label: {
+                HStack(spacing: Theme.s2) {
+                    Circle()
+                        .fill(Color(hexString: project.tintHex) ?? Theme.accent)
+                        .frame(width: 10, height: 10)
+                    Text(project.name)
+                        .font(.hanken(16).weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                        .accessibilityIdentifier("workspace-project-name")
+                    if project.kind == .general {
+                        Text("GENERAL")
+                            .font(.hkCaption2.weight(.bold))
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                    Spacer(minLength: 0)
+                    if project.needsAttention {
+                        Circle().fill(Theme.accent).frame(width: 8, height: 8)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("workspace-project-row")
+            .accessibilityLabel(project.name)
+            Button {
+                withAnimation(.easeOut(duration: 0.15)) {
+                    if expanded { expandedProjectIDs.remove(project.id) }
+                    else {
+                        expandedProjectIDs.insert(project.id)
+                        Task { await v2.refreshFileCounts() }
+                    }
+                }
+            } label: {
+                Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.inkSoft)
+                    .frame(width: 36, height: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("workspace-project-expand")
+            .accessibilityLabel(expanded ? "Collapse \(project.name)" : "Expand \(project.name)")
+        }
+        .padding(.vertical, Theme.s1)
+        .plainCardRow()
+        if expanded {
+            ForEach(project.missions) { mission in
+                missionTreeRow(project: project, mission: mission)
+            }
+            if let count = v2.fileCounts[project.threadID], count > 0 {
+                Button { router.open(.organize) } label: {
+                    HStack(spacing: Theme.s2) {
+                        Image(systemName: "folder")
+                            .font(.system(size: 13))
+                            .foregroundStyle(Theme.inkSoft)
+                            .frame(width: 24)
+                        Text("Files · \(count)")
+                            .font(.hkFootnote)
+                            .foregroundStyle(Theme.inkSoft)
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("workspace-files-row")
+                .accessibilityLabel("Files, \(count)")
+                .padding(.leading, 28)
+                .plainCardRow()
+            }
+            Button {
+                v2IntakeProjectID = project.id
+                v2IntakeFocused = true
+            } label: {
+                HStack(spacing: Theme.s2) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Theme.accent)
+                        .frame(width: 24)
+                    Text("+ New mission")
+                        .font(.hkFootnote.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("workspace-new-mission")
+            .accessibilityLabel("New mission in \(project.name)")
+            .padding(.leading, 28)
+            .plainCardRow()
+        }
+    }
+
+    private func missionTreeRow(project: ProjectSummary, mission: MissionSummary) -> some View {
+        Button { router.open(.mission(missionID: mission.id)) } label: {
+            HStack(spacing: Theme.s2) {
+                Image(systemName: "circle")
+                    .font(.system(size: 8))
+                    .foregroundStyle(Theme.inkFaint)
+                    .frame(width: 24)
+                Text(mission.title)
+                    .font(.hkBody)
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                    .accessibilityIdentifier("workspace-mission-name")
+                Spacer(minLength: 0)
+                Text(mission.status.rawValue.uppercased())
+                    .font(.hkCaption2.weight(.semibold))
+                    .foregroundStyle(Theme.inkFaint)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("workspace-mission-row")
+        .accessibilityLabel(mission.title)
+        .padding(.leading, 28)
+        .plainCardRow()
+    }
+
+    private var legacyArchiveRow: some View {
+        Button { router.open(.legacyArchive) } label: {
+            HStack(spacing: Theme.s2) {
+                Image(systemName: "archivebox")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Theme.inkSoft)
+                Text("Legacy archive")
+                    .font(.hkFootnote)
+                    .foregroundStyle(Theme.inkSoft)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.inkFaint)
+            }
+            .padding(.vertical, Theme.s2)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("legacy-archive-row")
+        .accessibilityLabel("Legacy archive")
+        .plainCardRow()
+    }
+
+    private func v2ErrorRow(_ error: String) -> some View {
+        HStack(spacing: Theme.s2) {
+            Text(error)
+                .font(.hkFootnote)
+                .foregroundStyle(Theme.warning)
+            Spacer(minLength: 0)
+            Button("Retry") { Task { await v2.refresh() } }
+                .font(.hkFootnote.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .buttonStyle(.plain)
+        }
+        .padding(.vertical, Theme.s2)
+        .plainCardRow()
+    }
+
+    /// Search filters the tree (projects + missions), never legacy rooms —
+    /// those live behind the archive.
+    @ViewBuilder
+    private var workspaceSearchRows: some View {
+        if let workspace = v2.workspace {
+            let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+            let projects = workspace.projects.filter {
+                q.isEmpty || $0.name.localizedCaseInsensitiveContains(q)
+            }
+            let missions = workspace.projects.flatMap { project in
+                project.missions
+                    .filter { q.isEmpty || $0.title.localizedCaseInsensitiveContains(q) }
+                    .map { (project, $0) }
+            }
+            if projects.isEmpty && missions.isEmpty {
+                sectionLabel("No projects or missions match")
+            } else {
+                sectionLabel("Results")
+                ForEach(projects) { project in
+                    projectTreeRow(project)
+                }
+                ForEach(missions, id: \.1.id) { project, mission in
+                    missionTreeRow(project: project, mission: mission)
+                }
+            }
+        }
+        legacyArchiveRow
+    }
+
+    // MARK: - v2 intake flow
+
+    private func v2Submit() {
+        let text = v2IntakeText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !v2Sending else { return }
+        v2Sending = true
+        v2IntakeError = nil
+        let preferred = v2IntakeProjectID
+        Task {
+            defer { v2Sending = false }
+            do {
+                let decision = try await v2.sendIntake(text, preferredProjectID: preferred)
+                v2IntakeText = ""
+                v2IntakeProjectID = nil
+                if decision.needsCreationConfirmation || decision.needsClarification {
+                    v2ConfirmError = nil
+                    v2PendingDecision = decision
+                    v2ShowingConfirm = true
+                } else {
+                    navigateToDecision(decision)
+                }
+            } catch {
+                v2IntakeError = "Corner couldn't sort this automatically. Try again."
+            }
+        }
+    }
+
+    /// A confident route opens its thread: the owning mission when the
+    /// decision names one, else the owning project.
+    private func navigateToDecision(_ decision: RouteDecision) {
+        if let mission = decision.mission {
+            router.open(.mission(missionID: mission.id))
+        } else if !decision.destinationThreadID.isEmpty,
+                  let context = v2.context(threadID: decision.destinationThreadID),
+                  let mission = context.mission {
+            router.open(.mission(missionID: mission.id))
+        } else {
+            router.open(.project(projectID: decision.project.id))
+        }
+    }
+
+    private func v2ConfirmCreate() {
+        guard let decision = v2PendingDecision, !v2ConfirmBusy else { return }
+        v2ConfirmBusy = true
+        v2ConfirmError = nil
+        Task {
+            defer { v2ConfirmBusy = false }
+            do {
+                let result = try await v2.confirmCreation(decision)
+                v2ShowingConfirm = false
+                v2PendingDecision = nil
+                if let missionID = result.missionID {
+                    router.open(.mission(missionID: missionID))
+                }
+            } catch {
+                v2ConfirmError = "Could not create it. Try again."
             }
         }
     }
@@ -1459,6 +1834,164 @@ struct RoomAvatar: View {
         let words = title.split(separator: " ")
         if words.count >= 2 { return String(words[0].prefix(1) + words[1].prefix(1)).uppercased() }
         return String(title.prefix(2)).uppercased()
+    }
+}
+
+// MARK: - Corner v2 intake confirmation (native Task 4)
+
+/// The confirm sheet for a room-less intake send. A proposal confirms
+/// ("Create mission in General") instead of creating; a clarification shows
+/// the reason once with its alternatives; confident routes never reach here.
+struct V2IntakeConfirmSheet: View {
+    let decision: RouteDecision
+    let workspace: WorkspaceSummary?
+    let busy: Bool
+    let errorText: String?
+    let onConfirm: () -> Void
+    let onCancel: () -> Void
+    let onOpenThread: (String) -> Void
+
+    private var isGeneralProposal: Bool {
+        decision.needsCreationConfirmation && decision.project.kind == .general
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: Theme.s3) {
+                if isGeneralProposal {
+                    Text("Create mission in General")
+                        .font(.hanken(20).weight(.bold))
+                        .foregroundStyle(Theme.ink)
+                    Text(decision.reason)
+                        .font(.hkFootnote)
+                        .foregroundStyle(Theme.inkSoft)
+                } else if decision.needsClarification {
+                    Text("Which conversation?")
+                        .font(.hanken(20).weight(.bold))
+                        .foregroundStyle(Theme.ink)
+                    Text(decision.reason)
+                        .font(.hkFootnote)
+                        .foregroundStyle(Theme.inkSoft)
+                    ForEach(decision.alternatives, id: \.self) { threadID in
+                        Button { onOpenThread(threadID) } label: {
+                            Text(alternativeTitle(threadID: threadID))
+                                .font(.hkBody.weight(.semibold))
+                                .foregroundStyle(Theme.accent)
+                                .padding(.vertical, Theme.s2)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } else {
+                    Text("Create in \(decision.project.name)")
+                        .font(.hanken(20).weight(.bold))
+                        .foregroundStyle(Theme.ink)
+                    Text(decision.reason)
+                        .font(.hkFootnote)
+                        .foregroundStyle(Theme.inkSoft)
+                }
+                if let errorText {
+                    Text(errorText)
+                        .font(.hkCaption)
+                        .foregroundStyle(Theme.warning)
+                }
+                Spacer(minLength: 0)
+                if decision.needsCreationConfirmation {
+                    Button { onConfirm() } label: {
+                        Text(busy ? "Creating…" : "Create")
+                            .font(.hanken(16).weight(.semibold))
+                            .foregroundStyle(Color.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(busy ? Theme.inkFaint : Theme.accent, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(busy)
+                    .accessibilityIdentifier("intake-confirm-create")
+                }
+                Button { onCancel() } label: {
+                    Text("Not now")
+                        .font(.hkBody.weight(.semibold))
+                        .foregroundStyle(Theme.inkSoft)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("intake-confirm-cancel")
+            }
+            .padding(Theme.s4)
+            .groundBackground()
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    private func alternativeTitle(threadID: String) -> String {
+        guard let workspace else { return "Open conversation" }
+        for project in workspace.projects {
+            if project.threadID == threadID { return project.name }
+            if let mission = project.missions.first(where: { $0.threadID == threadID }) {
+                return "\(project.name) / \(mission.title)"
+            }
+        }
+        return "Open conversation"
+    }
+}
+
+// MARK: - Legacy archive (native Task 4)
+
+/// Migrated rooms behind `Route.legacyArchive`: the only place agent rooms
+/// and flat room search still exist. Normal navigation never leads here.
+struct LegacyArchiveView: View {
+    @EnvironmentObject private var router: AppRouter
+    @StateObject private var store = RoomStore()
+    @State private var query = ""
+
+    private var matches: [Room] {
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let rooms = store.allRooms
+        guard !q.isEmpty else { return rooms }
+        return rooms.filter {
+            $0.title.localizedCaseInsensitiveContains(q)
+                || $0.subtitle.localizedCaseInsensitiveContains(q)
+        }
+    }
+
+    var body: some View {
+        List {
+            TextField("Search legacy rooms", text: $query)
+                .font(.hkBody)
+                .foregroundStyle(Theme.ink)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .accessibilityIdentifier("legacy-archive-search")
+            ForEach(matches, id: \.roomID) { room in
+                Button { router.open(room) } label: {
+                    HStack(spacing: Theme.s2) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(room.title)
+                                .font(.hkBody.weight(.semibold))
+                                .foregroundStyle(Theme.ink)
+                            Text(room.subtitle)
+                                .font(.hkCaption)
+                                .foregroundStyle(Theme.inkSoft)
+                        }
+                        Spacer(minLength: 0)
+                        Text(room.typeLabel)
+                            .font(.hkCaption2.weight(.bold))
+                            .foregroundStyle(Theme.inkFaint)
+                    }
+                    .padding(.vertical, Theme.s1)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("legacy-room-row")
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .groundBackground()
+        .navigationTitle("Legacy archive")
+        .navigationBarTitleDisplayMode(.inline)
+        .accessibilityIdentifier("legacy-archive-screen")
+        .task { await store.load() }
     }
 }
 

@@ -110,6 +110,25 @@ final class CornerAPI: ObservableObject {
         session = s
         world = s.user.world
     }
+
+    /// UI-test fixture mode (`-v2FixtureUITest`, see CornerV2FlowUITests):
+    /// installs a synthetic signed-in session so the v2 navigation flow runs
+    /// hermetically. The tokens are fake, the account is synthetic
+    /// (`uitest@example.com`, never a real account), and every v2 read is
+    /// served by the in-app fixture preview — no network, no Keychain
+    /// dependency, deterministic on any simulator.
+    func installFixtureSession() {
+        let user = AuthUser(
+            id: "uitest-fixture", email: "uitest@example.com", name: "UITest",
+            world: "uitest", worldId: nil, worldName: "Fixture", role: nil,
+            isAdmin: false, mustChangePassword: false,
+            initials: nil, color: nil, avatarUrl: nil
+        )
+        let s = AuthSession(accessToken: "uitest-fixture-token", refreshToken: "uitest-fixture-refresh", user: user)
+        auth.save(s)
+        session = s
+        world = s.user.world
+    }
     #endif
 
     func signOut() async {

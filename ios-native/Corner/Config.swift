@@ -86,7 +86,19 @@ enum Config {
 
     /// Convex deployment — same backend the web app uses. The iOS app talks to
     /// Convex via raw HTTP (api/query + api/mutation) without an SDK dependency.
-    static let convexURL = URL(string: "https://neat-pony-216.convex.cloud")!
+    ///
+    /// `CONVEX_BASE_URL` in the process environment overrides the default (UI
+    /// tests point at the rehearsal deployment this way; the value itself is
+    /// never hardcoded in source). Keep `convexURL` for existing callers.
+    static var convexBaseURL: URL {
+        if let raw = ProcessInfo.processInfo.environment["CONVEX_BASE_URL"],
+           !raw.isEmpty, let url = URL(string: raw) {
+            return url
+        }
+        return URL(string: "https://neat-pony-216.convex.cloud")!
+    }
+
+    static var convexURL: URL { convexBaseURL }
 
     /// Feature flag to switch between direct Convex calls (true) and the /api/*
     /// routes (false). When true, RoomStore and ChatViewModel use ConvexService;

@@ -104,7 +104,10 @@ struct ConvexEnvelope<Value: Decodable>: Decodable {
 final class ConvexService {
     static let shared = ConvexService()
 
-    let baseURL = URL(string: "https://neat-pony-216.convex.cloud")!
+    /// Deployment switch: `CONVEX_BASE_URL` overrides the default (see
+    /// `Config.convexBaseURL`). UI tests point at rehearsal through the
+    /// launch environment; the value never appears in source.
+    let baseURL = Config.convexBaseURL
 
     /// Injected session for tests. Production (`shared`) leaves this nil and
     /// resolves the token from the Keychain session on every request.

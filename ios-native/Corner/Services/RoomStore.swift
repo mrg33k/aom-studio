@@ -15,6 +15,7 @@
 // the rail says the project list could not load, rather than quietly showing an
 // agents-only app and letting the user conclude their projects are gone.
 
+import Combine
 import Foundation
 
 @MainActor
@@ -481,3 +482,304 @@ final class RoomStore: ObservableObject {
         return groups
     }
 }
+
+// MARK: - Corner v2 workspace store (native Task 4)
+//
+// Replaces RoomStore's LIST role: the rail is the workspace tree
+// (Workspace → Project → Mission), not flat rooms. RoomStore stays for the
+// legacy archive behind `Route.legacyArchive` and keeps its own behavior.
+// Lives in this file so the Task 4 commit stages no new production files;
+// Task 5+ may move it to `Corner/Services/WorkspaceStore.swift`.
+
+/// A thread's owning summaries, resolved from the loaded tree.
+struct V2ThreadContext: Equatable {
+    let thread: Thread
+    let project: ProjectSummary
+    let mission: MissionSummary?
+}
+
+@MainActor
+final class WorkspaceStore: ObservableObject {
+    /// Shared instance for views. Tests inject `CornerV2APIFake`.
+    static let shared: WorkspaceStore = WorkspaceStore.makeShared()
+
+    private static func makeShared() -> WorkspaceStore {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-v2FixtureUITest") {
+            return WorkspaceStore(api: PreviewV2API())
+        }
+        #endif
+        return WorkspaceStore()
+    }
+
+    @Published private(set) var workspace: WorkspaceSummary?
+    @Published private(set) var isLoading = false
+    @Published private(set) var errorText: String?
+    /// Artifact counts by thread id, loaded on demand for the Files rows.
+    @Published private(set) var fileCounts: [String: Int] = [:]
+
+    private let api: any CornerV2API
+    private var ensuredWorkspaceID: String?
+    private var treePoll: (any Cancellable)?
+
+    init(api: (any CornerV2API)? = nil) {
+        self.api = api ?? DefaultCornerV2API()
+    }
+
+    var generalProject: ProjectSummary? {
+        workspace?.projects.first { $0.kind == .general }
+    }
+
+    func project(id: String) -> ProjectSummary? {
+        workspace?.projects.first { $0.id == id }
+    }
+
+    func projectName(id: String?) -> String? {
+        guard let id else { return nil }
+        return project(id: id)?.name
+    }
+
+    /// A mission anywhere in the tree, with its project.
+    func mission(id: String) -> (project: ProjectSummary, mission: MissionSummary)? {
+        guard let workspace else { return nil }
+        for project in workspace.projects {
+            if let mission = project.missions.first(where: { $0.id == id }) {
+                return (project, mission)
+            }
+        }
+        return nil
+    }
+
+    /// The project (and mission, when it is one) that owns a thread id.
+    func context(threadID: String) -> V2ThreadContext? {
+        guard let workspace else { return nil }
+        for project in workspace.projects {
+            if project.threadID == threadID {
+                return V2ThreadContext(
+                    thread: Thread(
+                        id: threadID, ownerType: .project, projectID: project.id,
+                        missionID: nil, visualSessionID: ""
+                    ),
+                    project: project,
+                    mission: nil
+                )
+            }
+            for mission in project.missions where mission.threadID == threadID {
+                return V2ThreadContext(
+                    thread: Thread(
+                        id: threadID, ownerType: .mission, projectID: project.id,
+                        missionID: mission.id, visualSessionID: ""
+                    ),
+                    project: project,
+                    mission: mission
+                )
+            }
+        }
+        return nil
+    }
+
+    /// `ensureWorkspace` once per sign-in, then (re)subscribe to the
+    /// subscribable `workspaceTree` query.
+    func refresh() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            if ensuredWorkspaceID == nil {
+                let ensured = try await api.ensureWorkspace()
+                ensuredWorkspaceID = ensured.workspaceId
+            }
+            workspace = try await api.workspaceTree()
+            errorText = nil
+            subscribeTree()
+        } catch {
+            errorText = (error as? LocalizedError)?.errorDescription ?? "The workspace could not be loaded."
+        }
+    }
+
+    private func subscribeTree() {
+        treePoll?.cancel()
+        treePoll = api.subscribeWorkspace { [weak self] workspace in
+            Task { @MainActor [weak self] in
+                if let workspace { self?.workspace = workspace }
+            }
+        }
+    }
+
+    /// Global intake: route a room-less message. `@brain` slugs ride as
+    /// routing metadata; the caller passes an explicit project only from the
+    /// per-project "+ New mission" row.
+    func sendIntake(_ text: String, preferredProjectID: String? = nil) async throws -> RouteDecision {
+        try await api.send(
+            text: text,
+            mentioning: BrainMention.parse(text),
+            preferredProjectID: preferredProjectID
+        )
+    }
+
+    /// Confirm a proposed creation, then reload the tree so the new
+    /// project/mission row appears.
+    func confirmCreation(_ decision: RouteDecision) async throws -> ConfirmProposalResult {
+        let result = try await api.confirmProposal(decisionId: decision.decisionId)
+        await refresh()
+        return result
+    }
+
+    func threadForProject(_ projectID: String) async throws -> Thread? {
+        try await api.thread(projectID: projectID)
+    }
+
+    func threadForMission(_ missionID: String) async throws -> Thread? {
+        try await api.thread(missionID: missionID)
+    }
+
+    /// Artifact counts for the Files rows, fetched on demand and cached by
+    /// thread id. Failures leave the count absent rather than wrong.
+    func refreshFileCounts() async {
+        guard let workspace else { return }
+        var threads: [String] = []
+        for project in workspace.projects {
+            threads.append(project.threadID)
+            threads += project.missions.map(\.threadID)
+        }
+        for threadID in threads where fileCounts[threadID] == nil {
+            do {
+                fileCounts[threadID] = try await api.artifacts(threadID: threadID).count
+            } catch {
+                // Absent count, not a zero: the row hides instead of lying.
+            }
+        }
+    }
+
+    /// Sign-out invalidation: the next sign-in re-ensures and resubscribes,
+    /// and no stale tree survives the account switch.
+    func signOutCleanup() {
+        treePoll?.cancel()
+        treePoll = nil
+        ensuredWorkspaceID = nil
+        workspace = nil
+        errorText = nil
+        fileCounts = [:]
+    }
+}
+
+#if DEBUG
+/// Hermetic v2 backend for `-v2FixtureUITest` (see CornerV2FlowUITests).
+/// Serves fixture-shaped data — General + Aster, no missions, mirroring
+/// `v2.native.fixture.json` — with real intake → confirm → mission-appears
+/// behavior. No network, no account, no Keychain session needed. Debug only.
+@MainActor
+final class PreviewV2API: CornerV2API {
+    private var missions: [MissionSummary] = []
+    private var createdCount = 0
+    private var pendingTitle = ""
+    private var pendingProjectID = "proj-general-1"
+
+    private var general: ProjectSummary {
+        ProjectSummary(
+            id: "proj-general-1", workspaceID: "world-preview-1", name: "General",
+            kind: .general, tintHex: "#8B5CF6", needsAttention: false,
+            threadID: "thread-general-1", missions: missions.filter { $0.projectID == "proj-general-1" }
+        )
+    }
+
+    private var aster: ProjectSummary {
+        ProjectSummary(
+            id: "proj-aster-1", workspaceID: "world-preview-1", name: "Aster",
+            kind: .standard, tintHex: "#5B9BFF", needsAttention: false,
+            threadID: "thread-aster-1", missions: missions.filter { $0.projectID == "proj-aster-1" }
+        )
+    }
+
+    private var workspace: WorkspaceSummary {
+        WorkspaceSummary(
+            id: "world-preview-1", name: "preview", generalProjectID: general.id,
+            projects: [general, aster]
+        )
+    }
+
+    private func threadFor(id: String, owner: ThreadOwnerType, projectID: String, missionID: String?) -> Thread {
+        Thread(id: id, ownerType: owner, projectID: projectID, missionID: missionID, visualSessionID: "session-\(id)")
+    }
+
+    func workspaceTree() async throws -> WorkspaceSummary? { workspace }
+
+    func ensureWorkspace() async throws -> EnsureWorkspaceResult {
+        EnsureWorkspaceResult(workspaceId: workspace.id, generalProjectId: general.id, generalThreadId: general.threadID)
+    }
+
+    func thread(projectID: String) async throws -> Thread? {
+        guard let project = workspace.projects.first(where: { $0.id == projectID }) else { return nil }
+        return threadFor(id: project.threadID, owner: .project, projectID: project.id, missionID: nil)
+    }
+
+    func thread(missionID: String) async throws -> Thread? {
+        for project in workspace.projects {
+            if let mission = project.missions.first(where: { $0.id == missionID }) {
+                return threadFor(id: mission.threadID, owner: .mission, projectID: project.id, missionID: mission.id)
+            }
+        }
+        return nil
+    }
+
+    func threadEvents(threadID: String) async throws -> [ThreadEvent] { [] }
+
+    func send(text: String, mentioning: [String], preferredProjectID: String?) async throws -> RouteDecision {
+        pendingTitle = text
+        let targetID = preferredProjectID ?? general.id
+        pendingProjectID = targetID
+        let target = workspace.projects.first(where: { $0.id == targetID }) ?? general
+        let reason = target.kind == .general ? "Create mission in General." : "Create in \(target.name)."
+        return RouteDecision(
+            decisionId: "decision-preview-1", destinationThreadID: "", project: target,
+            mission: nil, confidence: 0.7, alternatives: [], reason: reason,
+            needsClarification: false, needsCreationConfirmation: true,
+            actor: "uitest", createdAt: Date()
+        )
+    }
+
+    func confirmProposal(decisionId: String) async throws -> ConfirmProposalResult {
+        createdCount += 1
+        let mission = MissionSummary(
+            id: "mission-preview-\(createdCount)", projectID: pendingProjectID,
+            title: pendingTitle.isEmpty ? "Untitled mission" : pendingTitle,
+            status: .live, threadID: "thread-preview-\(createdCount)"
+        )
+        missions.append(mission)
+        return ConfirmProposalResult(projectID: mission.projectID, missionID: mission.id, threadID: mission.threadID)
+    }
+
+    func subscribeThread(threadID: String, receive: @escaping ([ThreadEvent]) -> Void) -> any Cancellable {
+        Task<Void, Never> {}
+    }
+
+    func subscribeWorkspace(receive: @escaping (WorkspaceSummary?) -> Void) -> any Cancellable {
+        receive(workspace)
+        return Task<Void, Never> {}
+    }
+
+    func visualTabs(visualSessionID: String) async throws -> [VisualWindowTab] { [] }
+
+    func openVisualTab(kind: VisualTabKind, threadID: String, artifactID: String?, title: String, state: [String: String]) async throws -> VisualWindowTab {
+        throw CornerV2APIError.unconfiguredFakeOperation
+    }
+
+    func closeVisualTab(id: String) async throws {}
+
+    func submitReview(artifactID: String, pins: [ReviewPin]) async throws -> SubmitReviewResult {
+        SubmitReviewResult(
+            checklistId: "checklist-preview-1",
+            pins: pins.enumerated().map { index, pin in
+                SubmitReviewResult.PinID(clientID: pin.clientID, id: "pin-preview-\(index + 1)")
+            }
+        )
+    }
+
+    func ledger(workspaceID: String, after: String?) async throws -> [LedgerItem] { [] }
+
+    func confirmCrossProjectWrite(id: String) async throws {}
+
+    func artifacts(threadID: String) async throws -> [Artifact] { [] }
+
+    func pendingConfirmations() async throws -> [CrossProjectWriteConfirmation] { [] }
+}
+#endif

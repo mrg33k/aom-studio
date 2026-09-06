@@ -89,12 +89,24 @@ struct DeepLink: Equatable {
 
 /// Every destination the navigation stack can hold. Hashable because it IS the
 /// NavigationStack path — SwiftUI needs value identity to diff it.
+///
+/// Corner v2 navigation (native Task 4) is Workspace → Project → Mission →
+/// Thread: `.project` opens the project's direct thread, `.mission` the
+/// mission's narrower thread, `.workspace` the tree, `.visualTab` a Visual
+/// Window tab's owning thread (Task 6 wires the window itself), and
+/// `.legacyArchive` the migrated-room search. The `room` cases stay for
+/// compatibility clients and notifications until cutover.
 enum Route: Hashable {
     case room(Room)
     case review
     case organize
     case tracker
     case email
+    case workspace
+    case project(projectID: String)
+    case mission(missionID: String)
+    case visualTab(tabID: String)
+    case legacyArchive
 
     var roomID: String? {
         if case .room(let room) = self { return room.roomID }
@@ -112,6 +124,17 @@ enum Route: Hashable {
         case .organize: return URL(string: "\(Config.urlScheme)://organize")
         case .tracker:  return URL(string: "\(Config.urlScheme)://tracker")
         case .email:    return URL(string: "\(Config.urlScheme)://email")
+        case .workspace: return URL(string: "\(Config.urlScheme)://rooms")
+        case .project(let id):
+            let encoded = id.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? id
+            return URL(string: "\(Config.urlScheme)://project/\(encoded)")
+        case .mission(let id):
+            let encoded = id.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? id
+            return URL(string: "\(Config.urlScheme)://mission/\(encoded)")
+        case .visualTab(let id):
+            let encoded = id.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? id
+            return URL(string: "\(Config.urlScheme)://tab/\(encoded)")
+        case .legacyArchive: return URL(string: "\(Config.urlScheme)://archive")
         }
     }
 }
@@ -135,6 +158,13 @@ enum DeepLinkTarget: Equatable {
         case "tracker":  self = .route(.tracker)
         case "email":    self = .route(.email)
         case "rooms":    self = .rail
+        case "project":
+            self = .route(.project(projectID: url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")).removingPercentEncoding ?? ""))
+        case "mission":
+            self = .route(.mission(missionID: url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")).removingPercentEncoding ?? ""))
+        case "tab":
+            self = .route(.visualTab(tabID: url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/")).removingPercentEncoding ?? ""))
+        case "archive":  self = .route(.legacyArchive)
         default: return nil
         }
     }

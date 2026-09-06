@@ -388,6 +388,12 @@ final class ScreenTour: XCTestCase {
 
         // --- 07 new room sheet (opened, never created) -----------------------
         do {
+            // The 02–04 swipes leave the list at the bottom and SwiftUI
+            // virtualizes the top chips away — come back up first, or the
+            // New button (and the first room row in step 08) exist but are
+            // not hittable.
+            for _ in 0..<5 { app.swipeDown() }
+            settle(1)
             let button = newRoomButton
             guard button.waitForExistence(timeout: 10) else {
                 recordMissing(frame: "07-new-room-sheet", step: "new-room", element: "\"New room\" button")

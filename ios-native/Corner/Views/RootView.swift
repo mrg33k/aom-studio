@@ -37,6 +37,11 @@ struct RootView: View {
                             case .organize:       OrganizeView()
                             case .tracker:        TrackerView()
                             case .email:          EmailView()
+                            case .workspace:      RoomListView()
+                            case .project(let id): V2ProjectChatView(projectID: id)
+                            case .mission(let id): V2MissionChatView(missionID: id)
+                            case .visualTab(let id): V2VisualTabView(tabID: id)
+                            case .legacyArchive:  LegacyArchiveView()
                             }
                         }
                 }
@@ -45,6 +50,14 @@ struct RootView: View {
             }
         }
         .groundBackground()
+        .task {
+            #if DEBUG
+            // Hermetic v2 flow tests: synthetic session before anything reads auth.
+            if ProcessInfo.processInfo.arguments.contains("-v2FixtureUITest") {
+                api.installFixtureSession()
+            }
+            #endif
+        }
         .task(id: api.session?.user.id) {
             guard api.session != nil else { return }
             router.restoreLastRoom(for: api.world)
@@ -126,5 +139,197 @@ struct RootView: View {
             // notification. Say what happened, even when it is unflattering.
             Text("It points somewhere this version of Corner does not know how to open. It is still there on the web.")
         }
+    }
+}
+
+// MARK: - Corner v2 route loaders (native Task 4)
+//
+// A project/mission route carries only an id; the thread plus its owning
+// summaries load here, then the shared `ChatView(thread:project:mission:)`
+// surface renders. One surface for both — never a specialist chat screen.
+
+struct V2ProjectChatView: View {
+    let projectID: String
+    @State private var thread: Thread?
+    @State private var project: ProjectSummary?
+    @State private var errorText: String?
+
+    var body: some View {
+        Group {
+            if let thread, let project {
+                ChatView(thread: thread, project: project, mission: nil)
+            } else if let errorText {
+                VStack(spacing: Theme.s3) {
+                    Text(errorText)
+                        .font(.hkFootnote)
+                        .foregroundStyle(Theme.inkSoft)
+                        .multilineTextAlignment(.center)
+                    Button("Try again") { Task { await load() } }
+                        .font(.hkBody.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                }
+                .padding(Theme.s4)
+                .groundBackground()
+            } else {
+                ProgressView("Opening project…")
+                    .groundBackground()
+                    .task { await load() }
+            }
+        }
+    }
+
+    @MainActor
+    private func load() async {
+        errorText = nil
+        let store = WorkspaceStore.shared
+        await store.refresh()
+        guard let found = store.project(id: projectID) else {
+            errorText = "This project is not in the workspace."
+            return
+        }
+        do {
+            if let loaded = try await store.threadForProject(projectID) {
+                project = found
+                thread = loaded
+            } else {
+                errorText = "This project has no conversation yet."
+            }
+        } catch {
+            errorText = "The conversation could not be loaded."
+        }
+    }
+}
+
+struct V2MissionChatView: View {
+    let missionID: String
+    @State private var thread: Thread?
+    @State private var project: ProjectSummary?
+    @State private var mission: MissionSummary?
+    @State private var errorText: String?
+
+    var body: some View {
+        Group {
+            if let thread, let project, let mission {
+                ChatView(thread: thread, project: project, mission: mission)
+            } else if let errorText {
+                VStack(spacing: Theme.s3) {
+                    Text(errorText)
+                        .font(.hkFootnote)
+                        .foregroundStyle(Theme.inkSoft)
+                        .multilineTextAlignment(.center)
+                    Button("Try again") { Task { await load() } }
+                        .font(.hkBody.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                }
+                .padding(Theme.s4)
+                .groundBackground()
+            } else {
+                ProgressView("Opening mission…")
+                    .groundBackground()
+                    .task { await load() }
+            }
+        }
+    }
+
+    @MainActor
+    private func load() async {
+        errorText = nil
+        let store = WorkspaceStore.shared
+        await store.refresh()
+        guard let found = store.mission(id: missionID) else {
+            errorText = "This mission is not in the workspace."
+            return
+        }
+        do {
+            if let loaded = try await store.threadForMission(missionID) {
+                project = found.project
+                mission = found.mission
+                thread = loaded
+            } else {
+                errorText = "This mission has no conversation yet."
+            }
+        } catch {
+            errorText = "The conversation could not be loaded."
+        }
+    }
+}
+
+/// A Visual Window deep link resolves to the tab's owning thread (Task 6 owns
+/// the window itself; until then the conversation is the destination, never a
+/// dead end).
+struct V2VisualTabView: View {
+    let tabID: String
+    @State private var thread: Thread?
+    @State private var project: ProjectSummary?
+    @State private var mission: MissionSummary?
+    @State private var errorText: String?
+
+    var body: some View {
+        Group {
+            if let thread, let project {
+                ChatView(thread: thread, project: project, mission: mission)
+            } else if let errorText {
+                VStack(spacing: Theme.s3) {
+                    Text(errorText)
+                        .font(.hkFootnote)
+                        .foregroundStyle(Theme.inkSoft)
+                        .multilineTextAlignment(.center)
+                    Button("Back to workspace") { AppRouter.shared.closeAll() }
+                        .font(.hkBody.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                }
+                .padding(Theme.s4)
+                .groundBackground()
+            } else {
+                ProgressView("Opening tab…")
+                    .groundBackground()
+                    .task { await load() }
+            }
+        }
+    }
+
+    @MainActor
+    private func load() async {
+        errorText = nil
+        let store = WorkspaceStore.shared
+        await store.refresh()
+        guard let workspace = store.workspace else {
+            errorText = "The workspace could not be loaded."
+            return
+        }
+        let api = DefaultCornerV2API()
+        var threads: [(threadID: String, sessionID: String, project: ProjectSummary, mission: MissionSummary?)] = []
+        for project in workspace.projects {
+            if let session = try? await api.thread(projectID: project.id) {
+                threads.append((project.threadID, session.visualSessionID, project, nil))
+            }
+            for mission in project.missions {
+                if let session = try? await api.thread(missionID: mission.id) {
+                    threads.append((mission.threadID, session.visualSessionID, project, mission))
+                }
+            }
+        }
+        for candidate in threads {
+            if let tabs = try? await api.visualTabs(visualSessionID: candidate.sessionID),
+               tabs.contains(where: { $0.id == tabID }) {
+                if let owningMission = candidate.mission {
+                    thread = Thread(
+                        id: candidate.threadID, ownerType: .mission,
+                        projectID: candidate.project.id, missionID: owningMission.id,
+                        visualSessionID: candidate.sessionID
+                    )
+                } else {
+                    thread = Thread(
+                        id: candidate.threadID, ownerType: .project,
+                        projectID: candidate.project.id, missionID: nil,
+                        visualSessionID: candidate.sessionID
+                    )
+                }
+                project = candidate.project
+                mission = candidate.mission
+                return
+            }
+        }
+        errorText = "This tab is no longer open."
     }
 }

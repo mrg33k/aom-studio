@@ -55,11 +55,43 @@ fileprivate func extractInserted(old: String, new: String) -> String? {
     return inserted.isEmpty ? nil : inserted
 }
 
+/// Corner v2 conversation context (native Task 4): one surface for both
+/// project and mission threads. The title is `Project` or `Project / Mission`.
+/// Message rendering is untouched beyond these inputs — Task 5 rewires the model.
+struct V2ChatContext {
+    let thread: Thread
+    let project: ProjectSummary
+    let mission: MissionSummary?
+
+    var title: String {
+        if let mission { return "\(project.name) / \(mission.title)" }
+        return project.name
+    }
+
+    /// Compatibility room for the legacy model until Task 5 replaces it with
+    /// the v2 event subscription. Never leaves the device as identity: sends
+    /// still go through the model's existing transport.
+    var compatRoom: Room {
+        if let mission {
+            Room(
+                world: "v2",
+                kind: .mission(slug: mission.id, project: project.id),
+                title: title,
+                subtitle: project.name
+            )
+        } else {
+            Room(world: "v2", kind: .project(slug: project.id), title: title, subtitle: "Project")
+        }
+    }
+}
+
 struct ChatView: View {
     @StateObject private var model: ChatViewModel
     @StateObject private var review = ReviewStore.shared
     @EnvironmentObject private var router: AppRouter
     @Environment(\.scenePhase) private var scenePhase
+    /// Set only by the v2 initializer; nil on the legacy room path.
+    private let v2: V2ChatContext?
 
     @State private var showingFiles = false
     @State private var showingPhotoPicker = false
@@ -115,7 +147,20 @@ struct ChatView: View {
 
     init(room: Room) {
         _model = StateObject(wrappedValue: ChatViewModel(room: room))
+        v2 = nil
     }
+
+    /// Corner v2 initializer: a `Thread` plus its owning summaries. One
+    /// surface for project and mission conversations alike.
+    init(thread: Thread, project: ProjectSummary, mission: MissionSummary?) {
+        let context = V2ChatContext(thread: thread, project: project, mission: mission)
+        _model = StateObject(wrappedValue: ChatViewModel(room: context.compatRoom))
+        v2 = context
+    }
+
+    /// The header title: `Project` for a project thread, `Project / Mission`
+    /// for a mission thread, the room title on the legacy path.
+    private var displayTitle: String { v2?.title ?? model.room.title }
 
     private var draftStorageKey: String { "chatDraft.\(model.room.roomID)" }
 
@@ -375,10 +420,11 @@ struct ChatView: View {
                 RoomAvatarView(room: model.room, size: 30, isActive: model.isAwaiting)
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 4) {
-                        Text(model.room.title)
+                        Text(displayTitle)
                             .font(.hanken(15).weight(.semibold))
                             .foregroundStyle(Theme.ink)
                             .lineLimit(1)
+                            .accessibilityIdentifier("chat-title")
                         Image(systemName: "chevron.down")
                             .font(.system(size: 9, weight: .bold))
                             .foregroundStyle(Theme.inkSoft)
