@@ -87,6 +87,9 @@ struct V2ChatContext {
 
 struct ChatView: View {
     @StateObject private var model: ChatViewModel
+    /// Corner v2 conversation model (native Task 5). Inert on the legacy
+    /// path; the v2 path below is the only thing that ever starts it.
+    @StateObject private var v2model: V2ChatModel
     @StateObject private var review = ReviewStore.shared
     @EnvironmentObject private var router: AppRouter
     @Environment(\.scenePhase) private var scenePhase
@@ -147,14 +150,17 @@ struct ChatView: View {
 
     init(room: Room) {
         _model = StateObject(wrappedValue: ChatViewModel(room: room))
+        _v2model = StateObject(wrappedValue: V2ChatModel())
         v2 = nil
     }
 
     /// Corner v2 initializer: a `Thread` plus its owning summaries. One
-    /// surface for project and mission conversations alike.
+    /// surface for project and mission conversations alike. The v2 model
+    /// shares the workspace store's backend (fixture stub under test).
     init(thread: Thread, project: ProjectSummary, mission: MissionSummary?) {
         let context = V2ChatContext(thread: thread, project: project, mission: mission)
         _model = StateObject(wrappedValue: ChatViewModel(room: context.compatRoom))
+        _v2model = StateObject(wrappedValue: V2ChatModel(api: WorkspaceStore.shared.v2api))
         v2 = context
     }
 
@@ -165,6 +171,245 @@ struct ChatView: View {
     private var draftStorageKey: String { "chatDraft.\(model.room.roomID)" }
 
     var body: some View {
+        if v2 != nil {
+            v2Screen
+        } else {
+            legacyBody
+        }
+    }
+
+    // MARK: - Corner v2 conversation screen (native Task 5)
+
+    /// One surface for Project and Mission threads: titled events with
+    /// visible agent labels, an offline queue banner, and a composer whose
+    /// `@brain` suggestions route server-side. No agent rooms, no specialist
+    /// menu, no navigation state — a send never leaves this thread.
+    private var v2Screen: some View {
+        VStack(spacing: 0) {
+            v2ThreadList
+            if !v2model.queued.isEmpty {
+                v2OfflineBanner
+            }
+            // The routing verdict renders inline (Task 6 owns the card).
+            v2Composer
+        }
+        .groundBackground()
+        // NOTE: no identifier anywhere on this screen's main subtree — an
+        // identifier on ANY ancestor view overwrites every identified control
+        // below it (measured: with one on the root, the composer field and
+        // the send button both read back as the container's id). The screen
+        // marker lives on the toolbar subtitle, a leaf in a separate subtree.
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Theme.ground, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                VStack(spacing: 1) {
+                    Text(v2?.title ?? v2model.displayTitle)
+                        .font(.hanken(15).weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                        .accessibilityIdentifier("chat-title")
+                    Text("Corner v2")
+                        .font(.hanken(10.5).weight(.medium))
+                        .foregroundStyle(Theme.inkSoft)
+                        .accessibilityIdentifier("chat-screen")
+                }
+            }
+        }
+        .onAppear {
+            if let context = v2 {
+                Task { await v2model.start(thread: context.thread, project: context.project, mission: context.mission) }
+            }
+        }
+        .onDisappear { v2model.stop() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active, v2 != nil {
+                Task { await v2model.foreground() }
+            }
+        }
+    }
+
+    private var v2ThreadList: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: Theme.s3) {
+                switch v2model.loadState {
+                case .loading:
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, Theme.s6)
+                case .error(let message):
+                    centeredNotice(message, systemImage: "wifi.exclamationmark")
+                case .empty where v2model.unsentWithoutEcho.isEmpty:
+                    centeredNotice("No messages yet — say something.", systemImage: "bubble.left")
+                case .empty, .ready:
+                    ForEach(v2model.events) { event in
+                        V2EventRow(event: event, onSend: { text in
+                            Task { await v2model.send(text) }
+                        })
+                        .id(event.id)
+                    }
+                    ForEach(v2model.unsentWithoutEcho) { entry in
+                        v2QueuedBubble(entry)
+                            .id(entry.id)
+                    }
+                }
+                Color.clear.frame(height: 1)
+            }
+            .padding(.horizontal, Theme.s4)
+            .padding(.top, Theme.s3)
+            .padding(.bottom, 28)
+        }
+    }
+
+    /// A queued message with no echo on screen (parked while offline, kept
+    /// across relaunch by the disk outbox). Retry replays this thread's
+    /// queue in order; nothing is ever re-sent twice.
+    private func v2QueuedBubble(_ entry: V2OutboxEntry) -> some View {
+        HStack {
+            Spacer(minLength: 48)
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(entry.text)
+                    .font(.hanken(15))
+                    .foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .accessibilityIdentifier("v2-queued-text")
+                Text("Waiting for connection")
+                    .font(.hanken(11))
+                    .foregroundStyle(Theme.warning)
+            }
+        }
+    }
+
+    private var v2OfflineBanner: some View {
+        HStack(spacing: Theme.s2) {
+            Image(systemName: "wifi.exclamationmark")
+                .foregroundStyle(Theme.warning)
+            Text(v2model.queued.count == 1
+                ? "Offline — 1 message waiting. It sends on reconnect."
+                : "Offline — \(v2model.queued.count) messages waiting. They send on reconnect.")
+                .font(.hanken(13))
+                .foregroundStyle(Theme.ink)
+                // The banner marker lives on this leaf Text, never on the
+                // HStack: a container identifier would overwrite the Retry
+                // button's own identifier (same finding as chat-screen).
+                .accessibilityIdentifier("v2-offline-banner")
+            Spacer(minLength: 0)
+            Button("Retry") {
+                Task { await v2model.replayOutbox() }
+            }
+            .font(.hanken(13).weight(.semibold))
+            .foregroundStyle(Theme.accent)
+            .accessibilityIdentifier("v2-outbox-retry")
+        }
+        .padding(.horizontal, Theme.s4)
+        .padding(.vertical, Theme.s2)
+        .background(Theme.raised)
+    }
+
+    /// Whether the `@brain` routing suggestion shows: the draft holds an
+    /// `@mention` token that is not yet `@brain`. Suggestions appear only
+    /// while editing, and `@brain` is the only one — never a roster.
+    private var showsBrainSuggestion: Bool {
+        let draft = v2model.draft
+        guard let at = draft.lastIndex(of: "@") else { return false }
+        let token = String(draft[at...]).lowercased()
+        guard token.hasPrefix("@") else { return false }
+        let slug = String(token.dropFirst())
+        if slug.isEmpty { return true }
+        if "brain".hasPrefix(slug) { return slug != "brain" }
+        return false
+    }
+
+    private var v2Composer: some View {
+        VStack(spacing: 8) {
+            if showsBrainSuggestion {
+                HStack {
+                    Button {
+                        completeBrainMention()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text("@brain")
+                                .font(.hanken(14).weight(.semibold))
+                                .foregroundStyle(Theme.accent)
+                            Text("route to a specialist — stays in this conversation")
+                                .font(.hanken(12))
+                                .foregroundStyle(Theme.inkSoft)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Theme.accentWeak, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+                    .accessibilityIdentifier("v2-mention-brain")
+                    Spacer(minLength: 0)
+                }
+            }
+            HStack(alignment: .bottom, spacing: 6) {
+                TextField("Message…", text: $v2model.draft, axis: .vertical)
+                    .font(.hanken(16))
+                    .lineLimit(1...5)
+                    .focused($composerFocused)
+                    .foregroundStyle(Theme.ink)
+                    .padding(.vertical, 8)
+                    .padding(.trailing, Theme.s2)
+                    .accessibilityIdentifier("v2-composer-field")
+                Button {
+                    let text = v2model.draft
+                    Task { await v2model.send(text) }
+                } label: {
+                    Image(systemName: "paperplane.fill")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(v2CanSend ? Color.white : Theme.inkFaint)
+                        .frame(width: 44, height: 44)
+                        .background(
+                            v2CanSend ? Theme.accent : Theme.raised2,
+                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        )
+                }
+                .accessibilityIdentifier("v2-composer-send")
+                .accessibilityLabel("Send message")
+                .disabled(!v2CanSend)
+            }
+            .padding(.leading, Theme.s3)
+            .frame(minHeight: 44)
+            .background(Theme.composerCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(composerFocused ? Theme.accent : Theme.hairline, lineWidth: 1)
+            )
+        }
+        .padding(Theme.s2)
+        .background {
+            Theme.frostedSurface(
+                fallback: Theme.composer,
+                tint: Color(cv6: 0x111820, opacity: 0.45),
+                in: RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous)
+            )
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous)
+                .strokeBorder(Theme.hairline, lineWidth: 1)
+        )
+        .padding(.horizontal, Theme.s3)
+        .padding(.bottom, Theme.s2)
+    }
+
+    private var v2CanSend: Bool {
+        !v2model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Complete the `@…` token under the cursor to `@brain `.
+    private func completeBrainMention() {
+        var draft = v2model.draft
+        guard let at = draft.lastIndex(of: "@") else { return }
+        draft.replaceSubrange(at..., with: "@brain ")
+        v2model.draft = draft
+    }
+
+    private var legacyBody: some View {
         messageList
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: Theme.s2) {
@@ -236,10 +481,13 @@ struct ChatView: View {
                     }
                     .accessibilityLabel(isSearching ? "Cancel search" : "Search conversation")
 
-                    // More menu (⋯) — files, settings
+                    // More menu (⋯) — files, rename, settings
                     Menu {
                         Button { showingFiles = true } label: {
                             Label("Files", systemImage: "folder")
+                        }
+                        Button { showingRename = true } label: {
+                            Label("Rename room", systemImage: "pencil")
                         }
                         Button { showingSettings = true } label: {
                             Label("Room settings", systemImage: "gearshape")
@@ -379,56 +627,21 @@ struct ChatView: View {
 
     /// Avatar + room name + live status — the web's desktop-room-header, compressed
     /// for the phone's nav bar. Tapping it opens room settings.
-    /// The slug of this room's specialist when it IS a 1:1 agent room, else nil.
-    private var currentAgentSlug: String? {
-        if case .agent(let slug) = model.room.kind { return slug }
-        return nil
-    }
-
-    // The title is the specialist switcher — CV4's ContextNav click-to-switch
-    // dropdown, native. Tap the header, pick a specialist, and AppRouter's
-    // replace-don't-stack rule swaps this chat for theirs in place. Room
-    // settings rides at the bottom (the header tap used to open it directly;
-    // it also stays in the ⋯ menu).
+    ///
+    /// Corner v2 (native Task 5): the "Switch specialist" agent menu is gone.
+    /// There are no agent rooms, filters, or destinations anywhere in v2 — a
+    /// header that swaps this conversation for a specialist's is navigation
+    /// state the contract forbids. `@brain` mentions still route server-side.
     private var headerTitle: some View {
-        Menu {
-            Section("Switch specialist") {
-                ForEach(AgentRoster.resolved, id: \.slug) { entry in
-                    Button {
-                        router.open(Room(world: model.room.world,
-                                         kind: .agent(slug: entry.slug),
-                                         title: entry.title,
-                                         subtitle: entry.subtitle))
-                    } label: {
-                        if entry.slug == currentAgentSlug {
-                            Label(entry.title, systemImage: "checkmark")
-                        } else {
-                            Text(entry.title)
-                        }
-                    }
-                }
-            }
-            Divider()
-            Button { showingRename = true } label: {
-                Label("Rename room", systemImage: "pencil")
-            }
-            Button { showingSettings = true } label: {
-                Label("Room settings", systemImage: "gearshape")
-            }
-        } label: {
+        Button { showingSettings = true } label: {
             HStack(spacing: 8) {
                 RoomAvatarView(room: model.room, size: 30, isActive: model.isAwaiting)
                 VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 4) {
-                        Text(displayTitle)
-                            .font(.hanken(15).weight(.semibold))
-                            .foregroundStyle(Theme.ink)
-                            .lineLimit(1)
-                            .accessibilityIdentifier("chat-title")
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundStyle(Theme.inkSoft)
-                    }
+                    Text(displayTitle)
+                        .font(.hanken(15).weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                        .accessibilityIdentifier("chat-title")
                     // Status line: THE one vocabulary word while the room has
                     // something to say — Thinking / Working / Writing / Stopping… /
                     // Needs you / Stuck — else the room's subtitle. Same derivation
@@ -457,7 +670,7 @@ struct ChatView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(model.room.title) — switch specialist or open room settings")
+        .accessibilityLabel("\(model.room.title) — open room settings")
     }
 
     // MARK: - Search bar (R5)
@@ -1528,6 +1741,141 @@ struct ChatView: View {
 /// never an empty list. Only after ten minutes of TOTAL silence does the soft
 /// "still quiet" notice appear, and any reply clears it on the spot: a reply is the
 /// conversation continuing, never a resurrection.
+// MARK: - Corner v2 event rows (native Task 5)
+//
+// One `ThreadEvent` on screen. Agent events carry a visible label (the
+// provider-neutral `agentLabel`); the label is paint, never a destination —
+// tapping it does nothing, because there is nowhere to go. Every block the
+// backend emits renders; question options send their title as a new message.
+
+struct V2EventRow: View {
+    let event: ThreadEvent
+    let onSend: (String) -> Void
+
+    // NOTE: no identifier on these layout containers — it would overwrite
+    // the agent label's and block text's own identifiers (same finding as
+    // chat-screen). Tests address the leaves directly.
+    var body: some View {
+        if event.author == .user {
+            HStack {
+                Spacer(minLength: 48)
+                VStack(alignment: .trailing, spacing: 4) {
+                    ForEach(Array(event.blocks.enumerated()), id: \.offset) { _, block in
+                        V2BlockView(block: block, onSend: onSend)
+                    }
+                }
+            }
+        } else {
+            HStack(alignment: .bottom, spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(event.agentLabel ?? "Corner")
+                        .font(.hanken(11).weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                        .accessibilityIdentifier("v2-agent-label")
+                    ForEach(Array(event.blocks.enumerated()), id: \.offset) { _, block in
+                        V2BlockView(block: block, onSend: onSend)
+                    }
+                }
+                Spacer(minLength: 48)
+            }
+        }
+    }
+}
+
+private struct V2BlockView: View {
+    let block: ThreadBlock
+    let onSend: (String) -> Void
+
+    var body: some View {
+        switch block {
+        case .text(let value):
+            Text(value)
+                .font(.hanken(15))
+                .foregroundStyle(Theme.ink)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .accessibilityIdentifier("v2-event-text")
+        case .question(_, let text, let options):
+            VStack(alignment: .leading, spacing: 6) {
+                Text(text)
+                    .font(.hanken(15))
+                    .foregroundStyle(Theme.ink)
+                ForEach(options) { option in
+                    Button { onSend(option.title) } label: {
+                        HStack {
+                            Text(option.title)
+                                .font(.hanken(14).weight(.medium))
+                                .foregroundStyle(Theme.accent)
+                            Spacer(minLength: 0)
+                            if option.recommended {
+                                Text("Suggested")
+                                    .font(.hanken(11))
+                                    .foregroundStyle(Theme.inkSoft)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Theme.accentWeak, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    }
+                    .accessibilityIdentifier("v2-option-\(option.id)")
+                }
+            }
+        case .steps(let steps):
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(steps) { step in
+                    HStack(spacing: 6) {
+                        Image(systemName: step.state == "done" ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 12))
+                            .foregroundStyle(Theme.inkSoft)
+                        Text(step.label)
+                            .font(.hanken(13))
+                            .foregroundStyle(Theme.ink)
+                    }
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        case .success(let text, _):
+            Text(text)
+                .font(.hanken(15))
+                .foregroundStyle(Theme.success)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        case .snag(let text, let options):
+            VStack(alignment: .leading, spacing: 6) {
+                Text(text)
+                    .font(.hanken(15))
+                    .foregroundStyle(Theme.warning)
+                ForEach(options) { option in
+                    Button { onSend(option.title) } label: {
+                        Text(option.title)
+                            .font(.hanken(14).weight(.medium))
+                            .foregroundStyle(Theme.accent)
+                    }
+                    .accessibilityIdentifier("v2-option-\(option.id)")
+                }
+            }
+        case .artifact(let artifactIDs):
+            Label(
+                artifactIDs.count == 1 ? "1 attachment" : "\(artifactIDs.count) attachments",
+                systemImage: "paperclip"
+            )
+            .font(.hanken(13))
+            .foregroundStyle(Theme.inkSoft)
+        case .checklist(let pinIDs):
+            Label(
+                pinIDs.count == 1 ? "1 review note" : "\(pinIDs.count) review notes",
+                systemImage: "checklist"
+            )
+            .font(.hanken(13))
+            .foregroundStyle(Theme.inkSoft)
+        }
+    }
+}
+
 struct TurnIndicatorView: View {
     let turn: TurnState
     var steps: [MessageStep] = []

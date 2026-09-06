@@ -526,6 +526,11 @@ final class WorkspaceStore: ObservableObject {
         self.api = api ?? DefaultCornerV2API()
     }
 
+    /// The v2 API behind this store, so chat screens share the store's backend
+    /// (the `-v2FixtureUITest` stub in UI tests, the live client in prod)
+    /// instead of each screen constructing — and diverging from — its own.
+    var v2api: any CornerV2API { api }
+
     var generalProject: ProjectSummary? {
         workspace?.projects.first { $0.kind == .general }
     }
@@ -721,13 +726,73 @@ final class PreviewV2API: CornerV2API {
         return nil
     }
 
-    func threadEvents(threadID: String) async throws -> [ThreadEvent] { [] }
+    /// Chat events served to every thread (single shared buffer: the stub
+    /// drives one chat at a time, and per-thread partitioning would only hide
+    /// the replay the offline UI test relaunches for).
+    private var chatEvents: [ThreadEvent] = []
+    /// `-v2FailNextSends=N`: the next N sends throw `.notConnectedToInternet`
+    /// (the offline UI test's airplane mode). Default: connected.
+    private var failSendsLeft: Int = PreviewV2API.launchIntFlag("-v2FailNextSends")
+    /// `-v2RouteMode=confirm`: sends return a confident Project > Mission
+    /// route (the route-block UI test). Default: every send proposes a new
+    /// mission, preserving the intake creation flow.
+    private var routeMode: String = PreviewV2API.launchStringFlag("-v2RouteMode")
+
+    private static func launchStringFlag(_ name: String) -> String {
+        let prefix = "\(name)="
+        for arg in ProcessInfo.processInfo.arguments where arg.hasPrefix(prefix) {
+            return String(arg.dropFirst(prefix.count))
+        }
+        return ""
+    }
+
+    private static func launchIntFlag(_ name: String) -> Int {
+        Int(launchStringFlag(name)) ?? 0
+    }
+
+    func threadEvents(threadID: String) async throws -> [ThreadEvent] { chatEvents }
 
     func send(text: String, mentioning: [String], preferredProjectID: String?) async throws -> RouteDecision {
+        if failSendsLeft > 0 {
+            failSendsLeft -= 1
+            throw URLError(.notConnectedToInternet)
+        }
         pendingTitle = text
         let targetID = preferredProjectID ?? general.id
         pendingProjectID = targetID
         let target = workspace.projects.first(where: { $0.id == targetID }) ?? general
+        // The chat echo + agent reply, so send/reply renders with a label.
+        let stamp = Date()
+        chatEvents.append(ThreadEvent(
+            id: "event-preview-user-\(chatEvents.count + 1)", threadID: target.threadID,
+            author: .user, agentLabel: nil, blocks: [.text(text)], createdAt: stamp
+        ))
+        if mentioning.contains("research") {
+            chatEvents.append(ThreadEvent(
+                id: "event-preview-agent-\(chatEvents.count + 1)", threadID: target.threadID,
+                author: .agent, agentLabel: "Research",
+                blocks: [.text("I found three competitors.")], createdAt: stamp
+            ))
+        } else {
+            chatEvents.append(ThreadEvent(
+                id: "event-preview-agent-\(chatEvents.count + 1)", threadID: target.threadID,
+                author: .agent, agentLabel: "Corner",
+                blocks: [.text("On it — anything else?")], createdAt: stamp
+            ))
+        }
+        if routeMode == "confirm" {
+            let ship = MissionSummary(
+                id: "mission-ship-1", projectID: aster.id, title: "Ship home page",
+                status: .live, threadID: "thread-ship-1"
+            )
+            return RouteDecision(
+                decisionId: "decision-preview-confirm-1", destinationThreadID: ship.threadID,
+                project: aster, mission: ship, confidence: 0.78, alternatives: [],
+                reason: "Strongest match for Aster > Ship home page.",
+                needsClarification: false, needsCreationConfirmation: false,
+                actor: "uitest", createdAt: Date()
+            )
+        }
         let reason = target.kind == .general ? "Create mission in General." : "Create in \(target.name)."
         return RouteDecision(
             decisionId: "decision-preview-1", destinationThreadID: "", project: target,

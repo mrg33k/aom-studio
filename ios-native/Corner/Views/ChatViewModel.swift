@@ -34,6 +34,7 @@
 // The reconcile poll underneath all of it (10s, the web's cadence) is what makes a
 // dropped socket invisible. Realtime is the accelerator; the poll is the guarantee.
 
+import Combine
 import Foundation
 import SwiftUI
 
@@ -1755,5 +1756,320 @@ final class ChatViewModel: ObservableObject {
     /// sends the wrong thing is worse than a chip that drafts the right thing.
     func draftOption(_ label: String) {
         draft = label
+    }
+}
+
+// MARK: - Corner v2 conversation (native Task 5)
+//
+// `V2ChatModel` is intentionally NOT the legacy `ChatViewModel` in v2 mode:
+// the legacy model is a room-based `MessageTransport` client (room ids,
+// specialist state, turn ladders) and the v2 contract forbids all three. This
+// model implements the plan's `start(thread:project:mission:)` / `send(_:)`
+// interface against `CornerV2API`: events load + a single polling
+// subscription, `@brain` slugs sent as routing metadata only, an optimistic
+// echo per send, and a disk-backed outbox keyed by thread id + client event
+// id. There is no agent navigation state anywhere on this type — a send never
+// changes `thread`, and the route decision the server returns is rendered
+// inline (Task 6), never navigated to unasked.
+
+/// One unsent v2 message. The `(threadID, clientEventID)` pair is the
+/// identity: the same text sent twice is two entries, and a replay after
+/// reconnect removes exactly the entry the server accepted.
+struct V2OutboxEntry: Codable, Equatable, Identifiable {
+    var id: String { clientEventID }
+    let clientEventID: String
+    let threadID: String
+    let text: String
+    let mentioning: [String]
+    let preferredProjectID: String?
+    let createdAt: Date
+}
+
+/// The disk-backed v2 outbox. One JSON file per install
+/// (`Application Support/Corner/V2Outbox/outbox.json`, atomic writes,
+/// excluded from backup like the thread cache); `.memory` skips the disk for
+/// tests. Keys are thread ids — room ids never appear here.
+final class V2OutboxStore {
+    static let shared = V2OutboxStore()
+    static var memory: V2OutboxStore {
+        V2OutboxStore(
+            directory: nil,
+            defaults: UserDefaults(suiteName: "corner.v2outbox.memory") ?? .standard
+        )
+    }
+
+    private static let migrationFlag = "v2outbox.migrated.v1"
+
+    private let directory: URL?
+    private let defaults: UserDefaults
+    private var entries: [String: [V2OutboxEntry]] = [:]
+
+    private static var defaultDirectory: URL? {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("Corner/V2Outbox", isDirectory: true)
+    }
+
+    init(directory: URL? = V2OutboxStore.defaultDirectory, defaults: UserDefaults = .standard) {
+        self.directory = directory
+        self.defaults = defaults
+        load()
+    }
+
+    @discardableResult
+    func enqueue(threadID: String, text: String, mentioning: [String], preferredProjectID: String?) -> V2OutboxEntry {
+        let entry = V2OutboxEntry(
+            clientEventID: UUID().uuidString.lowercased(), threadID: threadID,
+            text: text, mentioning: mentioning, preferredProjectID: preferredProjectID,
+            createdAt: Date()
+        )
+        entries[threadID, default: []].append(entry)
+        persist()
+        return entry
+    }
+
+    func pending(threadID: String) -> [V2OutboxEntry] {
+        entries[threadID] ?? []
+    }
+
+    func remove(threadID: String, clientEventID: String) {
+        entries[threadID]?.removeAll { $0.clientEventID == clientEventID }
+        if entries[threadID]?.isEmpty == true { entries.removeValue(forKey: threadID) }
+        persist()
+    }
+
+    /// One-time migration off the room-keyed legacy `ThreadCache` snapshots.
+    /// Room ids cannot map to thread ids (no mapping table exists), so every
+    /// stranded entry is DROPPED with a log line — never replayed to a thread
+    /// it was not written in. Returns the number of dropped entries.
+    @discardableResult
+    func migrateIfNeeded(legacyDirectory: URL? = nil) -> Int {
+        guard !defaults.bool(forKey: Self.migrationFlag) else { return 0 }
+        defaults.set(true, forKey: Self.migrationFlag)
+        let dir: URL? = legacyDirectory ?? FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("Corner/ThreadCache", isDirectory: true)
+        guard let dir,
+              let files = try? FileManager.default.contentsOfDirectory(
+                  at: dir, includingPropertiesForKeys: nil, options: .skipsHiddenFiles
+              )
+        else { return 0 }
+        var dropped = 0
+        for file in files where file.pathExtension == "json" {
+            guard let data = try? Data(contentsOf: file),
+                  let snapshot = try? JSONDecoder().decode(ThreadCacheSnapshot.self, from: data)
+            else { continue }
+            let count = snapshot.outbox.count
+            guard count > 0 else { continue }
+            dropped += count
+            NSLog(
+                "corner:corner-v2 outbox migration: dropping %d room-keyed entries from %@ "
+                    + "(no thread mapping; never replayed to a wrong thread)",
+                count, file.lastPathComponent
+            )
+        }
+        return dropped
+    }
+
+    private var fileURL: URL? {
+        directory?.appendingPathComponent("outbox.json", isDirectory: false)
+    }
+
+    private func load() {
+        guard let url = fileURL,
+              let data = try? Data(contentsOf: url),
+              let decoded = try? JSONDecoder().decode([String: [V2OutboxEntry]].self, from: data)
+        else { return }
+        entries = decoded
+    }
+
+    private func persist() {
+        guard let url = fileURL else { return }
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        guard let data = try? JSONEncoder().encode(entries) else { return }
+        try? data.write(to: url, options: .atomic)
+    }
+}
+
+@MainActor
+final class V2ChatModel: ObservableObject {
+    enum LoadState: Equatable { case loading, ready, empty, error(String) }
+
+    /// Prefix for optimistic local echoes. Server ids never start with it, so
+    /// reconciliation can tell "mine, unsent" from "theirs" without a flag.
+    static let localPrefix = "local-"
+
+    static func echoID(for clientEventID: String) -> String { "\(localPrefix)\(clientEventID)" }
+
+    @Published private(set) var events: [ThreadEvent] = []
+    @Published private(set) var queued: [V2OutboxEntry] = []
+    @Published private(set) var loadState: LoadState = .loading
+    @Published var draft = ""
+    /// The server's routing verdict for the last send. Rendered inline as a
+    /// route block (Task 6); it never navigates on its own.
+    @Published private(set) var lastDecision: RouteDecision?
+
+    private(set) var thread: Corner.Thread?
+    private(set) var project: ProjectSummary?
+    private(set) var mission: MissionSummary?
+
+    var displayTitle: String {
+        if let project {
+            if let mission { return "\(project.name) / \(mission.title)" }
+            return project.name
+        }
+        return thread?.id ?? ""
+    }
+
+    /// Queued entries with no optimistic echo on screen (echoes from a
+    /// previous launch, before this process ever rendered them).
+    var unsentWithoutEcho: [V2OutboxEntry] {
+        queued.filter { entry in !events.contains { $0.id == Self.echoID(for: entry.clientEventID) } }
+    }
+
+    private let api: any CornerV2API
+    private let outbox: V2OutboxStore
+    private var subscription: (any Cancellable)?
+    private var awaitingReply = false
+    private var activityBegan = false
+    private var isReplaying = false
+
+    init(api: (any CornerV2API)? = nil, outbox: V2OutboxStore = .shared) {
+        self.api = api ?? DefaultCornerV2API()
+        self.outbox = outbox
+    }
+
+    /// Open a Project or Mission thread: load events, subscribe once, replay
+    /// the outbox. Replaces any previous thread (one active subscription).
+    func start(thread: Corner.Thread, project: ProjectSummary, mission: MissionSummary?) async {
+        stop()
+        self.thread = thread
+        self.project = project
+        self.mission = mission
+        loadState = .loading
+        do {
+            events = try await api.threadEvents(threadID: thread.id)
+            loadState = events.isEmpty ? .empty : .ready
+            subscribe()
+            refreshQueued()
+            await replayOutbox()
+        } catch {
+            loadState = .error("The conversation could not be loaded.")
+        }
+    }
+
+    func stop() {
+        subscription?.cancel()
+        subscription = nil
+        awaitingReply = false
+        if activityBegan {
+            TurnActivityService.shared.turnEnded(outcomeWord: "Closed", startedAt: nil)
+            activityBegan = false
+        }
+    }
+
+    /// Foreground / reconnect: re-read the thread and flush the queue.
+    func foreground() async {
+        await refreshEvents()
+        await replayOutbox()
+    }
+
+    /// Send one message. Never throws: a failure parks the text in the
+    /// outbox (visible, retryable) instead of vanishing it. `@brain` slugs
+    /// ride as routing metadata; the thread, files, and Visual Window stay
+    /// exactly where they are.
+    func send(_ text: String) async {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let thread else { return }
+        draft = ""
+        let mentioning = BrainMention.parse(trimmed)
+        let entry = outbox.enqueue(
+            threadID: thread.id, text: trimmed,
+            mentioning: mentioning, preferredProjectID: nil
+        )
+        refreshQueued()
+        let echo = ThreadEvent(
+            id: Self.echoID(for: entry.clientEventID), threadID: thread.id,
+            author: .user, agentLabel: nil, blocks: [.text(trimmed)], createdAt: Date()
+        )
+        events.append(echo)
+        loadState = .ready
+        // The Live Activity follows THIS thread's run only: it begins on send
+        // and ends on the first agent event (or when the thread closes).
+        TurnActivityService.shared.turnBegan(roomTitle: displayTitle, ask: trimmed)
+        activityBegan = true
+        awaitingReply = true
+        do {
+            lastDecision = try await api.send(text: trimmed, mentioning: mentioning, preferredProjectID: nil)
+            outbox.remove(threadID: thread.id, clientEventID: entry.clientEventID)
+            events.removeAll { $0.id == echo.id }
+            refreshQueued()
+            await refreshEvents()
+        } catch {
+            refreshQueued()
+        }
+    }
+
+    /// Flush the queue in order, at most once per entry per call. Stops at
+    /// the first failure so transcript order survives a flaky network.
+    func replayOutbox() async {
+        guard let thread, !isReplaying else { return }
+        isReplaying = true
+        defer { isReplaying = false }
+        var didSucceed = false
+        for entry in outbox.pending(threadID: thread.id) {
+            do {
+                lastDecision = try await api.send(
+                    text: entry.text, mentioning: entry.mentioning,
+                    preferredProjectID: entry.preferredProjectID
+                )
+                outbox.remove(threadID: thread.id, clientEventID: entry.clientEventID)
+                events.removeAll { $0.id == Self.echoID(for: entry.clientEventID) }
+                didSucceed = true
+            } catch {
+                break
+            }
+        }
+        refreshQueued()
+        if didSucceed { await refreshEvents() }
+    }
+
+    private func subscribe() {
+        guard let thread else { return }
+        subscription = api.subscribeThread(threadID: thread.id) { [weak self] fresh in
+            Task { @MainActor [weak self] in self?.applyRemote(fresh) }
+        }
+    }
+
+    private func refreshEvents() async {
+        guard let thread else { return }
+        do {
+            applyRemote(try await api.threadEvents(threadID: thread.id))
+        } catch {
+            // A failed refresh keeps the last good events, not an error
+            // screen over a conversation the user was reading.
+        }
+    }
+
+    /// Merge server events over local state. Remote wins on id collisions;
+    /// optimistic echoes survive until their entry is confirmed sent.
+    private func applyRemote(_ fresh: [ThreadEvent]) {
+        guard thread != nil else { return }
+        var known = Dictionary(uniqueKeysWithValues: events.map { ($0.id, $0) })
+        for event in fresh { known[event.id] = event }
+        events = known.values.sorted {
+            $0.createdAt != $1.createdAt ? $0.createdAt < $1.createdAt : $0.id < $1.id
+        }
+        if loadState != .ready { loadState = events.isEmpty ? .empty : .ready }
+        if awaitingReply, fresh.contains(where: { $0.author == .agent }) {
+            awaitingReply = false
+            if activityBegan {
+                TurnActivityService.shared.turnEnded(outcomeWord: "Replied", startedAt: nil)
+                activityBegan = false
+            }
+        }
+    }
+
+    private func refreshQueued() {
+        queued = thread.map { outbox.pending(threadID: $0.id) } ?? []
     }
 }

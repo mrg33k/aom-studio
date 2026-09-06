@@ -127,7 +127,42 @@ final class PushService: NSObject, ObservableObject {
     /// NO room keys at all — a tap must still go somewhere, and the rooms rail is
     /// the honest somewhere. Never a silent swallow.
     nonisolated static func targetForTap(userInfo: [AnyHashable: Any]) -> DeepLinkTarget {
-        DeepLinkTarget(userInfo: userInfo) ?? .rail
+        if let link = DeepLink(userInfo: userInfo) { return .room(link) }
+        // Corner v2 pushes name a Project, Mission, or Visual Window tab (flat
+        // keys first, `corner://` URL second) — never a room or an agent.
+        if let route = v2Route(userInfo: userInfo) { return .route(route) }
+        if let raw = userInfo["deep_link"] as? String,
+           let url = URL(string: raw),
+           let target = DeepLinkTarget(url: url) {
+            return target
+        }
+        return .rail
+    }
+
+    /// A v2 push's destination: the flat `project_id` / `mission_id` /
+    /// `tab_id` keys, falling back to a `corner://project|mission|tab` URL in
+    /// `deep_link`. Tab wins over mission wins over project when several ride
+    /// together. (Legacy `project` / `mission_slug` name keys are NOT read
+    /// here — they describe a message row's home, not a v2 destination.)
+    nonisolated static func v2Route(userInfo: [AnyHashable: Any]) -> Route? {
+        func flat(_ key: String) -> String {
+            ((userInfo[key] as? String) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let tab = flat("tab_id")
+        if !tab.isEmpty { return .visualTab(tabID: tab) }
+        let mission = flat("mission_id")
+        if !mission.isEmpty { return .mission(missionID: mission) }
+        let project = flat("project_id")
+        if !project.isEmpty { return .project(projectID: project) }
+        guard let raw = userInfo["deep_link"] as? String,
+              let url = URL(string: raw),
+              let target = DeepLinkTarget(url: url),
+              case .route(let route) = target
+        else { return nil }
+        switch route {
+        case .project, .mission, .visualTab: return route
+        default: return nil
+        }
     }
 
     // MARK: - Lifecycle

@@ -48,17 +48,20 @@ final class CornerV2FlowUITests: XCTestCase {
 
     // MARK: - helpers
 
-    /// Screenshot to the test result AND to the evidence dir (R11_EVIDENCE_DIR
-    /// or /tmp/r11-evidence) so the run report can attach the PNGs.
+    /// Screenshot to the test result AND to the evidence dir (R14_EVIDENCE_DIR
+    /// or R11_EVIDENCE_DIR or /tmp/r11-evidence) so the run report can attach
+    /// the PNGs. EVIDENCE_PREFIX renames the run (R14-native for this round).
     private func evidence(_ name: String) {
         let shot = XCUIScreen.main.screenshot()
         let attach = XCTAttachment(screenshot: shot)
         attach.name = name
         attach.lifetime = .keepAlways
         add(attach)
-        let dir = ProcessInfo.processInfo.environment["R11_EVIDENCE_DIR"] ?? "/tmp/r11-evidence"
+        let env = ProcessInfo.processInfo.environment
+        let prefix = env["EVIDENCE_PREFIX"] ?? "R11-native"
+        let dir = env["R14_EVIDENCE_DIR"] ?? env["R11_EVIDENCE_DIR"] ?? "/tmp/r11-evidence"
         try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
-        try? shot.pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/R11-native-\(name).png"))
+        try? shot.pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/\(prefix)-\(name).png"))
     }
 
     /// The tree's presence, read off the General project name: container
@@ -116,6 +119,98 @@ final class CornerV2FlowUITests: XCTestCase {
             Thread.sleep(forTimeInterval: 2.0)
         }
         return query.count >= count
+    }
+
+    // MARK: - v2 chat helpers (native Task 5)
+
+    /// The v2 composer field (TextField or TextView — the multiline field
+    /// exposes either shape depending on OS version).
+    private func v2Field(in scope: XCUIApplication) -> XCUIElement {
+        let field = scope.textFields.matching(identifier: "v2-composer-field").firstMatch
+        if field.waitForExistence(timeout: 15) { return field }
+        return scope.textViews.matching(identifier: "v2-composer-field").firstMatch
+    }
+
+    private func v2Send(in scope: XCUIApplication) -> XCUIElement {
+        scope.buttons.matching(identifier: "v2-composer-send").firstMatch
+    }
+
+    private func openFirstProjectChatOn(_ scope: XCUIApplication) {
+        let tree = scope.staticTexts.matching(identifier: "workspace-project-name")
+            .matching(NSPredicate(format: "label == 'General'")).firstMatch
+        XCTAssertTrue(tree.waitForExistence(timeout: 120),
+                      "workspace tree never appeared — sign-in or ensureWorkspace failed")
+        scope.descendants(matching: .any).matching(identifier: "workspace-project-row").firstMatch.tap()
+        XCTAssertTrue(scope.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch
+            .waitForExistence(timeout: 30), "tapping a project did not open a chat")
+    }
+
+    /// Send/reply with a visible agent label: `@research` rides as routing
+    /// metadata, the reply carries the Research label, and the thread never
+    /// navigates away (the title is still the project).
+    func testV2ChatSendShowsAgentLabel() throws {
+        app.launchArguments += ["-v2FixtureUITest"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openFirstProjectChatOn(app)
+        let title = app.staticTexts.matching(identifier: "chat-title").firstMatch
+        XCTAssertTrue(title.waitForExistence(timeout: 15), "project chat has no title")
+        let projectName = title.label
+
+        let probe = "@research find competitors \(Int(Date().timeIntervalSince1970))"
+        let field = v2Field(in: app)
+        XCTAssertTrue(field.waitForExistence(timeout: 15), "no v2 composer field in the chat")
+        field.tap()
+        field.typeText(probe)
+        // The @brain suggestion may offer to complete the token; the raw
+        // @research text sends as-is either way.
+        let send = v2Send(in: app)
+        XCTAssertTrue(send.waitForExistence(timeout: 10), "no v2 composer send button")
+        send.tap()
+
+        let labels = app.staticTexts.matching(identifier: "v2-agent-label")
+        XCTAssertTrue(labels.firstMatch.waitForExistence(timeout: 60),
+                      "no agent-labelled reply arrived after sending")
+        XCTAssertTrue(labels.matching(NSPredicate(format: "label == 'Research'")).count >= 1,
+                      "the @research reply carries no visible Research label")
+        evidence("05-send-reply")
+        XCTAssertEqual(title.label, projectName, "sending navigated away from the thread")
+        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "workspace-agent-row").count, 0,
+                       "no agent rows anywhere after a mention send")
+    }
+
+    /// Offline queue: with sends failing, the message parks in the banner;
+    /// after a relaunch with the network back, it sends once and the banner
+    /// clears (the disk outbox survives the process death).
+    func testV2OfflineQueueBannerAndReplay() throws {
+        app.launchArguments += ["-v2FixtureUITest", "-v2FailNextSends=999"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openFirstProjectChatOn(app)
+
+        let probe = "Offline draft \(Int(Date().timeIntervalSince1970))"
+        let field = v2Field(in: app)
+        XCTAssertTrue(field.waitForExistence(timeout: 15), "no v2 composer field in the chat")
+        field.tap()
+        field.typeText(probe)
+        v2Send(in: app).tap()
+
+        let banner = app.descendants(matching: .any).matching(identifier: "v2-offline-banner").firstMatch
+        XCTAssertTrue(banner.waitForExistence(timeout: 30),
+                      "the failed send never parked in the offline queue banner")
+        evidence("06-offline-queue")
+        app.terminate()
+
+        let back = XCUIApplication()
+        back.launchArguments += ["-v2FixtureUITest"]
+        back.launch()
+        XCTAssertTrue(back.wait(for: .runningForeground, timeout: 30), "app did not relaunch")
+        openFirstProjectChatOn(back)
+        XCTAssertTrue(back.staticTexts[probe].waitForExistence(timeout: 60),
+                      "the queued message never sent after reconnect")
+        evidence("06b-offline-replayed")
+        XCTAssertFalse(back.descendants(matching: .any).matching(identifier: "v2-offline-banner").firstMatch.exists,
+                       "the offline banner did not clear after the replay succeeded")
     }
 
     // MARK: - the flow

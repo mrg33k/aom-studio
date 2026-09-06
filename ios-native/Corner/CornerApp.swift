@@ -49,6 +49,10 @@ struct CornerApp: App {
 
     init() {
         CornerTypography.install()
+        // Corner v2 (native Task 5): one-time outbox migration off room ids.
+        // Stranded room-keyed entries are dropped with a log line, never
+        // replayed — see V2OutboxStore.migrateIfNeeded.
+        V2OutboxStore.shared.migrateIfNeeded()
         #if DEBUG
         // Deterministic visual-proof mode. `simctl defaults write` can race the
         // process preferences cache, so captures opt into Glass explicitly.
