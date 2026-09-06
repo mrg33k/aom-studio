@@ -209,6 +209,7 @@ final class CornerAPI: ObservableObject {
     // MARK: - Thread
 
     /// GET /api/dashboard/messages. Returns oldest-first.
+    @available(*, deprecated, message: "Corner v2: use CornerV2API")
     func fetchMessages(room: Room, limit: Int = 100) async throws -> [MessageRow] {
         var items = room.historyQueryItems
         items.append(URLQueryItem(name: "limit", value: String(limit)))
@@ -231,6 +232,7 @@ final class CornerAPI: ObservableObject {
     /// user is already inside (the room composer, a room picked in the confirm sheet), so
     /// it never carries a route stamp — it forwards with `routed: nil`.
     @discardableResult
+    @available(*, deprecated, message: "Corner v2: use CornerV2API")
     func send(text: String, room: Room, interactionMode: String = "work") async throws -> MessageRow? {
         try await send(text: text, room: room, interactionMode: interactionMode, routed: nil)
     }
@@ -242,6 +244,7 @@ final class CornerAPI: ObservableObject {
     /// Kept off the `MessageTransport` protocol on purpose: provenance is an intake concern,
     /// not part of the room-thread seam the failure tests run against.
     @discardableResult
+    @available(*, deprecated, message: "Corner v2: use CornerV2API")
     func send(text: String, room: Room, interactionMode: String, routed: RouteProvenance?) async throws -> MessageRow? {
         try await send(text: text, room: room, interactionMode: interactionMode, routed: routed, attachments: [])
     }
@@ -249,6 +252,7 @@ final class CornerAPI: ObservableObject {
     /// The full send: text plus any files the composer staged, one POST, one row —
     /// exactly how the web's composer rides pendingAttachments into the write path.
     @discardableResult
+    @available(*, deprecated, message: "Corner v2: use CornerV2API")
     func send(
         text: String, room: Room, interactionMode: String, attachments: [Attachment]
     ) async throws -> MessageRow? {
@@ -256,6 +260,7 @@ final class CornerAPI: ObservableObject {
     }
 
     @discardableResult
+    @available(*, deprecated, message: "Corner v2: use CornerV2API")
     func send(
         text: String, room: Room, interactionMode: String,
         attachments: [Attachment], roomAgent: String?
@@ -267,6 +272,7 @@ final class CornerAPI: ObservableObject {
     }
 
     @discardableResult
+    @available(*, deprecated, message: "Corner v2: use CornerV2API")
     func send(
         text: String, room: Room, interactionMode: String,
         attachments: [Attachment], roomAgent: String?, clientMessageID: String
@@ -279,6 +285,7 @@ final class CornerAPI: ObservableObject {
     }
 
     @discardableResult
+    @available(*, deprecated, message: "Corner v2: use CornerV2API")
     func send(
         text: String, room: Room, interactionMode: String,
         routed: RouteProvenance?, attachments: [Attachment]
@@ -290,6 +297,7 @@ final class CornerAPI: ObservableObject {
     }
 
     @discardableResult
+    @available(*, deprecated, message: "Corner v2: use CornerV2API")
     func send(
         text: String, room: Room, interactionMode: String,
         routed: RouteProvenance?, attachments: [Attachment], roomAgent: String?,

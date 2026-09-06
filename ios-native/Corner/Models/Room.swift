@@ -415,3 +415,11 @@ enum AgentRoster {
         }
     }
 }
+
+// MARK: - Corner v2 compatibility aliases
+//
+// The room-as-domain model is retired in favor of `CornerV2API` (Workspace →
+// Project → Mission → Thread). These aliases keep the backend
+// compatibility-API callers compiling until cutover.
+@available(*, deprecated, message: "Corner v2: use CornerV2API (replaces RoomDTO)") typealias RoomDTO = Room
+@available(*, deprecated, message: "Corner v2: use CornerV2API (replaces MessageDTO)") typealias MessageDTO = MessageRow

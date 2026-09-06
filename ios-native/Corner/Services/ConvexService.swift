@@ -99,14 +99,8 @@ struct ConvexEnvelope<Value: Decodable>: Decodable {
     let errorMessage: String?
 }
 
-/// Minimal v2 workspace shape for the transport gate. The full workspace tree
-/// DTO (projects, missions, threads) lands with the typed v2 client in Task 3,
-/// which expands this struct additively.
-struct WorkspaceSummary: Codable, Equatable {
-    let id: String
-    let name: String
-}
-
+/// The full workspace-tree DTO now lives in `Corner/Models/CornerV2DTO.swift`
+/// (native Task 3); transport tests use their own probe struct.
 final class ConvexService {
     static let shared = ConvexService()
 
@@ -130,11 +124,24 @@ final class ConvexService {
     /// endpoint carries a `userId`.
     func request<Value: Decodable>(_ endpoint: ConvexEndpoint, as type: Value.Type) async throws -> Value {
         let data = try await authorizedData(for: endpoint)
-        let envelope = try JSONDecoder().decode(ConvexEnvelope<Value>.self, from: data)
+        let envelope = try JSONDecoder.corner.decode(ConvexEnvelope<Value>.self, from: data)
         guard envelope.status == "success", let value = envelope.value else {
             throw ConvexServiceError.server(envelope.errorMessage ?? "Convex request failed")
         }
         return value
+    }
+
+    /// Nullable-query reads (native Task 3): the v2 subscribable queries
+    /// (`workspaceTree`, `threadForProject`, `threadForMission`) return their
+    /// DTO or null when the workspace was never ensured. A success envelope
+    /// with a null value decodes to nil instead of throwing.
+    func requestOptional<Value: Decodable>(_ endpoint: ConvexEndpoint, as type: Value.Type) async throws -> Value? {
+        let data = try await authorizedData(for: endpoint)
+        let envelope = try JSONDecoder.corner.decode(ConvexEnvelope<Value?>.self, from: data)
+        guard envelope.status == "success" else {
+            throw ConvexServiceError.server(envelope.errorMessage ?? "Convex request failed")
+        }
+        return envelope.value ?? nil
     }
 
     /// Poll an endpoint on an interval, delivering typed results. The returned

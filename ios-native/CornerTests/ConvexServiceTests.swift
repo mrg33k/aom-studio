@@ -12,6 +12,14 @@ import XCTest
 @MainActor
 final class ConvexServiceTests: XCTestCase {
 
+    /// Transport-gate probe shape (Task 2's minimal workspace). The real
+    /// `WorkspaceSummary` DTO lives in CornerV2DTO now; these tests prove
+    /// envelope/auth behavior, not the v2 shape.
+    private struct TransportProbe: Codable, Equatable {
+        let id: String
+        let name: String
+    }
+
     // MARK: - Plan Task 2, Step 1
 
     func testQueryThrowsWhenConvexEnvelopeStatusIsError() async {
@@ -20,7 +28,7 @@ final class ConvexServiceTests: XCTestCase {
             transport: FakeConvexTransport.errorEnvelope("not found")
         )
         do {
-            _ = try await service.request(.workspaceTree, as: WorkspaceSummary.self)
+            _ = try await service.request(.workspaceTree, as: TransportProbe.self)
             XCTFail("an error envelope must throw, never decode")
         } catch {
             XCTAssertEqual(error as? ConvexServiceError, .server("not found"))
@@ -94,11 +102,11 @@ final class ConvexServiceTests: XCTestCase {
     func testAuthorizedRequestSendsBearerTokenOnce() async throws {
         let session = AuthSession.valid
         let transport = FakeConvexTransport.success(
-            value: WorkspaceSummary(id: "w1", name: "Demo")
+            value: TransportProbe(id: "w1", name: "Demo")
         )
         let service = ConvexService(session: session, transport: transport)
-        let workspace = try await service.request(.workspaceTree, as: WorkspaceSummary.self)
-        XCTAssertEqual(workspace, WorkspaceSummary(id: "w1", name: "Demo"))
+        let workspace = try await service.request(.workspaceTree, as: TransportProbe.self)
+        XCTAssertEqual(workspace, TransportProbe(id: "w1", name: "Demo"))
         XCTAssertEqual(transport.requests.count, 1)
         let authHeaders = (transport.requests[0].allHTTPHeaderFields ?? [:])
             .filter { ($0.key as? String)?.lowercased() == "authorization" }
@@ -112,10 +120,10 @@ final class ConvexServiceTests: XCTestCase {
         let service = ConvexService(
             session: .valid,
             transport: FakeConvexTransport.success(
-                value: WorkspaceSummary(id: "w1", name: "Demo")
+                value: TransportProbe(id: "w1", name: "Demo")
             )
         )
-        let workspace = try await service.request(.workspaceTree, as: WorkspaceSummary.self)
+        let workspace = try await service.request(.workspaceTree, as: TransportProbe.self)
         XCTAssertEqual(workspace.id, "w1")
     }
 }

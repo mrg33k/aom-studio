@@ -1,0 +1,288 @@
+{
+  "workspace": {
+    "id": "world-karen-1",
+    "name": "karens-world",
+    "generalProjectID": "proj-general-1",
+    "projects": [
+      {
+        "id": "proj-general-1",
+        "workspaceID": "world-karen-1",
+        "name": "General",
+        "kind": "general",
+        "tintHex": "#8B5CF6",
+        "needsAttention": false,
+        "threadID": "thread-general-1",
+        "missions": []
+      },
+      {
+        "id": "proj-aster-1",
+        "workspaceID": "world-karen-1",
+        "name": "Aster",
+        "kind": "standard",
+        "tintHex": "#5B9BFF",
+        "needsAttention": true,
+        "threadID": "thread-aster-1",
+        "missions": [
+          {
+            "id": "mission-ship-1",
+            "projectID": "proj-aster-1",
+            "title": "Ship home page",
+            "status": "live",
+            "threadID": "thread-ship-1"
+          }
+        ]
+      }
+    ]
+  },
+  "thread": {
+    "id": "thread-aster-1",
+    "ownerType": "project",
+    "projectID": "proj-aster-1",
+    "missionID": null,
+    "visualSessionID": "session-aster-1",
+    "events": [
+      {
+        "id": "event-user-1",
+        "threadID": "thread-aster-1",
+        "author": "user",
+        "agentLabel": null,
+        "blocks": [{ "type": "text", "value": "Draft the brief for Aster." }],
+        "createdAt": "2026-09-05T10:00:00.000Z"
+      },
+      {
+        "id": "event-agent-1",
+        "threadID": "thread-aster-1",
+        "author": "agent",
+        "agentLabel": "Research",
+        "blocks": [
+          { "type": "text", "value": "I found three competitors." },
+          {
+            "type": "question",
+            "id": "audience",
+            "text": "Who is it for?",
+            "options": [
+              { "id": "buyers", "title": "Buyers", "detail": "Range and timing", "recommended": true },
+              { "id": "renters", "title": "Renters", "detail": "Deposit and term", "recommended": false }
+            ]
+          }
+        ],
+        "createdAt": "2026-09-05T10:01:00.000Z"
+      },
+      {
+        "id": "event-agent-2",
+        "threadID": "thread-aster-1",
+        "author": "agent",
+        "agentLabel": "Research",
+        "blocks": [
+          {
+            "type": "steps",
+            "steps": [
+              { "id": "step-1", "label": "Gather sources", "state": "done" },
+              { "id": "step-2", "label": "Draft brief", "state": "working" }
+            ]
+          },
+          { "type": "success", "text": "Gathered three sources.", "stepIndex": 0 },
+          {
+            "type": "snag",
+            "text": "The brief needs a call date.",
+            "options": [
+              { "id": "pick-date", "title": "Pick a date", "detail": "Choose the call date", "recommended": true }
+            ]
+          }
+        ],
+        "createdAt": "2026-09-05T10:02:00.000Z"
+      },
+      {
+        "id": "event-user-2",
+        "threadID": "thread-aster-1",
+        "author": "user",
+        "agentLabel": null,
+        "blocks": [
+          { "type": "artifact", "artifactIDs": ["artifact-1"] },
+          { "type": "checklist", "pinIDs": ["pin-1", "pin-2"] }
+        ],
+        "createdAt": "2026-09-05T10:03:00.000Z"
+      }
+    ]
+  },
+  "events": [
+    {
+      "id": "event-user-1",
+      "threadID": "thread-aster-1",
+      "author": "user",
+      "agentLabel": null,
+      "blocks": [{ "type": "text", "value": "Draft the brief for Aster." }],
+      "createdAt": "2026-09-05T10:00:00.000Z"
+    },
+    {
+      "id": "event-agent-1",
+      "threadID": "thread-aster-1",
+      "author": "agent",
+      "agentLabel": "Research",
+      "blocks": [
+        { "type": "text", "value": "I found three competitors." },
+        {
+          "type": "question",
+          "id": "audience",
+          "text": "Who is it for?",
+          "options": [
+            { "id": "buyers", "title": "Buyers", "detail": "Range and timing", "recommended": true },
+            { "id": "renters", "title": "Renters", "detail": "Deposit and term", "recommended": false }
+          ]
+        }
+      ],
+      "createdAt": "2026-09-05T10:01:00.000Z"
+    },
+    {
+      "id": "event-agent-2",
+      "threadID": "thread-aster-1",
+      "author": "agent",
+      "agentLabel": "Research",
+      "blocks": [
+        {
+          "type": "steps",
+          "steps": [
+            { "id": "step-1", "label": "Gather sources", "state": "done" },
+            { "id": "step-2", "label": "Draft brief", "state": "working" }
+          ]
+        },
+        { "type": "success", "text": "Gathered three sources.", "stepIndex": 0 },
+        {
+          "type": "snag",
+          "text": "The brief needs a call date.",
+          "options": [
+            { "id": "pick-date", "title": "Pick a date", "detail": "Choose the call date", "recommended": true }
+          ]
+        }
+      ],
+      "createdAt": "2026-09-05T10:02:00.000Z"
+    },
+    {
+      "id": "event-user-2",
+      "threadID": "thread-aster-1",
+      "author": "user",
+      "agentLabel": null,
+      "blocks": [
+        { "type": "artifact", "artifactIDs": ["artifact-1"] },
+        { "type": "checklist", "pinIDs": ["pin-1", "pin-2"] }
+      ],
+      "createdAt": "2026-09-05T10:03:00.000Z"
+    }
+  ],
+  "visualTabs": [
+    {
+      "id": "tab-pdf-1",
+      "visualSessionID": "session-aster-1",
+      "threadID": "thread-aster-1",
+      "kind": "pdf",
+      "artifactID": "artifact-1",
+      "title": "Launch brief",
+      "openedBy": "user",
+      "agentLabel": null,
+      "state": { "page": "2", "reviewing": "true" },
+      "createdAt": "2026-09-05T10:04:00.000Z"
+    },
+    {
+      "id": "tab-email-1",
+      "visualSessionID": "session-aster-1",
+      "threadID": "thread-aster-1",
+      "kind": "email",
+      "artifactID": null,
+      "title": "Invoice question",
+      "openedBy": "agent",
+      "agentLabel": "Research",
+      "state": { "reviewing": "false" },
+      "createdAt": "2026-09-05T10:05:00.000Z"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "artifact-1",
+      "threadID": "thread-aster-1",
+      "title": "Launch brief",
+      "kind": "pdf",
+      "version": 1,
+      "sourceURL": null,
+      "metadata": { "pages": "3", "mime": "application/pdf" }
+    }
+  ],
+  "pins": [
+    {
+      "id": "pin-1",
+      "artifactID": "artifact-1",
+      "anchor": { "type": "point", "page": 2, "x": 10.5, "y": 20.25 },
+      "text": "Raise headline",
+      "isDone": false
+    },
+    {
+      "id": "pin-2",
+      "artifactID": "artifact-1",
+      "anchor": { "type": "time", "seconds": 2.0, "x": null, "y": null },
+      "text": "Trim the pause",
+      "isDone": false
+    },
+    {
+      "id": "pin-3",
+      "artifactID": "artifact-1",
+      "anchor": { "type": "line", "number": 42 },
+      "text": "Rename this symbol",
+      "isDone": true
+    }
+  ],
+  "route": {
+    "decisionId": "route-decision-1",
+    "destinationThreadID": "thread-aster-1",
+    "project": {
+      "id": "proj-aster-1",
+      "workspaceID": "world-karen-1",
+      "name": "Aster",
+      "kind": "standard",
+      "tintHex": "#5B9BFF",
+      "needsAttention": true,
+      "threadID": "thread-aster-1",
+      "missions": [
+        {
+          "id": "mission-ship-1",
+          "projectID": "proj-aster-1",
+          "title": "Ship home page",
+          "status": "live",
+          "threadID": "thread-ship-1"
+        }
+      ]
+    },
+    "mission": {
+      "id": "mission-ship-1",
+      "projectID": "proj-aster-1",
+      "title": "Ship home page",
+      "status": "live",
+      "threadID": "thread-ship-1"
+    },
+    "confidence": 0.78,
+    "alternatives": ["thread-north-1"],
+    "reason": "Strongest match for Aster > Ship home page.",
+    "needsClarification": false,
+    "needsCreationConfirmation": false,
+    "actor": "karen",
+    "createdAt": "2026-09-05T10:06:00.000Z"
+  },
+  "ledger": [
+    {
+      "id": "ledger-1",
+      "workspaceID": "world-karen-1",
+      "kind": "did",
+      "description": "Scoped a ledger row.",
+      "actor": "karen",
+      "surface": "corner:v2",
+      "subjectIDs": ["aster"],
+      "createdAt": "2026-09-05T10:07:00.000Z",
+      "supersedesID": null
+    }
+  ],
+  "confirmation": {
+    "id": "confirm-1",
+    "sourceThreadID": "thread-aster-1",
+    "destinationThreadID": "thread-north-1",
+    "summary": "update brief: Set primary to #5B9BFF",
+    "expiresAt": "2026-09-05T10:16:00.000Z"
+  }
+}
