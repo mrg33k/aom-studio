@@ -20,6 +20,19 @@ struct RootView: View {
     @EnvironmentObject private var api: CornerAPI
     @EnvironmentObject private var push: PushService
     @EnvironmentObject private var router: AppRouter
+    /// R17 P061: the setup flow covers the signed-in app until done.
+    @State private var showSetup = false
+    @State private var setupInitialStep = 0
+    @StateObject private var v2home = WorkspaceStore.shared
+
+    /// R17 P062: the workspace is loaded and holds no real projects and no
+    /// missions. (General alone, fresh from ensureWorkspace, counts as empty.)
+    private var homeIsEmpty: Bool {
+        guard let workspace = v2home.workspace else { return false }
+        let real = workspace.projects.filter { $0.kind != .general }
+        let missions = workspace.projects.flatMap(\.missions)
+        return real.isEmpty && missions.isEmpty
+    }
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -29,7 +42,24 @@ struct RootView: View {
                 SetPasswordView()
             } else if api.session != nil {
                 NavigationStack(path: $router.path) {
-                    RoomListView()
+                    // R17 P062: no real projects yet → the empty home, with
+                    // its CTAs jumping into setup at the matching step.
+                    Group {
+                        if homeIsEmpty {
+                            V2EmptyHomeView(
+                                onStartProject: {
+                                    setupInitialStep = 5
+                                    showSetup = true
+                                },
+                                onBringContext: {
+                                    setupInitialStep = 0
+                                    showSetup = true
+                                }
+                            )
+                        } else {
+                            RoomListView()
+                        }
+                    }
                         .navigationDestination(for: Route.self) { route in
                             switch route {
                             case .room(let room): ChatView(room: room)
@@ -44,6 +74,22 @@ struct RootView: View {
                             case .legacyArchive:  LegacyArchiveView()
                             }
                         }
+                }
+                // R17 P061: first run lands in setup, over the home.
+                .fullScreenCover(isPresented: $showSetup) {
+                    V2SetupView(initialStep: setupInitialStep) {
+                        showSetup = false
+                        Task { await v2home.refresh() }
+                    }
+                }
+                .task(id: api.session?.user.id) {
+                    guard api.session != nil else { return }
+                    await v2home.refresh()
+                    if V2SetupStore.needsSetup { showSetup = true }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .v2RerunSetup)) { _ in
+                    setupInitialStep = 0
+                    showSetup = true
                 }
             } else {
                 SignInView()

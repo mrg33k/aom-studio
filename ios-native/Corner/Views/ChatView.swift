@@ -200,17 +200,43 @@ struct ChatView: View {
     /// `@brain` suggestions route server-side. No agent rooms, no specialist
     /// menu, no navigation state — a send never leaves this thread.
     private var v2Screen: some View {
-        VisualWindowHost(main: { v2Main }, onCarryOn: { text in
-            Task { await v2model.send(text) }
-        })
+        VisualWindowHost(
+            main: { v2Main },
+            onCarryOn: { text in
+                Task { await v2model.send(text) }
+            },
+            statusText: v2LastAgentText,
+            projectName: v2?.project.name ?? ""
+        )
             .environmentObject(window)
             .environmentObject(v2review)
     }
+
+    /// P054: the sheet's status card shows the latest agent line — real
+    /// thread content, never a mock. Nil (no agent text yet) hides the card.
+    private var v2LastAgentText: String? {
+        for event in v2model.events.reversed() where event.author == .agent {
+            for block in event.blocks {
+                if case .text(let value) = block,
+                   !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    return value
+                }
+            }
+        }
+        return nil
+    }
+
+    /// R17 P031: the design draws its own 52px nav bar (hamburger, centred
+    /// title block, status dot) instead of the system toolbar, so the metrics
+    /// match the export and the hamburger opens the drawer. Swipe-back still
+    /// pops to the home tree; the drawer is the forward path.
+    @State private var v2ShowingDrawer = false
 
     /// The chat column itself; the host lays the Visual Window beside it on
     /// iPad and over it as a sheet on iPhone. Same store, same selection.
     private var v2Main: some View {
         VStack(spacing: 0) {
+            v2NavBar
             v2ThreadList
             if let confirmation = v2model.pendingConfirmation {
                 v2ConfirmationCard(confirmation)
@@ -231,40 +257,21 @@ struct ChatView: View {
         // identifier on ANY ancestor view overwrites every identified control
         // below it (measured: with one on the root, the composer field and
         // the send button both read back as the container's id). The screen
-        // marker lives on the toolbar subtitle, a leaf in a separate subtree.
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Theme.ground, for: .navigationBar)
-        .toolbarBackground(.visible, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                // P022: a mission shows the PROJECT name as the 12.5px line
-                // above the title; a project shows the title only. The
-                // screen marker stays a 1pt overlay leaf — never on the
-                // VStack (R14: a container identifier overwrites its
-                // children, and the title must keep its own).
-                VStack(spacing: 1) {
-                    if let mission = v2?.mission {
-                        Text(v2?.project.name ?? mission.title)
-                            .font(.hanken(12.5).weight(.medium))
-                            .foregroundStyle(Theme.inkSoft)
-                            .lineLimit(1)
-                            .accessibilityIdentifier("chat-subtitle")
-                    }
-                    Text(v2?.title ?? v2model.displayTitle)
-                        .font(.hanken(15).weight(.semibold))
-                        .foregroundStyle(Theme.ink)
-                        .lineLimit(1)
-                        .accessibilityIdentifier("chat-title")
-                }
-                .overlay(alignment: .top) {
-                    Color.clear.frame(width: 1, height: 1)
-                        .accessibilityIdentifier("chat-screen")
-                }
+        // marker lives on the nav title, a leaf in a separate subtree.
+        .toolbar(.hidden, for: .navigationBar)
+        .overlay {
+            if v2ShowingDrawer {
+                V2DrawerView(isPresented: $v2ShowingDrawer, currentThreadID: v2?.thread.id)
             }
         }
         .onAppear {
             if let context = v2 {
+                V2RecentStore.shared.record(project: context.project, mission: context.mission)
+                // Setup step 6 stages the first goal here — reviewed, never sent.
+                if v2model.draft.isEmpty,
+                   let staged = V2DraftStore.take(threadID: context.thread.id) {
+                    v2model.draft = staged
+                }
                 Task { await v2model.start(thread: context.thread, project: context.project, mission: context.mission) }
                 Task { await window.start(threadID: context.thread.id) }
             }
@@ -280,8 +287,80 @@ struct ChatView: View {
         }
     }
 
+    /// R17 P029–P031: the design's 52px nav bar — a 44pt hamburger, the
+    /// centred title block (P022's 12.5px project line over the 16px title),
+    /// and the 10px status dot in a 44pt target. Identifiers stay on leaves.
+    private var v2NavBar: some View {
+        HStack(spacing: 0) {
+            Button { v2ShowingDrawer = true } label: {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("v2-drawer-button")
+            .accessibilityLabel("Open menu")
+            .padding(.leading, 12)
+            Spacer(minLength: 0)
+            // P022: a mission shows the PROJECT name as the 12.5px line
+            // above the title; a project shows the title only. The screen
+            // marker stays a 1pt overlay leaf — never on the VStack (R14: a
+            // container identifier overwrites its children, and the title
+            // must keep its own).
+            VStack(spacing: 1) {
+                if let mission = v2?.mission {
+                    Text(v2?.project.name ?? mission.title)
+                        .font(.hanken(12.5).weight(.medium))
+                        .foregroundStyle(Theme.inkSoft)
+                        .lineLimit(1)
+                        .accessibilityIdentifier("chat-subtitle")
+                }
+                Text(v2?.title ?? v2model.displayTitle)
+                    .font(.hanken(16).weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                    .lineLimit(1)
+                    .accessibilityIdentifier("chat-title")
+            }
+            .overlay(alignment: .top) {
+                Color.clear.frame(width: 1, height: 1)
+                    .accessibilityIdentifier("chat-screen")
+            }
+            Spacer(minLength: 0)
+            // P030: status as a 10px dot — mission status, or the project's
+            // needs-you signal. A project with nothing to say shows no dot.
+            if let dot = v2StatusDot {
+                Circle()
+                    .fill(dot)
+                    .frame(width: 10, height: 10)
+                    .frame(width: 44, height: 44)
+                    .accessibilityIdentifier("v2-status-dot")
+            } else {
+                Color.clear.frame(width: 44, height: 44)
+            }
+        }
+        .padding(.trailing, 12)
+        .frame(height: 52)
+    }
+
+    /// The nav dot colour, or nil when this thread carries no status.
+    private var v2StatusDot: Color? {
+        if let mission = v2?.mission {
+            switch mission.status {
+            case .live: return Theme.success
+            case .blocked: return Theme.warning
+            case .ready, .done: return Theme.inkFaint
+            }
+        } else if let project = v2?.project, project.needsAttention {
+            return Theme.warning
+        }
+        return nil
+    }
+
     private var v2ThreadList: some View {
         ScrollView {
+            // P044: the thread column is 348pt (21px gutters), not 16.
             LazyVStack(alignment: .leading, spacing: Theme.s3) {
                 switch v2model.loadState {
                 case .loading:
@@ -294,9 +373,14 @@ struct ChatView: View {
                     centeredNotice("No messages yet — say something.", systemImage: "bubble.left")
                 case .empty, .ready:
                     ForEach(v2model.events) { event in
-                        V2EventRow(event: event, threadID: v2?.thread.id ?? "", onSend: { text in
-                            Task { await v2model.send(text) }
-                        })
+                        V2EventRow(
+                            event: event,
+                            threadID: v2?.thread.id ?? "",
+                            agentName: v2?.project.name,
+                            onSend: { text in
+                                Task { await v2model.send(text) }
+                            }
+                        )
                         .id(event.id)
                     }
                     ForEach(v2model.unsentWithoutEcho) { entry in
@@ -306,7 +390,7 @@ struct ChatView: View {
                 }
                 Color.clear.frame(height: 1)
             }
-            .padding(.horizontal, Theme.s4)
+            .padding(.horizontal, 21)
             .padding(.top, Theme.s3)
             .padding(.bottom, 28)
         }
@@ -537,72 +621,62 @@ struct ChatView: View {
             if !window.tabs.isEmpty {
                 v2PeekBar
             }
-            HStack(alignment: .bottom, spacing: 8) {
-                // P023: 50px pill with the Record chip inside.
+            // P039: pill + round send sit directly on the ground — the
+            // frosted outer card is gone.
+            HStack(alignment: .bottom, spacing: 10) {
+                // P023: 50px pill with the Record chip inside. The pill fill
+                // is surface; the focused ring is the only chrome.
                 HStack(spacing: 4) {
-                    TextField("Message…", text: $v2model.draft, axis: .vertical)
-                        .font(.hanken(16))
+                    // P038: `Tell Aster what to make next`, not `Message…`.
+                    TextField(
+                        "Tell \(v2?.project.name ?? "Corner") what to make next",
+                        text: $v2model.draft, axis: .vertical
+                    )
+                        .font(.hanken(15))
                         .lineLimit(1...5)
                         .focused($composerFocused)
                         .foregroundStyle(Theme.ink)
                         .padding(.vertical, 8)
                         .accessibilityIdentifier("v2-composer-field")
                     if speech.supported {
+                        // P041: a bare muted glyph — no circle behind it.
                         Button(action: toggleV2Dictation) {
                             Image(systemName: speech.isListening ? "mic.fill" : "mic")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(speech.isListening ? Color.white : Theme.inkSoft)
+                                .font(.system(size: 17, weight: .regular))
+                                .foregroundStyle(speech.isListening ? Color.red : Theme.inkSoft)
                                 .frame(width: 36, height: 36)
-                                .background(
-                                    speech.isListening ? Color.red : Theme.raised2,
-                                    in: Circle()
-                                )
                         }
                         .accessibilityIdentifier("v2-record")
                         .accessibilityLabel(speech.isListening ? "Stop dictation" : "Speak your message")
                     }
                 }
-                .padding(.leading, Theme.s4)
+                .padding(.leading, 17)
                 .padding(.trailing, Theme.s1)
                 .frame(minHeight: 50)
-                .background(Theme.composerCard, in: Capsule())
+                .background(Theme.raised, in: Capsule())
                 .overlay(
                     Capsule()
-                        .strokeBorder(composerFocused ? Theme.accent : Theme.hairline, lineWidth: 1)
+                        .strokeBorder(composerFocused ? Theme.accent : Color.clear, lineWidth: 1)
                 )
-                // P023: 50px round send beside the pill.
+                // P023 + P040: the 50px round send — always accent with an
+                // up-arrow, even with an empty draft.
                 Button {
                     if speech.isListening { speech.stop() }
                     let text = v2model.draft
                     Task { await v2model.send(text) }
                 } label: {
-                    Image(systemName: "paperplane.fill")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(v2CanSend ? Color.white : Theme.inkFaint)
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(Color.white)
                         .frame(width: 50, height: 50)
-                        .background(
-                            v2CanSend ? Theme.accent : Theme.raised2,
-                            in: Circle()
-                        )
+                        .background(Theme.accent, in: Circle())
                 }
                 .accessibilityIdentifier("v2-composer-send")
                 .accessibilityLabel("Send message")
                 .disabled(!v2CanSend)
             }
         }
-        .padding(Theme.s2)
-        .background {
-            Theme.frostedSurface(
-                fallback: Theme.composer,
-                tint: Color(cv6: 0x111820, opacity: 0.45),
-                in: RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous)
-            )
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.buttonRadius, style: .continuous)
-                .strokeBorder(Theme.hairline, lineWidth: 1)
-        )
-        .padding(.horizontal, Theme.s3)
+        .padding(.horizontal, 21)
         .padding(.bottom, Theme.s2)
     }
 
@@ -612,6 +686,7 @@ struct ChatView: View {
 
     /// P023 artifact peek bar (60px): the active tab's live thumbnail and
     /// change count. Tapping opens the sheet/column on the selected tab.
+    /// P042–P043: chip fill r16, 13.5/600 title + 11.5 sub, 56×36 thumb.
     private var v2PeekBar: some View {
         Button {
             window.isPresented = true
@@ -620,26 +695,22 @@ struct ChatView: View {
                 v2PeekThumbnail
                 VStack(alignment: .leading, spacing: 1) {
                     Text(window.selectedTab?.title ?? "Preview")
-                        .font(.hanken(14).weight(.semibold))
+                        .font(.hanken(13.5).weight(.semibold))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                     Text(v2PeekCountText)
-                        .font(.hanken(12))
+                        .font(.hanken(11.5))
                         .foregroundStyle(Theme.inkSoft)
                         .accessibilityIdentifier("visual-peek-count")
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.up")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Theme.inkFaint)
             }
-            .padding(.horizontal, Theme.s3)
+            .padding(.horizontal, 11)
             .frame(maxWidth: .infinity, minHeight: 60, maxHeight: 60, alignment: .leading)
-            .background(Theme.composerCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(Theme.hairline, lineWidth: 1)
-            )
+            .background(Theme.chipFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .accessibilityIdentifier("visual-peek")
         .accessibilityLabel("Open \(window.selectedTab?.title ?? "preview")")
@@ -652,7 +723,7 @@ struct ChatView: View {
     }
 
     /// The live thumbnail: the photo itself when the active tab is one,
-    /// otherwise the kind's mark.
+    /// otherwise the kind badge. 56×36 like the export's live frame.
     private var v2PeekThumbnail: some View {
         Group {
             if let tab = window.selectedTab,
@@ -663,14 +734,17 @@ struct ChatView: View {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 40, height: 40)
+                    .frame(width: 56, height: 36)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
             } else {
-                Image(systemName: V2ArtifactCards.icon(for: window.selectedTab?.kind ?? .document))
-                    .font(.system(size: 16))
-                    .foregroundStyle(Theme.accent)
-                    .frame(width: 40, height: 40)
-                    .background(Theme.accentWeak, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                Text(V2ArtifactCards.badge(for: window.selectedTab?.kind ?? .document).0)
+                    .font(.hanken(9.5).weight(.bold))
+                    .foregroundStyle(Color.white)
+                    .frame(width: 56, height: 36)
+                    .background(
+                        V2ArtifactCards.badge(for: window.selectedTab?.kind ?? .document).1,
+                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    )
             }
         }
     }
@@ -2035,36 +2109,74 @@ struct ChatView: View {
 // tapping it does nothing, because there is nowhere to go. Every block the
 // backend emits renders; question options send their title as a new message.
 
+/// R17 phone-thread clock: `6:41`.
+private enum V2ThreadClock {
+    static func string(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "h:mm"
+        return f.string(from: date)
+    }
+}
+
 struct V2EventRow: View {
     let event: ThreadEvent
     let threadID: String
+    /// The owning project name — the design's agent line reads `Aster 6:41`.
+    let agentName: String?
     let onSend: (String) -> Void
 
     // NOTE: no identifier on these layout containers — it would overwrite
     // the agent label's and block text's own identifiers (same finding as
     // chat-screen). Tests address the leaves directly.
+
+    /// The agent line: a specialist label on the event wins; otherwise the
+    /// project name (the default agent), then the event label, then Corner.
+    private var displayAgentName: String {
+        if let label = event.agentLabel, label != "Corner" { return label }
+        return agentName ?? event.agentLabel ?? "Corner"
+    }
     var body: some View {
         if event.author == .user {
-            HStack {
-                Spacer(minLength: 48)
-                VStack(alignment: .trailing, spacing: 4) {
-                    ForEach(Array(event.blocks.enumerated()), id: \.offset) { _, block in
-                        V2BlockView(block: block, threadID: threadID, onSend: onSend)
+            VStack(alignment: .trailing, spacing: 4) {
+                HStack {
+                    Spacer(minLength: 48)
+                    VStack(alignment: .trailing, spacing: 4) {
+                        ForEach(Array(event.blocks.enumerated()), id: \.offset) { _, block in
+                            V2BlockView(block: block, threadID: threadID, isUser: event.author == .user, onSend: onSend)
+                        }
                     }
                 }
+                // P045: the design stamps every message `6:41`.
+                Text(V2ThreadClock.string(event.createdAt))
+                    .font(.hanken(10.5))
+                    .foregroundStyle(Theme.inkFaint)
+                    .accessibilityIdentifier("v2-event-time")
             }
         } else {
-            HStack(alignment: .bottom, spacing: 8) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(event.agentLabel ?? "Corner")
-                        .font(.hanken(11).weight(.semibold))
-                        .foregroundStyle(Theme.accent)
-                        .accessibilityIdentifier("v2-agent-label")
-                    ForEach(Array(event.blocks.enumerated()), id: \.offset) { _, block in
-                        V2BlockView(block: block, threadID: threadID, onSend: onSend)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .bottom, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        // P033: `Aster` 14/600 fg + the 12px faint clock.
+                        // The line reads the agent: the project name for the
+                        // default agent, the specialist's own label when the
+                        // event names one (the @research flow).
+                        HStack(spacing: 6) {
+                            Text(displayAgentName)
+                                .font(.hanken(14).weight(.semibold))
+                                .foregroundStyle(Theme.ink)
+                                .accessibilityIdentifier("v2-agent-label")
+                            Text(V2ThreadClock.string(event.createdAt))
+                                .font(.hanken(12))
+                                .foregroundStyle(Theme.inkFaint)
+                                .accessibilityIdentifier("v2-event-time")
+                        }
+                        ForEach(Array(event.blocks.enumerated()), id: \.offset) { _, block in
+                            V2BlockView(block: block, threadID: threadID, isUser: event.author == .user, onSend: onSend)
+                        }
                     }
+                    Spacer(minLength: 48)
                 }
-                Spacer(minLength: 48)
             }
         }
     }
@@ -2073,62 +2185,110 @@ struct V2EventRow: View {
 private struct V2BlockView: View {
     let block: ThreadBlock
     let threadID: String
+    /// User text rides the accent bubble; agent text is unbubbled body.
+    let isUser: Bool
     let onSend: (String) -> Void
 
     var body: some View {
         switch block {
         case .text(let value):
-            Text(value)
-                .font(.hanken(15))
-                .foregroundStyle(Theme.ink)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .accessibilityIdentifier("v2-event-text")
+            if isUser {
+                // P032: 16px white on accent, 18px corners with the 6px tail.
+                Text(value)
+                    .font(.hanken(16))
+                    .foregroundStyle(Color.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        Theme.accent,
+                        in: UnevenRoundedRectangle(
+                            topLeadingRadius: 18, bottomLeadingRadius: 18,
+                            bottomTrailingRadius: 6, topTrailingRadius: 18,
+                            style: .continuous
+                        )
+                    )
+                    .accessibilityIdentifier("v2-event-text")
+            } else {
+                // P034: agent body is unbubbled 16px.
+                Text(value)
+                    .font(.hanken(16))
+                    .foregroundStyle(Theme.ink)
+                    .accessibilityIdentifier("v2-event-text")
+            }
         case .question(_, let text, let options):
             VStack(alignment: .leading, spacing: 6) {
                 Text(text)
-                    .font(.hanken(15))
+                    .font(.hanken(16))
                     .foregroundStyle(Theme.ink)
                 ForEach(options) { option in
+                    // P035: 57px option cards — 22px radio, 14/600 title,
+                    // 12px muted detail. Recommended reads selected.
                     Button { onSend(option.title) } label: {
-                        HStack {
-                            Text(option.title)
-                                .font(.hanken(14).weight(.medium))
-                                .foregroundStyle(Theme.accent)
-                            Spacer(minLength: 0)
-                            if option.recommended {
-                                Text("Suggested")
-                                    .font(.hanken(11))
-                                    .foregroundStyle(Theme.inkSoft)
+                        HStack(spacing: 12) {
+                            ZStack {
+                                Circle()
+                                    .strokeBorder(
+                                        option.recommended ? Theme.accent : Theme.inkFaint,
+                                        lineWidth: 1.5
+                                    )
+                                    .frame(width: 22, height: 22)
+                                if option.recommended {
+                                    Circle()
+                                        .fill(Theme.accent)
+                                        .frame(width: 11, height: 11)
+                                }
                             }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(option.title)
+                                    .font(.hanken(14).weight(.semibold))
+                                    .foregroundStyle(Theme.ink)
+                                if !option.detail.isEmpty {
+                                    Text(option.detail)
+                                        .font(.hanken(12))
+                                        .foregroundStyle(Theme.inkSoft)
+                                }
+                            }
+                            Spacer(minLength: 0)
                         }
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Theme.accentWeak, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .frame(maxWidth: .infinity, minHeight: 57, alignment: .leading)
+                        .background(
+                            option.recommended ? Theme.accentWeak : Theme.raised,
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        )
                     }
                     .accessibilityIdentifier("v2-option-\(option.id)")
                 }
             }
         case .steps(let steps):
-            VStack(alignment: .leading, spacing: 4) {
+            // P036: plain rows — 16px check + 14.5px muted text, no card.
+            VStack(alignment: .leading, spacing: 8) {
                 ForEach(steps) { step in
-                    HStack(spacing: 6) {
-                        Image(systemName: step.state == "done" ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 12))
-                            .foregroundStyle(Theme.inkSoft)
+                    HStack(spacing: 8) {
+                        ZStack {
+                            Circle()
+                                .fill(step.state == "done"
+                                    ? Theme.success.opacity(0.16) : Color.clear)
+                                .frame(width: 16, height: 16)
+                            if step.state == "done" {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(Theme.success)
+                            } else {
+                                Circle()
+                                    .strokeBorder(Theme.inkFaint, lineWidth: 1.5)
+                                    .frame(width: 16, height: 16)
+                            }
+                        }
                         Text(step.label)
-                            .font(.hanken(13))
-                            .foregroundStyle(Theme.ink)
+                            .font(.hanken(14.5))
+                            .foregroundStyle(Theme.inkSoft)
                     }
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         case .success(let text, _):
             Text(text)
-                .font(.hanken(15))
+                .font(.hanken(16))
                 .foregroundStyle(Theme.success)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
@@ -2136,7 +2296,7 @@ private struct V2BlockView: View {
         case .snag(let text, let options):
             VStack(alignment: .leading, spacing: 6) {
                 Text(text)
-                    .font(.hanken(15))
+                    .font(.hanken(16))
                     .foregroundStyle(Theme.warning)
                 ForEach(options) { option in
                     Button { onSend(option.title) } label: {
@@ -2166,7 +2326,9 @@ private struct V2BlockView: View {
 /// opens the durable Visual Window tab (always `open`, even when another tab
 /// is selected — the server dedupes by target). Identifiers on the leaf
 /// buttons only.
-private struct V2ArtifactCards: View {
+// NOTE: internal, not private — the sheet's file strip (P051) shares the
+// kind marks below.
+struct V2ArtifactCards: View {
     let ids: [String]
     let threadID: String
     let count: Int
@@ -2193,22 +2355,29 @@ private struct V2ArtifactCards: View {
                                 )
                             }
                         } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: Self.icon(for: artifact.kind))
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(Theme.accent)
+                            // P037: 52px surface-2 cards — the kind badge
+                            // (HANDOFF §2 file colours) + 13.5/600 title.
+                            HStack(spacing: 12) {
+                                Text(Self.badge(for: artifact.kind).0)
+                                    .font(.hanken(9.5).weight(.bold))
+                                    .foregroundStyle(Color.white)
+                                    .frame(width: 32, height: 32)
+                                    .background(
+                                        Self.badge(for: artifact.kind).1,
+                                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    )
                                 Text(artifact.title)
-                                    .font(.hanken(14).weight(.medium))
+                                    .font(.hanken(13.5).weight(.semibold))
                                     .foregroundStyle(Theme.ink)
                                     .lineLimit(1)
                                 Spacer(minLength: 0)
-                                Image(systemName: "arrow.up.right.square")
-                                    .font(.system(size: 12))
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 14, weight: .semibold))
                                     .foregroundStyle(Theme.inkFaint)
                             }
                             .padding(.horizontal, 12)
-                            .padding(.vertical, 10)
-                            .background(Theme.accentWeak, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .frame(maxWidth: .infinity, minHeight: 52, alignment: .leading)
+                            .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
                         .accessibilityIdentifier("visual-open-\(artifact.id)")
                         .accessibilityLabel(artifact.title)
@@ -2226,6 +2395,19 @@ private struct V2ArtifactCards: View {
         case .photo: "photo"
         case .code: "chevron.left.forwardslash.chevron.right"
         default: "doc"
+        }
+    }
+
+    /// P037: the file-badge colours are HANDOFF §2, not approximations.
+    static func badge(for kind: VisualTabKind) -> (String, Color) {
+        switch kind {
+        case .pdf: ("PDF", Color(cv6: 0xE5484D))
+        case .photo: ("IMG", Color(cv6: 0x2F9E6E))
+        case .video: ("MP4", Color(cv6: 0x7C5CFF))
+        case .youtube: ("YT", Color(cv6: 0xE5484D))
+        case .web: ("URL", Color(cv6: 0x3B82F6))
+        case .code: ("{}", Color(cv6: 0x5B5F66))
+        default: ("FILE", Theme.inkFaint)
         }
     }
 }

@@ -76,13 +76,14 @@ struct ThemePalette {
     let danger: Color
     let success: Color
 
-    /// cv6.css `[data-cv6]` base block — the default theme.
+    /// The Corner v2 design tokens (HANDOFF §2, midnight) — the default theme.
+    /// P025–P028: ground/surface/surface-2/accent map 1:1 to the export.
     static let dark = ThemePalette(
-        ground: Color(cv6: 0x0A0A0B),
-        raised: Color(cv6: 0x161619),
-        raised2: Color(cv6: 0x1C1C21),
+        ground: Color(cv6: 0x0F1319),
+        raised: Color(cv6: 0x161B23),
+        raised2: Color(cv6: 0x1D2430),
         hairline: Color.white.opacity(0.09),
-        divider: Color.white.opacity(0.07),
+        divider: Color.white.opacity(0.075),
         chipFill: Color.white.opacity(0.06),
         composer: Color(cv6: 0x131317),
         composerCard: Color(cv6: 0x202026),
@@ -90,8 +91,8 @@ struct ThemePalette {
         ink: Color(cv6: 0xE9E9EC),
         inkSoft: Color(cv6: 0x9A9AA2),
         inkFaint: Color(cv6: 0x62626B),
-        accent: Color(cv6: 0x3B82F6),
-        accentWeak: Color(cv6: 0x3B82F6, opacity: 0.16),
+        accent: Color(cv6: 0x5B9BFF),
+        accentWeak: Color(cv6: 0x5B9BFF, opacity: 0.16),
         warning: Color(cv6: 0xFBBF24),
         danger: Color(cv6: 0xF87171),
         success: Color(cv6: 0x34D399)
@@ -204,6 +205,11 @@ enum Theme {
     // Bubbles — user rides the accent with white ink in every web theme.
     @MainActor static var userBubble: Color { current.accent }
     static let userBubbleInk = Color.white
+    /// HANDOFF §2 `--avatar`: the user mark on login, drawer, and settings.
+    static let avatarGradient = LinearGradient(
+        colors: [Color(cv6: 0x3B82F6), Color(cv6: 0x1D4ED8)],
+        startPoint: .topLeading, endPoint: .bottomTrailing
+    )
     @MainActor static var agentBubble: Color { current.raised2 }
 
     // Raw palette — the web's *-400 row, theme-invariant.
@@ -364,7 +370,7 @@ enum AgentColors {
     static let strategy  = Color(cv6: 0x60A5FA)
     static let research  = Color(cv6: 0x818CF8)
     static let corner    = Color(cv6: 0xE5E7EB)
-    static let user      = Color(cv6: 0x3B82F6)
+    static let user      = Color(cv6: 0x5B9BFF)
     static let qa        = Color(cv6: 0xF97316)
     static let media     = Color(cv6: 0x38BDF8)
 

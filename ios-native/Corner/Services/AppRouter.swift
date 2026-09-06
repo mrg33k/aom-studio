@@ -229,7 +229,12 @@ final class AppRouter: ObservableObject {
     /// Restore the conversation the signed-in user was last looking at. RootView calls
     /// this only after auth/world resolution, so a room from another tenant can never
     /// flash on screen during account switching.
+    /// Fixture launches never restore: a real lastRoomID left by a backend run would
+    /// otherwise hijack the hermetic tree (R17: three flow reds, one shared cause).
     func restoreLastRoom(for world: String?) {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-v2FixtureUITest") { return }
+        #endif
         guard path.isEmpty,
               let world,
               let roomID = defaults.string(forKey: Self.lastRoomIDKey),

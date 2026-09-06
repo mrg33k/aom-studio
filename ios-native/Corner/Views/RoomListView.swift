@@ -140,10 +140,11 @@ struct RoomListView: View {
             }
             .background(Theme.ground)
         }
+        // R17 P063: the phone Settings, not the legacy account sheet.
         .sheet(isPresented: $router.showingSettings) {
-            AccountView()
+            V2SettingsView()
                 .environmentObject(api)
-                .environmentObject(PushService.shared)
+                .environmentObject(router)
         }
         // The front-door composer, pinned above the timeline (and above the keyboard).
         // Hidden while searching — search is a different intent from starting work.
@@ -200,6 +201,25 @@ struct RoomListView: View {
                 .environmentObject(router)
         }
         .sheet(isPresented: $showingVoice) { AirPodsVoiceView() }
+        // R17 drawer signals: the drawer owns no sheets, so it asks the
+        // home (always the stack root while signed in) to raise them.
+        .onReceive(NotificationCenter.default.publisher(for: .v2RecordCall)) { _ in
+            showingVoice = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .v2ShowNotifications)) { _ in
+            showingNotifications = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .v2FocusIntake)) { note in
+            router.path = []
+            if let id = note.userInfo?["projectID"] as? String {
+                v2IntakeProjectID = id
+            }
+            // Focusing takes a turn: the push-pop above must land first.
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 350_000_000)
+                v2IntakeFocused = true
+            }
+        }
         .sheet(isPresented: $showingBackgroundWork) {
             BackgroundWorkView()
                 .environmentObject(ThemeManager.shared)
@@ -873,26 +893,28 @@ struct RoomListView: View {
 
     @ViewBuilder
     private func projectTreeRow(_ project: ProjectSummary) -> some View {
+        // P058: the design's project row — a 22px tint mark with the initial,
+        // the 15/500 name, the needs-you dot, and the chevron. No GENERAL tag.
         let expanded = expandedProjectIDs.contains(project.id)
         HStack(spacing: 0) {
             Button { router.open(.project(projectID: project.id)) } label: {
-                HStack(spacing: Theme.s2) {
-                    Circle()
-                        .fill(Color(hexString: project.tintHex) ?? Theme.accent)
-                        .frame(width: 10, height: 10)
+                HStack(spacing: 10) {
+                    Text(String(project.name.prefix(1)).uppercased())
+                        .font(.hanken(10).weight(.bold))
+                        .foregroundStyle(Color.white)
+                        .frame(width: 22, height: 22)
+                        .background(
+                            Color(hexString: project.tintHex) ?? Theme.accent,
+                            in: RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        )
                     Text(project.name)
-                        .font(.hanken(16).weight(.semibold))
+                        .font(.hanken(15).weight(.medium))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                         .accessibilityIdentifier("workspace-project-name")
-                    if project.kind == .general {
-                        Text("GENERAL")
-                            .font(.hkCaption2.weight(.bold))
-                            .foregroundStyle(Theme.inkSoft)
-                    }
                     Spacer(minLength: 0)
                     if project.needsAttention {
-                        Circle().fill(Theme.accent).frame(width: 8, height: 8)
+                        Circle().fill(Theme.warning).frame(width: 7, height: 7)
                     }
                 }
                 .contentShape(Rectangle())
@@ -910,14 +932,15 @@ struct RoomListView: View {
                 }
             } label: {
                 Image(systemName: expanded ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Theme.inkSoft)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(Theme.inkFaint)
                     .frame(width: 36, height: 44)
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("workspace-project-expand")
             .accessibilityLabel(expanded ? "Collapse \(project.name)" : "Expand \(project.name)")
         }
+        .frame(minHeight: 46)
         .padding(.vertical, Theme.s1)
         .plainCardRow()
         if expanded {
@@ -948,14 +971,15 @@ struct RoomListView: View {
                 v2IntakeProjectID = project.id
                 v2IntakeFocused = true
             } label: {
-                HStack(spacing: Theme.s2) {
+                // P056: one plus icon + faint `New mission` — never `+ + …`.
+                HStack(spacing: 8) {
                     Image(systemName: "plus")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Theme.accent)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(Theme.inkFaint)
                         .frame(width: 24)
-                    Text("+ New mission")
-                        .font(.hkFootnote.weight(.semibold))
-                        .foregroundStyle(Theme.accent)
+                    Text("New mission")
+                        .font(.hanken(14))
+                        .foregroundStyle(Theme.inkFaint)
                     Spacer(minLength: 0)
                 }
                 .contentShape(Rectangle())
@@ -969,27 +993,27 @@ struct RoomListView: View {
     }
 
     private func missionTreeRow(project: ProjectSummary, mission: MissionSummary) -> some View {
+        // P057: 14px muted titles with the 6px status dot — no caps tag.
         Button { router.open(.mission(missionID: mission.id)) } label: {
-            HStack(spacing: Theme.s2) {
-                Image(systemName: "circle")
-                    .font(.system(size: 8))
-                    .foregroundStyle(Theme.inkFaint)
-                    .frame(width: 24)
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(V2DrawerView.dot(for: mission.status.rawValue))
+                    .frame(width: 6, height: 6)
                 Text(mission.title)
-                    .font(.hkBody)
-                    .foregroundStyle(Theme.ink)
+                    .font(.hanken(14))
+                    .foregroundStyle(Theme.inkSoft)
                     .lineLimit(1)
                     .accessibilityIdentifier("workspace-mission-name")
                 Spacer(minLength: 0)
-                Text(mission.status.rawValue.uppercased())
-                    .font(.hkCaption2.weight(.semibold))
-                    .foregroundStyle(Theme.inkFaint)
             }
+            .accessibilityElement(children: .contain)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("workspace-mission-row")
-        .accessibilityLabel(mission.title)
+        // NOTE: no explicit label — it would swallow the title Text below
+        // (measured: zero `workspace-mission-name` nodes with it). VoiceOver
+        // reads the exposed title naturally.
         .padding(.leading, 28)
         .plainCardRow()
     }

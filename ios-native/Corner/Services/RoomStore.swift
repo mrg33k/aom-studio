@@ -696,7 +696,22 @@ final class PreviewV2API: CornerV2API {
     }
 
     private var workspace: WorkspaceSummary {
-        WorkspaceSummary(
+        // R17: density (-v2SeedScale) and bare (-v2SeedEmpty) fixtures.
+        if PreviewV2API.launchHasFlag("-v2SeedEmpty") {
+            let bare = ProjectSummary(
+                id: general.id, workspaceID: general.workspaceID, name: general.name,
+                kind: .general, tintHex: general.tintHex, needsAttention: false,
+                threadID: general.threadID, missions: []
+            )
+            return WorkspaceSummary(
+                id: "world-preview-1", name: "preview",
+                generalProjectID: bare.id, projects: [bare]
+            )
+        }
+        if PreviewV2API.launchHasFlag("-v2SeedScale") {
+            return Self.seedScaleWorkspace(general: general)
+        }
+        return WorkspaceSummary(
             id: "world-preview-1", name: "preview", generalProjectID: general.id,
             projects: [general, aster]
         )
@@ -748,7 +763,260 @@ final class PreviewV2API: CornerV2API {
     /// the Aster thread, consumed by `confirmCrossProjectWrite` (Task 6).
     private var seedConfirmation: Bool = PreviewV2API.launchHasFlag("-v2SeedConfirmation")
     private var confirmationConsumed = false
+    private var compMatchSeeded = false
     private var shipSeeded = false
+
+    // R17 scale seed: 47 projects / 121 missions with real-length titles
+    // from the AOM audit perRoom titles. Test-only fixture density.
+    private static let scaleProjectTitles: [String] = [
+        "First Paying Customer",
+        "Elmo",
+        "Site Walk",
+        "G Soak4",
+        "Router",
+        "Brand",
+        "Google Ads Launch",
+        "Billing June 15",
+        "Corner",
+        "Lab Elon",
+        "Embeddable Agents",
+        "Moguls",
+        "Proj Tool Smoke 7",
+        "Agent Chrome",
+        "Dashboard Speed",
+        "Brand Deck",
+        "Management",
+        "Social Legacy",
+        "Onboarding",
+        "Chat Files Panel",
+        "Establish Core Ui Standard",
+        "Mail Room",
+        "Ambition EA",
+        "Mail Room",
+        "Corner",
+        "Billing June 15",
+        "Holistic Balance",
+        "Reports Page",
+        "Rainbow Sherbert",
+        "Mission Rooms",
+        "Project:ambition",
+        "First Paying Customer",
+        "Course Preview Tab",
+        "Aom Ea",
+        "Course Mapping",
+        "Blackstar Orbital",
+        "Blacknight",
+        "Ahead of Market",
+        "Project:higher Orbits",
+        "Studio",
+        "Deck Vibe Overhaul",
+        "Cleo",
+        "Podcast Page",
+        "Corner EA",
+        "Qa Composer Fix R2 706 Verify Mission Create",
+        "New Users"
+    ]
+    private static let scaleMissionTitles: [String] = [
+        "Website",
+        "Left Menu",
+        "Notifications",
+        "Live Conversation",
+        "Website Rebuild",
+        "Dropbox Video Feedback",
+        "Gemini Workers",
+        "G Soak6",
+        "Pala",
+        "Elon",
+        "What Project Does Live In",
+        "Chat Reliability",
+        "Aerospace Booth Flyer",
+        "Ben EA",
+        "Aztc Post Behind The Scene Storytelling",
+        "Project:included Health",
+        "April 29 Event",
+        "Director",
+        "Mini Doc Series Pitch",
+        "Theme And Density",
+        "Summit Highlight Reel",
+        "/Users/aom Inhouse/Documents/Dev/aom Studio Transfer/aom Studio",
+        "Multi Tenant",
+        "Rpg Mechanics",
+        "Loop Test Project",
+        "Space Adventure 3",
+        "Room Organizer",
+        "Aerospace Booth Flyer",
+        "Business Ops",
+        "Integrations",
+        "convex-multi-agent",
+        "Agent Hooks",
+        "New Projects",
+        "Crunch Mesa Titles",
+        "Wolfpack KFB",
+        "Mission Water Game",
+        "Corner Ui Cv5",
+        "Kraken Corps",
+        "Deal Bank",
+        "Wolfpack",
+        "Design Feedback Loop",
+        "June Footage",
+        "Deck",
+        "Support",
+        "Summerschool",
+        "Support",
+        "Portfolio Showcase",
+        "Website Rebuild",
+        "Skylar EA",
+        "Chat Quality Loop",
+        "C Memtest",
+        "Higher Orbits",
+        "Parent Teacher Council",
+        "Website V2",
+        "Project:isa Energy",
+        "Probe Test 1779737560",
+        "Tenant Isolation",
+        "G Soak2",
+        "Open Design Eval",
+        "Kraken Corps",
+        "Barbara O Neill",
+        "Organize Files Files In App",
+        "G Memtest",
+        "Bridge",
+        "Feed",
+        "Home Screen Polishing",
+        "Cg Kitchen",
+        "Favicon System",
+        "Proj Tool Smoke 6",
+        "Keygroups Wavetables",
+        "Agent Recovery Logic",
+        "Masterclass Proposal",
+        "Masterclass Pitch Deck",
+        "Brands",
+        "Files In App",
+        "Master Loop",
+        "Ambition Social Clips",
+        "Elon",
+        "Claude Motion Videos",
+        "Ambition Mechanical",
+        "Design Foundations",
+        "Elon",
+        "Gut Pruning Ship",
+        "Linkedin Flood",
+        "Brand Identity",
+        "Corner Design Standards",
+        "Coding Hook",
+        "Home All Rooms",
+        "Rpg Mechanics",
+        "Trading Agent",
+        "Director",
+        "Cvg Redesign",
+        "Included Health",
+        "Jacob",
+        "Cv4 Redesign",
+        "Rules Consolidation",
+        "Space Os",
+        "Aztc Event Prize Cards",
+        "Holistic Balance Page",
+        "Az Tech Council",
+        "Bobby",
+        "Saved 38429",
+        "Corner Proposal",
+        "Master Loop",
+        "AOM Summerschool",
+        "Daily Research",
+        "Notifications Catchup",
+        "System Map For Family",
+        "Routines",
+        "Files In App",
+        "Drive Mirror",
+        "Older Versions",
+        "Batch02 Culture Videos",
+        "Smoke Test Project 6",
+        "Wolfpack",
+        "Intelliplay",
+        "Project:aom Business",
+        "Masterclass Proposal",
+        "Feed",
+        "Wolfpack",
+        "Marketing"
+    ]
+
+    /// R17 scale density: 47 projects (General + 46) and 121 missions.
+    /// Titles are real-length AOM room titles from the reconciliation audit.
+    private static func seedScaleWorkspace(general: ProjectSummary) -> WorkspaceSummary {
+        let tints = ["#5B9BFF", "#8B5CF6", "#2F9E6E", "#E5484D", "#F5A524", "#3B82F6", "#7C5CFF"]
+        var rest = scaleMissionTitles[...]
+        var projects: [ProjectSummary] = [general]
+        for (i, title) in scaleProjectTitles.enumerated() {
+            let take = i < 29 ? 3 : 2
+            var rows: [MissionSummary] = []
+            for _ in 0..<take {
+                guard let mt = rest.popLast() else { break }
+                let n = projects.count * 10 + rows.count
+                let status: MissionStatus = (n % 11 == 0) ? .blocked : (n % 7 == 0) ? .live : (n % 5 == 0) ? .done : .ready
+                rows.append(MissionSummary(
+                    id: "v2scale-mis-\(n)", projectID: "v2scale-proj-\(i)",
+                    title: String(mt), status: status, threadID: "v2scale-thread-\(n)"
+                ))
+            }
+            projects.append(ProjectSummary(
+                id: "v2scale-proj-\(i)", workspaceID: general.workspaceID,
+                name: String(title), kind: .standard, tintHex: tints[i % tints.count],
+                needsAttention: i % 8 == 3, threadID: "v2scale-projthread-\(i)",
+                missions: rows
+            ))
+        }
+        return WorkspaceSummary(
+            id: general.workspaceID, name: "AOM",
+            generalProjectID: general.id, projects: projects
+        )
+    }
+
+    /// R17 comp-match: a deterministic rich General thread (user text, agent
+    /// text + question, user text, agent text + steps) so every row shape
+    /// renders without a backend.
+    private func seedCompMatchIfNeeded() {
+        guard PreviewV2API.launchHasFlag("-v2SeedCompMatch"), !compMatchSeeded else { return }
+        compMatchSeeded = true
+        let base = Date().addingTimeInterval(-3600)
+        chatEvents.append(contentsOf: [
+            ThreadEvent(
+                id: "event-comp-user-1", threadID: general.threadID,
+                author: .user, agentLabel: nil,
+                blocks: [.text("Build the Aster spring launch deck. Eight slides, their brand kit, first pass tonight.")],
+                createdAt: base
+            ),
+            ThreadEvent(
+                id: "event-comp-agent-1", threadID: general.threadID,
+                author: .agent, agentLabel: "Corner",
+                blocks: [
+                    .text("Before I start, two things I cannot guess from the brand kit."),
+                    .question(id: "q-lane", text: "Pick a lane", options: [
+                        QuestionOption(id: "q-retail", title: "Retail buyers", detail: "Range, margins, timing", recommended: true),
+                        QuestionOption(id: "q-press", title: "Press and partners", detail: "Story, atmosphere, the line as a moment", recommended: false),
+                    ]),
+                ],
+                createdAt: base.addingTimeInterval(60)
+            ),
+            ThreadEvent(
+                id: "event-comp-user-2", threadID: general.threadID,
+                author: .user, agentLabel: nil,
+                blocks: [.text("Buyers. Keep the film for press.")],
+                createdAt: base.addingTimeInterval(120)
+            ),
+            ThreadEvent(
+                id: "event-comp-agent-2", threadID: general.threadID,
+                author: .agent, agentLabel: "Corner",
+                blocks: [
+                    .text("I read the playbook you dropped in. Page 4 has the three priorities."),
+                    .steps([
+                        StepState(id: "st-read", label: "Read the playbook", state: "done"),
+                        StepState(id: "st-outline", label: "Outline from the priorities", state: "done"),
+                    ]),
+                ],
+                createdAt: base.addingTimeInterval(180)
+            ),
+        ])
+    }
 
     private static func launchHasFlag(_ name: String) -> Bool {
         ProcessInfo.processInfo.arguments.contains(name)
@@ -777,7 +1045,10 @@ final class PreviewV2API: CornerV2API {
         Int(launchStringFlag(name)) ?? 0
     }
 
-    func threadEvents(threadID: String) async throws -> [ThreadEvent] { chatEvents }
+    func threadEvents(threadID: String) async throws -> [ThreadEvent] {
+        seedCompMatchIfNeeded()
+        return chatEvents
+    }
 
     func send(text: String, mentioning: [String], preferredProjectID: String?) async throws -> RouteDecision {
         if failSendsLeft > 0 {

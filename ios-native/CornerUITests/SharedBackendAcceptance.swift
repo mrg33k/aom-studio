@@ -33,6 +33,8 @@ final class SharedBackendAcceptance: XCTestCase {
             app.launchEnvironment["AUTO_SIGNIN_EMAIL"] = email
             app.launchEnvironment["AUTO_SIGNIN_PASSWORD"] = pass
         }
+        // These suites drive the signed-in app, not the first-run flow.
+        app.launchArguments.append("-v2SkipSetup")
 
         addUIInterruptionMonitor(withDescription: "System dialog") { alert in
             for label in ["Allow", "OK", "Not Now", "Don't Allow", "Continue"] {

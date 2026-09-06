@@ -243,8 +243,13 @@ final class VisualWindowUITests: XCTestCase {
 
         // Send once: the pins clear and Send stands down (no re-fire).
         // Review auto-expands to full, but the Send row may still sit below
-        // the fold with three pins — scroll it into view first.
-        reviewNote(app).swipeUp()
+        // the fold with three pins — scroll it into view first. The swipe
+        // starts on the screen, not on the note: the note itself may already
+        // be the thing below the fold.
+        for _ in 0..<4 {
+            if reviewSend(app).isHittable { break }
+            app.swipeUp()
+        }
         evidence("R15-native-review-pins")
         XCTAssertTrue(reviewSend(app).isEnabled, "Send 2 changes is disabled before the tap")
         reviewSend(app).tap()

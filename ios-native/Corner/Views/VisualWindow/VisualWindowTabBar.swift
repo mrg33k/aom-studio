@@ -11,16 +11,29 @@ import SwiftUI
 struct VisualWindowTabBar: View {
     @EnvironmentObject private var window: VisualWindowStore
 
+    // P051: the file strip — 36px r9 chips with the kind icon, 13.5/500.
+    // The selected chip is surface-2; the underline belongs to the
+    // Preview/Context header tabs (P024), never to these chips.
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Theme.s2) {
                 ForEach(window.tabs) { tab in
-                    HStack(spacing: 2) {
-                        Button(tab.title) { window.select(id: tab.id) }
-                            .font(.hanken(13).weight(window.selectedTabID == tab.id ? .semibold : .medium))
-                            .foregroundStyle(window.selectedTabID == tab.id ? Theme.ink : Theme.inkSoft)
-                            .accessibilityIdentifier("visual-tab")
-                            .accessibilityLabel(tab.title)
+                    let selected = window.selectedTabID == tab.id
+                    HStack(spacing: 6) {
+                        Button { window.select(id: tab.id) } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: V2ArtifactCards.icon(for: tab.kind))
+                                    .font(.system(size: 15, weight: .regular))
+                                    .foregroundStyle(Theme.inkSoft)
+                                Text(tab.title)
+                                    .font(.hanken(13.5).weight(.medium))
+                                    .foregroundStyle(selected ? Theme.ink : Theme.inkSoft)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("visual-tab")
+                        .accessibilityLabel(tab.title)
                         Button {
                             Task { try? await window.close(id: tab.id) }
                         } label: {
@@ -32,26 +45,16 @@ struct VisualWindowTabBar: View {
                         .accessibilityIdentifier("visual-close")
                         .accessibilityLabel("Close \(tab.title)")
                     }
-                    .padding(.leading, Theme.s3)
+                    .padding(.leading, 11)
                     .padding(.trailing, Theme.s1)
-                    .padding(.vertical, Theme.s1)
+                    .frame(height: 36)
                     .background(
-                        window.selectedTabID == tab.id ? Theme.raised2 : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        selected ? Theme.raised2 : Theme.raised,
+                        in: RoundedRectangle(cornerRadius: 9, style: .continuous)
                     )
-                    .overlay(alignment: .bottom) {
-                        // The design's underlined tabs: the selected chip
-                        // carries the accent line.
-                        if window.selectedTabID == tab.id {
-                            Rectangle()
-                                .fill(Theme.accent)
-                                .frame(height: 2)
-                                .padding(.horizontal, Theme.s3)
-                        }
-                    }
                 }
             }
-            .padding(.horizontal, Theme.s2)
+            .padding(.horizontal, 21)
         }
     }
 }

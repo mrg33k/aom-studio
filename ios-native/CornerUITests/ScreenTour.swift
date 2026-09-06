@@ -34,6 +34,8 @@ final class ScreenTour: XCTestCase {
         // R0b gate: freeze ambient animation (ASCIIBackground timeline +
         // repeatForever pulses) so the main thread idles for snapshots.
         app.launchArguments += ["-screenTour"]
+        // The tour walks the legacy screens, not first-run setup.
+        app.launchArguments += ["-v2SkipSetup"]
         addUIInterruptionMonitor(withDescription: "System Dialog") { alert in
             for label in ["Allow", "Don't Allow", "OK", "Not Now"] {
                 let button = alert.buttons[label]
@@ -251,10 +253,12 @@ final class ScreenTour: XCTestCase {
         } else {
             // Cold sign-in. Primary path: real element interaction on the real
             // sign-in screen — the -screenTour gate keeps the main thread idle
-            // enough for these queries to snapshot.
+            // enough for these queries to snapshot. R17: the v2 login is two
+            // steps (email → Continue with email → password → Sign in).
+            let emailContinue = app.buttons["Continue with email"].firstMatch
             let signInButton = app.buttons["Sign in"].firstMatch
-            if signInButton.waitForExistence(timeout: 10) {
-                note("signin_path=manual (sign-in button found under -screenTour)")
+            if emailContinue.waitForExistence(timeout: 10) || signInButton.waitForExistence(timeout: 10) {
+                note("signin_path=manual (v2 login found under -screenTour)")
                 note("launch_to_signin_ms=\(Int(Date().timeIntervalSince(launchDate) * 1000))")
                 shot("00-signin-empty")
 
@@ -267,6 +271,11 @@ final class ScreenTour: XCTestCase {
                 emailField.tap()
                 emailField.typeText(email)
                 settle(1)
+
+                if emailContinue.exists && emailContinue.isHittable {
+                    emailContinue.tap()
+                    settle(1)
+                }
 
                 let passwordField = app.secureTextFields.firstMatch
                 guard passwordField.waitForExistence(timeout: 10) else {

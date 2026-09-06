@@ -26,10 +26,22 @@ struct ReviewPanelView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.s2) {
             if review.pins.isEmpty {
-                Text("Tap the artifact to drop a pin, then write the change.")
-                    .font(.hanken(13))
-                    .foregroundStyle(Theme.inkSoft)
-                    .accessibilityIdentifier("review-empty")
+                // P054: the empty state reads as the design's status card —
+                // honest copy (no agent line arrived), same shape.
+                HStack(alignment: .top, spacing: 10) {
+                    Circle()
+                        .fill(Theme.success)
+                        .frame(width: 8, height: 8)
+                        .padding(.top, 5)
+                    Text("Tap the file where something should change.")
+                        .font(.hanken(14))
+                        .foregroundStyle(Theme.ink)
+                        .accessibilityIdentifier("review-empty")
+                    Spacer(minLength: 0)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             } else {
                 ForEach(Array(review.pins.enumerated()), id: \.element.clientID) { index, pin in
                     HStack(spacing: Theme.s2) {
@@ -79,7 +91,9 @@ struct ReviewPanelView: View {
                     .accessibilityIdentifier("review-note")
                 }
             }
-            HStack(spacing: Theme.s2) {
+            VStack(alignment: .leading, spacing: Theme.s2) {
+                // P053: Send is 50px r14 — chip fill + muted `Pin a change
+                // to send` until a pin carries text.
                 Button(review.sendTitle) {
                     Task {
                         failed = false
@@ -92,12 +106,12 @@ struct ReviewPanelView: View {
                     }
                 }
                 .font(.hanken(14).weight(.semibold))
-                .foregroundStyle(review.canSend ? Color.white : Theme.inkFaint)
-                .padding(.horizontal, Theme.s4)
-                .frame(height: 44)
+                .foregroundStyle(review.canSend ? Color.white : Theme.inkSoft)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
                 .background(
-                    review.canSend ? Theme.accent : Theme.raised2,
-                    in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    review.canSend ? Theme.accent : Theme.chipFill,
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
                 )
                 .disabled(!review.canSend)
                 .accessibilityIdentifier("review-send")
@@ -105,7 +119,6 @@ struct ReviewPanelView: View {
                     .font(.hanken(13).weight(.medium))
                     .foregroundStyle(Theme.inkSoft)
                     .accessibilityIdentifier("review-carry-on")
-                Spacer(minLength: 0)
             }
             if failed {
                 Text("The checklist did not send. Try again.")

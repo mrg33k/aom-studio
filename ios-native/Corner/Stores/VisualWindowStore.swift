@@ -29,6 +29,8 @@ final class VisualWindowStore: ObservableObject {
 
     private let api: any CornerV2API
     private let visualSessionID: String
+    /// The owning thread, for Context-tab opens. Set by `start(threadID:)`.
+    private(set) var threadID: String?
     /// Renderer state cached locally per tab id (see header: no mutation).
     private var localState: [String: [String: String]] = [:]
     private var poll: Task<Void, Never>?
@@ -83,6 +85,7 @@ final class VisualWindowStore: ObservableObject {
     /// Load once, then poll the session like `threadEvents` (the brief's
     /// subscribe contract) so agent-opened tabs arrive without a relaunch.
     func start(threadID: String) async {
+        self.threadID = threadID
         try? await load()
         await loadArtifacts(threadID: threadID)
         poll?.cancel()

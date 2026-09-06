@@ -65,6 +65,20 @@ struct CornerApp: App {
         if ProcessInfo.processInfo.arguments.contains("-askPushPermission") {
             Task { _ = await PushService.shared.requestAuthorizationExplicitly() }
         }
+        // R17 login proof: start signed out even when the simulator Keychain
+        // holds a session from an earlier run. Debug builds only.
+        if ProcessInfo.processInfo.arguments.contains("-v2ForceSignOut") {
+            Task { @MainActor in
+                await CornerAPI.shared.signOut()
+            }
+        }
+        // R17 setup proof: forget completion so the flow shows deterministically.
+        // The gate also requires no last room (migration-safe), so a dirty
+        // simulator resets that too — otherwise P061 only passes fresh.
+        if ProcessInfo.processInfo.arguments.contains("-v2ResetSetup") {
+            UserDefaults.standard.removeObject(forKey: "corner.v2.setup-done")
+            UserDefaults.standard.removeObject(forKey: "navigation.lastRoomID")
+        }
         // Auto sign-in for simulator testing. Reads email/password from launch
         // environment so `xcrun simctl launch --env` can authenticate without
         // touching the password field. Debug builds only, never shipped.

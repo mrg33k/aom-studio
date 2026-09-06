@@ -311,9 +311,10 @@ final class V2ReviewStore: ObservableObject {
         pins.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
+    /// P053: with nothing sendable the button reads `Pin a change to send`.
     var sendTitle: String {
         let count = sendablePins.count
-        return count == 0 ? "Send" : "Send \(count) change\(count == 1 ? "" : "s")"
+        return count == 0 ? "Pin a change to send" : "Send \(count) change\(count == 1 ? "" : "s")"
     }
 
     var canSend: Bool { !sendablePins.isEmpty && !submitting }

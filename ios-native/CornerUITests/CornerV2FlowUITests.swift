@@ -195,6 +195,18 @@ final class CornerV2FlowUITests: XCTestCase {
             .waitForExistence(timeout: 30), "tapping \(name) did not open a chat")
     }
 
+    /// Back to the tree from a thread. The thread hides the system bar (its
+    /// custom header carries the drawer button, by design), so there is no
+    /// NavigationBar back to tap: the drawer's New pops to the root, and the
+    /// intake focus it raises is the same field the journey uses next.
+    private func backToTree(_ app: XCUIApplication) {
+        app.buttons.matching(identifier: "v2-drawer-button").firstMatch.tap()
+        let drawer = app.descendants(matching: .any).matching(identifier: "v2-drawer").firstMatch
+        XCTAssertTrue(drawer.waitForExistence(timeout: 10), "the drawer never opened")
+        app.buttons.matching(identifier: "v2-drawer-new").firstMatch.tap()
+        XCTAssertTrue(workspaceTree.waitForExistence(timeout: 15), "did not return to the workspace tree")
+    }
+
     private func sendInV2Chat(_ scope: XCUIApplication, _ text: String) {
         let field = v2Field(in: scope)
         XCTAssertTrue(field.waitForExistence(timeout: 15), "no v2 composer field in the chat")
@@ -365,8 +377,7 @@ final class CornerV2FlowUITests: XCTestCase {
         evidence("02-project-chat")
 
         // Back to the tree.
-        app.navigationBars.buttons.firstMatch.tap()
-        XCTAssertTrue(workspaceTree.waitForExistence(timeout: 15), "did not return to the workspace tree")
+        backToTree(app)
 
         // 3b. No missions yet: create one through the UI — that live tree is
         // the fixture. (Later runs find it and skip this.)
@@ -392,8 +403,7 @@ final class CornerV2FlowUITests: XCTestCase {
                 missionTitle = parts.dropFirst().joined(separator: " / ")
                 missionEl = nil
             }
-            app.navigationBars.buttons.firstMatch.tap()
-            XCTAssertTrue(workspaceTree.waitForExistence(timeout: 15), "did not return to the workspace tree")
+            backToTree(app)
             XCTAssertTrue(waitForCount(missionRows(), 1, timeout: 60),
                           "confirmed mission never appeared under its project")
         }
@@ -429,8 +439,7 @@ final class CornerV2FlowUITests: XCTestCase {
             XCTAssertEqual(chatTitle.label, combined,
                            "mission chat is not titled Project / Mission (\(combined))")
             evidence("03-mission-chat")
-            app.navigationBars.buttons.firstMatch.tap()
-            XCTAssertTrue(workspaceTree.waitForExistence(timeout: 15), "did not return to the workspace tree")
+            backToTree(app)
         } else {
             XCTFail("no mission row to tap — creation step above must have failed")
         }
