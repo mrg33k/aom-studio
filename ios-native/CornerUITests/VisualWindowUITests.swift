@@ -147,4 +147,193 @@ final class VisualWindowUITests: XCTestCase {
         XCTAssertTrue(retry.waitForExistence(timeout: 15), "the broken tab offers no retry")
         evidence("R15-native-broken")
     }
+
+    // MARK: - Task 8 review flows
+
+    private func reviewNote(_ scope: XCUIApplication) -> XCUIElement {
+        let field = scope.textFields.matching(identifier: "review-note").firstMatch
+        if field.waitForExistence(timeout: 10) { return field }
+        return scope.textViews.matching(identifier: "review-note").firstMatch
+    }
+
+    private func reviewSend(_ scope: XCUIApplication) -> XCUIElement {
+        scope.buttons.matching(identifier: "review-send").firstMatch
+    }
+
+    private func reviewPins(_ scope: XCUIApplication) -> XCUIElementQuery {
+        scope.buttons.matching(identifier: "review-pin")
+    }
+
+    /// Fresh query per tap: an element captured before the keyboard appears
+    /// goes stale when the sheet shifts, and the tap silently misses.
+    private func tapPinMoment(_ scope: XCUIApplication, file: StaticString = #file, line: UInt = #line) {
+        let moment = scope.buttons.matching(identifier: "visual-pin-moment").firstMatch
+        XCTAssertTrue(moment.waitForExistence(timeout: 30), "the video offers no Pin moment", file: file, line: line)
+        moment.tap()
+    }
+
+    @discardableResult
+    private func waitForPinCount(_ scope: XCUIApplication, _ count: Int, timeout: TimeInterval = 20) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if reviewPins(scope).count == count { return true }
+            Thread.sleep(forTimeInterval: 1.0)
+        }
+        return reviewPins(scope).count == count
+    }
+
+    /// A point pin on the PDF, two moment pins on the video (one blank):
+    /// "Send 2 changes" excludes the blank, submits, and clears; the peek
+    /// bar shows the active tab's count.
+    func testReviewPinFlowSendsOnceAndPeekShowsCount() throws {
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openGeneralChat(app)
+
+        // A point pin on the PDF.
+        openCard(app, artifactID: "artifact-pdf-1")
+        expectWindow(app, showing: "Aster brief")
+        let pdfStage = app.descendants(matching: .any).matching(identifier: "visual-stage-pdf").firstMatch
+        XCTAssertTrue(pdfStage.waitForExistence(timeout: 30), "the pdf stage never rendered")
+        evidence("R15-native-sheet-half")
+        pdfStage.tap()
+        let note = reviewNote(app)
+        XCTAssertTrue(note.waitForExistence(timeout: 15), "tapping the pdf added no pin to note")
+        note.tap()
+        note.typeText("Increase contrast")
+        // Half -> full through the handle, pins on the page. iPad has no
+        // sheet — the column already shows everything.
+        let sheetMarker = app.descendants(matching: .any).matching(identifier: "visual-sheet").firstMatch
+        if sheetMarker.waitForExistence(timeout: 5) { sheetMarker.swipeUp() }
+        evidence("R15-native-sheet-full-pins")
+        dismissSheetIfAny(app)
+
+        // Two moment pins on the video, the second left blank.
+        openCard(app, artifactID: "artifact-video-1")
+        expectWindow(app, showing: "Teaser")
+        tapPinMoment(app)
+        XCTAssertTrue(waitForPinCount(app, 1), "the first moment added no pin")
+        let videoNote = reviewNote(app)
+        XCTAssertTrue(videoNote.waitForExistence(timeout: 15), "pinning the moment opened no note")
+        videoNote.tap()
+        videoNote.typeText("Trim the end")
+        tapPinMoment(app)
+        XCTAssertTrue(waitForPinCount(app, 2), "the second moment added no pin")
+        let videoNote2 = reviewNote(app)
+        XCTAssertTrue(videoNote2.waitForExistence(timeout: 15), "the second moment opened no note")
+        videoNote2.tap()
+        videoNote2.typeText("Louder mix")
+        // A third moment left blank.
+        tapPinMoment(app)
+        XCTAssertTrue(waitForPinCount(app, 3), "the third moment added no pin")
+
+        // The blank note does not send: 3 pins, "Send 2 changes".
+        let send = reviewSend(app)
+        XCTAssertTrue(send.waitForExistence(timeout: 10), "no review Send")
+        XCTAssertEqual(send.label, "Send 2 changes")
+
+        // The peek bar shows the active tab's count; tapping it reopens.
+        dismissSheetIfAny(app)
+        let peekCount = app.staticTexts.matching(identifier: "visual-peek-count").firstMatch
+        XCTAssertTrue(peekCount.waitForExistence(timeout: 15), "no artifact peek above the composer")
+        XCTAssertEqual(peekCount.label, "2 changes")
+        evidence("R15-native-peek")
+        app.buttons.matching(identifier: "visual-peek").firstMatch.tap()
+        expectWindow(app, showing: "Teaser")
+
+        // Send once: the pins clear and Send stands down (no re-fire).
+        // Review auto-expands to full, but the Send row may still sit below
+        // the fold with three pins — scroll it into view first.
+        reviewNote(app).swipeUp()
+        evidence("R15-native-review-pins")
+        XCTAssertTrue(reviewSend(app).isEnabled, "Send 2 changes is disabled before the tap")
+        reviewSend(app).tap()
+        // Send once: submit clears the pins and review mode stands down, so
+        // the panel (and its Send) leaves — there is nothing to tap twice.
+        let toggle = app.buttons.matching(identifier: "review-toggle").firstMatch
+        let sent = expectation(for: NSPredicate(format: "label == 'Review'"), evaluatedWith: toggle, handler: nil)
+        wait(for: [sent], timeout: 30)
+        XCTAssertEqual(app.buttons.matching(identifier: "review-send").count, 0, "Send stayed live after submitting")
+        // Let the cleared counts commit before the evidence frame.
+        Thread.sleep(forTimeInterval: 2.0)
+        evidence("R15-native-review-send")
+    }
+
+    // MARK: - P022 / P023
+
+    /// P022: a mission chat shows the PROJECT name as the line above the
+    /// title; a project chat shows the title only.
+    func testMissionChatShowsProjectSubtitle() throws {
+        app.launchArguments += ["-v2RouteMode=confirm"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        // A project chat: title only, no subtitle line.
+        openGeneralChat(app)
+        XCTAssertEqual(
+            app.staticTexts.matching(identifier: "chat-title").firstMatch.label, "General"
+        )
+        XCTAssertFalse(
+            app.staticTexts.matching(identifier: "chat-subtitle").firstMatch.exists,
+            "a project chat shows no subtitle line"
+        )
+        // Route into the seeded mission: `Project / Mission` + project above.
+        let field = app.textFields.matching(identifier: "v2-composer-field").firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 15), "no v2 composer field")
+        field.tap()
+        field.typeText("Where should this go")
+        app.buttons.matching(identifier: "v2-composer-send").firstMatch.tap()
+        XCTAssertTrue(
+            app.buttons.matching(identifier: "route-move").firstMatch.waitForExistence(timeout: 60),
+            "no route block arrived"
+        )
+        app.buttons.matching(identifier: "route-move").firstMatch.tap()
+        let missionTitle = app.staticTexts.matching(identifier: "chat-title")
+            .matching(NSPredicate(format: "label == 'Aster / Ship home page'")).firstMatch
+        XCTAssertTrue(missionTitle.waitForExistence(timeout: 30), "Move did not open the mission chat")
+        let subtitle = app.staticTexts.matching(identifier: "chat-subtitle").firstMatch
+        XCTAssertTrue(subtitle.waitForExistence(timeout: 10), "a mission chat shows no project line")
+        XCTAssertEqual(subtitle.label, "Aster")
+    }
+
+    /// P023: the composer is a pill with Record inside plus a round send;
+    /// with no tabs there is no peek bar.
+    func testComposerHasRecordPillAndRoundSend() throws {
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openGeneralChat(app)
+        XCTAssertTrue(
+            app.textFields.matching(identifier: "v2-composer-field").firstMatch.waitForExistence(timeout: 15),
+            "no v2 composer field"
+        )
+        XCTAssertTrue(
+            app.buttons.matching(identifier: "v2-record").firstMatch.waitForExistence(timeout: 10),
+            "no Record chip inside the pill"
+        )
+        XCTAssertTrue(
+            app.buttons.matching(identifier: "v2-composer-send").firstMatch.exists,
+            "no round send beside the pill"
+        )
+        XCTAssertEqual(
+            app.buttons.matching(identifier: "visual-peek").count, 0,
+            "the peek bar shows with no tabs open"
+        )
+    }
+
+    /// "Nothing to change, carry on" sends the plain thread text, not a
+    /// checklist submission.
+    func testReviewCarryOnSendsPlainText() throws {
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openGeneralChat(app)
+        openCard(app, artifactID: "artifact-pdf-1")
+        expectWindow(app, showing: "Aster brief")
+        let toggle = app.buttons.matching(identifier: "review-toggle").firstMatch
+        XCTAssertTrue(toggle.waitForExistence(timeout: 15), "no Review toggle on the sheet")
+        toggle.tap()
+        let carry = app.buttons.matching(identifier: "review-carry-on").firstMatch
+        XCTAssertTrue(carry.waitForExistence(timeout: 15), "no carry-on control in review mode")
+        carry.tap()
+        XCTAssertTrue(app.staticTexts["Looks right. Carry on."].waitForExistence(timeout: 60),
+                      "carry-on never sent the plain thread text")
+    }
 }

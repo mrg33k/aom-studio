@@ -43,24 +43,29 @@ struct ArtifactRenderer {
     static func view(
         tab: VisualWindowTab, artifact: Artifact?,
         state: [String: String] = [:],
-        updateState: @escaping (String, String) -> Void = { _, _ in }
+        updateState: @escaping (String, String) -> Void = { _, _ in },
+        review: V2ReviewStore? = nil
     ) -> some View {
         if let artifact, let url = artifact.sourceURL {
             switch viewType(for: tab.kind) {
         case .pdf:
-            PDFArtifactView(url: url, page: Int(state["page"] ?? "") ?? 1, onPage: { updateState("page", String($0)) })
+            PDFArtifactView(
+                url: url, page: Int(state["page"] ?? "") ?? 1,
+                onPage: { updateState("page", String($0)) },
+                review: review, artifactID: artifact.id
+            )
         case .quickLook:
             QuickLookArtifactView(url: url)
         case .video:
-            VideoArtifactView(url: url)
+            VideoArtifactView(url: url, review: review)
         case .web:
             WebArtifactView(url: url, viewport: state["siteViewport"], onViewport: { updateState("siteViewport", $0) })
         case .photo:
-            PhotoArtifactView(url: url)
+            PhotoArtifactView(url: url, review: review)
         case .youtube:
             YouTubeArtifactView(url: url)
         case .code:
-            CodeArtifactView(url: url)
+            CodeArtifactView(url: url, review: review)
         case .unsupported:
             UnsupportedArtifactView(kind: tab.kind)
         }
@@ -80,14 +85,63 @@ struct ArtifactRenderer {
 /// failure is the recoverable-error tab, never a spinner.
 struct PhotoArtifactView: View {
     let url: URL
+    /// Present when the host supports review (Task 8): taps drop point pins.
+    var review: V2ReviewStore?
+
+    /// A tap offset as a 0–100 % pin coordinate. Explicit Doubles: CGFloat
+    /// and Double `*` overloads collide on the bare literal (measured).
+    static func percent(_ value: CGFloat, of total: CGFloat) -> Double {
+        guard total > 0 else { return 0 }
+        return min(max(Double(value / total) * 100.0, 0.0), 100.0)
+    }
 
     var body: some View {
         Group {
             if url.isFileURL, let image = UIImage(contentsOfFile: url.path) {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .accessibilityIdentifier("visual-stage-photo")
+                GeometryReader { stage in
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .accessibilityIdentifier("visual-stage-photo")
+                        .overlay {
+                            if review != nil {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .onTapGesture(coordinateSpace: .local) { location in
+                                        let size = stage.size
+                                        guard size.width > 0, size.height > 0 else { return }
+                                        review?.addPin(
+                                            .point(
+                                                page: nil,
+                                                x: PhotoArtifactView.percent(location.x, of: size.width),
+                                                y: PhotoArtifactView.percent(location.y, of: size.height)
+                                            ),
+                                            text: ""
+                                        )
+                                    }
+                            }
+                        }
+                        .overlay(alignment: .topLeading) {
+                            if let review {
+                                ForEach(Array(review.pins.enumerated()), id: \.element.clientID) { index, pin in
+                                    if case .point(_, let x, let y) = pin.anchor {
+                                        PinMarkerButton(
+                                            number: index + 1,
+                                            selected: review.selectedPinID == pin.clientID,
+                                            done: pin.isDone
+                                        ) {
+                                            review.selectedPinID = pin.clientID
+                                        }
+                                        .position(
+                                            x: CGFloat(x) / 100 * stage.size.width,
+                                            y: CGFloat(y) / 100 * stage.size.height
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                }
             } else if !url.isFileURL {
                 AsyncImage(url: url) { phase in
                     switch phase {
@@ -116,12 +170,23 @@ struct PhotoArtifactView: View {
 /// is stated, never silent.
 struct CodeArtifactView: View {
     let url: URL
+    /// Present when the host supports review (Task 8): line numbers pin.
+    var review: V2ReviewStore?
 
     @State private var lines: [String]?
     @State private var truncated = false
     @State private var failed = false
 
     private static let maximumBytes = 400_000
+
+    /// Lines carrying pins, highlighted in the gutter.
+    private var pinnedLines: Set<Int> {
+        guard let review else { return [] }
+        return Set(review.pins.compactMap {
+            if case .line(let number) = $0.anchor { return number }
+            return nil
+        })
+    }
 
     var body: some View {
         Group {
@@ -137,10 +202,20 @@ struct CodeArtifactView: View {
                         }
                         ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                             HStack(alignment: .top, spacing: 12) {
-                                Text("\(index + 1)")
-                                    .font(.system(.caption, design: .monospaced))
-                                    .foregroundStyle(Theme.inkFaint)
-                                    .frame(minWidth: 28, alignment: .trailing)
+                                Group {
+                                    if review != nil {
+                                        Button("\(index + 1)") {
+                                            review?.addPin(.line(number: index + 1), text: "")
+                                        }
+                                        .accessibilityIdentifier("visual-code-line")
+                                        .accessibilityLabel("Pin line \(index + 1)")
+                                    } else {
+                                        Text("\(index + 1)")
+                                    }
+                                }
+                                .font(.system(.caption, design: .monospaced))
+                                .foregroundStyle(pinnedLines.contains(index + 1) ? Theme.accent : Theme.inkFaint)
+                                .frame(minWidth: 28, alignment: .trailing)
                                 Text(line.isEmpty ? " " : line)
                                     .font(.system(.footnote, design: .monospaced))
                                     .foregroundStyle(Theme.ink)

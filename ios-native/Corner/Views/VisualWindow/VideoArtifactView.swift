@@ -12,6 +12,9 @@ import WebKit
 
 struct VideoArtifactView: View {
     let url: URL
+    /// Present when the host supports review (Task 8): "Pin moment" drops a
+    /// time anchor against the player's clock.
+    var review: V2ReviewStore?
 
     @State private var player: AVPlayer?
     @State private var failed = false
@@ -21,8 +24,33 @@ struct VideoArtifactView: View {
             if failed {
                 ErrorArtifactView(title: url.lastPathComponent, message: "This video could not be played.", onRetry: load)
             } else if let player {
-                PlayerView(player: player)
-                    .accessibilityIdentifier("visual-stage-video")
+                VStack(spacing: 0) {
+                    PlayerView(player: player)
+                        .accessibilityIdentifier("visual-stage-video")
+                    if let review {
+                        HStack(spacing: Theme.s2) {
+                            Text(clock(player.currentTime().seconds))
+                                .font(.hanken(12).monospacedDigit())
+                                .foregroundStyle(Theme.inkSoft)
+                                .accessibilityIdentifier("visual-video-time")
+                            Spacer(minLength: 0)
+                            Text("\(review.pins.count) pin\(review.pins.count == 1 ? "" : "s")")
+                                .font(.hanken(12))
+                                .foregroundStyle(Theme.inkSoft)
+                            Button("Pin moment") {
+                                review.addPin(
+                                    .time(seconds: max(player.currentTime().seconds, 0), x: nil, y: nil),
+                                    text: ""
+                                )
+                            }
+                            .font(.hanken(13).weight(.semibold))
+                            .foregroundStyle(Theme.accent)
+                            .accessibilityIdentifier("visual-pin-moment")
+                        }
+                        .padding(.horizontal, Theme.s3)
+                        .padding(.vertical, Theme.s2)
+                    }
+                }
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -30,6 +58,12 @@ struct VideoArtifactView: View {
             }
         }
         .onDisappear { player?.pause() }
+    }
+
+    private func clock(_ seconds: Double) -> String {
+        guard seconds.isFinite else { return "0:00" }
+        let total = Int(max(seconds, 0))
+        return String(format: "%d:%02d", total / 60, total % 60)
     }
 
     private func load() {

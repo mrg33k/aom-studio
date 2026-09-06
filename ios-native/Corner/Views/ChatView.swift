@@ -94,6 +94,12 @@ struct ChatView: View {
     /// server session is the durable copy, so a rebuild restores via load().
     /// Inert on the legacy path.
     @StateObject private var window: VisualWindowStore
+    /// Corner v2 review checklist (native Task 8): pins per artifact, capped
+    /// at four, submitted once per Send. Inert on the legacy path.
+    @StateObject private var v2review: V2ReviewStore
+    /// Dictation for the v2 Record chip (P023): streams into the draft.
+    @StateObject private var speech = SpeechService()
+    @State private var dictationBase = ""
     @StateObject private var review = ReviewStore.shared
     @EnvironmentObject private var router: AppRouter
     @Environment(\.scenePhase) private var scenePhase
@@ -156,6 +162,7 @@ struct ChatView: View {
         _model = StateObject(wrappedValue: ChatViewModel(room: room))
         _v2model = StateObject(wrappedValue: V2ChatModel())
         _window = StateObject(wrappedValue: VisualWindowStore(api: WorkspaceStore.shared.v2api, visualSessionID: "legacy"))
+        _v2review = StateObject(wrappedValue: V2ReviewStore(api: WorkspaceStore.shared.v2api))
         v2 = nil
     }
 
@@ -168,6 +175,7 @@ struct ChatView: View {
         _model = StateObject(wrappedValue: ChatViewModel(room: context.compatRoom))
         _v2model = StateObject(wrappedValue: V2ChatModel(api: WorkspaceStore.shared.v2api))
         _window = StateObject(wrappedValue: VisualWindowStore(api: WorkspaceStore.shared.v2api, visualSessionID: thread.visualSessionID))
+        _v2review = StateObject(wrappedValue: V2ReviewStore(api: WorkspaceStore.shared.v2api))
         v2 = context
     }
 
@@ -192,8 +200,11 @@ struct ChatView: View {
     /// `@brain` suggestions route server-side. No agent rooms, no specialist
     /// menu, no navigation state — a send never leaves this thread.
     private var v2Screen: some View {
-        VisualWindowHost { v2Main }
+        VisualWindowHost(main: { v2Main }, onCarryOn: { text in
+            Task { await v2model.send(text) }
+        })
             .environmentObject(window)
+            .environmentObject(v2review)
     }
 
     /// The chat column itself; the host lays the Visual Window beside it on
@@ -227,15 +238,27 @@ struct ChatView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
+                // P022: a mission shows the PROJECT name as the 12.5px line
+                // above the title; a project shows the title only. The
+                // screen marker stays a 1pt overlay leaf — never on the
+                // VStack (R14: a container identifier overwrites its
+                // children, and the title must keep its own).
                 VStack(spacing: 1) {
+                    if let mission = v2?.mission {
+                        Text(v2?.project.name ?? mission.title)
+                            .font(.hanken(12.5).weight(.medium))
+                            .foregroundStyle(Theme.inkSoft)
+                            .lineLimit(1)
+                            .accessibilityIdentifier("chat-subtitle")
+                    }
                     Text(v2?.title ?? v2model.displayTitle)
                         .font(.hanken(15).weight(.semibold))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                         .accessibilityIdentifier("chat-title")
-                    Text("Corner v2")
-                        .font(.hanken(10.5).weight(.medium))
-                        .foregroundStyle(Theme.inkSoft)
+                }
+                .overlay(alignment: .top) {
+                    Color.clear.frame(width: 1, height: 1)
                         .accessibilityIdentifier("chat-screen")
                 }
             }
@@ -508,39 +531,64 @@ struct ChatView: View {
                     Spacer(minLength: 0)
                 }
             }
-            HStack(alignment: .bottom, spacing: 6) {
-                TextField("Message…", text: $v2model.draft, axis: .vertical)
-                    .font(.hanken(16))
-                    .lineLimit(1...5)
-                    .focused($composerFocused)
-                    .foregroundStyle(Theme.ink)
-                    .padding(.vertical, 8)
-                    .padding(.trailing, Theme.s2)
-                    .accessibilityIdentifier("v2-composer-field")
+            // P023 artifact peek: 60px above the composer while the thread
+            // has tabs — the active tab's thumbnail + change count. Tapping
+            // opens the sheet/column on the selected tab.
+            if !window.tabs.isEmpty {
+                v2PeekBar
+            }
+            HStack(alignment: .bottom, spacing: 8) {
+                // P023: 50px pill with the Record chip inside.
+                HStack(spacing: 4) {
+                    TextField("Message…", text: $v2model.draft, axis: .vertical)
+                        .font(.hanken(16))
+                        .lineLimit(1...5)
+                        .focused($composerFocused)
+                        .foregroundStyle(Theme.ink)
+                        .padding(.vertical, 8)
+                        .accessibilityIdentifier("v2-composer-field")
+                    if speech.supported {
+                        Button(action: toggleV2Dictation) {
+                            Image(systemName: speech.isListening ? "mic.fill" : "mic")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(speech.isListening ? Color.white : Theme.inkSoft)
+                                .frame(width: 36, height: 36)
+                                .background(
+                                    speech.isListening ? Color.red : Theme.raised2,
+                                    in: Circle()
+                                )
+                        }
+                        .accessibilityIdentifier("v2-record")
+                        .accessibilityLabel(speech.isListening ? "Stop dictation" : "Speak your message")
+                    }
+                }
+                .padding(.leading, Theme.s4)
+                .padding(.trailing, Theme.s1)
+                .frame(minHeight: 50)
+                .background(Theme.composerCard, in: Capsule())
+                .overlay(
+                    Capsule()
+                        .strokeBorder(composerFocused ? Theme.accent : Theme.hairline, lineWidth: 1)
+                )
+                // P023: 50px round send beside the pill.
                 Button {
+                    if speech.isListening { speech.stop() }
                     let text = v2model.draft
                     Task { await v2model.send(text) }
                 } label: {
                     Image(systemName: "paperplane.fill")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(v2CanSend ? Color.white : Theme.inkFaint)
-                        .frame(width: 44, height: 44)
+                        .frame(width: 50, height: 50)
                         .background(
                             v2CanSend ? Theme.accent : Theme.raised2,
-                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            in: Circle()
                         )
                 }
                 .accessibilityIdentifier("v2-composer-send")
                 .accessibilityLabel("Send message")
                 .disabled(!v2CanSend)
             }
-            .padding(.leading, Theme.s3)
-            .frame(minHeight: 44)
-            .background(Theme.composerCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(composerFocused ? Theme.accent : Theme.hairline, lineWidth: 1)
-            )
         }
         .padding(Theme.s2)
         .background {
@@ -560,6 +608,84 @@ struct ChatView: View {
 
     private var v2CanSend: Bool {
         !v2model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// P023 artifact peek bar (60px): the active tab's live thumbnail and
+    /// change count. Tapping opens the sheet/column on the selected tab.
+    private var v2PeekBar: some View {
+        Button {
+            window.isPresented = true
+        } label: {
+            HStack(spacing: Theme.s3) {
+                v2PeekThumbnail
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(window.selectedTab?.title ?? "Preview")
+                        .font(.hanken(14).weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                    Text(v2PeekCountText)
+                        .font(.hanken(12))
+                        .foregroundStyle(Theme.inkSoft)
+                        .accessibilityIdentifier("visual-peek-count")
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.up")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.inkFaint)
+            }
+            .padding(.horizontal, Theme.s3)
+            .frame(maxWidth: .infinity, minHeight: 60, maxHeight: 60, alignment: .leading)
+            .background(Theme.composerCard, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Theme.hairline, lineWidth: 1)
+            )
+        }
+        .accessibilityIdentifier("visual-peek")
+        .accessibilityLabel("Open \(window.selectedTab?.title ?? "preview")")
+    }
+
+    private var v2PeekCountText: String {
+        let count = v2review.sendablePins.count
+        if count == 0 { return "No changes yet" }
+        return count == 1 ? "1 change" : "\(count) changes"
+    }
+
+    /// The live thumbnail: the photo itself when the active tab is one,
+    /// otherwise the kind's mark.
+    private var v2PeekThumbnail: some View {
+        Group {
+            if let tab = window.selectedTab,
+               tab.kind == .photo,
+               let url = window.artifact(for: tab)?.sourceURL,
+               url.isFileURL,
+               let image = UIImage(contentsOfFile: url.path) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 40, height: 40)
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            } else {
+                Image(systemName: V2ArtifactCards.icon(for: window.selectedTab?.kind ?? .document))
+                    .font(.system(size: 16))
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 40, height: 40)
+                    .background(Theme.accentWeak, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            }
+        }
+    }
+
+    /// Record inside the pill, mirroring the home composer's dictation
+    /// contract: partials replace the dictated tail, typed text is kept.
+    private func toggleV2Dictation() {
+        if speech.isListening {
+            speech.stop()
+            return
+        }
+        dictationBase = SpeechService.dictationBase(for: v2model.draft)
+        speech.toggle { transcript in
+            v2model.draft = dictationBase + transcript
+        }
     }
 
     /// Complete the `@…` token under the cursor to `@brain `.
@@ -2092,7 +2218,7 @@ private struct V2ArtifactCards: View {
         }
     }
 
-    private static func icon(for kind: VisualTabKind) -> String {
+    static func icon(for kind: VisualTabKind) -> String {
         switch kind {
         case .pdf: "doc.richtext"
         case .web: "globe"

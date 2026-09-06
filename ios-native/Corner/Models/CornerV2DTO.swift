@@ -290,10 +290,13 @@ struct VisualWindowTab: Codable, Identifiable, Equatable {
 }
 
 struct ReviewPin: Codable, Identifiable, Equatable {
-    let id: String
+    /// Empty until the server answers `submitReview` (Task 8 maps the echoed
+    /// client ids back onto the kept pins).
+    var id: String
     /// Absent on the wire (pins are listed per artifact); present when the
-    /// client echoes a pin it already knows the server id for.
-    let artifactID: String?
+    /// client echoes a pin it already knows the server id for. Mutable so
+    /// submit can stamp the target artifact on its outgoing copies.
+    var artifactID: String?
     let anchor: PinAnchor
     var text: String
     var isDone: Bool

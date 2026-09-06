@@ -265,3 +265,133 @@ final class ReviewStore: ObservableObject {
         }
     }
 }
+
+// MARK: - Corner v2 checklist review (native Task 8)
+//
+// Checklist-only, per artifact: point anchors for PDF/image/web, time
+// anchors for video, line anchors for code. Max 4 pins per artifact (HANDOFF
+// §6) — the fifth is refused with a `limitHit` toast signal, never silently
+// kept. Blank notes never send. The agent's checklist completion arrives as
+// `ThreadBlock.checklist`; there is deliberately no approval button anywhere
+// in this loop.
+//
+// This is a NEW type appended to this file per the plan's file list. The
+// legacy review-queue `ReviewStore` above keeps its contract and its tests.
+
+/// A draft pin before submit: `id` is empty until the server answers.
+/// Identity client-side is `clientID`.
+@MainActor
+final class V2ReviewStore: ObservableObject {
+    /// HANDOFF §6: max 4 pins per artifact.
+    static let maxPins = 4
+
+    /// The current artifact's pins, in anchor order.
+    @Published private(set) var pins: [ReviewPin] = []
+    /// The selected pin's clientID (server ids arrive only after submit).
+    @Published var selectedPinID: String?
+    /// Review mode: checklist + Send show only while on (HANDOFF §4).
+    @Published var reviewing = false
+    /// Set when a pin past the cap is refused; the view toasts and clears.
+    @Published private(set) var limitHit = false
+    /// A submit is in flight; Send stands down so one tap is one checklist.
+    @Published private(set) var submitting = false
+
+    private(set) var artifactID: String?
+    /// Pins parked per artifact while another tab is selected.
+    private var stash: [String: [ReviewPin]] = [:]
+
+    private let api: any CornerV2API
+
+    init(api: any CornerV2API) {
+        self.api = api
+    }
+
+    /// Pins with text — the only ones that send.
+    var sendablePins: [ReviewPin] {
+        pins.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    var sendTitle: String {
+        let count = sendablePins.count
+        return count == 0 ? "Send" : "Send \(count) change\(count == 1 ? "" : "s")"
+    }
+
+    var canSend: Bool { !sendablePins.isEmpty && !submitting }
+
+    /// Switch the artifact under review: park the current pins, restore the
+    /// target's. Same-artifact calls only reselect.
+    func context(artifactID newID: String?) {
+        let current = artifactID
+        if let current, current != newID { stash[current] = pins }
+        artifactID = newID
+        if let newID, newID != current { pins = stash[newID] ?? [] }
+        if let selected = selectedPinID,
+           !pins.contains(where: { $0.clientID == selected }) {
+            selectedPinID = nil
+        }
+    }
+
+    /// Add a pin to the current artifact. Returns false at the cap (and
+    /// raises `limitHit` for the toast); the pin is not added.
+    @discardableResult
+    func addPin(_ anchor: PinAnchor, text: String) -> Bool {
+        guard pins.count < Self.maxPins else {
+            limitHit = true
+            return false
+        }
+        let pin = ReviewPin(
+            id: "", artifactID: artifactID, anchor: anchor,
+            text: text, isDone: false, clientID: UUID().uuidString
+        )
+        pins.append(pin)
+        selectedPinID = pin.clientID
+        reviewing = true
+        return true
+    }
+
+    func removePin(id: String) {
+        pins.removeAll { $0.id == id || $0.clientID == id }
+        if selectedPinID == id { selectedPinID = nil }
+    }
+
+    func updateText(id: String, text: String) {
+        guard let index = pins.firstIndex(where: { $0.id == id || $0.clientID == id }) else { return }
+        pins[index].text = text
+    }
+
+    func clearLimitHit() { limitHit = false }
+
+    /// Submit the current artifact's non-empty pins as one checklist. Maps
+    /// the echoed client ids to server ids on the kept pins (the panel
+    /// resets after). A blank-only outbox makes no network call.
+    @discardableResult
+    func submit(artifactID: String) async throws -> SubmitReviewResult {
+        self.artifactID = artifactID
+        let sendable = sendablePins
+        guard !sendable.isEmpty else {
+            return SubmitReviewResult(checklistId: "", pins: [])
+        }
+        submitting = true
+        defer { submitting = false }
+        let outgoing = sendable.map { pin -> ReviewPin in
+            var copy = pin
+            copy.artifactID = artifactID
+            return copy
+        }
+        let result = try await api.submitReview(artifactID: artifactID, pins: outgoing)
+        for item in result.pins {
+            guard let client = item.clientID,
+                  let index = pins.firstIndex(where: { $0.clientID == client }) else { continue }
+            pins[index].id = item.id
+        }
+        return result
+    }
+
+    /// After a sent checklist: pins reset, review mode off (HANDOFF §6).
+    func reset() {
+        if let current = artifactID { stash[current] = [] }
+        pins = []
+        selectedPinID = nil
+        reviewing = false
+    }
+}

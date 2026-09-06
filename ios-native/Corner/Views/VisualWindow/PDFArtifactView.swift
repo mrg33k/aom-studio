@@ -15,6 +15,10 @@ struct PDFArtifactView: View {
     /// 1-based page from tab state.
     let page: Int
     let onPage: (Int) -> Void
+    /// Present when the host supports review (Task 8): taps drop point pins,
+    /// markers select them. Nil keeps the pure Task 7 viewer.
+    var review: V2ReviewStore?
+    var artifactID: String?
 
     @State private var document: PDFDocument?
     @State private var failed = false
@@ -27,8 +31,48 @@ struct PDFArtifactView: View {
                 ErrorArtifactView(title: url.lastPathComponent, message: "This PDF could not be opened.", onRetry: load)
             } else if let document {
                 VStack(spacing: 0) {
-                    PDFKitView(document: document, page: currentPage, onPage: { currentPage = $0; onPage($0) })
-                        .accessibilityIdentifier("visual-stage-pdf")
+                    GeometryReader { stage in
+                        PDFKitView(document: document, page: currentPage, onPage: { currentPage = $0; onPage($0) })
+                            .accessibilityIdentifier("visual-stage-pdf")
+                            .overlay {
+                                if review != nil {
+                                    Color.clear
+                                        .contentShape(Rectangle())
+                                        .onTapGesture(coordinateSpace: .local) { location in
+                                            let size = stage.size
+                                            guard size.width > 0, size.height > 0 else { return }
+                                            review?.addPin(
+                                                .point(
+                                                    page: currentPage,
+                                                    x: Self.percent(location.x, of: size.width),
+                                                    y: Self.percent(location.y, of: size.height)
+                                                ),
+                                                text: ""
+                                            )
+                                        }
+                                }
+                            }
+                            .overlay(alignment: .topLeading) {
+                                if let review {
+                                    ForEach(Array(review.pins.enumerated()), id: \.element.clientID) { index, pin in
+                                        if case .point(let page, let x, let y) = pin.anchor,
+                                           page == nil || page == currentPage {
+                                            PinMarkerButton(
+                                                number: index + 1,
+                                                selected: review.selectedPinID == pin.clientID,
+                                                done: pin.isDone
+                                            ) {
+                                                review.selectedPinID = pin.clientID
+                                            }
+                                            .position(
+                                                x: CGFloat(x) / 100 * stage.size.width,
+                                                y: CGFloat(y) / 100 * stage.size.height
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                    }
                     HStack(spacing: Theme.s4) {
                         Button {
                             go(currentPage - 1, in: document)
@@ -58,6 +102,13 @@ struct PDFArtifactView: View {
             }
         }
         .onAppear { currentPage = max(1, page) }
+    }
+
+    /// A tap offset as a 0–100 % pin coordinate. Explicit Doubles: CGFloat
+    /// and Double `*` overloads collide on the bare literal (measured).
+    private static func percent(_ value: CGFloat, of total: CGFloat) -> Double {
+        guard total > 0 else { return 0 }
+        return min(max(Double(value / total) * 100.0, 0.0), 100.0)
     }
 
     private func load() {
