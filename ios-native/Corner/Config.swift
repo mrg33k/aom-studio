@@ -95,7 +95,9 @@ enum Config {
            !raw.isEmpty, let url = URL(string: raw) {
             return url
         }
-        return URL(string: "https://neat-pony-216.convex.cloud")!
+        // Corner v2 production (corner-v2-production / brilliant-scorpion-163) since the
+        // 2026-09-06 cutover; the old dev deployment neat-pony-216 is the rollback target.
+        return URL(string: "https://brilliant-scorpion-163.convex.cloud")!
     }
 
     static var convexURL: URL { convexBaseURL }
