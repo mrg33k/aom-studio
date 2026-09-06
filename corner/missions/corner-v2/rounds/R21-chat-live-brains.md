@@ -306,9 +306,82 @@ reported as-reported.
    live mission. Retired that thread; A2/B are single-pass and clean.
 4. T9 first runs: backend kind string is `"steps"`, not `"step"` (my assert
    was wrong; the bridge was right). Fixed.
-5. OpenAI: prom
-...[truncated 3888 chars]
+5. OpenAI: probed the key (presence only) and the chain `gpt-5 → gpt-4.1 →
+   gpt-4o` — all three refuse with 429 insufficient_quota, $0 spent. The
+   live single-turn probe ("R21 openai probe" thread) classified the probe
+   text as a `latest` slot, failed both adapter attempts, and contained to
+   one plain step + done in ~10 s wall. Refusal and free-text contract
+   breaks take the identical path; only the violation string differs.
+6. Muse guest honesty (both runs): asked for brand-kit colours / a film
+   still with neither in the pack, both Muse- and Claude-backed Steffen
+   declined to invent values and asked for the source file or hex — the
+   behavior the contract demands. Claude-backed Paige closes then smooth
+   this a little ("Steffen has the brand kit colours... I fold his read
+   in"; "Steffen is pulling one still...") while the guest actually asked
+   for the source. Mild overclaim in closes, no invented facts; worth one
+   prompt line later ("report what the guest actually said").
+7. Muse-backed Paige `latest` (run B) led with a backend run-row ("latest
+   is we finished a r20-bridge run") before the Buyers fact. Ledger-faithful
+   but low-value: a future context pack could hide automatic run
+   start/finish rows from brains (they are `did` noise for a "latest"
+   question). Not a failure — the decided fact was present.
 
-Ledger probe (for test 8 design): `v2Ledger:latest` with `["aster"]`
-returns rows, extra subjects don't narrow (match-ANY) — so one query scopes
-both live threads.
+## 7. Commits (scoped paths only, nothing pushed)
+
+- AOM-EA `4fdaa68a8`: `scripts/v2-team-bridge.py`,
+  `scripts/test_v2_team_bridge.py` (26/26 unit green, re-run after commit).
+- Nested aom-studio `366a719d`: `corner/missions/corner-v2/rounds/
+  R21-chat-live-brains.md` (this file) + 16 `rounds/evidence/R21-reply-*.txt`.
+- Web worktree `de6c0a2`: `e2e/chat.spec.ts` only (eslint clean,
+  `tsc --noEmit` shows no chat.spec errors). `e2e/results-orch/` and
+  `httprobe.tmp.mjs` left untracked, as found.
+- Note: my runs re-rendered the untracked `R20-chat-*.png` screenshots with
+  R21 threads (same names); R20's committed record is unaffected (those files
+  were never committed), but its report's PNG references now show R21
+  content — orchestrator's call whether to re-run R20 shots.
+
+## 8. Honest about what the clone lacks (no `convex/` changes this round)
+
+1. Delegation still rides `step` payloads (`kind: delegate` inside a steps
+   event) — there is no first-class `delegate` event type on the clone.
+2. `done` is the writer's receipt (`finishRun` + bridge `/r20/state`); there
+   is still no runs read query, so run status is provable only via bridge
+   state + `listEvents`.
+3. The driver map (`R20_DRIVERS_JSON`) still lives in bridge config, not
+   project data (no agent column on v2 projects).
+4. The context pack still has no per-project CONTEXT field to read (goal/
+   summary only).
+5. New from live traffic: the bridge-written `did` delegation-result row for
+   brand checks uses a fixed template naming Ink/Signal/Bone even when the
+   live guest reported it found no values — the row describes the completed
+   delegation, but its palette names overstate what the guest confirmed.
+   Template should quote the guest's actual words (one-line bridge change,
+   next round).
+6. UI: R21-UI1 (§6.1) + L010 (open, R18).
+
+## 9. For Patrik
+
+Driver map recommendation (roles, not vendors — test 8 proves Claude and
+Muse are interchangeable under the protocol, so this is about voice):
+
+- Aster → Paige. Client-success voice; observed closing turns cleanly,
+  folding guest input, and reading `latest` from the ledger with the fact
+  attached. Keep.
+- Any brand/design-led project (e.g. Cellar Door) → Steffen as driver, Paige
+  as the client-facing closer only if the project needs one. Observed: the
+  specialist asks for sources instead of inventing — exactly what you want
+  owning a brand thread.
+- Everything unmapped → Mom (R20 default, unchanged — no evidence either way).
+- Backends: Muse first for driver turns (median 5.7 s vs 9.8 s, $0 marginal
+  here, gate-clean 10/10 calls), Claude for specialist guests or any turn
+  where you want the token receipt (only Claude reports usage+cost).
+  OpenAI stays unwired until its billing is fixed — the adapter is built,
+  unit-tested, and its live refusal is proven contained.
+
+Anything a real brain refused or hallucinated: both guests refused twice
+each to invent brand colours / film stills (4 honest refusals, 0
+hallucinated hex values, 0 invented files across 18 live replies). One mild
+pattern: driver closes round the guest's caveat up ("Steffen has the colours")
+— smoothing, not fabrication. Nothing else refused; no brain broke the JSON
+contract once in 19 live calls (the only malformed replies in the round came
+from the deliberate fake adapter and the billing-dead OpenAI path).
