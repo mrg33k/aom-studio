@@ -13,3 +13,8 @@ RenderGallery/
 # corner:corner-smooth-loop — tour credentials and tour output stay out of git
 .tour.env
 deliverables/screen-tour/
+
+# R15 re-includes the Visual Window fixture photo: the studio root ignores
+# *.png, but corner-v2-integration/public/fixtures/hero-portrait.png rides as
+# CornerTests/Fixtures/hero.png for the hermetic fixture backend.
+!CornerTests/Fixtures/*.png

@@ -90,6 +90,10 @@ struct ChatView: View {
     /// Corner v2 conversation model (native Task 5). Inert on the legacy
     /// path; the v2 path below is the only thing that ever starts it.
     @StateObject private var v2model: V2ChatModel
+    /// Corner v2 Visual Window state (native Task 7). Owned per thread: the
+    /// server session is the durable copy, so a rebuild restores via load().
+    /// Inert on the legacy path.
+    @StateObject private var window: VisualWindowStore
     @StateObject private var review = ReviewStore.shared
     @EnvironmentObject private var router: AppRouter
     @Environment(\.scenePhase) private var scenePhase
@@ -151,16 +155,19 @@ struct ChatView: View {
     init(room: Room) {
         _model = StateObject(wrappedValue: ChatViewModel(room: room))
         _v2model = StateObject(wrappedValue: V2ChatModel())
+        _window = StateObject(wrappedValue: VisualWindowStore(api: WorkspaceStore.shared.v2api, visualSessionID: "legacy"))
         v2 = nil
     }
 
     /// Corner v2 initializer: a `Thread` plus its owning summaries. One
-    /// surface for project and mission conversations alike. The v2 model
-    /// shares the workspace store's backend (fixture stub under test).
+    /// surface for project and mission conversations alike. The v2 model and
+    /// the Visual Window share the workspace store's backend (fixture stub
+    /// under test).
     init(thread: Thread, project: ProjectSummary, mission: MissionSummary?) {
         let context = V2ChatContext(thread: thread, project: project, mission: mission)
         _model = StateObject(wrappedValue: ChatViewModel(room: context.compatRoom))
         _v2model = StateObject(wrappedValue: V2ChatModel(api: WorkspaceStore.shared.v2api))
+        _window = StateObject(wrappedValue: VisualWindowStore(api: WorkspaceStore.shared.v2api, visualSessionID: thread.visualSessionID))
         v2 = context
     }
 
@@ -185,6 +192,13 @@ struct ChatView: View {
     /// `@brain` suggestions route server-side. No agent rooms, no specialist
     /// menu, no navigation state — a send never leaves this thread.
     private var v2Screen: some View {
+        VisualWindowHost { v2Main }
+            .environmentObject(window)
+    }
+
+    /// The chat column itself; the host lays the Visual Window beside it on
+    /// iPad and over it as a sheet on iPhone. Same store, same selection.
+    private var v2Main: some View {
         VStack(spacing: 0) {
             v2ThreadList
             if let confirmation = v2model.pendingConfirmation {
@@ -229,9 +243,13 @@ struct ChatView: View {
         .onAppear {
             if let context = v2 {
                 Task { await v2model.start(thread: context.thread, project: context.project, mission: context.mission) }
+                Task { await window.start(threadID: context.thread.id) }
             }
         }
-        .onDisappear { v2model.stop() }
+        .onDisappear {
+            v2model.stop()
+            window.stop()
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, v2 != nil {
                 Task { await v2model.foreground() }
@@ -253,7 +271,7 @@ struct ChatView: View {
                     centeredNotice("No messages yet — say something.", systemImage: "bubble.left")
                 case .empty, .ready:
                     ForEach(v2model.events) { event in
-                        V2EventRow(event: event, onSend: { text in
+                        V2EventRow(event: event, threadID: v2?.thread.id ?? "", onSend: { text in
                             Task { await v2model.send(text) }
                         })
                         .id(event.id)
@@ -1893,6 +1911,7 @@ struct ChatView: View {
 
 struct V2EventRow: View {
     let event: ThreadEvent
+    let threadID: String
     let onSend: (String) -> Void
 
     // NOTE: no identifier on these layout containers — it would overwrite
@@ -1904,7 +1923,7 @@ struct V2EventRow: View {
                 Spacer(minLength: 48)
                 VStack(alignment: .trailing, spacing: 4) {
                     ForEach(Array(event.blocks.enumerated()), id: \.offset) { _, block in
-                        V2BlockView(block: block, onSend: onSend)
+                        V2BlockView(block: block, threadID: threadID, onSend: onSend)
                     }
                 }
             }
@@ -1916,7 +1935,7 @@ struct V2EventRow: View {
                         .foregroundStyle(Theme.accent)
                         .accessibilityIdentifier("v2-agent-label")
                     ForEach(Array(event.blocks.enumerated()), id: \.offset) { _, block in
-                        V2BlockView(block: block, onSend: onSend)
+                        V2BlockView(block: block, threadID: threadID, onSend: onSend)
                     }
                 }
                 Spacer(minLength: 48)
@@ -1927,6 +1946,7 @@ struct V2EventRow: View {
 
 private struct V2BlockView: View {
     let block: ThreadBlock
+    let threadID: String
     let onSend: (String) -> Void
 
     var body: some View {
@@ -2002,12 +2022,9 @@ private struct V2BlockView: View {
                 }
             }
         case .artifact(let artifactIDs):
-            Label(
-                artifactIDs.count == 1 ? "1 attachment" : "\(artifactIDs.count) attachments",
-                systemImage: "paperclip"
-            )
-            .font(.hanken(13))
-            .foregroundStyle(Theme.inkSoft)
+            // File cards open durable Visual Window tabs (Task 7). Before
+            // the artifacts load, the old count line holds the row's place.
+            V2ArtifactCards(ids: artifactIDs, threadID: threadID, count: artifactIDs.count)
         case .checklist(let pinIDs):
             Label(
                 pinIDs.count == 1 ? "1 review note" : "\(pinIDs.count) review notes",
@@ -2015,6 +2032,74 @@ private struct V2BlockView: View {
             )
             .font(.hanken(13))
             .foregroundStyle(Theme.inkSoft)
+        }
+    }
+}
+
+/// File cards for an artifact block: one tappable row per artifact. Tapping
+/// opens the durable Visual Window tab (always `open`, even when another tab
+/// is selected — the server dedupes by target). Identifiers on the leaf
+/// buttons only.
+private struct V2ArtifactCards: View {
+    let ids: [String]
+    let threadID: String
+    let count: Int
+
+    @EnvironmentObject private var window: VisualWindowStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if window.artifacts.isEmpty {
+                Label(
+                    count == 1 ? "1 attachment" : "\(count) attachments",
+                    systemImage: "paperclip"
+                )
+                .font(.hanken(13))
+                .foregroundStyle(Theme.inkSoft)
+            } else {
+                ForEach(ids, id: \.self) { id in
+                    if let artifact = window.artifact(id: id) {
+                        Button {
+                            Task {
+                                try? await window.open(
+                                    artifact.kind, threadID: threadID,
+                                    artifactID: artifact.id, title: artifact.title, state: [:]
+                                )
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: Self.icon(for: artifact.kind))
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(Theme.accent)
+                                Text(artifact.title)
+                                    .font(.hanken(14).weight(.medium))
+                                    .foregroundStyle(Theme.ink)
+                                    .lineLimit(1)
+                                Spacer(minLength: 0)
+                                Image(systemName: "arrow.up.right.square")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(Theme.inkFaint)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                            .background(Theme.accentWeak, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        }
+                        .accessibilityIdentifier("visual-open-\(artifact.id)")
+                        .accessibilityLabel(artifact.title)
+                    }
+                }
+            }
+        }
+    }
+
+    private static func icon(for kind: VisualTabKind) -> String {
+        switch kind {
+        case .pdf: "doc.richtext"
+        case .web: "globe"
+        case .video, .youtube: "play.rectangle"
+        case .photo: "photo"
+        case .code: "chevron.left.forwardslash.chevron.right"
+        default: "doc"
         }
     }
 }

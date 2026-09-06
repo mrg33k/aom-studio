@@ -849,13 +849,115 @@ final class PreviewV2API: CornerV2API {
         return Task<Void, Never> {}
     }
 
-    func visualTabs(visualSessionID: String) async throws -> [VisualWindowTab] { [] }
+    /// `-v2SeedVisual`: seeded artifacts + an event carrying file cards, and an
+    /// `openVisualTab` echo (Task 7). `-v2ResetVisual` clears the persisted
+    /// tab rows first; without it a relaunch restores them, like the server
+    /// session would.
+    private var seedVisual: Bool = PreviewV2API.launchHasFlag("-v2SeedVisual")
+    private var visualSeeded = false
+    private var visualTabsByID: [String: VisualWindowTab] = [:]
+    private var visualCounter = 0
 
-    func openVisualTab(kind: VisualTabKind, threadID: String, artifactID: String?, title: String, state: [String: String]) async throws -> VisualWindowTab {
-        throw CornerV2APIError.unconfiguredFakeOperation
+    private static func visualTabsKey() -> String { "preview-visual-tabs" }
+
+    private func loadPersistedVisualTabs() {
+        visualTabsByID = [:]
+        guard seedVisual,
+              let data = UserDefaults.standard.data(forKey: Self.visualTabsKey()),
+              let rows = try? JSONDecoder().decode([VisualWindowTab].self, from: data) else { return }
+        for row in rows { visualTabsByID[row.id] = row }
+        visualCounter = rows.count
     }
 
-    func closeVisualTab(id: String) async throws {}
+    private func persistVisualTabs() {
+        let rows = visualTabsByID.values.sorted { $0.createdAt < $1.createdAt }
+        visualTabsByID = Dictionary(uniqueKeysWithValues: rows.map { ($0.id, $0) })
+        if let data = try? JSONEncoder().encode(rows) {
+            UserDefaults.standard.set(data, forKey: Self.visualTabsKey())
+        }
+    }
+
+    private func bundleURL(_ name: String, ext: String) -> URL? {
+        Bundle.main.url(forResource: name, withExtension: ext)
+    }
+
+    private func seedVisualIfNeeded() {
+        guard seedVisual, !visualSeeded else { return }
+        visualSeeded = true
+        if PreviewV2API.launchHasFlag("-v2ResetVisual") {
+            UserDefaults.standard.removeObject(forKey: Self.visualTabsKey())
+        }
+        loadPersistedVisualTabs()
+        let stamp = Date()
+        chatEvents.append(ThreadEvent(
+            id: "event-preview-visual-1", threadID: general.threadID,
+            author: .agent, agentLabel: "Corner",
+            blocks: [.artifact(artifactIDs: [
+                "artifact-pdf-1", "artifact-site-1", "artifact-video-1",
+                "artifact-photo-1", "artifact-code-1", "artifact-broken-1",
+            ])],
+            createdAt: stamp
+        ))
+    }
+
+    private func seedArtifact(
+        id: String, title: String, kind: VisualTabKind, version: Int = 1,
+        file name: String? = nil, ext: String? = nil, dead: Bool = false
+    ) -> Artifact {
+        let url: URL?
+        if dead {
+            url = URL(fileURLWithPath: "/nonexistent/broken.pdf")
+        } else if let name, let ext {
+            url = bundleURL(name, ext: ext)
+        } else {
+            url = nil
+        }
+        return Artifact(
+            id: id, threadID: general.threadID, title: title, kind: kind,
+            version: version, sourceURL: url, metadata: [:]
+        )
+    }
+
+    func visualTabs(visualSessionID: String) async throws -> [VisualWindowTab] {
+        seedVisualIfNeeded()
+        return visualTabsByID.values
+            .filter { $0.visualSessionID == visualSessionID }
+            .sorted { $0.createdAt < $1.createdAt }
+    }
+
+    func openVisualTab(kind: VisualTabKind, threadID: String, artifactID: String?, title: String, state: [String: String]) async throws -> VisualWindowTab {
+        seedVisualIfNeeded()
+        guard seedVisual else { throw CornerV2APIError.unconfiguredFakeOperation }
+        let sessionID = "session-\(threadID)"
+        let artifacts = try await artifacts(threadID: threadID)
+        // The server dedupes open by target: reopening reselects, never dupes.
+        if let artifactID,
+           let same = visualTabsByID.values.first(where: {
+               $0.visualSessionID == sessionID && $0.artifactID == artifactID
+           }) {
+            visualTabsByID[same.id] = same
+            persistVisualTabs()
+            return same
+        }
+        visualCounter += 1
+        let resolvedTitle = artifactID.flatMap { id in artifacts.first { $0.id == id }?.title } ?? title
+        let resolvedKind = artifactID.flatMap { id in artifacts.first { $0.id == id }?.kind } ?? kind
+        let tab = VisualWindowTab(
+            id: "vtab-preview-\(visualCounter)", visualSessionID: sessionID,
+            threadID: threadID, kind: resolvedKind, artifactID: artifactID,
+            title: resolvedTitle, openedBy: .user, agentLabel: nil,
+            state: state, createdAt: Date()
+        )
+        visualTabsByID[tab.id] = tab
+        persistVisualTabs()
+        return tab
+    }
+
+    func closeVisualTab(id: String) async throws {
+        seedVisualIfNeeded()
+        visualTabsByID.removeValue(forKey: id)
+        persistVisualTabs()
+    }
 
     func submitReview(artifactID: String, pins: [ReviewPin]) async throws -> SubmitReviewResult {
         SubmitReviewResult(
@@ -889,7 +991,18 @@ final class PreviewV2API: CornerV2API {
         confirmationConsumed = true
     }
 
-    func artifacts(threadID: String) async throws -> [Artifact] { [] }
+    func artifacts(threadID: String) async throws -> [Artifact] {
+        seedVisualIfNeeded()
+        guard seedVisual, threadID == general.threadID else { return [] }
+        return [
+            seedArtifact(id: "artifact-pdf-1", title: "Aster brief", kind: .pdf, file: "aster-brief", ext: "pdf"),
+            seedArtifact(id: "artifact-site-1", title: "Launch site", kind: .web, file: "site", ext: "html"),
+            seedArtifact(id: "artifact-video-1", title: "Teaser", kind: .video, file: "walkthrough", ext: "mp4"),
+            seedArtifact(id: "artifact-photo-1", title: "Hero photo", kind: .photo, file: "hero", ext: "png"),
+            seedArtifact(id: "artifact-code-1", title: "Hero code", kind: .code, file: "brief", ext: "tsx"),
+            seedArtifact(id: "artifact-broken-1", title: "Broken file", kind: .pdf, dead: true),
+        ]
+    }
 
     func pendingConfirmations() async throws -> [CrossProjectWriteConfirmation] {
         guard seedConfirmation, !confirmationConsumed else { return [] }

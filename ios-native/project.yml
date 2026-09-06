@@ -44,6 +44,14 @@ targets:
     platform: iOS
     sources:
       - path: Corner
+      # R15 fixture media: the app process (PreviewV2API, fixture mode) serves
+      # these from Bundle.main — UI tests cannot inject files into the app.
+      # Same files the web fixtures ship; hero-portrait.png rides as hero.png.
+      - path: CornerTests/Fixtures/aster-brief.pdf
+      - path: CornerTests/Fixtures/hero.png
+      - path: CornerTests/Fixtures/walkthrough.mp4
+      - path: CornerTests/Fixtures/site.html
+      - path: CornerTests/Fixtures/brief.tsx
     dependencies:
       - target: CornerWidgets
         embed: true
