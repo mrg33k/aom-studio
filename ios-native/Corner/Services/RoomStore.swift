@@ -509,7 +509,12 @@ final class WorkspaceStore: ObservableObject {
             return WorkspaceStore(api: PreviewV2API())
         }
         #endif
-        return WorkspaceStore()
+        let store = WorkspaceStore()
+        // A session the backend no longer accepts (a token minted by another
+        // deployment, a revoked refresh) must land on sign-in, never on an
+        // error tree behind a signed-in shell (R19 finding, 2026-09-06).
+        store.onSessionRejected = { Task { await CornerAPI.shared.signOut() } }
+        return store
     }
 
     @Published private(set) var workspace: WorkspaceSummary?
@@ -521,9 +526,26 @@ final class WorkspaceStore: ObservableObject {
     private let api: any CornerV2API
     private var ensuredWorkspaceID: String?
     private var treePoll: (any Cancellable)?
+    /// Called once when the backend rejects the stored session; the app signs out.
+    var onSessionRejected: (() -> Void)?
+    private(set) var sessionRejected = false
 
     init(api: (any CornerV2API)? = nil) {
         self.api = api ?? DefaultCornerV2API()
+    }
+
+    /// True for the errors that mean "this session is not accepted", as opposed
+    /// to a network blip or a server fault the person can retry.
+    static func isSessionRejection(_ error: Error) -> Bool {
+        if error is AuthError { return true }
+        if let e = error as? ConvexServiceError {
+            switch e {
+            case .notSignedIn: return true
+            case .http(let code, _): return code == 401 || code == 403
+            case .server(let message): return message.localizedCaseInsensitiveContains("not signed in")
+            }
+        }
+        return String(describing: error).localizedCaseInsensitiveContains("not signed in")
     }
 
     /// The v2 API behind this store, so chat screens share the store's backend
@@ -597,6 +619,14 @@ final class WorkspaceStore: ObservableObject {
             errorText = nil
             subscribeTree()
         } catch {
+            if Self.isSessionRejection(error) {
+                errorText = nil
+                if !sessionRejected {
+                    sessionRejected = true
+                    onSessionRejected?()
+                }
+                return
+            }
             errorText = (error as? LocalizedError)?.errorDescription ?? "The workspace could not be loaded."
         }
     }
@@ -661,6 +691,7 @@ final class WorkspaceStore: ObservableObject {
         treePoll?.cancel()
         treePoll = nil
         ensuredWorkspaceID = nil
+        sessionRejected = false
         workspace = nil
         errorText = nil
         fileCounts = [:]

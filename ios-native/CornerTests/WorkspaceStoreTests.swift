@@ -60,4 +60,22 @@ final class WorkspaceStoreTests: XCTestCase {
             XCTAssertEqual(error as? CornerV2APIError, .unconfiguredFakeOperation)
         }
     }
+
+    func testRejectedSessionSignsOutInsteadOfShowingAnErrorTree() async throws {
+        // A token minted by another deployment: ensureWorkspace is refused.
+        let api = CornerV2APIFake(route: .proposedGeneralMission)
+        api.ensureWorkspaceHandler = { throw ConvexServiceError.server("Not signed in") }
+        let store = WorkspaceStore(api: api)
+        var signedOut = 0
+        store.onSessionRejected = { signedOut += 1 }
+        await store.refresh()
+        await store.refresh()
+        XCTAssertEqual(signedOut, 1, "one sign-out per rejected session, not one per refresh")
+        XCTAssertNil(store.errorText, "a rejected session is sign-in, never an error tree")
+        XCTAssertNil(store.workspace)
+        XCTAssertTrue(WorkspaceStore.isSessionRejection(AuthError.notSignedIn))
+        XCTAssertTrue(WorkspaceStore.isSessionRejection(ConvexServiceError.http(401, "")))
+        XCTAssertFalse(WorkspaceStore.isSessionRejection(ConvexServiceError.http(500, "boom")))
+    }
+
 }
