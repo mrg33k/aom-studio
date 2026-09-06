@@ -1907,6 +1907,15 @@ final class V2ChatModel: ObservableObject {
     /// The server's routing verdict for the last send. Rendered inline as a
     /// route block (Task 6); it never navigates on its own.
     @Published private(set) var lastDecision: RouteDecision?
+    /// The live cross-Project write confirmation for this thread, if any.
+    /// Rendered as a single confirmation card (Task 6); confirming consumes
+    /// it exactly once.
+    @Published private(set) var pendingConfirmation: CrossProjectWriteConfirmation?
+    /// Cross-Project read provenance for this thread: the `description` +
+    /// `subjectIDs` of `learned` ledger items tied to it. (`ProvenanceLink`
+    /// from the desktop shape is not in the native contract; these two
+    /// fields carry the meaning.)
+    @Published private(set) var ledgerProvenance: [LedgerItem] = []
 
     private(set) var thread: Corner.Thread?
     private(set) var project: ProjectSummary?
@@ -1952,8 +1961,49 @@ final class V2ChatModel: ObservableObject {
             subscribe()
             refreshQueued()
             await replayOutbox()
+            await refreshConfirmations()
+            await refreshProvenance()
         } catch {
             loadState = .error("The conversation could not be loaded.")
+        }
+    }
+
+    /// Pick up this thread's live cross-Project write confirmation, if the
+    /// server holds one. Only confirmations sourced from this thread show
+    /// here; expired ones are dropped (the server filters them too).
+    func refreshConfirmations() async {
+        guard let thread else { return }
+        do {
+            pendingConfirmation = try await api.pendingConfirmations()
+                .filter { $0.sourceThreadID == thread.id && $0.expiresAt > Date() }
+                .sorted { $0.expiresAt < $1.expiresAt }
+                .first
+        } catch {
+            // No card is an absence, never an error screen over the thread.
+        }
+    }
+
+    /// Confirm a cross-Project write exactly once, using the server-issued
+    /// token. The expiry guard runs before anything touches the network; a
+    /// repeat confirm of a consumed card throws instead of writing twice.
+    func confirmCrossProjectWrite(_ confirmation: CrossProjectWriteConfirmation) async throws {
+        guard confirmation.expiresAt > Date() else { throw CornerV2Error.expiredConfirmation }
+        guard pendingConfirmation?.id == confirmation.id else { throw CornerV2Error.confirmationConsumed }
+        try await api.confirmCrossProjectWrite(id: confirmation.id)
+        pendingConfirmation = nil
+    }
+
+    /// Cross-Project read provenance: `learned` ledger items whose subjects
+    /// name this thread (or its mission/project). Anything else stays in the
+    /// Activity surface; the thread shows only what it actually read.
+    private func refreshProvenance() async {
+        guard let thread, let project else { return }
+        do {
+            let tied: Set<String> = Set([thread.id, project.id, mission?.id].compactMap { $0 })
+            ledgerProvenance = try await api.ledger(workspaceID: project.workspaceID, after: nil)
+                .filter { $0.kind == "learned" && !tied.isDisjoint(with: $0.subjectIDs) }
+        } catch {
+            ledgerProvenance = []
         }
     }
 

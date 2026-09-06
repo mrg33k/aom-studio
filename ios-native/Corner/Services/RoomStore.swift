@@ -706,18 +706,23 @@ final class PreviewV2API: CornerV2API {
         Thread(id: id, ownerType: owner, projectID: projectID, missionID: missionID, visualSessionID: "session-\(id)")
     }
 
-    func workspaceTree() async throws -> WorkspaceSummary? { workspace }
+    func workspaceTree() async throws -> WorkspaceSummary? {
+        seedShipIfNeeded()
+        return workspace
+    }
 
     func ensureWorkspace() async throws -> EnsureWorkspaceResult {
         EnsureWorkspaceResult(workspaceId: workspace.id, generalProjectId: general.id, generalThreadId: general.threadID)
     }
 
     func thread(projectID: String) async throws -> Thread? {
+        seedShipIfNeeded()
         guard let project = workspace.projects.first(where: { $0.id == projectID }) else { return nil }
         return threadFor(id: project.threadID, owner: .project, projectID: project.id, missionID: nil)
     }
 
     func thread(missionID: String) async throws -> Thread? {
+        seedShipIfNeeded()
         for project in workspace.projects {
             if let mission = project.missions.first(where: { $0.id == missionID }) {
                 return threadFor(id: mission.threadID, owner: .mission, projectID: project.id, missionID: mission.id)
@@ -737,6 +742,28 @@ final class PreviewV2API: CornerV2API {
     /// route (the route-block UI test). Default: every send proposes a new
     /// mission, preserving the intake creation flow.
     private var routeMode: String = PreviewV2API.launchStringFlag("-v2RouteMode")
+    /// `-v2SeedLedger`: `ledger` serves two real-kind items (Task 6).
+    private var seedLedger: Bool = PreviewV2API.launchHasFlag("-v2SeedLedger")
+    /// `-v2SeedConfirmation`: one live cross-Project write confirmation from
+    /// the Aster thread, consumed by `confirmCrossProjectWrite` (Task 6).
+    private var seedConfirmation: Bool = PreviewV2API.launchHasFlag("-v2SeedConfirmation")
+    private var confirmationConsumed = false
+    private var shipSeeded = false
+
+    private static func launchHasFlag(_ name: String) -> Bool {
+        ProcessInfo.processInfo.arguments.contains(name)
+    }
+
+    /// In confirm mode the destination mission exists in the tree, so Move
+    /// resolves it through `WorkspaceStore.context(threadID:)` like prod.
+    private func seedShipIfNeeded() {
+        guard routeMode == "confirm", !shipSeeded else { return }
+        shipSeeded = true
+        missions.append(MissionSummary(
+            id: "mission-ship-1", projectID: "proj-aster-1", title: "Ship home page",
+            status: .live, threadID: "thread-ship-1"
+        ))
+    }
 
     private static func launchStringFlag(_ name: String) -> String {
         let prefix = "\(name)="
@@ -839,12 +866,39 @@ final class PreviewV2API: CornerV2API {
         )
     }
 
-    func ledger(workspaceID: String, after: String?) async throws -> [LedgerItem] { [] }
+    func ledger(workspaceID: String, after: String?) async throws -> [LedgerItem] {
+        guard seedLedger else { return [] }
+        let stamp = Date()
+        return [
+            LedgerItem(
+                id: "ledger-preview-1", workspaceID: workspaceID, kind: "did",
+                description: "Scoped the Ship home page mission.", actor: "uitest",
+                surface: "corner:v2", subjectIDs: ["mission-ship-1"],
+                createdAt: stamp, supersedesID: nil
+            ),
+            LedgerItem(
+                id: "ledger-preview-2", workspaceID: workspaceID, kind: "learned",
+                description: "Learned the brand color from the Aster brief.", actor: "uitest",
+                surface: "corner:v2", subjectIDs: ["thread-aster-1"],
+                createdAt: stamp, supersedesID: nil
+            ),
+        ]
+    }
 
-    func confirmCrossProjectWrite(id: String) async throws {}
+    func confirmCrossProjectWrite(id: String) async throws {
+        confirmationConsumed = true
+    }
 
     func artifacts(threadID: String) async throws -> [Artifact] { [] }
 
-    func pendingConfirmations() async throws -> [CrossProjectWriteConfirmation] { [] }
+    func pendingConfirmations() async throws -> [CrossProjectWriteConfirmation] {
+        guard seedConfirmation, !confirmationConsumed else { return [] }
+        return [CrossProjectWriteConfirmation(
+            id: "confirm-preview-1", sourceThreadID: "thread-aster-1",
+            destinationThreadID: "thread-north-1",
+            summary: "update brief: Set primary to #5B9BFF",
+            expiresAt: Date().addingTimeInterval(600)
+        )]
+    }
 }
 #endif

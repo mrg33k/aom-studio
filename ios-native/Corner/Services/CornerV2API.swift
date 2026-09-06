@@ -15,6 +15,16 @@ enum CornerV2APIError: Error, Equatable {
     case unconfiguredFakeOperation
 }
 
+/// Client-side v2 errors that never reach the wire.
+enum CornerV2Error: Error, Equatable {
+    /// The confirmation expired before the tap: no write was attempted, and
+    /// a failed or expired confirmation makes no write.
+    case expiredConfirmation
+    /// The confirmation is no longer the pending one (already confirmed or
+    /// replaced): confirming again would risk a double write.
+    case confirmationConsumed
+}
+
 @MainActor
 protocol CornerV2API {
     func workspaceTree() async throws -> WorkspaceSummary?

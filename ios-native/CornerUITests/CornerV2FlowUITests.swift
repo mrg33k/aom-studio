@@ -179,6 +179,99 @@ final class CornerV2FlowUITests: XCTestCase {
                        "no agent rows anywhere after a mention send")
     }
 
+    /// Open the named project's chat (rows and names pair by index).
+    /// Open the named project's chat. Rows are matched by their accessible
+    /// label (the project name), not by the inner name text: the row
+    /// button's own identifier swallows the inner text identifier on every
+    /// row but the first (measured: 2 rows, 1 named text), so name-text
+    /// matching can only ever find General.
+    private func openProjectChatOn(_ scope: XCUIApplication, named name: String) {
+        let row = scope.buttons.matching(identifier: "workspace-project-row")
+            .matching(NSPredicate(format: "label == '\(name)'")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 120),
+                      "workspace tree never appeared — sign-in or ensureWorkspace failed")
+        row.tap()
+        XCTAssertTrue(scope.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch
+            .waitForExistence(timeout: 30), "tapping \(name) did not open a chat")
+    }
+
+    private func sendInV2Chat(_ scope: XCUIApplication, _ text: String) {
+        let field = v2Field(in: scope)
+        XCTAssertTrue(field.waitForExistence(timeout: 15), "no v2 composer field in the chat")
+        field.tap()
+        field.typeText(text)
+        let send = v2Send(in: scope)
+        XCTAssertTrue(send.waitForExistence(timeout: 10), "no v2 composer send button")
+        send.tap()
+    }
+
+    // MARK: - native Task 6 flows
+
+    /// A route block shows `Project > Mission` + reason + Move; Move opens
+    /// the destination mission's chat.
+    func testV2RouteBlockWithMove() throws {
+        app.launchArguments += ["-v2FixtureUITest", "-v2RouteMode=confirm"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openFirstProjectChatOn(app)
+
+        sendInV2Chat(app, "Where should this go \(Int(Date().timeIntervalSince1970))")
+        let title = app.staticTexts.matching(identifier: "route-title").firstMatch
+        XCTAssertTrue(title.waitForExistence(timeout: 60), "no route block arrived after sending")
+        XCTAssertEqual(title.label, "Aster > Ship home page")
+        XCTAssertTrue(
+            app.staticTexts.matching(identifier: "route-reason").firstMatch
+                .waitForExistence(timeout: 10), "the route block shows no reason"
+        )
+        evidence("07-route-block")
+        app.buttons.matching(identifier: "route-move").firstMatch.tap()
+        let moved = app.staticTexts.matching(identifier: "chat-title")
+            .matching(NSPredicate(format: "label == 'Aster / Ship home page'")).firstMatch
+        XCTAssertTrue(moved.waitForExistence(timeout: 30),
+                      "Move did not open the destination mission chat")
+        evidence("07b-route-moved")
+    }
+
+    /// A pending confirmation card confirms once and disappears; a second
+    /// confirm never happens (the card is gone, so there is nothing to tap).
+    func testV2ConfirmationCardConfirmsOnce() throws {
+        app.launchArguments += ["-v2FixtureUITest", "-v2SeedConfirmation"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openProjectChatOn(app, named: "Aster")
+
+        let summary = app.staticTexts.matching(identifier: "confirm-summary").firstMatch
+        XCTAssertTrue(summary.waitForExistence(timeout: 60),
+                      "no cross-project confirmation card on the source thread")
+        XCTAssertEqual(summary.label, "update brief: Set primary to #5B9BFF")
+        evidence("08-confirm-card")
+        app.buttons.matching(identifier: "confirm-write").firstMatch.tap()
+        let gone = expectation(
+            for: NSPredicate(format: "exists == false"), evaluatedWith: summary, handler: nil
+        )
+        wait(for: [gone], timeout: 15)
+        evidence("08b-confirm-done")
+    }
+
+    /// The Activity screen lists ledger items, opened from the tree list's
+    /// home menu — never from a room.
+    func testV2ActivityListsLedger() throws {
+        app.launchArguments += ["-v2FixtureUITest", "-v2SeedLedger"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        let tree = app.staticTexts.matching(identifier: "workspace-project-name")
+            .matching(NSPredicate(format: "label == 'General'")).firstMatch
+        XCTAssertTrue(tree.waitForExistence(timeout: 120),
+                      "workspace tree never appeared — sign-in or ensureWorkspace failed")
+        app.buttons.matching(identifier: "home-menu").firstMatch.tap()
+        app.buttons.matching(identifier: "activity-row").firstMatch.tap()
+        let items = app.descendants(matching: .any).matching(identifier: "ledger-item")
+        XCTAssertTrue(waitForCount(items, 2, timeout: 60),
+                      "the Activity screen never listed the ledger items")
+        evidence("09-activity")
+        app.buttons.matching(identifier: "ledger-close").firstMatch.tap()
+    }
+
     /// Offline queue: with sends failing, the message parks in the banner;
     /// after a relaunch with the network back, it sends once and the banner
     /// clears (the disk outbox survives the process death).

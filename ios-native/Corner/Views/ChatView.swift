@@ -187,10 +187,18 @@ struct ChatView: View {
     private var v2Screen: some View {
         VStack(spacing: 0) {
             v2ThreadList
+            if let confirmation = v2model.pendingConfirmation {
+                v2ConfirmationCard(confirmation)
+            }
+            if let decision = v2model.lastDecision {
+                v2RouteCard(decision)
+            }
+            if !v2model.ledgerProvenance.isEmpty {
+                v2SourcesSection
+            }
             if !v2model.queued.isEmpty {
                 v2OfflineBanner
             }
-            // The routing verdict renders inline (Task 6 owns the card).
             v2Composer
         }
         .groundBackground()
@@ -308,6 +316,141 @@ struct ChatView: View {
         .padding(.horizontal, Theme.s4)
         .padding(.vertical, Theme.s2)
         .background(Theme.raised)
+    }
+
+    // MARK: - Corner v2 routing provenance (native Task 6)
+
+    /// The routing verdict as `Project > Mission` plus reason and Move.
+    /// Identifiers live on the leaves only — never on these containers (same
+    /// finding as chat-screen: a container id overwrites its children).
+    private func v2RouteCard(_ decision: RouteDecision) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: Theme.s2) {
+                Image(systemName: "arrow.triangle.branch")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.accent)
+                Text(v2RouteTitle(decision))
+                    .font(.hanken(14).weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                    .accessibilityIdentifier("route-title")
+                Spacer(minLength: 0)
+                if v2RouteCanMove(decision) {
+                    Button("Move") { v2Move(decision) }
+                        .font(.hanken(13).weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                        .accessibilityIdentifier("route-move")
+                }
+            }
+            Text(decision.reason)
+                .font(.hanken(13))
+                .foregroundStyle(Theme.inkSoft)
+                .accessibilityIdentifier("route-reason")
+            if decision.needsCreationConfirmation {
+                Text("Needs confirmation — nothing is created until you tap Move.")
+                    .font(.hanken(12))
+                    .foregroundStyle(Theme.warning)
+            } else if decision.needsClarification {
+                Text("Needs clarification — this stays here until you pick a destination.")
+                    .font(.hanken(12))
+                    .foregroundStyle(Theme.warning)
+            }
+        }
+        .padding(.horizontal, Theme.s4)
+        .padding(.vertical, Theme.s2)
+        .background(Theme.raised)
+    }
+
+    private func v2RouteTitle(_ decision: RouteDecision) -> String {
+        if let mission = decision.mission {
+            return "\(decision.project.name) > \(mission.title)"
+        }
+        return decision.project.name
+    }
+
+    /// Move is offered for a confident destination or a pending creation —
+    /// never for a clarification (there is no single place to move to).
+    private func v2RouteCanMove(_ decision: RouteDecision) -> Bool {
+        if decision.needsCreationConfirmation { return true }
+        return !decision.needsClarification && !decision.destinationThreadID.isEmpty
+    }
+
+    private func v2Move(_ decision: RouteDecision) {
+        Task { @MainActor in
+            if decision.needsCreationConfirmation {
+                // Confirm the proposal, then open what the server created.
+                if let result = try? await WorkspaceStore.shared.confirmCreation(decision) {
+                    if let missionID = result.missionID {
+                        router.open(.mission(missionID: missionID))
+                    } else {
+                        router.open(.project(projectID: result.projectID))
+                    }
+                }
+                return
+            }
+            // A confident route: open the destination thread's home.
+            if let context = WorkspaceStore.shared.context(threadID: decision.destinationThreadID) {
+                if let mission = context.mission {
+                    router.open(.mission(missionID: mission.id))
+                } else {
+                    router.open(.project(projectID: context.project.id))
+                }
+            }
+        }
+    }
+
+    /// A cross-Project write as a single confirmation card, using the
+    /// server-issued token. Confirming consumes it (the card disappears); a
+    /// failed or expired confirmation makes no write.
+    private func v2ConfirmationCard(_ confirmation: CrossProjectWriteConfirmation) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: Theme.s2) {
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.warning)
+                Text("Confirm cross-project write")
+                    .font(.hanken(14).weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                Spacer(minLength: 0)
+                Button("Confirm") {
+                    Task { try? await v2model.confirmCrossProjectWrite(confirmation) }
+                }
+                .font(.hanken(13).weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .accessibilityIdentifier("confirm-write")
+            }
+            Text(confirmation.summary)
+                .font(.hanken(13))
+                .foregroundStyle(Theme.inkSoft)
+                .accessibilityIdentifier("confirm-summary")
+        }
+        .padding(.horizontal, Theme.s4)
+        .padding(.vertical, Theme.s2)
+        .background(Theme.raised)
+    }
+
+    /// Cross-Project read provenance: the `description` + `subjectIDs` of
+    /// `learned` ledger items tied to this thread.
+    private var v2SourcesSection: some View {
+        DisclosureGroup("Sources · \(v2model.ledgerProvenance.count)") {
+            ForEach(v2model.ledgerProvenance) { entry in
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.description)
+                        .font(.hanken(13))
+                        .foregroundStyle(Theme.ink)
+                        .accessibilityIdentifier("provenance-item")
+                    if !entry.subjectIDs.isEmpty {
+                        Text(entry.subjectIDs.joined(separator: " · "))
+                            .font(.hanken(11))
+                            .foregroundStyle(Theme.inkSoft)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
+        .font(.hanken(13).weight(.medium))
+        .foregroundStyle(Theme.inkSoft)
+        .padding(.horizontal, Theme.s4)
+        .padding(.vertical, Theme.s2)
     }
 
     /// Whether the `@brain` routing suggestion shows: the draft holds an

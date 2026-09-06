@@ -186,6 +186,104 @@ final class ChatViewModelV2Tests: XCTestCase {
         )
     }
 
+    // MARK: - native Task 6: confirmations + provenance (plan Step 1, adapted)
+
+    private func confirmation(
+        id: String = "confirm-1", sourceThreadID: String,
+        expiresAt: Date = Date().addingTimeInterval(600)
+    ) -> CrossProjectWriteConfirmation {
+        CrossProjectWriteConfirmation(
+            id: id, sourceThreadID: sourceThreadID,
+            destinationThreadID: "thread-north-1",
+            summary: "update brief: Set primary to #5B9BFF",
+            expiresAt: expiresAt
+        )
+    }
+
+    func testCrossProjectWriteRequiresThenConsumesOneConfirmation() async throws {
+        let (thread, project, mission) = try context()
+        let api = CornerV2APIFake()
+        api.threadEventsHandler = { _ in [] }
+        let pending = confirmation(sourceThreadID: thread.id)
+        api.pendingConfirmationsHandler = { [pending] }
+        api.confirmCrossProjectWriteHandler = { _ in }
+        api.ledgerHandler = { _, _ in [] }
+        let model = V2ChatModel(api: api, outbox: .memory)
+        await model.start(thread: thread, project: project, mission: mission)
+
+        // Adapted: the backend exposes pending confirmations as a query, not
+        // a propose call — start() picks up the live one for this thread.
+        XCTAssertEqual(model.pendingConfirmation?.destinationThreadID, "thread-north-1")
+
+        try await model.confirmCrossProjectWrite(pending)
+        XCTAssertEqual(api.confirmedWriteIDs, [pending.id])
+        XCTAssertNil(model.pendingConfirmation, "the card disappears after confirming once")
+
+        // A second confirm of the same card must fail, never write twice.
+        do {
+            try await model.confirmCrossProjectWrite(pending)
+            XCTFail("confirming twice must throw")
+        } catch {
+            XCTAssertEqual(api.confirmedWriteIDs, [pending.id])
+        }
+    }
+
+    func testExpiredConfirmationNeverWrites() async throws {
+        let (thread, project, mission) = try context()
+        let api = CornerV2APIFake()
+        api.threadEventsHandler = { _ in [] }
+        api.pendingConfirmationsHandler = { [] }
+        api.confirmCrossProjectWriteHandler = { _ in }
+        api.ledgerHandler = { _, _ in [] }
+        let model = V2ChatModel(api: api, outbox: .memory)
+        await model.start(thread: thread, project: project, mission: mission)
+
+        let stale = confirmation(sourceThreadID: thread.id, expiresAt: Date().addingTimeInterval(-60))
+        do {
+            try await model.confirmCrossProjectWrite(stale)
+            XCTFail("an expired confirmation must throw")
+        } catch let error as CornerV2Error {
+            XCTAssertEqual(error, .expiredConfirmation)
+        }
+        XCTAssertTrue(api.confirmedWriteIDs.isEmpty, "an expired confirmation makes no write")
+    }
+
+    func testLearnedLedgerItemsForThreadBecomeProvenance() async throws {
+        let (thread, project, mission) = try context()
+        let api = CornerV2APIFake()
+        api.threadEventsHandler = { _ in [] }
+        api.pendingConfirmationsHandler = { [] }
+        api.ledgerHandler = { _, _ in
+            [
+                LedgerItem(
+                    id: "ledger-learn-1", workspaceID: "world-1", kind: "learned",
+                    description: "Learned the brand color from the Aster brief.",
+                    actor: "research", surface: "corner:v2",
+                    subjectIDs: [thread.id], createdAt: Date(), supersedesID: nil
+                ),
+                LedgerItem(
+                    id: "ledger-learn-2", workspaceID: "world-1", kind: "learned",
+                    description: "Learned something about another thread.",
+                    actor: "research", surface: "corner:v2",
+                    subjectIDs: ["thread-elsewhere-9"], createdAt: Date(), supersedesID: nil
+                ),
+                LedgerItem(
+                    id: "ledger-did-1", workspaceID: "world-1", kind: "did",
+                    description: "Scoped a ledger row.",
+                    actor: "karen", surface: "corner:v2",
+                    subjectIDs: [thread.id], createdAt: Date(), supersedesID: nil
+                ),
+            ]
+        }
+        let model = V2ChatModel(api: api, outbox: .memory)
+        await model.start(thread: thread, project: project, mission: mission)
+
+        // Only `learned` items tied to this thread surface as provenance.
+        // (`ProvenanceLink` from the desktop shape is not in the native
+        // contract; the description + subjectIDs carry the meaning.)
+        XCTAssertEqual(model.ledgerProvenance.map(\.id), ["ledger-learn-1"])
+    }
+
     func testOutboxMigrationDropsRoomKeyedEntriesWithoutReplaying() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let legacyDir = root.appendingPathComponent("ThreadCache", isDirectory: true)

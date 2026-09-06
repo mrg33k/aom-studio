@@ -42,6 +42,9 @@ struct RoomListView: View {
     @State private var showingNewRoom = false
     @State private var showingBackgroundWork = false
     @State private var showingNotifications = false
+    /// Corner v2 Activity ledger sheet (native Task 6). Opened from the home
+    /// menu — the tree list's gear area — never from a room.
+    @State private var showingActivity = false
     @State private var showingVoice = false
     /// The pinned search field (Patrik 2026-08-11): .searchable's pull-down kept getting
     /// missed, so the search chip in the top bar toggles a visible field row instead.
@@ -201,6 +204,9 @@ struct RoomListView: View {
             BackgroundWorkView()
                 .environmentObject(ThemeManager.shared)
         }
+        .sheet(isPresented: $showingActivity) {
+            LedgerActivityView(api: v2.v2api)
+        }
         .sheet(isPresented: Binding(
             get: { openProjectSlug != nil },
             set: { if !$0 { openProjectSlug = nil } }
@@ -309,6 +315,13 @@ struct RoomListView: View {
                 Button { router.open(.tracker) } label: {
                     Label("Tracker", systemImage: "checklist")
                 }
+                // Corner v2 Activity: the workspace ledger. A home-menu row —
+                // never a room row — because the ledger is workspace truth,
+                // not conversation content.
+                Button { showingActivity = true } label: {
+                    Label("Activity", systemImage: "chart.bar")
+                }
+                .accessibilityIdentifier("activity-row")
                 Divider()
                 Button { cycleTheme() } label: {
                     Label("Theme: \(themeName)", systemImage: themeGlyph)
