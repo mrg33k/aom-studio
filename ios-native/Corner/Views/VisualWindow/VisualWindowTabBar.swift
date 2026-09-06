@@ -1,10 +1,12 @@
 // VisualWindowTabBar.swift — Corner native iOS
 // corner:corner-v2 native plan Task 7.
 //
-// The design's file strip as chips: horizontally scrolling, selected tab
-// underlined, every chip with its own close. Identifiers live on the leaf
-// buttons only — never on the strip (a container identifier overwrites its
-// children; R14). Only `close(id:)` removes a tab; tapping a chip selects.
+// The design's file strip as chips: horizontally scrolling, selected chip in
+// surface-2 with a hairline on every chip (never an underline — that belongs
+// to the Preview/Context header tabs), every chip with its own close.
+// Identifiers live on the leaf buttons only — never on the strip (a container
+// identifier overwrites its children; R14). Only `close(id:)` removes a tab;
+// tapping a chip selects.
 
 import SwiftUI
 
@@ -51,6 +53,12 @@ struct VisualWindowTabBar: View {
                     .background(
                         selected ? Theme.raised2 : Theme.raised,
                         in: RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    )
+                    // R19: the design draws a hairline around every chip;
+                    // without it an unselected chip melts into the sheet.
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .strokeBorder(Theme.hairline, lineWidth: 1)
                     )
                 }
             }

@@ -114,13 +114,24 @@ struct V2SetupView: View {
             logoRow
             stepRow
             segments
-            ScrollView {
+            // R19: step 6 is short (head + two fields + CTA) — it fills the
+            // column so its own Spacer bottom-docks "Take me to Corner" under
+            // the hairline, exactly like the design. Steps 1–5 scroll.
+            if step == 5 {
                 VStack(alignment: .leading, spacing: 0) {
                     stepContent
                 }
                 .padding(.horizontal, 19)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        stepContent
+                    }
+                    .padding(.horizontal, 19)
+                }
+                bottomCTA
             }
-            bottomCTA
         }
         .groundBackground()
         // NOTE: leaf marker, not a container id (same finding as chat-screen).
@@ -258,12 +269,14 @@ private struct V2SetupConnect: View {
     @StateObject private var connections = V2ConnectionsStore()
     @State private var noticeShown = false
 
-    private let services: [(name: String, icon: String)] = [
-        ("Gmail", "envelope.fill"),
-        ("Drive", "folder.fill"),
-        ("Figma", "pen.ruler.fill"),
-        ("Slack", "number.square.fill"),
-        ("GitHub", "chevron.left.forwardslash.chevron.right"),
+    /// Brand marks straight from the design export's LOGO set (R19) — the
+    /// design shows full-colour marks, not monochrome glyphs.
+    private let services: [(name: String, brand: String)] = [
+        ("Gmail", "brand-gmail"),
+        ("Drive", "brand-drive"),
+        ("Figma", "brand-figma"),
+        ("Slack", "brand-slack"),
+        ("GitHub", "brand-github"),
     ]
 
     var body: some View {
@@ -273,7 +286,7 @@ private struct V2SetupConnect: View {
                 sub: "Email, files, design. Corner reads only what you scope to a project."
             )
             ForEach(services, id: \.name) { service in
-                connectRow(service.name, icon: service.icon)
+                connectRow(service.name, brand: service.brand)
             }
             .padding(.top, 12)
             if noticeShown {
@@ -295,15 +308,16 @@ private struct V2SetupConnect: View {
         }
     }
 
-    private func connectRow(_ service: String, icon: String) -> some View {
+    private func connectRow(_ service: String, brand: String) -> some View {
         let row = integration(for: service)
         let connected = (row?.status ?? "").lowercased().contains("connect")
             || (row?.status ?? "").lowercased() == "active"
         return HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .regular))
-                .foregroundStyle(Theme.inkSoft)
-                .frame(width: 29, height: 29)
+            Image(brand)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 29, height: 24)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(service)
                     .font(.hanken(15).weight(.semibold))
@@ -338,6 +352,10 @@ private struct V2SetupConnect: View {
             }
         }
         .frame(minHeight: 68)
+        // R19: the hairline between Connect rows the design draws.
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(Theme.divider).frame(height: 1)
+        }
         .accessibilityIdentifier("v2-setup-connect-\(service.lowercased())")
         .accessibilityLabel("\(service), \(connected ? "connected" : "not connected")")
     }

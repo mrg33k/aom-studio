@@ -1890,6 +1890,13 @@ final class V2OutboxStore {
     }
 }
 
+/// Validates restored model prefs against the menu's own option list
+/// (ChatView.modelOptions, the single source) so a renamed model falls back
+/// to Auto instead of a dead label.
+enum ChatViewModelV2Models {
+    static func isKnown(_ id: String) -> Bool { ChatView.modelOptions.contains { $0.id == id } }
+}
+
 @MainActor
 final class V2ChatModel: ObservableObject {
     enum LoadState: Equatable { case loading, ready, empty, error(String) }
@@ -1904,6 +1911,14 @@ final class V2ChatModel: ObservableObject {
     @Published private(set) var queued: [V2OutboxEntry] = []
     @Published private(set) var loadState: LoadState = .loading
     @Published var draft = ""
+    /// R19 commands chip: Work/Plan, model, and specialist, persisted per
+    /// thread like the legacy room path (`chatMode.<roomID>`). Mode rides the
+    /// send when the backend accepts it (see DefaultCornerV2API.send);
+    /// model/specialist persist and label the chip today, and ride a send
+    /// field the moment one exists — the clone cannot take one yet.
+    @Published var chatMode = "work"
+    @Published var modelChoice = "default"
+    @Published var specialistChoice = "default"
     /// The server's routing verdict for the last send. Rendered inline as a
     /// route block (Task 6); it never navigates on its own.
     @Published private(set) var lastDecision: RouteDecision?
@@ -1947,6 +1962,64 @@ final class V2ChatModel: ObservableObject {
         self.outbox = outbox
     }
 
+    private var threadPrefsKey: String { "v2ThreadPrefs.\(thread?.id ?? "none")" }
+
+    /// Restore this thread's commands state. Defaults are Work, Auto model,
+    /// thread-default specialist — the same defaults the legacy path uses.
+    private func restoreThreadPrefs() {
+        let saved = UserDefaults.standard.dictionary(forKey: threadPrefsKey) as? [String: String] ?? [:]
+        chatMode = saved["mode"] == "plan" ? "plan" : "work"
+        let model = saved["model"] ?? "default"
+        modelChoice = ChatViewModelV2Models.isKnown(model) ? model : "default"
+        specialistChoice = saved["specialist"] ?? "default"
+    }
+
+    private func persistThreadPrefs() {
+        UserDefaults.standard.set(
+            ["mode": chatMode, "model": modelChoice, "specialist": specialistChoice],
+            forKey: threadPrefsKey
+        )
+    }
+
+    /// Work/Plan for this thread ("Corner will propose a plan first" when
+    /// Plan). Persists per thread; the send carries it when accepted.
+    func setMode(_ mode: String) {
+        chatMode = mode == "plan" ? "plan" : "work"
+        persistThreadPrefs()
+    }
+
+    /// Model pick for this thread. Persists per thread and labels the chip;
+    /// no v2 send field exists for it yet, so it rides no wire today.
+    func selectModel(_ id: String) {
+        modelChoice = ChatViewModelV2Models.isKnown(id) ? id : "default"
+        persistThreadPrefs()
+    }
+
+    /// Specialist pick for this thread. Same persistence story as the model.
+    func selectSpecialist(_ slug: String) {
+        let next = slug.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        specialistChoice = next.isEmpty ? "default" : next
+        persistThreadPrefs()
+    }
+
+    /// Specialists that spoke in this thread (agent labels beyond Corner and
+    /// the project default). Non-empty means the commands menu grows the
+    /// Specialist submenu — the v2 analogue of `agentPreferenceKey != nil`.
+    var specialistRoster: [(slug: String, title: String)] {
+        let defaultName = project?.name ?? "Corner"
+        let labels = Set(events.compactMap(\.agentLabel))
+            .filter { $0 != "Corner" && $0 != defaultName && !$0.isEmpty }
+        return labels.sorted().map { label in
+            (slug: label.lowercased().replacingOccurrences(of: " ", with: "-"), title: label)
+        }
+    }
+
+    var specialistTitle: String {
+        guard specialistChoice != "default" else { return "Thread default" }
+        return specialistRoster.first(where: { $0.slug == specialistChoice })?.title
+            ?? AgentRoster.title(for: specialistChoice)
+    }
+
     /// Open a Project or Mission thread: load events, subscribe once, replay
     /// the outbox. Replaces any previous thread (one active subscription).
     func start(thread: Corner.Thread, project: ProjectSummary, mission: MissionSummary?) async {
@@ -1954,6 +2027,7 @@ final class V2ChatModel: ObservableObject {
         self.thread = thread
         self.project = project
         self.mission = mission
+        restoreThreadPrefs()
         loadState = .loading
         do {
             events = try await api.threadEvents(threadID: thread.id)
@@ -2049,7 +2123,10 @@ final class V2ChatModel: ObservableObject {
         activityBegan = true
         awaitingReply = true
         do {
-            lastDecision = try await api.send(text: trimmed, mentioning: mentioning, preferredProjectID: nil)
+            // The thread's Work/Plan intent rides the send; the transport
+            // drops Work (the server default) and falls back field-less when
+            // the backend does not know `mode` yet.
+            lastDecision = try await api.send(text: trimmed, mentioning: mentioning, preferredProjectID: nil, mode: chatMode)
             outbox.remove(threadID: thread.id, clientEventID: entry.clientEventID)
             events.removeAll { $0.id == echo.id }
             refreshQueued()
@@ -2070,7 +2147,7 @@ final class V2ChatModel: ObservableObject {
             do {
                 lastDecision = try await api.send(
                     text: entry.text, mentioning: entry.mentioning,
-                    preferredProjectID: entry.preferredProjectID
+                    preferredProjectID: entry.preferredProjectID, mode: chatMode
                 )
                 outbox.remove(threadID: thread.id, clientEventID: entry.clientEventID)
                 events.removeAll { $0.id == Self.echoID(for: entry.clientEventID) }

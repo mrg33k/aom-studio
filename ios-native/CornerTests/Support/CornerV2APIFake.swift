@@ -151,10 +151,15 @@ final class CornerV2APIFake: CornerV2API {
         try await require(threadEventsHandler, op: "threadEvents")(threadID)
     }
 
-    func send(text: String, mentioning: [String], preferredProjectID: String?) async throws -> RouteDecision {
+    /// Modes the fake has seen, per send — the mode-fallback test asserts
+    /// Plan rides the first attempt and the field-less retry follows.
+    private(set) var sentModes: [String?] = []
+
+    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String? = nil) async throws -> RouteDecision {
         sentTexts.append(text)
         sentMentions.append(mentioning)
         sentPreferredProjectIDs.append(preferredProjectID)
+        sentModes.append(mode)
         return try await require(sendHandler, op: "send")(text, mentioning, preferredProjectID)
     }
 

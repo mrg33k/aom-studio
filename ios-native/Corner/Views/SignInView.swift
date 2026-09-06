@@ -57,9 +57,13 @@ struct SignInView: View {
                             id: "login-sso-google",
                             label: "Continue with Google",
                             icon: AnyView(
-                                Text("G")
-                                    .font(.system(size: 17, weight: .bold))
-                                    .foregroundStyle(Theme.ink)
+                                // R19: the design's multicolor G (LOGO set),
+                                // not a monochrome letter.
+                                Image("brand-google-g")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 19, height: 19)
+                                    .accessibilityHidden(true)
                             )
                         ) { ssoNotice("Google") }
                         ssoRow(

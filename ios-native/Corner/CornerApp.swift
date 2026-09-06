@@ -79,6 +79,12 @@ struct CornerApp: App {
             UserDefaults.standard.removeObject(forKey: "corner.v2.setup-done")
             UserDefaults.standard.removeObject(forKey: "navigation.lastRoomID")
         }
+        // R19 design-vs-sim proof: drop device-local recents (fixture runs on
+        // the same simulator seed them with synthetic rows) so the drawer
+        // shows this device's genuine history only. Debug builds only.
+        if ProcessInfo.processInfo.arguments.contains("-v2ClearRecents") {
+            V2RecentStore.shared.clear()
+        }
         // Auto sign-in for simulator testing. Reads email/password from launch
         // environment so `xcrun simctl launch --env` can authenticate without
         // touching the password field. Debug builds only, never shipped.

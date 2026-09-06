@@ -264,6 +264,14 @@ struct ChatView: View {
                 V2DrawerView(isPresented: $v2ShowingDrawer, currentThreadID: v2?.thread.id)
             }
         }
+        // R19: the commands menu's generator on the v2 path — the same sheet
+        // the legacy composer presents. Generation + save/share work; staging
+        // into the v2 thread waits on a send-attachments field.
+        .sheet(isPresented: $showingImageGenerator) {
+            ImageGeneratorSheet(model: model)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
         .onAppear {
             if let context = v2 {
                 V2RecentStore.shared.record(project: context.project, mission: context.mission)
@@ -638,6 +646,9 @@ struct ChatView: View {
                         .foregroundStyle(Theme.ink)
                         .padding(.vertical, 8)
                         .accessibilityIdentifier("v2-composer-field")
+                    // R19: the commands chip lives inside the pill, left of
+                    // Record — the design's pill with one more chip.
+                    v2CommandsChip
                     if speech.supported {
                         // P041: a bare muted glyph — no circle behind it.
                         Button(action: toggleV2Dictation) {
@@ -1865,29 +1876,36 @@ struct ChatView: View {
     }
 
     /// The web's Commands popover, as one native menu behind the sparkles chip:
-    /// the Work/Plan mode toggle, the Model submenu, and "Files in this room".
-    /// The chip's label stays live — model short-name, plus "Plan" whenever the
-    /// non-default mode is armed, so neither choice hides just because its control
-    /// moved into a menu.
-    private var commandsMenu: some View {
-        Menu {
+    /// the Work/Plan mode toggle, the Model submenu, and "Files in this
+    /// conversation". R19: this content builder is THE menu — the legacy room
+    /// composer and the v2 pill share it through their adapters, so there is
+    /// no second menu to drift. The chip's label stays live — model
+    /// short-name, plus "Plan" whenever the non-default mode is armed, so
+    /// neither choice hides just because its control moved into a menu.
+    @MainActor
+    private func commandsMenuContent<S: CommandsMenuState>(state: S) -> some View {
+        Group {
             // Work / Plan — a Picker renders as inline checkmark rows in a Menu,
             // the native shape of the web's segmented toggle.
             Picker("Mode", selection: Binding(
-                get: { model.chatMode },
-                set: { model.setMode($0) }
+                get: { state.chatMode },
+                set: { state.setMode($0) }
             )) {
                 Label("Work", systemImage: "hammer").tag("work")
                 Label("Plan", systemImage: "list.bullet.rectangle").tag("plan")
             }
+            // The web's caption under its toggle, verbatim.
+            Text(state.chatMode == "plan"
+                 ? "Corner will propose a plan first"
+                 : "Corner gets to work directly")
 
             // Model submenu — the same options and checkmark the old chip menu had.
             Menu {
                 ForEach(ChatView.modelOptions, id: \.id) { option in
                     Button {
-                        Task { await model.selectModel(option.id) }
+                        Task { await state.selectModel(option.id) }
                     } label: {
-                        if option.id == model.modelChoice {
+                        if option.id == state.modelChoice {
                             Label(option.label, systemImage: "checkmark")
                         } else {
                             Text(option.label)
@@ -1895,25 +1913,25 @@ struct ChatView: View {
                     }
                 }
             } label: {
-                Label("Model — \(ChatView.shortModelLabel(model.modelChoice))", systemImage: "cpu")
+                Label("Model — \(ChatView.shortModelLabel(state.modelChoice))", systemImage: "cpu")
             }
 
-            if model.room.agentPreferenceKey != nil {
+            if state.hasSpecialist {
                 Menu {
                     Button {
-                        Task { await model.selectRoomAgent("default") }
+                        Task { await state.selectSpecialist("default") }
                     } label: {
-                        if model.roomAgentChoice == "default" {
-                            Label("Room default", systemImage: "checkmark")
+                        if state.specialistChoice == "default" {
+                            Label(state.specialistDefaultTitle, systemImage: "checkmark")
                         } else {
-                            Text("Room default")
+                            Text(state.specialistDefaultTitle)
                         }
                     }
-                    ForEach(model.roomAgentRoster) { specialist in
+                    ForEach(state.specialistRoster, id: \.slug) { specialist in
                         Button {
-                            Task { await model.selectRoomAgent(specialist.slug) }
+                            Task { await state.selectSpecialist(specialist.slug) }
                         } label: {
-                            if specialist.slug == model.roomAgentChoice {
+                            if specialist.slug == state.specialistChoice {
                                 Label(specialist.title, systemImage: "checkmark")
                             } else {
                                 Text(specialist.title)
@@ -1921,17 +1939,32 @@ struct ChatView: View {
                         }
                     }
                 } label: {
-                    Label("Specialist — \(model.roomAgentTitle)", systemImage: "person.crop.circle")
+                    Label("Specialist — \(state.specialistTitle)", systemImage: "person.crop.circle")
                 }
             }
 
-            Button { showingFiles = true } label: {
-                Label("Files in this room", systemImage: "folder")
+            Button { state.openFiles() } label: {
+                Label("Files in this conversation", systemImage: "folder")
             }
 
-            Button { showingImageGenerator = true } label: {
+            Button { state.openImageGenerator() } label: {
                 Label("Generate an image", systemImage: "photo.badge.plus")
             }
+        }
+    }
+
+    /// The legacy room path's adapter: server-persisted prefs on the room.
+    private var legacyCommandsState: LegacyCommandsState {
+        LegacyCommandsState(
+            model: model,
+            onOpenFiles: { showingFiles = true },
+            onOpenImageGenerator: { showingImageGenerator = true }
+        )
+    }
+
+    private var commandsMenu: some View {
+        Menu {
+            commandsMenuContent(state: legacyCommandsState)
         } label: {
             HStack(spacing: 7) {
                 Image(systemName: "sparkles")
@@ -1956,6 +1989,53 @@ struct ChatView: View {
             ? ChatView.shortModelLabel(model.modelChoice)
             : model.roomAgentTitle
         return model.chatMode == "plan" ? "\(primary) · Plan" : primary
+    }
+
+    /// The v2 pill's adapter: per-thread persisted prefs on the v2 model;
+    /// Files opens the conversation's Visual Window, the generator is the
+    /// same sheet the legacy path presents.
+    private var v2CommandsState: V2CommandsState {
+        V2CommandsState(
+            model: v2model,
+            onOpenFiles: { window.isPresented = true },
+            onOpenImageGenerator: { showingImageGenerator = true }
+        )
+    }
+
+    /// The v2 chip label: the thread's model short-name (or its specialist
+    /// when one is picked), plus "Plan" when Plan is armed — the same live
+    /// rule as the legacy chip.
+    private var v2CommandsChipLabel: String {
+        let primary = v2model.specialistChoice == "default"
+            ? ChatView.shortModelLabel(v2model.modelChoice)
+            : v2model.specialistTitle
+        return v2model.chatMode == "plan" ? "\(primary) · Plan" : primary
+    }
+
+    /// R19: the commands chip INSIDE the v2 pill, left of Record. Its look
+    /// follows the design's Record chip (32pt height, 8pt radius, 12px label)
+    /// so the pill still reads as the design with one more chip.
+    private var v2CommandsChip: some View {
+        Menu {
+            commandsMenuContent(state: v2CommandsState)
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12, weight: .medium))
+                Text(v2CommandsChipLabel)
+                    .font(.hanken(12).weight(.semibold))
+            }
+            .foregroundStyle(Theme.inkSoft)
+            .padding(.horizontal, 10)
+            .frame(height: 32)
+            .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(Theme.hairline, lineWidth: 1)
+            )
+        }
+        .accessibilityIdentifier("v2-commands")
+        .accessibilityLabel("Commands — specialist, mode, model, files, image generation")
     }
 
     /// Staged files, as removable chips above the shell — the web's pinned-chip row.

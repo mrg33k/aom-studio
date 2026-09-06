@@ -1050,7 +1050,8 @@ final class PreviewV2API: CornerV2API {
         return chatEvents
     }
 
-    func send(text: String, mentioning: [String], preferredProjectID: String?) async throws -> RouteDecision {
+    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String? = nil) async throws -> RouteDecision {
+        _ = mode // the fixture preview answers every mode the same way.
         if failSendsLeft > 0 {
             failSendsLeft -= 1
             throw URLError(.notConnectedToInternet)

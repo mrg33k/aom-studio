@@ -31,7 +31,12 @@ protocol CornerV2API {
     func thread(projectID: String) async throws -> Thread?
     func thread(missionID: String) async throws -> Thread?
     func threadEvents(threadID: String) async throws -> [ThreadEvent]
-    func send(text: String, mentioning: [String], preferredProjectID: String?) async throws -> RouteDecision
+    /// Send one message. `mode` is the commands menu's Work/Plan intent
+    /// (R19): "work" rides only when a backend field exists for it — today
+    /// only "plan" is sent, and a backend that does not know the field gets
+    /// the same send without it (strict envelope: an unknown-arg mutation
+    /// fails validation before anything writes, so the retry never doubles).
+    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String?) async throws -> RouteDecision
     func subscribeThread(threadID: String, receive: @escaping ([ThreadEvent]) -> Void) -> any Cancellable
     func visualTabs(visualSessionID: String) async throws -> [VisualWindowTab]
     func openVisualTab(kind: VisualTabKind, threadID: String, artifactID: String?, title: String, state: [String: String]) async throws -> VisualWindowTab
@@ -47,6 +52,13 @@ protocol CornerV2API {
     func pendingConfirmations() async throws -> [CrossProjectWriteConfirmation]
     /// Live refresh of the workspace tree (polls the subscribable query).
     func subscribeWorkspace(receive: @escaping (WorkspaceSummary?) -> Void) -> any Cancellable
+}
+
+/// The 3-arg send every pre-R19 caller uses: mode unset (Work default).
+extension CornerV2API {
+    func send(text: String, mentioning: [String], preferredProjectID: String?) async throws -> RouteDecision {
+        try await send(text: text, mentioning: mentioning, preferredProjectID: preferredProjectID, mode: nil)
+    }
 }
 
 // MARK: - v2Native endpoints
@@ -73,9 +85,10 @@ extension ConvexEndpoint {
         return v2("threadEvents", kind: .query, args: args)
     }
 
-    static func v2Send(text: String, mentioning: [String], preferredProjectID: String?) -> ConvexEndpoint {
+    static func v2Send(text: String, mentioning: [String], preferredProjectID: String?, mode: String? = nil) -> ConvexEndpoint {
         var args: [String: Any] = ["text": text, "mentioning": mentioning]
         if let preferredProjectID { args["preferredProjectId"] = preferredProjectID }
+        if let mode, !mode.isEmpty { args["mode"] = mode }
         return v2("send", kind: .mutation, args: args)
     }
 
@@ -162,8 +175,24 @@ final class DefaultCornerV2API: CornerV2API {
         try await service.request(.v2ThreadEvents(threadID: threadID), as: [ThreadEvent].self)
     }
 
-    func send(text: String, mentioning: [String], preferredProjectID: String?) async throws -> RouteDecision {
-        try await service.request(
+    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String?) async throws -> RouteDecision {
+        // Plan rides only when it changes the default: Work is the server
+        // default, so Work sends never carry the field (and never pay the
+        // fallback). A backend without the field (today's clone) rejects the
+        // Plan send at arg validation — before anything writes — and the
+        // same send goes out without it, so Plan degrades to a normal send
+        // instead of failing. Both failures park in the outbox as usual.
+        if mode == "plan" {
+            do {
+                return try await service.request(
+                    .v2Send(text: text, mentioning: mentioning, preferredProjectID: preferredProjectID, mode: mode),
+                    as: RouteDecision.self
+                )
+            } catch is ConvexServiceError {
+                // Fall through to the field-less send below.
+            }
+        }
+        return try await service.request(
             .v2Send(text: text, mentioning: mentioning, preferredProjectID: preferredProjectID),
             as: RouteDecision.self
         )
