@@ -115,6 +115,117 @@ final class FakeTransport: MessageTransport {
     }
 }
 
+// MARK: - Convex transport stub (native Task 2: transport safety gate)
+//
+// Scriptable stand-in for the Convex HTTP data plane behind ConvexService.
+// Lets the envelope/refresh tests prove strict decoding, single-flight refresh,
+// and userId rejection without touching the network.
+
+final class FakeConvexTransport: ConvexTransport, @unchecked Sendable {
+    private let handler: (URLRequest) -> (Data, HTTPURLResponse)
+    private(set) var requests: [URLRequest] = []
+
+    init(handler: @escaping (URLRequest) -> (Data, HTTPURLResponse)) {
+        self.handler = handler
+    }
+
+    /// HTTP 200 with `{"status":"error","errorMessage":...}` — the shape the real
+    /// Convex data plane returns for a failed function call.
+    static func errorEnvelope(_ message: String, statusCode: Int = 200) -> FakeConvexTransport {
+        FakeConvexTransport { request in
+            let body: [String: Any] = ["status": "error", "errorMessage": message]
+            let data = try! JSONSerialization.data(withJSONObject: body)
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: statusCode,
+                httpVersion: nil, headerFields: nil
+            )!
+            return (data, response)
+        }
+    }
+
+    /// HTTP 200 with `{"status":"success","value":...}`.
+    static func success<Value: Encodable>(value: Value) -> FakeConvexTransport {
+        FakeConvexTransport { request in
+            let payload = try! JSONEncoder().encode(value)
+            let inner = try! JSONSerialization.jsonObject(with: payload)
+            let body: [String: Any] = ["status": "success", "value": inner]
+            let data = try! JSONSerialization.data(withJSONObject: body)
+            let response = HTTPURLResponse(
+                url: request.url!, statusCode: 200,
+                httpVersion: nil, headerFields: nil
+            )!
+            return (data, response)
+        }
+    }
+
+    func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        requests.append(request)
+        return handler(request)
+    }
+
+    /// The `args` dictionary of the most recent request body, if it parses.
+    var lastArgs: [String: Any]? {
+        guard let body = requests.last?.httpBody,
+              let json = try? JSONSerialization.jsonObject(with: body) as? [String: Any] else { return nil }
+        return json["args"] as? [String: Any]
+    }
+}
+
+// MARK: - Auth fixtures + refresh stub (native Task 2)
+
+/// Unsigned JWT + session factories. No secret: `ConvexAuth.expiry(of:)` only reads
+/// the payload's `exp` claim, so an `alg:none` token is enough to drive expiry.
+enum AuthFixture {
+    static func jwt(expiringIn offset: TimeInterval) -> String {
+        let exp = Int(Date().addingTimeInterval(offset).timeIntervalSince1970)
+        func b64(_ string: String) -> String {
+            Data(string.utf8).base64EncodedString()
+                .replacingOccurrences(of: "+", with: "-")
+                .replacingOccurrences(of: "/", with: "_")
+                .replacingOccurrences(of: "=", with: "")
+        }
+        return "\(b64("{\"alg\":\"none\"}")).\(b64("{\"exp\":\(exp)}")).sig"
+    }
+
+    static func session(expiringIn offset: TimeInterval) -> AuthSession {
+        AuthSession(
+            accessToken: jwt(expiringIn: offset),
+            refreshToken: "refresh-\(UUID().uuidString)",
+            user: AuthUser(
+                id: "user-test", email: "test@example.com", name: nil,
+                world: "aom", worldId: nil, worldName: nil, role: nil,
+                isAdmin: false, mustChangePassword: false,
+                initials: nil, color: nil, avatarUrl: nil
+            )
+        )
+    }
+}
+
+extension AuthSession {
+    /// A session whose access token is good for another hour: `validSession()`
+    /// must return it without refreshing.
+    static var valid: AuthSession { AuthFixture.session(expiringIn: 3600) }
+    /// A session whose access token expired an hour ago: `validSession()` must refresh.
+    static var expired: AuthSession { AuthFixture.session(expiringIn: -3600) }
+}
+
+extension ConvexAuth.RefreshClient {
+    /// Refresh succeeds and rotates both tokens, like the real server.
+    static var singleUseSuccess: Self {
+        Self(run: { base in
+            var next = base
+            next.accessToken = AuthFixture.jwt(expiringIn: 3600)
+            next.refreshToken = "refresh-rotated-\(UUID().uuidString)"
+            return next
+        })
+    }
+
+    /// Refresh is definitively rejected (unknown/rotated refresh token).
+    static var rejected: Self {
+        Self(run: { _ in throw ConvexAuthError.signedOut })
+    }
+}
+
 // MARK: - Row + step builders
 
 extension MessageRow {

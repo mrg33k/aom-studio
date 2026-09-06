@@ -51,11 +51,61 @@ enum ConvexAuthError: LocalizedError {
         case .server(let m): return m.isEmpty ? "The sign-in server did not answer." : m
         }
     }
+
+    /// A definitive rejection: the server will never accept this session again,
+    /// so the device must sign out rather than retry. Anything else (a timeout,
+    /// a 500, airplane mode) is transient and must NOT clear the session.
+    var isDefinitiveRejection: Bool {
+        switch self {
+        case .badCredentials, .signedOut: return true
+        case .server: return false
+        }
+    }
+}
+
+/// What a failed gate throws when there is no usable session. Distinct from
+/// `ConvexAuthError` (which describes the sign-in/refresh exchange itself) so
+/// callers can map "not signed in" without parsing messages.
+enum AuthError: Error, Equatable {
+    case notSignedIn
 }
 
 @MainActor
 final class ConvexAuth {
     static let shared = ConvexAuth()
+
+    /// Where sessions persist. Production uses the system Keychain; tests use
+    /// `.memory` so no test ever touches the device Keychain.
+    enum KeychainMode {
+        case system
+        case memory
+    }
+
+    /// The refresh operation. `live` performs the real network refresh; tests
+    /// inject a stub. `nil` run == live.
+    struct RefreshClient {
+        var run: ((AuthSession) async throws -> AuthSession)?
+        static var live: RefreshClient { RefreshClient(run: nil) }
+    }
+
+    private let keychainMode: KeychainMode
+    private let refreshClient: RefreshClient
+    private var memorySession: AuthSession?
+
+    /// How many refreshes actually started. Concurrent `validSession()` callers
+    /// share one in-flight task, so a storm of polls still costs one refresh.
+    private(set) var refreshCallCount = 0
+
+    /// The one in-flight refresh, shared by every concurrent caller. The refresh
+    /// token is single-use: two POSTs with the same token race and the second
+    /// fails, so this memoization is load-bearing, not an optimization.
+    private var refreshTask: Task<AuthSession, Error>?
+    private var refreshTaskToken: String?
+
+    init(keychain: KeychainMode = .system, refreshClient: RefreshClient = .live) {
+        self.keychainMode = keychain
+        self.refreshClient = refreshClient
+    }
 
     private let keychainService = "com.aheadofmarket.corner.session"
     private let keychainAccount = "convex"
@@ -63,6 +113,7 @@ final class ConvexAuth {
     // MARK: - Keychain
 
     func load() -> AuthSession? {
+        if keychainMode == .memory { return memorySession }
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
@@ -77,18 +128,32 @@ final class ConvexAuth {
         return session
     }
 
+    /// Atomic replacement: a single Update when the item exists, Add only when
+    /// absent. The old Delete-then-Add left a window with no session at all.
     func save(_ session: AuthSession?) {
+        if keychainMode == .memory {
+            memorySession = session
+            return
+        }
         let base: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: keychainService,
             kSecAttrAccount as String: keychainAccount,
         ]
-        SecItemDelete(base as CFDictionary)
-        guard let session, let data = try? JSONEncoder().encode(session) else { return }
-        var add = base
-        add[kSecValueData as String] = data
-        add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        SecItemAdd(add as CFDictionary, nil)
+        guard let session, let data = try? JSONEncoder().encode(session) else {
+            if session == nil { SecItemDelete(base as CFDictionary) }
+            return
+        }
+        let attributes: [String: Any] = [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        ]
+        if SecItemUpdate(base as CFDictionary, attributes as CFDictionary) == errSecItemNotFound {
+            var add = base
+            add[kSecValueData as String] = data
+            add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            SecItemAdd(add as CFDictionary, nil)
+        }
     }
 
     // MARK: - Calls
@@ -165,12 +230,57 @@ final class ConvexAuth {
         save(nil)
     }
 
+    /// The stored session, refreshed when it is about to expire. Concurrent
+    /// callers share one in-flight refresh; a definitive rejection clears the
+    /// stored session and throws `AuthError.notSignedIn`.
+    func validSession() async throws -> AuthSession {
+        guard let current = load() else { throw AuthError.notSignedIn }
+        if let exp = ConvexAuth.expiry(of: current.accessToken), exp > Date().addingTimeInterval(60) {
+            return current
+        }
+        do {
+            return try await memoizedRefresh(base: current)
+        } catch let rejection as ConvexAuthError where rejection.isDefinitiveRejection {
+            save(nil)
+            throw AuthError.notSignedIn
+        }
+    }
+
     /// A token that is good for at least another minute, refreshing if needed.
+    /// Shares the same single in-flight refresh as `validSession()`; errors keep
+    /// their original type so existing callers' mapping does not change.
     func validSession(_ session: AuthSession) async throws -> AuthSession {
         if let exp = ConvexAuth.expiry(of: session.accessToken), exp > Date().addingTimeInterval(60) {
             return session
         }
-        return try await refresh(session)
+        return try await memoizedRefresh(base: session)
+    }
+
+    /// One refresh per refresh token, no matter how many callers arrive together.
+    private func memoizedRefresh(base: AuthSession) async throws -> AuthSession {
+        if let task = refreshTask, refreshTaskToken == base.refreshToken {
+            return try await task.value
+        }
+        let task = Task<AuthSession, Error> { try await refreshAndPersist(base: base) }
+        refreshTask = task
+        refreshTaskToken = base.refreshToken
+        defer {
+            if refreshTaskToken == base.refreshToken {
+                refreshTask = nil
+                refreshTaskToken = nil
+            }
+        }
+        return try await task.value
+    }
+
+    private func refreshAndPersist(base: AuthSession) async throws -> AuthSession {
+        refreshCallCount += 1
+        if let run = refreshClient.run {
+            let next = try await run(base)
+            save(next)
+            return next
+        }
+        return try await refresh(base)
     }
 
     // MARK: - Transport

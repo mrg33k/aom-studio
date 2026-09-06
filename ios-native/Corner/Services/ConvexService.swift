@@ -8,14 +8,216 @@
 // If an official Convex Swift SDK becomes available, this file is the
 // single seam to swap to it — call sites use ConvexService.shared only.
 
+import Combine
 import Foundation
+
+/// The HTTP seam behind ConvexService. URLSession is the production
+/// implementation; tests inject a scripted stub. Exists so the envelope,
+/// auth-header, and userId tests can run without the network (audit H7).
+protocol ConvexTransport {
+    func data(for request: URLRequest) async throws -> (Data, URLResponse)
+}
+
+extension URLSession: ConvexTransport {
+    func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        try await data(for: request, delegate: nil)
+    }
+}
+
+/// A Task is already something you stop — this states it so subscriptions can
+/// expose the standard `Cancellable` primitive instead of a bespoke type.
+extension Task: Cancellable {}
+
+/// Errors from the authenticated `request(_:as:)` path. The legacy string-based
+/// methods below keep throwing `ConvexError` so their callers do not change in
+/// this task; they migrate to this type when Tasks 3-4 move them onto endpoints.
+enum ConvexServiceError: Error, Equatable {
+    /// The Convex envelope reported `status != "success"`.
+    case server(String)
+    /// The HTTP layer itself failed (non-2xx).
+    case http(Int, String)
+    /// No session to authorize with.
+    case notSignedIn
+}
+
+/// Which Convex data-plane route an endpoint hits.
+enum ConvexEndpointKind {
+    case query
+    case mutation
+}
+
+/// One authenticated Convex call. Identity always rides the Bearer [REDACTED] (see
+/// `authorizedData(for:)`); a `userId` argument is refused at construction
+/// because the server derives the viewer from the token.
+struct ConvexEndpoint {
+    enum ConstructionError: Error {
+        case clientUserIdForbidden
+    }
+
+    let kind: ConvexEndpointKind
+    let path: String
+    let args: [String: Any]
+
+    init(kind: ConvexEndpointKind, path: String, args: [String: Any] = [:]) throws {
+        guard args["userId"] == nil else { throw ConstructionError.clientUserIdForbidden }
+        self.kind = kind
+        self.path = path
+        self.args = args
+    }
+}
+
+/// Endpoint factories. Each `try!` covers a literal argument dictionary that
+/// cannot contain `userId` by inspection; the throwing initializer remains the
+/// backstop for dynamically built args.
+extension ConvexEndpoint {
+    static var workspaceTree: ConvexEndpoint {
+        try! ConvexEndpoint(kind: .query, path: "workspace:tree")
+    }
+
+    static func listMessages(roomId: String, limit: Int = 100) -> ConvexEndpoint {
+        try! ConvexEndpoint(kind: .query, path: "messages:list", args: ["roomId": roomId, "limit": limit])
+    }
+
+    static func sendMessage(roomId: String, text: String) -> ConvexEndpoint {
+        try! ConvexEndpoint(kind: .mutation, path: "messages:send", args: ["roomId": roomId, "text": text])
+    }
+
+    static func markRead(roomId: String, lastReadAt: Double) -> ConvexEndpoint {
+        try! ConvexEndpoint(kind: .mutation, path: "reads:markRead", args: ["roomId": roomId, "lastReadAt": lastReadAt])
+    }
+
+    static func listRooms(worldId: String) -> ConvexEndpoint {
+        try! ConvexEndpoint(kind: .query, path: "rooms:listRooms", args: ["worldId": worldId])
+    }
+}
+
+/// The typed response envelope. Decoded BEFORE any model: a non-success status
+/// throws instead of letting a tolerant model invent a fallback row (audit H8).
+struct ConvexEnvelope<Value: Decodable>: Decodable {
+    let status: String
+    let value: Value?
+    let errorMessage: String?
+}
+
+/// Minimal v2 workspace shape for the transport gate. The full workspace tree
+/// DTO (projects, missions, threads) lands with the typed v2 client in Task 3,
+/// which expands this struct additively.
+struct WorkspaceSummary: Codable, Equatable {
+    let id: String
+    let name: String
+}
 
 final class ConvexService {
     static let shared = ConvexService()
 
     let baseURL = URL(string: "https://neat-pony-216.convex.cloud")!
 
-    private init() {}
+    /// Injected session for tests. Production (`shared`) leaves this nil and
+    /// resolves the token from the Keychain session on every request.
+    private let sessionOverride: AuthSession?
+    private let transport: any ConvexTransport
+
+    init(session: AuthSession? = nil, transport: (any ConvexTransport)? = nil) {
+        self.sessionOverride = session
+        self.transport = transport ?? URLSession.shared
+    }
+
+    // MARK: - Authenticated endpoint requests (native Task 2)
+
+    /// The one authorized call path: Bearer [REDACTED] attached exactly once here, the
+    /// envelope decoded strictly, and `errorMessage` surfaced as
+    /// `ConvexServiceError.server`. No caller attaches its own token and no
+    /// endpoint carries a `userId`.
+    func request<Value: Decodable>(_ endpoint: ConvexEndpoint, as type: Value.Type) async throws -> Value {
+        let data = try await authorizedData(for: endpoint)
+        let envelope = try JSONDecoder().decode(ConvexEnvelope<Value>.self, from: data)
+        guard envelope.status == "success", let value = envelope.value else {
+            throw ConvexServiceError.server(envelope.errorMessage ?? "Convex request failed")
+        }
+        return value
+    }
+
+    /// Poll an endpoint on an interval, delivering typed results. The returned
+    /// `Cancellable` stops the loop; the caller owns its lifetime.
+    func subscribe<Value: Decodable>(
+        _ endpoint: ConvexEndpoint,
+        as type: Value.Type,
+        interval: TimeInterval = 2.0,
+        onUpdate: @escaping (Result<Value, Error>) -> Void
+    ) -> any Cancellable {
+        Task<Void, Never> {
+            while !Task.isCancelled {
+                do {
+                    let value = try await request(endpoint, as: type)
+                    if Task.isCancelled { break }
+                    onUpdate(.success(value))
+                } catch {
+                    if Task.isCancelled { break }
+                    onUpdate(.failure(error))
+                }
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+            }
+        }
+    }
+
+    /// Build, authorize, and send one request. The access token is set exactly
+    /// once, here — never by callers, never in endpoint args.
+    func authorizedData(for endpoint: ConvexEndpoint) async throws -> Data {
+        let token = try await accessToken()
+        var request = URLRequest(
+            url: baseURL.appendingPathComponent(endpoint.kind == .query ? "api/query" : "api/mutation")
+        )
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 30
+        let body: [String: Any] = ["path": endpoint.path, "args": endpoint.args, "format": "json"]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let (data, response) = try await transport.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            let msg = String(data: data.prefix(500), encoding: .utf8) ?? "HTTP \(http.statusCode)"
+            throw ConvexServiceError.http(http.statusCode, msg)
+        }
+        return data
+    }
+
+    private func accessToken() async throws -> String {
+        if let sessionOverride { return sessionOverride.accessToken }
+        guard let stored = await ConvexAuth.shared.load() else {
+            throw ConvexServiceError.notSignedIn
+        }
+        do {
+            return try await ConvexAuth.shared.validSession(stored).accessToken
+        } catch {
+            throw ConvexServiceError.notSignedIn
+        }
+    }
+
+    // MARK: - Legacy string-based methods (compatibility shims)
+    //
+    // RoomStore, ChatViewModel, and ReadStateStore still call these until Tasks
+    // 3-4 move them onto endpoints. They now attach the Bearer [REDACTED] when one is
+    // available and strip any client `userId` before the args leave the device,
+    // so those call sites stop sending client-asserted identity with no edit to
+    // their files. Decoding stays tolerant here; the strict envelope path above
+    // is what new callers use.
+
+    /// Drop client-asserted identity from legacy args. The server derives the
+    /// viewer from the Bearer [REDACTED]; a `userId` key is either redundant or a lie.
+    private static func sanitizedArgs(_ args: [String: Any]) -> [String: Any] {
+        var clean = args
+        clean.removeValue(forKey: "userId")
+        return clean
+    }
+
+    /// Best-effort Bearer [REDACTED] for the legacy shims: attach when signed in, send
+    /// bare when not. Unlike `authorizedData(for:)`, these never throw for auth —
+    /// their callers predate the authenticated contract.
+    private func legacyBearerToken() async -> String? {
+        if let sessionOverride { return sessionOverride.accessToken }
+        guard let stored = await ConvexAuth.shared.load() else { return nil }
+        return try? await ConvexAuth.shared.validSession(stored).accessToken
+    }
 
     // MARK: - Query
 
@@ -23,10 +225,13 @@ final class ConvexService {
         var request = URLRequest(url: baseURL.appendingPathComponent("api/query"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = await legacyBearerToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
         request.timeoutInterval = 30
-        let body: [String: Any] = ["path": functionName, "args": args, "format": "json"]
+        let body: [String: Any] = ["path": functionName, "args": Self.sanitizedArgs(args), "format": "json"]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await transport.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             let msg = String(data: data.prefix(500), encoding: .utf8) ?? "HTTP \(http.statusCode)"
             throw ConvexError.badResponse(status: http.statusCode, message: msg)
@@ -40,10 +245,13 @@ final class ConvexService {
         var request = URLRequest(url: baseURL.appendingPathComponent("api/mutation"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = await legacyBearerToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
         request.timeoutInterval = 30
-        let body: [String: Any] = ["path": functionName, "args": args, "format": "json"]
+        let body: [String: Any] = ["path": functionName, "args": Self.sanitizedArgs(args), "format": "json"]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await transport.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             let msg = String(data: data.prefix(500), encoding: .utf8) ?? "HTTP \(http.statusCode)"
             throw ConvexError.badResponse(status: http.statusCode, message: msg)
@@ -56,10 +264,13 @@ final class ConvexService {
         var request = URLRequest(url: baseURL.appendingPathComponent("api/mutation"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = await legacyBearerToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
         request.timeoutInterval = 30
-        let body: [String: Any] = ["path": functionName, "args": args, "format": "json"]
+        let body: [String: Any] = ["path": functionName, "args": Self.sanitizedArgs(args), "format": "json"]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await transport.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             let msg = String(data: data.prefix(500), encoding: .utf8) ?? "HTTP \(http.statusCode)"
             throw ConvexError.badResponse(status: http.statusCode, message: msg)

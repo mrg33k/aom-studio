@@ -142,6 +142,8 @@ targets:
       path: Support/CornerWidgets-Info.plist
       properties:
         CFBundleDisplayName: Corner
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
