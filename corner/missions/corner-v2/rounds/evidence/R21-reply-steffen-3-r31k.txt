@@ -1,0 +1,5 @@
+Steffen here.
+
+---
+
+Aster's brand kit runs three colours: Ink, Signal, Bone. That is from my own check logged in the Aster ledger on 2026-09-07, and nothing since has changed it. No swatch file or hex values sit in the project pack yet, so for the spring launch deck I would treat Ink as base, Bone as ground, Signal as the single accent. Send the kit PDF and I can pin exact values.
