@@ -51,7 +51,8 @@ function loadImaging(modulesDir) {
 
 function parseArgs(argv) {
   const out = {
-    sim390: "0A05C9AA-9835-4C66-BF7A-9B4CF15AD80D",
+    // 390-class = "iPhone 16e (tests)" — never 0A05C9AA (Patrik's attached panel, 2026-09-07).
+    sim390: "4818124A-CCAF-4386-9970-85F17A660AC7",
     sim402: "971E7446-394B-4EF6-9796-8D9D1F916994",
     sim440: "C261F6F2-9FA6-4030-8257-6FA4046E80EB",
     design: DESIGN_DIR,
