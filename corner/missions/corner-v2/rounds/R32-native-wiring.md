@@ -118,7 +118,13 @@ fixture pixels + code path (set unconditionally in `send()`) cover it.
 
 ## Commits
 
-(TBD.)
+- `f2b63db0` on aom-studio (never pushed): R32 sources + regenerated
+`project.pbxproj` (xcodegen, picks up the two new test files) + report +
+13 evidence PNGs + P081 flip. Scoped paths only; other rounds' tree churn
+(incl. the gate's R19 re-exports) left unstaged.
+- The live-proof UI test (`R32LiveProofUITests`, throwaway by design) was
+deleted before the commit; xcodegen re-ran after the delete so the
+committed pbxproj never references it.
 
 ## For the orchestrator
 
