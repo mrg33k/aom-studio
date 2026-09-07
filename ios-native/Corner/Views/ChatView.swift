@@ -245,18 +245,29 @@ struct ChatView: View {
             if let confirmation = v2model.pendingConfirmation {
                 v2ConfirmationCard(confirmation)
             }
-            if let decision = v2model.lastDecision {
+            if let decision = v2model.lastDecision, v2ShowsRouteCard(decision) {
                 v2RouteCard(decision)
             }
             if !v2model.ledgerProvenance.isEmpty {
                 v2SourcesSection
             }
-            if !v2model.queued.isEmpty {
+            switch v2model.sendBanner {
+            case .none:
+                EmptyView()
+            case .offline:
                 v2OfflineBanner
+            case .notSent(let count, let reason):
+                v2NotSentBanner(count: count, reason: reason)
             }
             v2Composer
         }
-        .groundBackground()
+        // P077: the thread ground is the flat `--ground`, never the glass
+        // wallpaper's gradient glow (the design thread is flat #0f1319).
+        .flatGroundBackground()
+        .onReceive(NotificationCenter.default.publisher(for: .v2DidReconnect)) { _ in
+            // R24 P075: the network came back while foregrounded — flush.
+            Task { await v2model.foreground() }
+        }
         // NOTE: no identifier anywhere on this screen's main subtree — an
         // identifier on ANY ancestor view overwrites every identified control
         // below it (measured: with one on the root, the composer field and
@@ -425,9 +436,19 @@ struct ChatView: View {
                     .padding(.vertical, 8)
                     .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .accessibilityIdentifier("v2-queued-text")
-                Text("Waiting for connection")
-                    .font(.hanken(11))
-                    .foregroundStyle(Theme.warning)
+                // R24 P075: a rejection names its plain reason under the
+                // echo (the web's pattern); a network failure waits quietly.
+                if case .rejected(let reason) = entry.lastFailure {
+                    Text(reason)
+                        .font(.hanken(11))
+                        .foregroundStyle(Theme.warning)
+                        .multilineTextAlignment(.trailing)
+                        .accessibilityIdentifier("v2-queued-error")
+                } else {
+                    Text("Waiting for connection")
+                        .font(.hanken(11))
+                        .foregroundStyle(Theme.warning)
+                }
             }
         }
     }
@@ -445,6 +466,48 @@ struct ChatView: View {
                 // HStack: a container identifier would overwrite the Retry
                 // button's own identifier (same finding as chat-screen).
                 .accessibilityIdentifier("v2-offline-banner")
+            Spacer(minLength: 0)
+            Button("Retry") {
+                Task { await v2model.replayOutbox() }
+            }
+            .font(.hanken(13).weight(.semibold))
+            .foregroundStyle(Theme.accent)
+            .accessibilityIdentifier("v2-outbox-retry")
+        }
+        .padding(.horizontal, Theme.s4)
+        .padding(.vertical, Theme.s2)
+        .background(Theme.raised)
+    }
+
+    /// R24 P079: the routing card belongs to global-input sends only. A
+    /// thread send's decision names the thread it is already in
+    /// (`destinationThreadID == thread.id`, reason "Already in …") — no
+    /// route line, no banner, no Move. The flags stay in the predicate so a
+    /// genuine clarification or pending creation still surfaces.
+    private func v2ShowsRouteCard(_ decision: RouteDecision) -> Bool {
+        if decision.needsClarification || decision.needsCreationConfirmation { return true }
+        return decision.destinationThreadID != (v2?.thread.id ?? "")
+    }
+
+    /// R24 P075: the rejection banner — "Not sent, tap to retry" with the
+    /// plain reason, never "Offline". The leaf-marker convention holds: the
+    /// id lives on the Text, never the HStack.
+    private func v2NotSentBanner(count: Int, reason: String) -> some View {
+        HStack(spacing: Theme.s2) {
+            Image(systemName: "exclamationmark.circle")
+                .foregroundStyle(Theme.warning)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(count == 1
+                    ? "Not sent — tap Retry to send it."
+                    : "Not sent — tap Retry to send them (\(count) waiting).")
+                    .font(.hanken(13).weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                    .accessibilityIdentifier("v2-notsent-banner")
+                Text(reason)
+                    .font(.hanken(12))
+                    .foregroundStyle(Theme.inkSoft)
+                    .accessibilityIdentifier("v2-notsent-reason")
+            }
             Spacer(minLength: 0)
             Button("Retry") {
                 Task { await v2model.replayOutbox() }
@@ -607,6 +670,49 @@ struct ChatView: View {
         return false
     }
 
+    /// R24 P076: the pill's fixed layout numbers in one place, so the
+    /// placeholder-fit test and the view share the same budget. The values
+    /// are the shipped ones (outer gutter 21 per P044; 50px round send per
+    /// P023): the chip collapse buys the room, not a metric change.
+    enum V2ComposerMetrics {
+        static let outerPadding: CGFloat = 21
+        /// 7, not 10 (R24 P076): toward the placeholder budget; the
+        /// pill/send grouping still reads as one control.
+        static let sendSpacing: CGFloat = 7
+        static let sendSize: CGFloat = 50
+        /// 11, not 17 (R24 P076): toward the placeholder budget. The text
+        /// origin moves 4pt with it — sub-perceptual against the design.
+        static let pillLeading: CGFloat = 11
+        /// 3, not 4 (R24 P076): toward the placeholder budget.
+        static let pillTrailing: CGFloat = 3
+        /// 3, not 4 (R24 P076): toward the placeholder budget.
+        static let interSpacing: CGFloat = 3
+        static let micWidth: CGFloat = 36
+        /// The multiline backing's ~5pt/side text inset, measured on-device
+        /// (placeholder starts +4pt in). It is chrome, not text room.
+        static let fieldInset: CGFloat = 5
+        /// Collapsed (icon-only) chip width: 12pt glyph + 2×4 padding +
+        /// hairline. The UI test asserts the collapsed chip stays within it.
+        static let collapsedChipWidth: CGFloat = 22
+        /// Full placeholder copy for the design's project (P038).
+        static let placeholderProject = "Aster"
+
+        /// Field width left for the placeholder at a screen width with the
+        /// collapsed chip, minus the backing inset: the placeholder must
+        /// fit it without an ellipsis.
+        static func fieldWidth(screenWidth: CGFloat, chipWidth: CGFloat) -> CGFloat {
+            screenWidth
+                - 2 * outerPadding - sendSpacing - sendSize
+                - pillLeading - pillTrailing - 2 * interSpacing
+                - chipWidth - micWidth
+                - 2 * fieldInset
+        }
+
+        static func placeholder(project: String) -> String {
+            "Tell \(project) what to make next"
+        }
+    }
+
     private var v2Composer: some View {
         VStack(spacing: 8) {
             if showsBrainSuggestion {
@@ -638,24 +744,32 @@ struct ChatView: View {
             }
             // P039: pill + round send sit directly on the ground — the
             // frosted outer card is gone.
-            HStack(alignment: .bottom, spacing: 10) {
+            HStack(alignment: .bottom, spacing: V2ComposerMetrics.sendSpacing) {
                 // P023: 50px pill with the Record chip inside. The pill fill
                 // is surface; the focused ring is the only chrome.
-                HStack(spacing: 4) {
+                HStack(spacing: V2ComposerMetrics.interSpacing) {
                     // P038: `Tell Aster what to make next`, not `Message…`.
+                    // R24 P076: the multiline axis is UITextView-backed with
+                    // a ~5pt/side text inset (measured: placeholder starts
+                    // +4pt in) — the placeholder budget below counts that
+                    // inset as chrome, not text room.
                     TextField(
-                        "Tell \(v2?.project.name ?? "Corner") what to make next",
+                        V2ComposerMetrics.placeholder(project: v2?.project.name ?? "Corner"),
                         text: $v2model.draft, axis: .vertical
                     )
-                        .font(.hanken(15))
+                        // P106's design value (14.5px input), not 15: the
+                        // half point is R24 P076's placeholder budget.
+                        .font(.hanken(14.5))
                         .lineLimit(1...5)
                         .focused($composerFocused)
                         .foregroundStyle(Theme.ink)
                         .padding(.vertical, 8)
                         .accessibilityIdentifier("v2-composer-field")
                     // R19: the commands chip lives inside the pill, left of
-                    // Record — the design's pill with one more chip.
-                    v2CommandsChip
+                    // Record — the design's pill with one more chip. R24
+                    // P076: icon-only while the field is empty so the full
+                    // placeholder fits at 390; the label returns with typing.
+                    v2CommandsChip(collapsed: v2model.draft.isEmpty)
                     if speech.supported {
                         // P041: a bare muted glyph — no circle behind it.
                         Button(action: toggleV2Dictation) {
@@ -668,8 +782,8 @@ struct ChatView: View {
                         .accessibilityLabel(speech.isListening ? "Stop dictation" : "Speak your message")
                     }
                 }
-                .padding(.leading, 17)
-                .padding(.trailing, Theme.s1)
+                .padding(.leading, V2ComposerMetrics.pillLeading)
+                .padding(.trailing, V2ComposerMetrics.pillTrailing)
                 .frame(minHeight: 50)
                 .background(Theme.raised, in: Capsule())
                 .overlay(
@@ -2021,19 +2135,24 @@ struct ChatView: View {
 
     /// R19: the commands chip INSIDE the v2 pill, left of Record. Its look
     /// follows the design's Record chip (32pt height, 8pt radius, 12px label)
-    /// so the pill still reads as the design with one more chip.
-    private var v2CommandsChip: some View {
+    /// so the pill still reads as the design with one more chip. R24 P076:
+    /// icon-only while the field is empty (same height/radius/glyph, tighter
+    /// padding) so the full placeholder fits at 390; the label returns the
+    /// moment there is text to send.
+    private func v2CommandsChip(collapsed: Bool) -> some View {
         Menu {
             commandsMenuContent(state: v2CommandsState)
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: "sparkles")
                     .font(.system(size: 12, weight: .medium))
-                Text(v2CommandsChipLabel)
-                    .font(.hanken(12).weight(.semibold))
+                if !collapsed {
+                    Text(v2CommandsChipLabel)
+                        .font(.hanken(12).weight(.semibold))
+                }
             }
             .foregroundStyle(Theme.inkSoft)
-            .padding(.horizontal, 10)
+            .padding(.horizontal, collapsed ? 4 : 10)
             .frame(height: 32)
             .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             .overlay(
@@ -2042,6 +2161,7 @@ struct ChatView: View {
             )
         }
         .accessibilityIdentifier("v2-commands")
+        .accessibilityValue(collapsed ? "collapsed" : "expanded")
         .accessibilityLabel("Commands — specialist, mode, model, files, image generation")
     }
 
@@ -2269,12 +2389,24 @@ struct V2EventRow: View {
     }
 }
 
+/// R24 P078 (web L011 twin): step rows with no label paint as blank rows,
+/// and an empty steps card paints an empty card. Filter first; nothing
+/// paintable means nothing painted.
+enum V2StepsPrepare {
+    static func rows(from steps: [StepState]) -> [StepState] {
+        steps.filter { !$0.label.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+}
+
 private struct V2BlockView: View {
     let block: ThreadBlock
     let threadID: String
     /// User text rides the accent bubble; agent text is unbubbled body.
     let isUser: Bool
     let onSend: (String) -> Void
+    /// R24 P080: the tapped option stays selected (radio fills) while its
+    /// text goes to the thread. Server-recommended reads selected too.
+    @State private var selectedOptionID: String?
 
     var body: some View {
         switch block {
@@ -2309,17 +2441,24 @@ private struct V2BlockView: View {
                     .foregroundStyle(Theme.ink)
                 ForEach(options) { option in
                     // P035: 57px option cards — 22px radio, 14/600 title,
-                    // 12px muted detail. Recommended reads selected.
-                    Button { onSend(option.title) } label: {
+                    // 12px muted detail. Recommended reads selected, and so
+                    // does the tapped option (R24 P080: the tap selects the
+                    // radio AND sends the option text into this thread —
+                    // `onSend` is the thread send, never a global route).
+                    let picked = option.recommended || selectedOptionID == option.id
+                    Button {
+                        selectedOptionID = option.id
+                        onSend(option.title)
+                    } label: {
                         HStack(spacing: 12) {
                             ZStack {
                                 Circle()
                                     .strokeBorder(
-                                        option.recommended ? Theme.accent : Theme.inkFaint,
+                                        picked ? Theme.accent : Theme.inkFaint,
                                         lineWidth: 1.5
                                     )
                                     .frame(width: 22, height: 22)
-                                if option.recommended {
+                                if picked {
                                     Circle()
                                         .fill(Theme.accent)
                                         .frame(width: 11, height: 11)
@@ -2340,17 +2479,22 @@ private struct V2BlockView: View {
                         .padding(.horizontal, 12)
                         .frame(maxWidth: .infinity, minHeight: 57, alignment: .leading)
                         .background(
-                            option.recommended ? Theme.accentWeak : Theme.raised,
+                            picked ? Theme.accentWeak : Theme.raised,
                             in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                         )
                     }
                     .accessibilityIdentifier("v2-option-\(option.id)")
+                    .accessibilityValue(picked ? "selected" : "not selected")
                 }
             }
         case .steps(let steps):
             // P036: plain rows — 16px check + 14.5px muted text, no card.
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(steps) { step in
+            // R24 P078: label-less rows never paint (web L011 twin); an
+            // empty steps card paints nothing, not an empty card.
+            let rows = V2StepsPrepare.rows(from: steps)
+            if !rows.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(rows) { step in
                     HStack(spacing: 8) {
                         ZStack {
                             Circle()
@@ -2370,6 +2514,7 @@ private struct V2BlockView: View {
                         Text(step.label)
                             .font(.hanken(14.5))
                             .foregroundStyle(Theme.inkSoft)
+                        }
                     }
                 }
             }

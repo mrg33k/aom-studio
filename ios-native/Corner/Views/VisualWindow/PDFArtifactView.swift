@@ -10,6 +10,36 @@
 import PDFKit
 import SwiftUI
 
+/// R24 P074: aspect-fit geometry for one PDF page inside the stage. The
+/// whole page stays visible, letterboxed on `--surface`; the full detent
+/// shows it larger, never cropped. Pure, so the unit test pins the math.
+enum PDFPageFit {
+    /// The fitted page rect, centered in the stage. Zero-safe: an unknown
+    /// page or stage fills nothing (`.zero`), never a NaN frame.
+    static func fittedRect(pageSize: CGSize, in stage: CGSize) -> CGRect {
+        guard pageSize.width > 0, pageSize.height > 0,
+              stage.width > 0, stage.height > 0 else { return .zero }
+        let scale = min(stage.width / pageSize.width, stage.height / pageSize.height)
+        let size = CGSize(width: pageSize.width * scale, height: pageSize.height * scale)
+        return CGRect(
+            x: (stage.width - size.width) / 2,
+            y: (stage.height - size.height) / 2,
+            width: size.width, height: size.height
+        )
+    }
+}
+
+/// R24 P074, testable seam for the arrow turns: 1-based page to `PDFPage`,
+/// clamped (out of range is nil, never a crash). The view compares indices
+/// so echoing the delegate cannot loop.
+enum PDFPageTurn {
+    static func target(document: PDFDocument, page: Int) -> PDFPage? {
+        let index = page - 1
+        guard index >= 0, index < document.pageCount else { return nil }
+        return document.page(at: index)
+    }
+}
+
 struct PDFArtifactView: View {
     let url: URL
     /// 1-based page from tab state.
@@ -24,6 +54,9 @@ struct PDFArtifactView: View {
     @State private var failed = false
     @State private var currentPage: Int = 1
     @State private var pageCount: Int = 0
+    /// The current page's media size: the fitted rect (and the pin/marker
+    /// mapping) follows the page, not the stage.
+    @State private var pageSize: CGSize = .zero
 
     var body: some View {
         Group {
@@ -32,30 +65,43 @@ struct PDFArtifactView: View {
             } else if let document {
                 VStack(spacing: 0) {
                     GeometryReader { stage in
-                        PDFKitView(document: document, page: currentPage, onPage: { currentPage = $0; onPage($0) })
-                            .accessibilityIdentifier("visual-stage-pdf")
+                        // R24 P074: the page aspect-fits inside the stage —
+                        // the view IS the fitted rect, so the AX frame the
+                        // UI test reads proves whole-page-visible (letterbox
+                        // around it is the sheet's `--surface`).
+                        let fit = PDFPageFit.fittedRect(pageSize: pageSize, in: stage.size)
+                        let rect = fit == .zero
+                            ? CGRect(origin: .zero, size: stage.size)
+                            : fit
+                        Color.clear
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .overlay {
-                                if review != nil {
-                                    Color.clear
-                                        .contentShape(Rectangle())
-                                        .onTapGesture(coordinateSpace: .local) { location in
-                                            let size = stage.size
-                                            guard size.width > 0, size.height > 0 else { return }
-                                            review?.addPin(
-                                                .point(
-                                                    page: currentPage,
-                                                    x: Self.percent(location.x, of: size.width),
-                                                    y: Self.percent(location.y, of: size.height)
-                                                ),
-                                                text: ""
-                                            )
+                                PDFKitView(document: document, page: currentPage, onPage: { currentPage = $0; onPage($0); readPageSize(in: document, page: $0) })
+                                    .frame(width: rect.width, height: rect.height)
+                                    .accessibilityIdentifier("visual-stage-pdf")
+                                    .overlay {
+                                        if review != nil {
+                                            Color.clear
+                                                .contentShape(Rectangle())
+                                                .onTapGesture(coordinateSpace: .local) { location in
+                                                    let size = rect.size
+                                                    guard size.width > 0, size.height > 0 else { return }
+                                                    review?.addPin(
+                                                        .point(
+                                                            page: currentPage,
+                                                            x: Self.percent(location.x, of: size.width),
+                                                            y: Self.percent(location.y, of: size.height)
+                                                        ),
+                                                        text: ""
+                                                    )
+                                                }
                                         }
-                                }
-                            }
-                            .overlay(alignment: .topLeading) {
-                                if let review {
-                                    ObservedStageMarkers(review: review, size: stage.size, page: currentPage)
-                                }
+                                    }
+                                    .overlay(alignment: .topLeading) {
+                                        if let review {
+                                            ObservedStageMarkers(review: review, size: rect.size, page: currentPage)
+                                        }
+                                    }
                             }
                     }
                     HStack(spacing: Theme.s4) {
@@ -116,6 +162,16 @@ struct PDFArtifactView: View {
         document = loaded
         pageCount = loaded.pageCount
         currentPage = min(max(1, page), loaded.pageCount)
+        readPageSize(in: loaded, page: currentPage)
+    }
+
+    /// The fitted rect follows the page being shown (mixed-size documents
+    /// refit on every turn, arrows included).
+    private func readPageSize(in document: PDFDocument, page: Int) {
+        guard page >= 1, page <= document.pageCount,
+              let size = document.page(at: page - 1)?.bounds(for: .mediaBox).size,
+              size.width > 0, size.height > 0 else { return }
+        pageSize = size
     }
 
     private func go(_ next: Int, in document: PDFDocument) {
@@ -127,6 +183,10 @@ struct PDFArtifactView: View {
 
 /// PDFView with page-change callbacks. The delegate posts
 /// `PDFViewPageChanged` on every navigation (arrows, scrub, programmatic).
+/// R24 P074: one page at a time, aspect-fit (`singlePage` + `autoScales`
+/// shows the whole page, never a cropped scroll window), and the arrows
+/// actually turn the view — the old `updateUIView` moved the label but
+/// never the page.
 private struct PDFKitView: UIViewRepresentable {
     let document: PDFDocument
     let page: Int
@@ -138,7 +198,7 @@ private struct PDFKitView: UIViewRepresentable {
         let view = PDFView()
         view.document = document
         view.autoScales = true
-        view.displayMode = .singlePageContinuous
+        view.displayMode = .singlePage
         view.backgroundColor = .clear
         if let target = document.page(at: page - 1) { view.go(to: target) }
         NotificationCenter.default.addObserver(
@@ -150,6 +210,13 @@ private struct PDFKitView: UIViewRepresentable {
 
     func updateUIView(_ view: PDFView, context: Context) {
         if view.document !== document { view.document = document }
+        // Index-compared, never identity-compared: turning to the page
+        // already shown is a no-op, so the delegate echo cannot loop.
+        if let target = PDFPageTurn.target(document: view.document ?? document, page: page) {
+            let index = (view.document ?? document).index(for: target)
+            let current = view.currentPage.flatMap { (view.document ?? document).index(for: $0) }
+            if current != index { view.go(to: target) }
+        }
     }
 
     final class Coordinator: NSObject {

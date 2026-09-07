@@ -36,7 +36,11 @@ protocol CornerV2API {
     /// only "plan" is sent, and a backend that does not know the field gets
     /// the same send without it (strict envelope: an unknown-arg mutation
     /// fails validation before anything writes, so the retry never doubles).
-    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String?) async throws -> RouteDecision
+    /// `threadId` (R24 P080) is the in-thread send the clone's `v2Native:send`
+    /// accepts: set, the text lands in that thread with no routing and no
+    /// `Routed to` receipt; nil is the room-less global intake send, which
+    /// routes. A thread send answers open questions into the thread.
+    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String?, threadId: String?) async throws -> RouteDecision
     func subscribeThread(threadID: String, receive: @escaping ([ThreadEvent]) -> Void) -> any Cancellable
     func visualTabs(visualSessionID: String) async throws -> [VisualWindowTab]
     func openVisualTab(kind: VisualTabKind, threadID: String, artifactID: String?, title: String, state: [String: String]) async throws -> VisualWindowTab
@@ -54,10 +58,16 @@ protocol CornerV2API {
     func subscribeWorkspace(receive: @escaping (WorkspaceSummary?) -> Void) -> any Cancellable
 }
 
-/// The 3-arg send every pre-R19 caller uses: mode unset (Work default).
+/// The 3-arg send every pre-R19 caller uses: mode unset (Work default),
+/// room-less (global intake routing).
 extension CornerV2API {
     func send(text: String, mentioning: [String], preferredProjectID: String?) async throws -> RouteDecision {
-        try await send(text: text, mentioning: mentioning, preferredProjectID: preferredProjectID, mode: nil)
+        try await send(text: text, mentioning: mentioning, preferredProjectID: preferredProjectID, mode: nil, threadId: nil)
+    }
+
+    /// The 4-arg send pre-R24 callers use: room-less (global intake routing).
+    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String?) async throws -> RouteDecision {
+        try await send(text: text, mentioning: mentioning, preferredProjectID: preferredProjectID, mode: mode, threadId: nil)
     }
 }
 
@@ -85,10 +95,11 @@ extension ConvexEndpoint {
         return v2("threadEvents", kind: .query, args: args)
     }
 
-    static func v2Send(text: String, mentioning: [String], preferredProjectID: String?, mode: String? = nil) -> ConvexEndpoint {
+    static func v2Send(text: String, mentioning: [String], preferredProjectID: String?, mode: String? = nil, threadId: String? = nil) -> ConvexEndpoint {
         var args: [String: Any] = ["text": text, "mentioning": mentioning]
         if let preferredProjectID { args["preferredProjectId"] = preferredProjectID }
         if let mode, !mode.isEmpty { args["mode"] = mode }
+        if let threadId, !threadId.isEmpty { args["threadId"] = threadId }
         return v2("send", kind: .mutation, args: args)
     }
 
@@ -175,17 +186,19 @@ final class DefaultCornerV2API: CornerV2API {
         try await service.request(.v2ThreadEvents(threadID: threadID), as: [ThreadEvent].self)
     }
 
-    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String?) async throws -> RouteDecision {
+    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String?, threadId: String?) async throws -> RouteDecision {
         // Plan rides only when it changes the default: Work is the server
         // default, so Work sends never carry the field (and never pay the
-        // fallback). A backend without the field (today's clone) rejects the
-        // Plan send at arg validation — before anything writes — and the
-        // same send goes out without it, so Plan degrades to a normal send
-        // instead of failing. Both failures park in the outbox as usual.
+        // fallback). A backend without the field rejects the Plan send at
+        // arg validation — before anything writes — and the same send goes
+        // out without it, so Plan degrades to a normal send instead of
+        // failing. Both failures park in the outbox as usual. The fallback
+        // keeps `threadId`: an in-thread send must never degrade into a
+        // global-routed one (R24 P079/P080).
         if mode == "plan" {
             do {
                 return try await service.request(
-                    .v2Send(text: text, mentioning: mentioning, preferredProjectID: preferredProjectID, mode: mode),
+                    .v2Send(text: text, mentioning: mentioning, preferredProjectID: preferredProjectID, mode: mode, threadId: threadId),
                     as: RouteDecision.self
                 )
             } catch is ConvexServiceError {
@@ -193,7 +206,7 @@ final class DefaultCornerV2API: CornerV2API {
             }
         }
         return try await service.request(
-            .v2Send(text: text, mentioning: mentioning, preferredProjectID: preferredProjectID),
+            .v2Send(text: text, mentioning: mentioning, preferredProjectID: preferredProjectID, threadId: threadId),
             as: RouteDecision.self
         )
     }

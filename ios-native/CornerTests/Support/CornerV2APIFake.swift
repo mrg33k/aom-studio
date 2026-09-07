@@ -72,7 +72,7 @@ final class CornerV2APIFake: CornerV2API {
     var threadProjectHandler: ((String) async throws -> Corner.Thread?)?
     var threadMissionHandler: ((String) async throws -> Corner.Thread?)?
     var threadEventsHandler: ((String) async throws -> [ThreadEvent])?
-    var sendHandler: ((String, [String], String?) async throws -> RouteDecision)?
+    var sendHandler: ((String, [String], String?, String?) async throws -> RouteDecision)?
     var subscribeHandler: ((String, @escaping ([ThreadEvent]) -> Void) -> any Cancellable)?
     var visualTabsHandler: ((String) async throws -> [VisualWindowTab])?
     var openTabHandler: ((VisualTabKind, String, String?, String, [String: String]) async throws -> VisualWindowTab)?
@@ -106,7 +106,7 @@ final class CornerV2APIFake: CornerV2API {
     /// serves the preset route, `confirmProposal` echoes a result for the
     /// preset decision id. Everything else still throws until configured.
     init(route: FakeRoute) {
-        sendHandler = { [weak self] text, mentioning, preferredProjectID in
+        sendHandler = { [weak self] text, mentioning, preferredProjectID, _ in
             self?.sentTexts.append(text)
             self?.sentMentions.append(mentioning)
             self?.sentPreferredProjectIDs.append(preferredProjectID)
@@ -154,13 +154,17 @@ final class CornerV2APIFake: CornerV2API {
     /// Modes the fake has seen, per send — the mode-fallback test asserts
     /// Plan rides the first attempt and the field-less retry follows.
     private(set) var sentModes: [String?] = []
+    /// Thread ids the fake has seen, per send — the in-thread test asserts
+    /// a thread send carries its thread and a global send carries none.
+    private(set) var sentThreadIDs: [String?] = []
 
-    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String? = nil) async throws -> RouteDecision {
+    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String? = nil, threadId: String? = nil) async throws -> RouteDecision {
         sentTexts.append(text)
         sentMentions.append(mentioning)
         sentPreferredProjectIDs.append(preferredProjectID)
         sentModes.append(mode)
-        return try await require(sendHandler, op: "send")(text, mentioning, preferredProjectID)
+        sentThreadIDs.append(threadId)
+        return try await require(sendHandler, op: "send")(text, mentioning, preferredProjectID, threadId)
     }
 
     func subscribeThread(threadID: String, receive: @escaping ([ThreadEvent]) -> Void) -> any Cancellable {

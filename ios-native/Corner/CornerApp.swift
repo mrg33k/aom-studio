@@ -57,7 +57,7 @@ struct CornerApp: App {
         // Deterministic visual-proof mode. `simctl defaults write` can race the
         // process preferences cache, so captures opt into Glass explicitly.
         if ProcessInfo.processInfo.arguments.contains("-glassPreview") {
-            ThemeManager.shared.kind = .glass
+            ThemeManager.shared.preview(.glass)
         }
         // R18 N6 proof rig: ask for notification permission at launch so a
         // simctl-pushed payload can render its banner in the capture. Debug-only,

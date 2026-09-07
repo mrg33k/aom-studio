@@ -727,4 +727,87 @@ final class CompMatchUITests: XCTestCase {
         XCTAssertTrue(app.buttons.matching(identifier: "settings-row-profile").firstMatch.exists, "no Profile row")
         XCTAssertTrue(app.buttons.matching(identifier: "settings-rerun").firstMatch.exists, "no Re-run setup")
     }
+
+    // MARK: - R24 send-and-sheet (P074, P076, P077)
+
+    /// P074: the PDF page aspect-fits inside the stage — the page view's
+    /// frame IS the fitted rect (media-height tall, portrait 4:5,
+    /// letterboxed), never the cropped full-width scroll window — and the
+    /// arrows step pages.
+    func testP074PdfPageFitsStage() throws {
+        let app = launch(Self.compVisual)
+        openSheet(app, artifactID: "artifact-pdf-1")
+        let page = app.descendants(matching: .any).matching(identifier: "visual-stage-pdf").firstMatch
+        XCTAssertTrue(page.waitForExistence(timeout: 20), "the PDF stage never rendered")
+        // The 290 slot is media + footer (HANDOFF §6): the page fills the
+        // media remainder edge-to-edge of its height…
+        XCTAssertGreaterThan(page.frame.height, 200, "the page does not fill the media area")
+        XCTAssertLessThanOrEqual(page.frame.height, 290, "the page overflows its slot")
+        let aspect = page.frame.width / page.frame.height
+        XCTAssertLessThan(aspect, 1.0, "the page view is landscape — the page is cropped, not fit")
+        XCTAssertEqualWithAccuracy(aspect, 0.8, accuracy: 0.06,
+                                   "the page view does not keep the 4:5 page aspect")
+        XCTAssertLessThan(page.frame.width, 348, "no letterbox — the page fills the stage width")
+        app.buttons.matching(identifier: "visual-pdf-next").firstMatch.tap()
+        let pager = app.staticTexts.matching(identifier: "visual-pdf-page").firstMatch
+        XCTAssertTrue(pager.waitForExistence(timeout: 10), "no page footer")
+        XCTAssertTrue(pager.label.contains("Page 2 of"), "the arrows do not step pages: \(pager.label)")
+        let pdfShot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        pdfShot.name = "R24-P074-sheet-half"
+        pdfShot.lifetime = .keepAlways
+        add(pdfShot)
+    }
+
+    /// P076: at 390 the pill shows the full placeholder — the commands
+    /// chip collapses to its icon while the field is empty and expands
+    /// with its label once there is text.
+    func testP076ComposerPlaceholderFits() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        let field = app.textFields.matching(identifier: "v2-composer-field").firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 15), "no composer field")
+        XCTAssertEqual(field.placeholderValue, "Tell General what to make next")
+        let chip = app.descendants(matching: .any).matching(identifier: "v2-commands").firstMatch
+        XCTAssertTrue(chip.waitForExistence(timeout: 10), "no commands chip in the pill")
+        XCTAssertEqual(chip.value as? String, "collapsed", "the chip does not collapse while empty")
+        XCTAssertLessThanOrEqual(chip.frame.width, 28,
+                                 "the collapsed chip exceeds its width budget")
+        // The layout delivers the budgeted field width on-device (the unit
+        // test proves the full string fits that budget).
+        XCTAssertGreaterThanOrEqual(field.frame.width, 200,
+                                    "the field is narrower than the placeholder budget")
+        field.tap()
+        field.typeText("x")
+        XCTAssertEqual(chip.value as? String, "expanded", "the chip does not expand with typing")
+        XCTAssertGreaterThan(chip.frame.width, 30, "the expanded chip shows no label")
+        // Back to empty: the full placeholder is on screen, untruncated.
+        field.tap()
+        app.keyboards.keys["delete"].firstMatch.tap()
+        let composerShot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        composerShot.name = "R24-P076-composer"
+        composerShot.lifetime = .keepAlways
+        add(composerShot)
+    }
+
+    /// P077: the thread ground is flat `--ground` even in the Glass theme —
+    /// no gradient glow behind the messages. Glass flat is #0C1218; either
+    /// glow channel would read 40+ higher.
+    func testP077ThreadGroundFlatInGlass() throws {
+        let app = launch(Self.base + ["-glassPreview"])
+        openThread(app)
+        let shot = XCUIScreen.main.screenshot()
+        let window = windowFrame
+        for point in [
+            CGPoint(x: 10, y: 300), CGPoint(x: 380, y: 300),
+            CGPoint(x: 10, y: 450), CGPoint(x: 380, y: 450),
+            CGPoint(x: 10, y: 600), CGPoint(x: 380, y: 600),
+        ] {
+            expectPixel(shot, at: point, window: window, (12, 18, 24), tolerance: 14,
+                        "thread ground not flat at \(point)")
+        }
+        let glassShot = XCTAttachment(screenshot: shot)
+        glassShot.name = "R24-P077-thread-glass"
+        glassShot.lifetime = .keepAlways
+        add(glassShot)
+    }
 }

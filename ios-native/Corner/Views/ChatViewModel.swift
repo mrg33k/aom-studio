@@ -1772,6 +1772,17 @@ final class ChatViewModel: ObservableObject {
 // changes `thread`, and the route decision the server returns is rendered
 // inline (Task 6), never navigated to unasked.
 
+/// Why one outbox entry is still queued. Stored per entry (R24 P075): the
+/// banner may only cry "Offline" for a real network failure — a send the
+/// server rejected says so, with the plain reason, and offers a retry.
+enum V2SendFailure: Codable, Equatable {
+    /// The bytes never left the phone (no network). Retry on reconnect.
+    case network
+    /// The server answered no (denied, missing, invalid, masked "Server
+    /// Error"). `reason` is the plain sentence, never the raw envelope.
+    case rejected(reason: String)
+}
+
 /// One unsent v2 message. The `(threadID, clientEventID)` pair is the
 /// identity: the same text sent twice is two entries, and a replay after
 /// reconnect removes exactly the entry the server accepted.
@@ -1783,6 +1794,48 @@ struct V2OutboxEntry: Codable, Equatable, Identifiable {
     let mentioning: [String]
     let preferredProjectID: String?
     let createdAt: Date
+    /// The last send attempt's outcome. Nil while an attempt is in flight;
+    /// old installs decode this as nil (the default), i.e. "no failure yet".
+    var lastFailure: V2SendFailure? = nil
+}
+
+/// R24 P075: one plain sentence per send-failure shape (the web's
+/// `plainQueryError` twin). The raw Convex detail — request id, function
+/// name — never reaches visible copy; `String(describing:)` still carries
+/// it to the report and the console.
+enum V2SendError {
+    static func classify(_ error: Error) -> V2SendFailure {
+        if (error as NSError).domain == NSURLErrorDomain {
+            return .network
+        }
+        if case ConvexServiceError.notSignedIn = error {
+            return .rejected(reason: "You're signed out. Sign in, then retry.")
+        }
+        return .rejected(reason: plainReason(String(describing: error)))
+    }
+
+    static func plainReason(_ raw: String) -> String {
+        let lower = raw.lowercased()
+        if lower.contains("not signed in") || lower.contains("signed out")
+            || lower.contains("unauthorized") || lower.contains("auth") {
+            return "You're signed out. Sign in, then retry."
+        }
+        if lower.contains("access denied") || lower.contains("not a member")
+            || lower.contains("forbidden") || lower.contains("not allowed") {
+            return "You don't have access to this thread."
+        }
+        if lower.contains("not found") || lower.contains("no longer")
+            || lower.contains("does not exist") {
+            return "This thread isn't here anymore."
+        }
+        if lower.contains("server error") {
+            // The clone masks every rejection (L004's ConvexError codes are
+            // coded but undeployed): the reason is unknowable, the kept
+            // text and the retry are not.
+            return "The server didn't take it — your text is kept. Tap Retry."
+        }
+        return "Couldn't send — your text is kept. Tap Retry."
+    }
 }
 
 /// The disk-backed v2 outbox. One JSON file per install
@@ -1834,6 +1887,15 @@ final class V2OutboxStore {
     func remove(threadID: String, clientEventID: String) {
         entries[threadID]?.removeAll { $0.clientEventID == clientEventID }
         if entries[threadID]?.isEmpty == true { entries.removeValue(forKey: threadID) }
+        persist()
+    }
+
+    /// R24 P075: stamp the last attempt's outcome on the entry (persisted,
+    /// so a relaunch still tells rejection from offline). A removal clears
+    /// it with the entry; a later attempt overwrites it.
+    func recordFailure(threadID: String, clientEventID: String, failure: V2SendFailure) {
+        guard let index = entries[threadID]?.firstIndex(where: { $0.clientEventID == clientEventID }) else { return }
+        entries[threadID]?[index].lastFailure = failure
         persist()
     }
 
@@ -2020,6 +2082,29 @@ final class V2ChatModel: ObservableObject {
             ?? AgentRoster.title(for: specialistChoice)
     }
 
+    /// What the queue banner says. A rejection dominates: the person sees
+    /// the plain reason and a retry, never "Offline". Pure network
+    /// failures (or sends still in flight, which have no failure yet) read
+    /// offline — and an in-flight send with no failure shows no banner at
+    /// all, so a normal send no longer flashes "Offline" mid-round-trip.
+    enum SendBanner: Equatable {
+        case none
+        case offline(count: Int)
+        case notSent(count: Int, reason: String)
+    }
+
+    var sendBanner: SendBanner {
+        let pending = queued
+        guard !pending.isEmpty else { return .none }
+        for entry in pending {
+            if case .rejected(let reason) = entry.lastFailure {
+                return .notSent(count: pending.count, reason: reason)
+            }
+        }
+        guard pending.contains(where: { $0.lastFailure != nil }) else { return .none }
+        return .offline(count: pending.count)
+    }
+
     /// Open a Project or Mission thread: load events, subscribe once, replay
     /// the outbox. Replaces any previous thread (one active subscription).
     func start(thread: Corner.Thread, project: ProjectSummary, mission: MissionSummary?) async {
@@ -2027,6 +2112,9 @@ final class V2ChatModel: ObservableObject {
         self.thread = thread
         self.project = project
         self.mission = mission
+        // R24 P079: a decision belongs to the thread it was made in — never
+        // leak one thread's routing card into the next.
+        self.lastDecision = nil
         restoreThreadPrefs()
         loadState = .loading
         do {
@@ -2125,13 +2213,24 @@ final class V2ChatModel: ObservableObject {
         do {
             // The thread's Work/Plan intent rides the send; the transport
             // drops Work (the server default) and falls back field-less when
-            // the backend does not know `mode` yet.
-            lastDecision = try await api.send(text: trimmed, mentioning: mentioning, preferredProjectID: nil, mode: chatMode)
+            // the backend does not know `mode` yet. `threadId` pins the send
+            // to this thread (R24 P080): no routing, no `Routed to` receipt,
+            // and an open question is answered here — never globally.
+            lastDecision = try await api.send(
+                text: trimmed, mentioning: mentioning, preferredProjectID: nil,
+                mode: chatMode, threadId: thread.id
+            )
             outbox.remove(threadID: thread.id, clientEventID: entry.clientEventID)
             events.removeAll { $0.id == echo.id }
             refreshQueued()
             await refreshEvents()
         } catch {
+            // R24 P075: the reason is the diagnosis — a rejection is not
+            // "Offline". It rides the entry so the banner tells the truth.
+            outbox.recordFailure(
+                threadID: thread.id, clientEventID: entry.clientEventID,
+                failure: V2SendError.classify(error)
+            )
             refreshQueued()
         }
     }
@@ -2147,12 +2246,17 @@ final class V2ChatModel: ObservableObject {
             do {
                 lastDecision = try await api.send(
                     text: entry.text, mentioning: entry.mentioning,
-                    preferredProjectID: entry.preferredProjectID, mode: chatMode
+                    preferredProjectID: entry.preferredProjectID, mode: chatMode,
+                    threadId: thread.id
                 )
                 outbox.remove(threadID: thread.id, clientEventID: entry.clientEventID)
                 events.removeAll { $0.id == Self.echoID(for: entry.clientEventID) }
                 didSucceed = true
             } catch {
+                outbox.recordFailure(
+                    threadID: thread.id, clientEventID: entry.clientEventID,
+                    failure: V2SendError.classify(error)
+                )
                 break
             }
         }

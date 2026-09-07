@@ -136,7 +136,7 @@ final class V2CommandsTests: XCTestCase {
         let api = CornerV2APIFake()
         let (thread, project, _) = try context()
         api.threadEventsHandler = { _ in [] }
-        api.sendHandler = { _, _, _ in self.routeDecision(project: project) }
+        api.sendHandler = { _, _, _, _ in self.routeDecision(project: project) }
         let model = V2ChatModel(api: api, outbox: .memory)
         await model.start(thread: thread, project: project, mission: nil)
         model.setMode("plan")
@@ -149,7 +149,7 @@ final class V2CommandsTests: XCTestCase {
         let api = CornerV2APIFake()
         let (thread, project, _) = try context()
         api.threadEventsHandler = { _ in [] }
-        api.sendHandler = { _, _, _ in self.routeDecision(project: project) }
+        api.sendHandler = { _, _, _, _ in self.routeDecision(project: project) }
         let model = V2ChatModel(api: api, outbox: .memory)
         await model.start(thread: thread, project: project, mission: nil)
 

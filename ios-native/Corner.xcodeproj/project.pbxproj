@@ -13,6 +13,7 @@
 		043F08A3A762DCB7BC7BB361 /* hero.png in Resources */ = {isa = PBXBuildFile; fileRef = 7837D93D8D7A760469A95B1A /* hero.png */; };
 		0488714B0ACA56A6F88863C2 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4E330537A94F6BCADAAAD4 /* SignInView.swift */; };
 		068C15BB396647F8FD1E742E /* ConvexService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CCA195DB3CAFCF12889A9BB /* ConvexService.swift */; };
+		0716BE3F5CD216DF3D99A9C1 /* V2ReconnectMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D36EFAFE6A999D326192D855 /* V2ReconnectMonitor.swift */; };
 		09C9ADE896667C4859CA462C /* RoomSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE3EAACFEA3E82CAEC19854 /* RoomSettingsView.swift */; };
 		0A0AF32D3C93023CEF0C55E0 /* CompMatchUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85BAD5E966630B7F79930C5 /* CompMatchUITests.swift */; };
 		0A26F25EAF9501E6AE1F267F /* ConvexAuthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B30B08F373B7E6D20152A4 /* ConvexAuthTests.swift */; };
@@ -83,6 +84,7 @@
 		78CCD69E75CFB96D57688755 /* V2DrawerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A4E08805DDA8C292933E3C /* V2DrawerView.swift */; };
 		7924B8A0025880C33F1527B8 /* HankenGrotesk-VF.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A9D2EAFD89EEDF532AC5F081 /* HankenGrotesk-VF.ttf */; };
 		7FDC7B1CC07EF4CD49D61305 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 93F4B6205055988397D45943 /* PrivacyInfo.xcprivacy */; };
+		834F5785B82740C2DE2A472D /* R24SendAndSheetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5282418684E41024646BED6 /* R24SendAndSheetTests.swift */; };
 		8AE0480EF196A5B191CEA961 /* VideoArtifactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 191FB1E7BC00D12E72529793 /* VideoArtifactView.swift */; };
 		8D12035D67DD5AF1CABB60A3 /* CornerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26170D6B1CAAE06391DEEC4A /* CornerApp.swift */; };
 		8DAE8E6F61F28E73BEA4063D /* ReviewQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C582794E4358BAFB4A87FB79 /* ReviewQueueView.swift */; };
@@ -323,6 +325,8 @@
 		CEEF7FE0EBDF8ABD90A08461 /* AgentColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentColor.swift; sourceTree = "<group>"; };
 		D108379E9EA1B083B564C0BA /* RoomStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomStatusTests.swift; sourceTree = "<group>"; };
 		D131A547AABD2FCBE49FA758 /* ReviewPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPanelView.swift; sourceTree = "<group>"; };
+		D36EFAFE6A999D326192D855 /* V2ReconnectMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V2ReconnectMonitor.swift; sourceTree = "<group>"; };
+		D5282418684E41024646BED6 /* R24SendAndSheetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = R24SendAndSheetTests.swift; sourceTree = "<group>"; };
 		D7FAA587227445093A0E6B0C /* R19ShootScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = R19ShootScreens.swift; sourceTree = "<group>"; };
 		D8CA935ACABC0C1E275A24EE /* ReviewDecisionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewDecisionSheet.swift; sourceTree = "<group>"; };
 		DA52939BEC62A71097CEEC3E /* VisualWindowTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualWindowTabBar.swift; sourceTree = "<group>"; };
@@ -485,6 +489,7 @@
 				0200B80365B5D89CF18C2325 /* SpeechService.swift */,
 				EC120F7C6D2DBDEE3EED7C41 /* TrackerStore.swift */,
 				3BDDB385881E1A882A2BB055 /* TurnActivityService.swift */,
+				D36EFAFE6A999D326192D855 /* V2ReconnectMonitor.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -519,6 +524,7 @@
 				4951296375FEC3116AC43157 /* MessageContentTests.swift */,
 				482B63EA2B98F05A9B791A57 /* NotificationActionsTests.swift */,
 				9DBDCCA9EDDA20D17DD9F490 /* OrganizeTests.swift */,
+				D5282418684E41024646BED6 /* R24SendAndSheetTests.swift */,
 				602A96887BE24D9CBBF02832 /* RenderGalleryTests.swift */,
 				C8FA0D081EED255AE6BCDE9C /* ReviewStoreTests.swift */,
 				E85B84B4FDE537A6A0F8AFC4 /* RoomRoutingTests.swift */,
@@ -806,6 +812,7 @@
 				BE9E2949C5B83F127ADC3D1B /* MessageContentTests.swift in Sources */,
 				B82D8845FB4D6A42FFE3B6E5 /* NotificationActionsTests.swift in Sources */,
 				6F9C32B58252C90AD5D3FB12 /* OrganizeTests.swift in Sources */,
+				834F5785B82740C2DE2A472D /* R24SendAndSheetTests.swift in Sources */,
 				64C84398FCE2AEEB0B12C3C2 /* RenderGalleryTests.swift in Sources */,
 				2CEA60BA87B66A49A13A7C86 /* ReviewStoreTests.swift in Sources */,
 				D17AC373E2D97B9925C032F8 /* RoomRoutingTests.swift in Sources */,
@@ -927,6 +934,7 @@
 				78CCD69E75CFB96D57688755 /* V2DrawerView.swift in Sources */,
 				9C82F9A98703F46F6B8E1BE3 /* V2IntakeSheet.swift in Sources */,
 				6D00A6B43B7F1D709BD0D463 /* V2Onboarding.swift in Sources */,
+				0716BE3F5CD216DF3D99A9C1 /* V2ReconnectMonitor.swift in Sources */,
 				5AD09E432403F26619A274F5 /* V2SettingsView.swift in Sources */,
 				8AE0480EF196A5B191CEA961 /* VideoArtifactView.swift in Sources */,
 				0007CDDDE712A38CCD046454 /* VisualWindowContextView.swift in Sources */,

@@ -149,14 +149,30 @@ struct ThemePalette {
 @MainActor
 final class ThemeManager: ObservableObject {
     static let shared = ThemeManager()
-    private static let storageKey = "cv6-theme"
+    static let storageKey = "cv6-theme"
 
     @Published var kind: ThemeKind {
-        didSet { UserDefaults.standard.set(kind.rawValue, forKey: Self.storageKey) }
+        didSet {
+            guard persistKind else { return }
+            UserDefaults.standard.set(kind.rawValue, forKey: Self.storageKey)
+        }
     }
+
+    /// False inside `preview(_:)` only: the override must never reach disk.
+    private var persistKind = true
 
     init() {
         kind = ThemeKind(rawValue: UserDefaults.standard.string(forKey: Self.storageKey) ?? "") ?? .dark
+    }
+
+    /// Process-local theme override (simulator proofs like `-glassPreview`).
+    /// Never persisted: a leaked preview default would re-theme every later
+    /// fixture and gate run on the simulator (R24: glass leaked into P026).
+    func preview(_ kind: ThemeKind) {
+        UserDefaults.standard.removeObject(forKey: Self.storageKey)
+        persistKind = false
+        self.kind = kind
+        persistKind = true
     }
 
     var palette: ThemePalette {
@@ -331,9 +347,22 @@ struct GroundBackground: ViewModifier {
     }
 }
 
+/// R24 P077: the flat `--ground`, in the current theme, with no glass
+/// glow layer. The design's thread is flat ground (#0f1319 on dark);
+/// screens whose design frame carries the glow keep `groundBackground`.
+struct FlatGroundBackground: ViewModifier {
+    @ObservedObject private var theme = ThemeManager.shared
+
+    func body(content: Content) -> some View {
+        content.background(theme.palette.ground)
+    }
+}
+
 extension View {
     /// Full-screen background only. Small foreground/fill sites keep Theme.ground.
     func groundBackground() -> some View { modifier(GroundBackground()) }
+    /// Flat per-theme ground, no wallpaper. For thread surfaces (P077).
+    func flatGroundBackground() -> some View { modifier(FlatGroundBackground()) }
 }
 
 extension Theme {

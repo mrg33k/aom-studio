@@ -281,21 +281,32 @@ final class VisualWindowUITests: XCTestCase {
             app.staticTexts.matching(identifier: "chat-subtitle").firstMatch.exists,
             "a project chat shows no subtitle line"
         )
-        // Route into the seeded mission: mission name + project above (P071).
-        let field = app.textFields.matching(identifier: "v2-composer-field").firstMatch
-        XCTAssertTrue(field.waitForExistence(timeout: 15), "no v2 composer field")
-        field.tap()
-        field.typeText("Where should this go")
-        app.buttons.matching(identifier: "v2-composer-send").firstMatch.tap()
+        // R24 P079: thread sends stay in-thread, so reach the seeded mission
+        // through the drawer: mission name + project above (P071).
+        app.buttons.matching(identifier: "v2-drawer-button").firstMatch.tap()
         XCTAssertTrue(
-            app.buttons.matching(identifier: "route-move").firstMatch.waitForExistence(timeout: 60),
-            "no route block arrived"
+            app.descendants(matching: .any).matching(identifier: "v2-drawer").firstMatch
+                .waitForExistence(timeout: 10), "the drawer never opened"
         )
-        app.buttons.matching(identifier: "route-move").firstMatch.tap()
+        let expand = app.buttons.matching(identifier: "v2-drawer-project-expand")
+            .matching(NSPredicate(format: "label == 'Expand Aster'")).firstMatch
+        if expand.waitForExistence(timeout: 10) { expand.tap() }
+        let rows = app.buttons.matching(identifier: "v2-drawer-mission-row")
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 15), "no mission rows in the drawer")
+        var tapped = false
+        for i in 0..<rows.count {
+            let row = rows.element(boundBy: i)
+            if row.label.localizedCaseInsensitiveContains("Ship home page") {
+                row.tap()
+                tapped = true
+                break
+            }
+        }
+        XCTAssertTrue(tapped, "no mission row for Ship home page")
         // R23 P071: the title is the mission name only, the project above it.
         let missionTitle = app.staticTexts.matching(identifier: "chat-title")
             .matching(NSPredicate(format: "label == 'Ship home page'")).firstMatch
-        XCTAssertTrue(missionTitle.waitForExistence(timeout: 30), "Move did not open the mission chat")
+        XCTAssertTrue(missionTitle.waitForExistence(timeout: 30), "the drawer did not open the mission chat")
         let subtitle = app.staticTexts.matching(identifier: "chat-subtitle").firstMatch
         XCTAssertTrue(subtitle.waitForExistence(timeout: 10), "a mission chat shows no project line")
         XCTAssertEqual(subtitle.label, "Aster")

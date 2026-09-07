@@ -752,6 +752,20 @@ final class PreviewV2API: CornerV2API {
         Thread(id: id, ownerType: owner, projectID: projectID, missionID: missionID, visualSessionID: "session-\(id)")
     }
 
+    /// R24 P080: resolve a thread id to its owning project + mission, the
+    /// way the backend's `threadId` branch names the thread it is already
+    /// in. Nil when the id names nothing (a stale thread, like prod).
+    private func contextForThread(_ threadID: String) -> (ProjectSummary, MissionSummary?)? {
+        seedShipIfNeeded()
+        for project in workspace.projects {
+            if project.threadID == threadID { return (project, nil) }
+            if let mission = project.missions.first(where: { $0.threadID == threadID }) {
+                return (project, mission)
+            }
+        }
+        return nil
+    }
+
     func workspaceTree() async throws -> WorkspaceSummary? {
         seedShipIfNeeded()
         return workspace
@@ -784,6 +798,10 @@ final class PreviewV2API: CornerV2API {
     /// `-v2FailNextSends=N`: the next N sends throw `.notConnectedToInternet`
     /// (the offline UI test's airplane mode). Default: connected.
     private var failSendsLeft: Int = PreviewV2API.launchIntFlag("-v2FailNextSends")
+    /// `-v2RejectNextSends=N`: the next N sends throw a masked server
+    /// rejection (R24 P075: the clone hides every reason as "Server Error").
+    /// Default: the server takes everything.
+    private var rejectSendsLeft: Int = PreviewV2API.launchIntFlag("-v2RejectNextSends")
     /// `-v2RouteMode=confirm`: sends return a confident Project > Mission
     /// route (the route-block UI test). Default: every send proposes a new
     /// mission, preserving the intake creation flow.
@@ -1083,16 +1101,74 @@ final class PreviewV2API: CornerV2API {
         // first fetch must already carry the cards — winning or losing a
         // task race against window.start is not a seeding strategy.
         seedVisualIfNeeded()
+        seedStepOnlyIfNeeded()
         return chatEvents
     }
 
-    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String? = nil) async throws -> RouteDecision {
+    /// R24 P078: one step-only agent event (label, no text) on the General
+    /// thread — the live bridge's `step_ev` shape, where a label-only turn
+    /// used to render as a blank row.
+    private var stepOnlySeeded = false
+
+    private func seedStepOnlyIfNeeded() {
+        guard PreviewV2API.launchHasFlag("-v2SeedStepOnly"), !stepOnlySeeded else { return }
+        stepOnlySeeded = true
+        chatEvents.append(ThreadEvent(
+            id: "event-steponly-1", threadID: general.threadID,
+            author: .agent, agentLabel: "Corner",
+            blocks: [.steps([
+                StepState(id: "st-gather", label: "Gathering the latest numbers", state: "done"),
+            ])],
+            createdAt: Date()
+        ))
+    }
+
+    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String? = nil, threadId: String? = nil) async throws -> RouteDecision {
         _ = mode // the fixture preview answers every mode the same way.
         if failSendsLeft > 0 {
             failSendsLeft -= 1
             throw URLError(.notConnectedToInternet)
         }
+        if rejectSendsLeft > 0 {
+            rejectSendsLeft -= 1
+            // A masked clone rejection (R24 P075): no usable reason crosses
+            // the wire, exactly like production hides it today.
+            throw ConvexServiceError.server("[Request ID: test-reject] Server Error")
+        }
         pendingTitle = text
+        // R24 P080: a thread id answers INTO the thread, like the backend's
+        // `threadId` branch — the text lands there, the decision names the
+        // thread it is already in, and no routing card follows.
+        if let threadId, let (project, mission) = contextForThread(threadId) {
+            let stamp = Date()
+            chatEvents.append(ThreadEvent(
+                id: "event-preview-user-\(chatEvents.count + 1)", threadID: threadId,
+                author: .user, agentLabel: nil, blocks: [.text(text)], createdAt: stamp
+            ))
+            // @brain routing metadata still steers the reply, like the
+            // global path's research branch below.
+            if mentioning.contains("research") {
+                chatEvents.append(ThreadEvent(
+                    id: "event-preview-agent-\(chatEvents.count + 1)", threadID: threadId,
+                    author: .agent, agentLabel: "Research",
+                    blocks: [.text("I found three competitors.")], createdAt: stamp
+                ))
+            } else {
+                chatEvents.append(ThreadEvent(
+                    id: "event-preview-agent-\(chatEvents.count + 1)", threadID: threadId,
+                    author: .agent, agentLabel: "Corner",
+                    blocks: [.text("On it — anything else?")], createdAt: stamp
+                ))
+            }
+            let path = mission.map { "\(project.name) > \($0.title)" } ?? project.name
+            return RouteDecision(
+                decisionId: "decision-preview-inthread-\(chatEvents.count)", destinationThreadID: threadId,
+                project: project, mission: mission, confidence: 1, alternatives: [],
+                reason: "Already in \(path).",
+                needsClarification: false, needsCreationConfirmation: false,
+                actor: "uitest", createdAt: Date()
+            )
+        }
         let targetID = preferredProjectID ?? general.id
         pendingProjectID = targetID
         let target = workspace.projects.first(where: { $0.id == targetID }) ?? general

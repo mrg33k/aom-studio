@@ -54,7 +54,7 @@ final class ChatViewModelV2Tests: XCTestCase {
         let api = CornerV2APIFake()
         var served: [ThreadEvent] = []
         api.threadEventsHandler = { _ in served }
-        api.sendHandler = { [weak api] _, _, _ in
+        api.sendHandler = { [weak api] _, _, _, _ in
             served = [self.agentReply(threadID: thread.id, label: "Research", text: "I found three competitors.")]
             _ = api
             return self.routeDecision(project: project)
@@ -77,7 +77,7 @@ final class ChatViewModelV2Tests: XCTestCase {
         let api = CornerV2APIFake()
         var served: [ThreadEvent] = []
         api.threadEventsHandler = { _ in served }
-        api.sendHandler = { _, _, _ in throw URLError(.notConnectedToInternet) }
+        api.sendHandler = { _, _, _, _ in throw URLError(.notConnectedToInternet) }
         let outbox = V2OutboxStore.memory
         let model = V2ChatModel(api: api, outbox: outbox)
 
@@ -88,7 +88,7 @@ final class ChatViewModelV2Tests: XCTestCase {
 
         // Reconnect: the queued entry sends once, the optimistic echo is
         // replaced by the server event (no duplicate), the queue drains.
-        api.sendHandler = { _, _, _ in
+        api.sendHandler = { _, _, _, _ in
             served = [ThreadEvent(
                 id: "event-server-1", threadID: thread.id, author: .user,
                 agentLabel: nil, blocks: [.text("Draft the brief")], createdAt: Date()
@@ -111,7 +111,7 @@ final class ChatViewModelV2Tests: XCTestCase {
         api.threadEventsHandler = { _ in [] }
         var failuresLeft = 2
         var successes = 0
-        api.sendHandler = { _, _, _ in
+        api.sendHandler = { _, _, _, _ in
             if failuresLeft > 0 {
                 failuresLeft -= 1
                 throw URLError(.notConnectedToInternet)

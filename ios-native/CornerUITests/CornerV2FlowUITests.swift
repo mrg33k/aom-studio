@@ -314,29 +314,124 @@ final class CornerV2FlowUITests: XCTestCase {
 
     // MARK: - native Task 6 flows
 
-    /// A route block shows `Project > Mission` + reason + Move; Move opens
-    /// the destination mission's chat (R23 P071: mission name only).
-    func testV2RouteBlockWithMove() throws {
+    /// R24 P079: an in-thread send stays in the thread — no route card, no
+    /// Move, title unchanged — even when a global send would route
+    /// confidently elsewhere. Routing UI belongs to global-input sends.
+    func testV2InThreadSendShowsNoRouteCard() throws {
         app.launchArguments += ["-v2FixtureUITest", "-v2RouteMode=confirm"]
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
         openEntryThread(app)
 
-        sendInV2Chat(app, "Where should this go \(Int(Date().timeIntervalSince1970))")
-        let title = app.staticTexts.matching(identifier: "route-title").firstMatch
-        XCTAssertTrue(title.waitForExistence(timeout: 60), "no route block arrived after sending")
-        XCTAssertEqual(title.label, "Aster > Ship home page")
-        XCTAssertTrue(
-            app.staticTexts.matching(identifier: "route-reason").firstMatch
-                .waitForExistence(timeout: 10), "the route block shows no reason"
+        let probe = "Where should this go \(Int(Date().timeIntervalSince1970))"
+        sendInV2Chat(app, probe)
+        // The text lands in THIS thread…
+        XCTAssertTrue(app.staticTexts[probe].waitForExistence(timeout: 60),
+                      "the in-thread send never echoed in its thread")
+        // …with no routing card after it.
+        XCTAssertFalse(
+            app.staticTexts.matching(identifier: "route-title").firstMatch.waitForExistence(timeout: 8),
+            "an in-thread send showed routing UI"
         )
-        evidence("07-route-block")
-        app.buttons.matching(identifier: "route-move").firstMatch.tap()
+        XCTAssertFalse(
+            app.buttons.matching(identifier: "route-move").firstMatch.waitForExistence(timeout: 3),
+            "an in-thread send offered Move"
+        )
+        XCTAssertEqual(chatTitle.label, "General", "sending navigated away from the thread")
+        evidence("07-inthread-no-route")
+    }
+
+    /// R24 P079's other half: a global intake send still routes — a
+    /// confident match opens the destination thread, no card, no confirm.
+    func testV2GlobalIntakeConfidentRouteNavigates() throws {
+        app.launchArguments += ["-v2FixtureUITest", "-v2RouteMode=confirm"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openEntryThread(app)
+
+        openDrawer(app)
+        app.buttons.matching(identifier: "v2-drawer-new").firstMatch.tap()
+        let field = intakeField(app)
+        XCTAssertTrue(field.waitForExistence(timeout: 15), "the intake sheet never appeared")
+        field.tap()
+        field.typeText("Where should this go \(Int(Date().timeIntervalSince1970))")
+        app.buttons.matching(identifier: "global-intake-send").firstMatch.tap()
         let moved = app.staticTexts.matching(identifier: "chat-title")
             .matching(NSPredicate(format: "label == 'Ship home page'")).firstMatch
         XCTAssertTrue(moved.waitForExistence(timeout: 30),
-                      "Move did not open the destination mission chat")
-        evidence("07b-route-moved")
+                      "the confident global route did not open the destination mission chat")
+        evidence("07b-intake-routed")
+    }
+
+    /// R24 P080: tapping a question option selects its radio and sends the
+    /// option text INTO this thread — never a global-routed send, never a
+    /// router clarification card.
+    func testV2QuestionOptionAnswersInThread() throws {
+        app.launchArguments += ["-v2FixtureUITest", "-v2SeedCompMatch"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openEntryThread(app)
+
+        let option = app.buttons.matching(identifier: "v2-option-q-press").firstMatch
+        XCTAssertTrue(option.waitForExistence(timeout: 15), "no question option on the thread")
+        option.tap()
+        XCTAssertEqual(option.value as? String, "selected", "the tap did not select the radio")
+        // The option text lands in THIS thread (option card + user echo)…
+        let copies = app.staticTexts.matching(NSPredicate(format: "label == 'Press and partners'"))
+        XCTAssertTrue(waitForCount(copies, 2, timeout: 60),
+                      "the answer never landed in the thread")
+        // …with no router clarification card after it.
+        XCTAssertFalse(
+            app.staticTexts.matching(identifier: "route-title").firstMatch.waitForExistence(timeout: 8),
+            "the option tap routed globally"
+        )
+        XCTAssertEqual(chatTitle.label, "General", "answering navigated away from the thread")
+        evidence("09-option-inthread")
+    }
+
+    /// R24 P075: a send the server rejects parks with "Not sent, tap to
+    /// retry" + the plain reason — never "Offline" — and Retry sends it.
+    func testV2RejectedSendShowsNotSentAndRetries() throws {
+        app.launchArguments += ["-v2FixtureUITest", "-v2RejectNextSends=1"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openEntryThread(app)
+
+        let probe = "Rejected draft \(Int(Date().timeIntervalSince1970))"
+        sendInV2Chat(app, probe)
+        let banner = app.descendants(matching: .any).matching(identifier: "v2-notsent-banner").firstMatch
+        XCTAssertTrue(banner.waitForExistence(timeout: 30),
+                      "the rejected send never parked in the Not-sent banner")
+        let reason = app.staticTexts.matching(identifier: "v2-notsent-reason").firstMatch
+        XCTAssertTrue(reason.waitForExistence(timeout: 10), "the banner names no reason")
+        XCTAssertTrue(reason.label.contains("kept"), "the reason is not the plain kept-text sentence: \(reason.label)")
+        XCTAssertFalse(
+            app.descendants(matching: .any).matching(identifier: "v2-offline-banner").firstMatch
+                .waitForExistence(timeout: 3),
+            "a rejection read as Offline"
+        )
+        evidence("06c-notsent-banner")
+        // Retry: the rejection is spent, so the replayed send lands and the
+        // banner clears.
+        app.buttons.matching(identifier: "v2-outbox-retry").firstMatch.tap()
+        let gone = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: banner, handler: nil)
+        wait(for: [gone], timeout: 30)
+        XCTAssertTrue(app.staticTexts[probe].waitForExistence(timeout: 10),
+                      "the retried text did not survive")
+        evidence("06d-notsent-retried")
+    }
+
+    /// R24 P078: a step-only agent event paints its label — never a blank
+    /// labelled row (web L011 twin).
+    func testV2StepOnlyEventPaintsLabel() throws {
+        app.launchArguments += ["-v2FixtureUITest", "-v2SeedStepOnly"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openEntryThread(app)
+
+        XCTAssertTrue(app.staticTexts["Gathering the latest numbers"].waitForExistence(timeout: 30),
+                      "the step-only event painted no label")
+        evidence("10-step-only")
     }
 
     /// Open a project's chat through the drawer, by its accessible label.
