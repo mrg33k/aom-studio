@@ -2,13 +2,13 @@
 // corner:corner-v2 R17 (P055–P058).
 //
 // The design's phone drawer (§4 Mobile layout): an 84%-width slide-over with
-// the logo + close up top, a New / Project + row, Record a call, Recent,
+// the logo + close up top, a New / Project + row, Recent,
 // Projects with missions, and identity + bell + gear at the bottom.
 //
 // Every action does its real thing:
 // - New raises the intake sheet; Project + calls v2Projects:createProject
 //   (the web's `onNewProject` creates `New Project` the same way).
-// - Record a call / notifications raise their sheets via the entry (which
+// - Notifications raise their sheet via the entry (which
 //   owns them since the home tree retired, R23 P070).
 // - Recent is the device's own last-opened threads (UserDefaults) — the
 //   server exposes no recency signal, so recency is honestly local.
@@ -159,7 +159,6 @@ struct V2DrawerView: View {
                         VStack(alignment: .leading, spacing: 0) {
                             newRow
                             searchRow
-                            recordCallRow
                             if !recents.recents.isEmpty, !isSearching {
                                 drawerLabel("Recent")
                                 ForEach(Array(recents.recents.enumerated()), id: \.offset) { _, recent in
@@ -193,7 +192,11 @@ struct V2DrawerView: View {
                 }
                 .frame(width: geo.size.width * 0.8356, alignment: .leading)
                 .frame(maxHeight: .infinity)
+                // The current theme's `raised` is 55% translucent; the drawer
+                // is a solid panel in the design, so it sits on `ground`
+                // (P084: chat rows showed through it, Patrik 2026-09-07).
                 .background(Theme.raised)
+                .background(Theme.ground)
             }
         }
         .transition(.move(edge: .leading))
@@ -332,27 +335,15 @@ struct V2DrawerView: View {
         }
     }
 
-    private var recordCallRow: some View {
-        Button {
-            isPresented = false
-            NotificationCenter.default.post(name: .v2RecordCall, object: nil)
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "mic")
-                    .font(.system(size: 15, weight: .regular))
-                    .foregroundStyle(Theme.inkSoft)
-                    .frame(width: 24)
-                Text("Record a call")
-                    .font(.hanken(14.5).weight(.medium))
-                    .foregroundStyle(Theme.ink)
-                Spacer(minLength: 0)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .frame(height: 44)
-        .accessibilityIdentifier("v2-drawer-record")
-        .accessibilityLabel("Record a call")
+
+    /// L027 on the phone: a stored name that is really the account's email
+    /// (or its local part, the sign-up default) is not a name — show "You".
+    static func accountLabel(_ name: String?, email: String?) -> String {
+        let n = (name ?? "").trimmingCharacters(in: .whitespaces)
+        if n.isEmpty { return "You" }
+        if n.contains("@") || n.contains("+") { return "You" }
+        if let e = email?.lowercased(), let local = e.split(separator: "@").first, n.lowercased() == local { return "You" }
+        return n
     }
 
     // MARK: sections
@@ -593,7 +584,7 @@ struct V2DrawerView: View {
                 .frame(width: 32, height: 32)
                 .background(Theme.avatarGradient, in: Circle())
                 .accessibilityHidden(true)
-            Text(api.userDisplayName ?? "Corner")
+            Text(V2DrawerView.accountLabel(api.userDisplayName, email: api.userEmail))
                 .font(.hanken(14.5).weight(.semibold))
                 .foregroundStyle(Theme.ink)
                 .lineLimit(1)

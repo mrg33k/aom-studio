@@ -227,7 +227,7 @@ final class CornerV2FlowUITests: XCTestCase {
     }
 
     /// The drawer carries every home action the tree offered: search, New /
-    /// Project +, Record a call, projects with missions, per-project `+`,
+    /// Project +, projects with missions, per-project `+`,
     /// Files rows, and identity + bell + gear.
     func testDrawerCarriesEveryHomeAction() throws {
         app.launchArguments += ["-v2FixtureUITest", "-v2SeedVisual"]
@@ -237,7 +237,7 @@ final class CornerV2FlowUITests: XCTestCase {
         openDrawer(app)
 
         for id in ["v2-drawer-close", "v2-drawer-search", "v2-drawer-new",
-                   "v2-drawer-new-project", "v2-drawer-record",
+                   "v2-drawer-new-project",
                    "v2-drawer-project-row", "v2-drawer-project-add",
                    "v2-drawer-project-expand", "v2-drawer-new-mission",
                    "v2-drawer-bell", "v2-drawer-settings"] {

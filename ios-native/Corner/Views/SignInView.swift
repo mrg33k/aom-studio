@@ -141,20 +141,16 @@ struct SignInView: View {
 
     // MARK: pieces
 
+    // The asset is the whole logo (mark + wordmark, 277x60 @3x), so it is the
+    // only thing here: no second "Corner" text beside it (Patrik, 2026-09-07).
     private var logoRow: some View {
-        HStack(spacing: 8) {
-            Image("CornerLogo")
-                .renderingMode(.template)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 24, height: 24)
-                .foregroundStyle(Theme.ink)
-            Text("Corner")
-                .font(.hanken(19).weight(.bold))
-                .foregroundStyle(Theme.ink)
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Corner")
+        Image("CornerLogo")
+            .renderingMode(.template)
+            .resizable()
+            .scaledToFit()
+            .frame(height: 24)
+            .foregroundStyle(Theme.ink)
+            .accessibilityLabel("Corner")
     }
 
     private func ssoRow(id: String, label: String, icon: AnyView, action: @escaping () -> Void) -> some View {
