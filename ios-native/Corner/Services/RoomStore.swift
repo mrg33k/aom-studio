@@ -1103,7 +1103,7 @@ final class PreviewV2API: CornerV2API {
         Int(launchStringFlag(name)) ?? 0
     }
 
-    func threadEvents(threadID: String) async throws -> [ThreadEvent] {
+    func threadEvents(threadID: String, limit: Int? = nil) async throws -> [ThreadEvent] {
         seedCompMatchIfNeeded()
         // R23 P070: the visual card event seeds here, not only behind the
         // window's first load. The entry opens the thread directly, so the
@@ -1111,7 +1111,36 @@ final class PreviewV2API: CornerV2API {
         // task race against window.start is not a seeding strategy.
         seedVisualIfNeeded()
         seedStepOnlyIfNeeded()
-        return chatEvents
+        seedLongThreadIfNeeded()
+        // R40: the fixture windows like the server — the newest N by
+        // (createdAt, id), so the "Earlier messages" row and its +200
+        // expansion run the real path in fixture UI tests.
+        let ordered = chatEvents.sorted {
+            $0.createdAt != $1.createdAt ? $0.createdAt < $1.createdAt : $0.id < $1.id
+        }
+        guard let limit else { return ordered }
+        return Array(ordered.suffix(limit))
+    }
+
+    /// R40: `-v2SeedLongThread` fills the entry thread with exactly 200
+    /// generated rows (one per minute, oldest first), so the first load
+    /// fills the window and the "Earlier messages" row shows in fixture
+    /// UI tests. Newest-first ids keep the sort stable.
+    private var longThreadSeeded = false
+
+    private func seedLongThreadIfNeeded() {
+        guard PreviewV2API.launchHasFlag("-v2SeedLongThread"), !longThreadSeeded else { return }
+        longThreadSeeded = true
+        let base = Date().addingTimeInterval(-200 * 60)
+        for i in 1...V2ReadWindow.firstPage {
+            let userTurn = i % 2 == 1
+            chatEvents.append(ThreadEvent(
+                id: String(format: "event-long-%03d", i), threadID: general.threadID,
+                author: userTurn ? .user : .agent, agentLabel: userTurn ? nil : "Corner",
+                blocks: [.text("Seeded history row \(i) of \(V2ReadWindow.firstPage)")],
+                createdAt: base.addingTimeInterval(Double(i) * 60)
+            ))
+        }
     }
 
     /// R24 P078: one step-only agent event (label, no text) on the General
@@ -1142,7 +1171,15 @@ final class PreviewV2API: CornerV2API {
         _ = model
         _ = clientEventId
         _ = imageTool
-        _ = replyTo
+        // R40: the fixture echoes `replyTo` on the sent block the way
+        // production does (`v2Native:send` stores it on the block payload
+        // and `threadEvents` passes it through since `a4fc532`). The
+        // quote card renders from this server field alone — the local
+        // re-attach is gone. Same non-empty guard as the wire decode.
+        let sentQuote: V2ReplyQuote? = {
+            guard let replyTo, !replyTo.messageId.isEmpty, !replyTo.sender.isEmpty else { return nil }
+            return V2ReplyQuote(messageID: replyTo.messageId, sender: replyTo.sender, snippet: replyTo.snippet)
+        }()
         // R32 P081: the run opens with the send and closes when the agent
         // reply lands below, so the working line and nav dot run live.
         fixtureRunOpen = true
@@ -1167,7 +1204,8 @@ final class PreviewV2API: CornerV2API {
             let stamp = Date()
             chatEvents.append(ThreadEvent(
                 id: "event-preview-user-\(chatEvents.count + 1)", threadID: threadId,
-                author: .user, agentLabel: nil, blocks: [.text(text)], createdAt: stamp
+                author: .user, agentLabel: nil, blocks: [.text(text)], createdAt: stamp,
+                replyQuote: sentQuote
             ))
             // @brain routing metadata still steers the reply, like the
             // global path's research branch below.
@@ -1200,7 +1238,8 @@ final class PreviewV2API: CornerV2API {
         let stamp = Date()
         chatEvents.append(ThreadEvent(
             id: "event-preview-user-\(chatEvents.count + 1)", threadID: target.threadID,
-            author: .user, agentLabel: nil, blocks: [.text(text)], createdAt: stamp
+            author: .user, agentLabel: nil, blocks: [.text(text)], createdAt: stamp,
+            replyQuote: sentQuote
         ))
         if mentioning.contains("research") {
             chatEvents.append(ThreadEvent(

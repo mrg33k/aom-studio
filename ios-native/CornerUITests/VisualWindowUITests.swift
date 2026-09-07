@@ -58,9 +58,16 @@ final class VisualWindowUITests: XCTestCase {
         scope.buttons.matching(identifier: "visual-tab")
     }
 
-    private func closeChip(_ scope: XCUIApplication, title: String) {
-        scope.buttons.matching(identifier: "visual-close")
-            .matching(NSPredicate(format: "label CONTAINS '\(title)'")).firstMatch.tap()
+    /// P082: tabs carry no × at rest — close by long-press → Close menu
+    /// (swipe-to-delete is the same path for a person; the menu is the
+    /// deterministic one for the runner).
+    private func closeChip(_ scope: XCUIApplication, title: String, file: StaticString = #file, line: UInt = #line) {
+        let chip = chips(scope).matching(NSPredicate(format: "label == '\(title)'")).firstMatch
+        XCTAssertTrue(chip.waitForExistence(timeout: 10), "no tab chip for \(title)", file: file, line: line)
+        chip.press(forDuration: 1.2)
+        let close = scope.buttons.matching(identifier: "visual-close").firstMatch
+        XCTAssertTrue(close.waitForExistence(timeout: 10), "no Close menu for \(title)", file: file, line: line)
+        close.tap()
     }
 
     /// The window is up and showing the tab: sheet on iPhone, column beside
@@ -112,6 +119,28 @@ final class VisualWindowUITests: XCTestCase {
         XCTAssertEqual(chips(app).count, 1, "closing the pdf took the site with it")
         XCTAssertTrue(chips(app).matching(NSPredicate(format: "label == 'Launch site'")).firstMatch
             .waitForExistence(timeout: 10), "the surviving tab is not the site")
+    }
+
+    /// P082: a resting tab shows icon + label only — no × anywhere on the
+    /// strip — and the tab still closes through the long-press menu.
+    func testTabStripShowsNoCloseAtRest() throws {
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openGeneralChat(app)
+        openCard(app, artifactID: "artifact-pdf-1")
+        expectWindow(app, showing: "Aster brief")
+        XCTAssertEqual(
+            app.buttons.matching(identifier: "visual-close").count, 0,
+            "a resting tab shows close chrome (the design draws icon + label only)"
+        )
+        XCTAssertEqual(
+            app.buttons.matching(identifier: "visual-close-swipe").count, 0,
+            "swipe actions leak into the resting strip"
+        )
+        closeChip(app, title: "Aster brief")
+        let deadline = Date().addingTimeInterval(10)
+        while Date() < deadline, chips(app).count != 0 { Thread.sleep(forTimeInterval: 0.5) }
+        XCTAssertEqual(chips(app).count, 0, "the long-press Close menu did not close the tab")
     }
 
     /// A relaunch restores the server session's tabs: terminate with one tab

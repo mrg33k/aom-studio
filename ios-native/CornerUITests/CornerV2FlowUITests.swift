@@ -559,4 +559,44 @@ final class CornerV2FlowUITests: XCTestCase {
         app.buttons.matching(identifier: "intake-close").firstMatch.tap()
         openEntryThread(app)
     }
+
+    // MARK: - R40 read window
+
+    /// A full 200-row window offers "Earlier messages" at the top; tapping
+    /// it asks +200 and the row leaves when the wider window returns no
+    /// more (the fixture holds 200). The row sits above the fold, so the
+    /// test scrolls up to it — first paint lands at the bottom by design.
+    func testEarlierMessagesRowExpandsTheWindow() throws {
+        let long = XCUIApplication()
+        long.launchArguments += ["-v2FixtureUITest", "-v2ResetEntry", "-v2SeedLongThread"]
+        long.launch()
+        XCTAssertTrue(long.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openEntryThread(long)
+        let longTitle = long.staticTexts.matching(identifier: "chat-title").firstMatch
+        XCTAssertTrue(longTitle.waitForExistence(timeout: 15), "entry thread has no title")
+
+        let earlier = long.buttons.matching(identifier: "v2-earlier-messages").firstMatch
+        // First paint lands at the bottom by design and the list is lazy,
+        // so the top row only enters the hierarchy once the test has
+        // climbed ~200 rows — a dozen swipes never get there (R40b: the
+        // row existed, the scroll budget did not). Swipe first, ask
+        // after: each swipe settles faster than a fresh 3s wait.
+        var found = earlier.waitForExistence(timeout: 5)
+        for _ in 0..<30 where !found {
+            long.swipeDown()
+            found = earlier.exists
+        }
+        XCTAssertTrue(found, "a full 200-row window shows no Earlier messages row")
+        earlier.tap()
+        // The wider window answers with the same 200 (nothing older in
+        // the fixture): the row leaves, the thread stays put.
+        let gone = expectation(
+            for: NSPredicate(format: "exists == FALSE"),
+            evaluatedWith: long.buttons.matching(identifier: "v2-earlier-messages").firstMatch,
+            handler: nil
+        )
+        wait(for: [gone], timeout: 15)
+        XCTAssertTrue(longTitle.exists, "the expansion lost the thread")
+        evidence("R40-earlier-expanded")
+    }
 }

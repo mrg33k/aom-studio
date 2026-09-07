@@ -93,10 +93,12 @@
 		8D12035D67DD5AF1CABB60A3 /* CornerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26170D6B1CAAE06391DEEC4A /* CornerApp.swift */; };
 		8DAE8E6F61F28E73BEA4063D /* ReviewQueueView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C582794E4358BAFB4A87FB79 /* ReviewQueueView.swift */; };
 		8EC250D36A67090713DBA18C /* DebugAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53452A91F35EB1FCB0A97D20 /* DebugAuth.swift */; };
+		906D2673B153341D5FFEB269 /* V2FollowState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE041DDD7C8DBCDCB67F1198 /* V2FollowState.swift */; };
 		95BB18BC5C4BD42CFC48C94D /* VisualWindowStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAAE25249A8C83FA2409D041 /* VisualWindowStoreTests.swift */; };
 		96F12042B4E0DE57D03335D5 /* CommandsMenuState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5112852AE7AD38AA88DDC6 /* CommandsMenuState.swift */; };
 		97D0B387A6639C5A5AB59DE3 /* AirPodsVoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99FB8DFF3ED23530DF860CA1 /* AirPodsVoiceView.swift */; };
 		9C82F9A98703F46F6B8E1BE3 /* V2IntakeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85FF71AEBE8D9EF46363DE28 /* V2IntakeSheet.swift */; };
+		9CDF2424FB4AC2AC0187B317 /* R40NativeWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB5C8946554C5E853F12C01 /* R40NativeWindowTests.swift */; };
 		A1AEA03D8041FEA6FBEA89F9 /* PushService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131E1F3ED0F460574DE878C8 /* PushService.swift */; };
 		A22E60838F4603A0CDEF0E27 /* CornerWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD47F90E2DE3A97BBC7C7CCE /* CornerWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A25EBBEA8AECF2C1629DB981 /* SetPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40845571B718FF82471F844C /* SetPasswordView.swift */; };
@@ -334,6 +336,7 @@
 		C8FA0D081EED255AE6BCDE9C /* ReviewStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewStoreTests.swift; sourceTree = "<group>"; };
 		C9DA6E1D50DE52ED44D3041F /* Corner.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Corner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CCCBD3C9F3406CD322902BF1 /* ComposerParityUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerParityUITests.swift; sourceTree = "<group>"; };
+		CE041DDD7C8DBCDCB67F1198 /* V2FollowState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V2FollowState.swift; sourceTree = "<group>"; };
 		CEEF7FE0EBDF8ABD90A08461 /* AgentColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentColor.swift; sourceTree = "<group>"; };
 		D108379E9EA1B083B564C0BA /* RoomStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomStatusTests.swift; sourceTree = "<group>"; };
 		D131A547AABD2FCBE49FA758 /* ReviewPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPanelView.swift; sourceTree = "<group>"; };
@@ -353,6 +356,7 @@
 		E8D4FF86054478C3EFA42FE0 /* site.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = site.html; sourceTree = "<group>"; };
 		EA5112852AE7AD38AA88DDC6 /* CommandsMenuState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandsMenuState.swift; sourceTree = "<group>"; };
 		EAAE25249A8C83FA2409D041 /* VisualWindowStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualWindowStoreTests.swift; sourceTree = "<group>"; };
+		EAB5C8946554C5E853F12C01 /* R40NativeWindowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = R40NativeWindowTests.swift; sourceTree = "<group>"; };
 		EBC55DE9AD33D944A1172351 /* MessageRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageRow.swift; sourceTree = "<group>"; };
 		EC120F7C6D2DBDEE3EED7C41 /* TrackerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackerStore.swift; sourceTree = "<group>"; };
 		F2B646D758BEF1BBA1E8D883 /* walkthrough.mp4 */ = {isa = PBXFileReference; path = walkthrough.mp4; sourceTree = "<group>"; };
@@ -541,6 +545,7 @@
 				D5282418684E41024646BED6 /* R24SendAndSheetTests.swift */,
 				AE468948D51A3A6DD75145D7 /* R28ComposerParityTests.swift */,
 				A795F9A678A532963AF32210 /* R32NativeWiringTests.swift */,
+				EAB5C8946554C5E853F12C01 /* R40NativeWindowTests.swift */,
 				602A96887BE24D9CBBF02832 /* RenderGalleryTests.swift */,
 				C8FA0D081EED255AE6BCDE9C /* ReviewStoreTests.swift */,
 				E85B84B4FDE537A6A0F8AFC4 /* RoomRoutingTests.swift */,
@@ -597,6 +602,7 @@
 				99BE7756A7FF16D575F011F2 /* RoomPreview.swift */,
 				9AF65AAEC8B2AFEB4B0762CE /* RoomStatus.swift */,
 				40AE09620DF2207D00FDA5FA /* ScrollBrain.swift */,
+				CE041DDD7C8DBCDCB67F1198 /* V2FollowState.swift */,
 				472C80894E72475D7BF66DE9 /* WorkProjection.swift */,
 			);
 			path = Data;
@@ -833,6 +839,7 @@
 				834F5785B82740C2DE2A472D /* R24SendAndSheetTests.swift in Sources */,
 				43184D5E3ABCDB7C7D7426C7 /* R28ComposerParityTests.swift in Sources */,
 				0817CFCB386EA2C1AAB79A3F /* R32NativeWiringTests.swift in Sources */,
+				9CDF2424FB4AC2AC0187B317 /* R40NativeWindowTests.swift in Sources */,
 				64C84398FCE2AEEB0B12C3C2 /* RenderGalleryTests.swift in Sources */,
 				2CEA60BA87B66A49A13A7C86 /* ReviewStoreTests.swift in Sources */,
 				D17AC373E2D97B9925C032F8 /* RoomRoutingTests.swift in Sources */,
@@ -955,6 +962,7 @@
 				5CCD87F91BDBF76B032178E5 /* Typography.swift in Sources */,
 				E319A922A04684A9A1370317 /* V2ComposerExtras.swift in Sources */,
 				78CCD69E75CFB96D57688755 /* V2DrawerView.swift in Sources */,
+				906D2673B153341D5FFEB269 /* V2FollowState.swift in Sources */,
 				9C82F9A98703F46F6B8E1BE3 /* V2IntakeSheet.swift in Sources */,
 				6D00A6B43B7F1D709BD0D463 /* V2Onboarding.swift in Sources */,
 				0716BE3F5CD216DF3D99A9C1 /* V2ReconnectMonitor.swift in Sources */,

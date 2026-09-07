@@ -128,6 +128,16 @@ struct ChatView: View {
     @State private var v2ImagePromptText = ""
     /// In-flight image-tab opens, keyed by run id, so Stop cancels them.
     @State private var v2ImageTasks: [String: Task<Void, Never>] = [:]
+    /// R40 (L030/L032): identity-keyed follow state for the v2 thread —
+    /// first paint lands at the bottom, a send pins there, arrivals while
+    /// scrolled up raise the pill. The distance feeds it from the
+    /// thread's geometry preference (the legacy brain's twin).
+    @State private var v2Follow = V2FollowState()
+    @State private var v2DistanceFromBottom: CGFloat = 0
+    @State private var v2ViewportHeight: CGFloat = 0
+    /// The first row id before an "Earlier messages" expansion: after the
+    /// wider window lands, the scroll returns to it — the read holds.
+    @State private var v2HeldTopID: String?
     /// v2 attach: photo library / files / camera, multiple.
     @State private var v2ShowingPhotoPicker = false
     @State private var v2ShowingFilePicker = false
@@ -540,6 +550,10 @@ struct ChatView: View {
     private var v2ThreadList: some View {
         // R32: the reader serves quote tap-to-jump (the quoted message may
         // be screens above). Event ids are already the row ids.
+        // R40 (L030/L032): the thread follows by identity, never by count
+        // (V2FollowState — the web's R41 lesson). First paint lands at the
+        // bottom; a send pins there; arrivals while scrolled up raise the
+        // "new messages" pill instead of yanking the scroll.
         ScrollViewReader { proxy in
             ScrollView {
                 // P044: the thread column is 348pt (21px gutters), not 16.
@@ -554,6 +568,21 @@ struct ChatView: View {
                     case .empty where v2model.unsentWithoutEcho.isEmpty:
                         centeredNotice("No messages yet — say something.", systemImage: "bubble.left")
                     case .empty, .ready:
+                        // R40 L030: the window is full when exactly the
+                        // window's rows came back — the web's
+                        // `v2-earlier` twin (12.5px semibold faint,
+                        // centred, no new visual language).
+                        if v2model.hasEarlierPage {
+                            Button("Earlier messages") {
+                                v2HeldTopID = v2model.events.first?.id
+                                Task { await v2model.loadEarlier() }
+                            }
+                            .font(.hanken(12.5).weight(.semibold))
+                            .foregroundStyle(Theme.inkFaint)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                            .accessibilityIdentifier("v2-earlier-messages")
+                        }
                         ForEach(v2model.events) { event in
                             V2EventRow(
                                 event: event,
@@ -590,6 +619,109 @@ struct ChatView: View {
                 .padding(.horizontal, 21)
                 .padding(.top, Theme.s3)
                 .padding(.bottom, 28)
+                // Continuous measurement for the follow state: content
+                // height + offset in the scroll's coordinate space (the
+                // legacy thread's ThreadMetricsKey, same math).
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.preference(
+                            key: ThreadMetricsKey.self,
+                            value: ThreadMetrics(
+                                contentHeight: geo.size.height,
+                                minY: geo.frame(in: .named("v2Thread")).minY
+                            )
+                        )
+                    }
+                )
+            }
+            .coordinateSpace(name: "v2Thread")
+            .background(
+                GeometryReader { geo in
+                    Color.clear
+                        .onAppear { v2ViewportHeight = geo.size.height }
+                        .onChange(of: geo.size.height) { _, h in v2ViewportHeight = h }
+                }
+            )
+            .onPreferenceChange(ThreadMetricsKey.self) { metrics in
+                v2DistanceFromBottom = max(0, metrics.contentHeight + metrics.minY - v2ViewportHeight)
+                // A deliberate scroll up releases the send pin: the next
+                // arrival raises the pill instead of yanking the read.
+                if v2DistanceFromBottom > 240 { v2Follow.noteUserScrolledUp() }
+            }
+            // Identity-keyed arrivals (never count): first paint snaps to
+            // the bottom, a new newest row follows only while pinned or
+            // near the tail.
+            .onChange(of: v2model.events) { _, events in
+                v2Arrived(events, proxy: proxy)
+            }
+            // Every send pins to the bottom (the model bumps this on all
+            // send paths — composer, option taps, review carry-on).
+            .onChange(of: v2model.sendSequence) { _, _ in
+                v2Follow.noteSend()
+                v2ScrollToBottom(proxy: proxy, animated: true)
+            }
+            .onAppear { v2Follow.noteOpened() }
+            // The R22-style pill: arrivals while reading elsewhere, one
+            // tap re-pins to the bottom.
+            .overlay(alignment: .bottom) {
+                if v2Follow.showsNewMessages, v2DistanceFromBottom > 240 {
+                    Button {
+                        v2Follow.notePillTapped()
+                        v2ScrollToBottom(proxy: proxy, animated: true)
+                    } label: {
+                        V2NewMessagesPill(count: v2Follow.unseenCount)
+                    }
+                    .padding(.bottom, Theme.s3)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .accessibilityIdentifier("v2-new-messages")
+                    .accessibilityLabel("New messages. Activate to jump to the latest message.")
+                }
+            }
+        }
+    }
+
+    /// One arrival batch through the follow state; the scroll moves only
+    /// on identity change, after layout (scrolling to the old bottom
+    /// before the new height lands strands the reader).
+    private func v2Arrived(_ events: [ThreadEvent], proxy: ScrollViewProxy) {
+        switch v2Follow.arrivals(
+            newestID: events.last?.id, firstID: events.first?.id,
+            nearBottom: v2DistanceFromBottom < 200
+        ) {
+        case .none:
+            break
+        case .snapInstant:
+            DispatchQueue.main.async {
+                if let id = v2model.events.last?.id {
+                    proxy.scrollTo(id, anchor: .bottom)
+                }
+            }
+        case .followSmooth:
+            withAnimation(.easeOut(duration: 0.2)) {
+                if let id = events.last?.id {
+                    proxy.scrollTo(id, anchor: .bottom)
+                }
+            }
+        }
+        // "Earlier messages" held the top: the wider window landed, so
+        // return to the previously-first row — the read never jumps.
+        if let held = v2HeldTopID, events.contains(where: { $0.id == held }) {
+            v2HeldTopID = nil
+            DispatchQueue.main.async {
+                proxy.scrollTo(held, anchor: .top)
+            }
+        }
+    }
+
+    private func v2ScrollToBottom(proxy: ScrollViewProxy, animated: Bool) {
+        guard let id = v2model.events.last?.id else { return }
+        if animated {
+            withAnimation(.easeOut(duration: 0.2)) {
+                proxy.scrollTo(id, anchor: .bottom)
+            }
+        } else {
+            DispatchQueue.main.async {
+                proxy.scrollTo(id, anchor: .bottom)
             }
         }
     }
@@ -3887,6 +4019,27 @@ struct JumpToLatestPill: View {
             Image(systemName: "arrow.down")
                 .font(.system(size: 12, weight: .semibold))
             Text("Jump to latest")
+                .font(.hanken(12.5).weight(.semibold))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 14)
+        .frame(height: 34)
+        .background(Theme.accent, in: Capsule())
+        .shadow(color: .black.opacity(0.35), radius: 8, y: 3)
+    }
+}
+
+/// R40: the v2 thread's "new messages" pill (the web's R22 affordance
+/// twin) — arrivals while the user reads elsewhere, one tap re-pins to
+/// the bottom. Same anatomy as JumpToLatestPill, the thread's own copy.
+struct V2NewMessagesPill: View {
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "arrow.down")
+                .font(.system(size: 12, weight: .semibold))
+            Text(count > 1 ? "\(count) new messages" : "New messages")
                 .font(.hanken(12.5).weight(.semibold))
         }
         .foregroundStyle(.white)

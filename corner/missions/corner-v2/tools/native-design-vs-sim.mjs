@@ -173,6 +173,8 @@ const ANCHORS = {
   },
   "sheet-half": {
     required: ["visual-sheet-close", "review-toggle", "sheet-tab-preview", "sheet-tab-context"],
+    // P082: the resting tab strip draws icon + label only — no ×.
+    forbidden: ["visual-close"],
     frames: [],
     pixels: [{ label: "sheet-bg", rgb: [22, 27, 35], tol: 8 }],
     scans: [{ kind: "sheet-handle", tol: 2 }],
@@ -189,6 +191,8 @@ const ANCHORS = {
   },
   "sheet-full": {
     required: ["review-toggle", "review-send"],
+    // P082: the resting tab strip draws icon + label only — no ×.
+    forbidden: ["visual-close"],
     frames: [{ id: "review-send", h: 50, tol: 3 }],
     pixels: [],
     scans: [{ kind: "sheet-handle-full", tol: 3 }],
@@ -382,6 +386,13 @@ function checkAnchors(screen, tour, sim390) {
   for (const id of a.required ?? []) {
     if (fr[id]) pass(id, "present", `frame ${fr[id].w.toFixed(1)}x${fr[id].h.toFixed(1)}`, "—", "UI");
     else fail(id, "present", "MISSING", "—", "UI");
+  }
+  // P082: elements the design never draws at rest (a tab ×). Present =
+  // FAIL — this anchor fails on the pre-fix strip, where every tab
+  // carries its close button.
+  for (const id of a.forbidden ?? []) {
+    if (fr[id]) fail(id, "absent at rest", `frame ${fr[id].w.toFixed(1)}x${fr[id].h.toFixed(1)}`, "—", "UI");
+    else pass(id, "absent at rest", "MISSING", "—", "UI");
   }
   for (const f of a.frames ?? []) {
     const got = fr[f.id];

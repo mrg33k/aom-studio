@@ -2056,11 +2056,18 @@ final class V2ChatModel: ObservableObject {
     /// send is still waiting on its first run poll).
     @Published private(set) var runWorking = false
 
-    /// Quotes awaiting their server echo, by outbox id. `threadEvents`
-    /// text blocks do not carry `replyTo` yet (backend ask), so the model
-    /// re-attaches the sent quote to the matching server event on every
-    /// merge — the quote survives refreshes without depending on text.
-    private var pendingQuotes: [String: (text: String, quote: V2ReplyQuote, sentAt: Date)] = [:]
+    /// R40 read window (L030, the web's R39 window twin): the phone loads
+    /// the newest 200 rows, never the whole thread. Polls keep `after`;
+    /// only these explicit fetches carry the window. "Earlier messages"
+    /// grows it 200 at a time.
+    private(set) var windowLimit = V2ReadWindow.firstPage
+    /// True when the last windowed fetch filled the window — older rows
+    /// may exist beyond it, so the view offers "Earlier messages".
+    /// Published: the row appears and leaves on this, alongside events.
+    @Published private(set) var hasEarlierPage = false
+    /// Every send bumps this (the view pins to the bottom on it): all
+    /// send paths funnel through `send()`, so no caller can forget.
+    @Published private(set) var sendSequence = 0
     private var quietTask: Task<Void, Never>?
     private var runsTask: Task<Void, Never>?
     private let quietAfter: TimeInterval
@@ -2179,8 +2186,14 @@ final class V2ChatModel: ObservableObject {
         self.lastDecision = nil
         restoreThreadPrefs()
         loadState = .loading
+        // R40: a new thread starts on the first page — a grown window from
+        // the last visit never leaks into this one.
+        windowLimit = V2ReadWindow.firstPage
+        hasEarlierPage = false
         do {
-            events = try await api.threadEvents(threadID: thread.id)
+            let rows = try await api.threadEvents(threadID: thread.id, limit: windowLimit)
+            noteWindowFetch(rows)
+            events = rows
             loadState = events.isEmpty ? .empty : .ready
             subscribe()
             startRunsPoll()
@@ -2245,12 +2258,11 @@ final class V2ChatModel: ObservableObject {
         // R32: leaving the thread ends every thread-scoped wait — the
         // working line, its quiet timer, and the runs poll. Queued outbox
         // entries survive: they belong to the thread and replay on return
-        // (replay re-registers their quotes from the entry).
+        // (replays carry the entry's quote, like the first attempt).
         clearWorkingLine()
         runWorking = false
         runsTask?.cancel()
         runsTask = nil
-        pendingQuotes.removeAll()
         if activityBegan {
             TurnActivityService.shared.turnEnded(outcomeWord: "Closed", startedAt: nil)
             activityBegan = false
@@ -2279,6 +2291,11 @@ final class V2ChatModel: ObservableObject {
     func send(_ text: String, quote: V2ReplyQuote? = nil) async {
         let final = V2SendText.build(text: text)
         guard !final.isEmpty, let thread else { return }
+        // R40: every send pins the view to the bottom (the view observes
+        // `sendSequence`), and the echo below carries the quote for the
+        // instant render — the server event arrives with the stored
+        // `replyTo` already decoded, so no client re-attach runs.
+        sendSequence += 1
         draft = ""
         let mentioning = BrainMention.parse(final)
         let entry = outbox.enqueue(
@@ -2287,9 +2304,6 @@ final class V2ChatModel: ObservableObject {
             replyTo: quote?.wire
         )
         refreshQueued()
-        if let quote {
-            pendingQuotes[entry.clientEventID] = (text: final, quote: quote, sentAt: Date())
-        }
         var echo = ThreadEvent(
             id: Self.echoID(for: entry.clientEventID), threadID: thread.id,
             author: .user, agentLabel: nil, blocks: [.text(final)], createdAt: Date()
@@ -2626,13 +2640,6 @@ final class V2ChatModel: ObservableObject {
         var didSucceed = false
         for entry in outbox.pending(threadID: thread.id) {
             do {
-                if let wire = entry.replyTo {
-                    pendingQuotes[entry.clientEventID] = (
-                        text: entry.text,
-                        quote: V2ReplyQuote(wire),
-                        sentAt: entry.createdAt
-                    )
-                }
                 lastDecision = try await api.send(
                     text: entry.text, mentioning: entry.mentioning,
                     preferredProjectID: entry.preferredProjectID,
@@ -2667,26 +2674,53 @@ final class V2ChatModel: ObservableObject {
     private func refreshEvents() async {
         guard let thread else { return }
         do {
-            applyRemote(try await api.threadEvents(threadID: thread.id))
+            // R40: re-reads carry the current window (a grown window stays
+            // grown across foregrounds, sends, and replays).
+            let rows = try await api.threadEvents(threadID: thread.id, limit: windowLimit)
+            noteWindowFetch(rows)
+            applyRemote(rows)
         } catch {
             // A failed refresh keeps the last good events, not an error
             // screen over a conversation the user was reading.
         }
     }
 
+    /// "Earlier messages": grow the window one page and re-read. The view
+    /// holds the scroll on the previously-first row (it passes the anchor
+    /// back via the unchanged first id). A failed expansion reverts the
+    /// window, so the row stays and a retry re-asks the same page.
+    func loadEarlier() async {
+        guard let thread, hasEarlierPage else { return }
+        windowLimit += V2ReadWindow.pageStep
+        do {
+            let rows = try await api.threadEvents(threadID: thread.id, limit: windowLimit)
+            noteWindowFetch(rows)
+            applyRemote(rows)
+        } catch {
+            windowLimit -= V2ReadWindow.pageStep
+        }
+    }
+
+    /// A windowed fetch filled the window when it returned at least the
+    /// window's rows — older rows may exist beyond it. (A thread with
+    /// exactly the window's rows also reads as full; the extra tap then
+    /// returns the same window, the web's `:windowFull` twin.)
+    private func noteWindowFetch(_ rows: [ThreadEvent]) {
+        hasEarlierPage = rows.count >= windowLimit
+    }
+
     /// Merge server events over local state. Remote wins on id collisions;
     /// optimistic echoes survive until their entry is confirmed sent.
     ///
-    /// R32: two overlays are re-applied after every merge (remote wins the
-    /// ids, the client keeps the meaning). The working line ends on the
-    /// first agent event outside the send-time set; sent quotes re-attach
-    /// to their matching server event, so a refresh never drops a quote
-    /// the backend does not return yet.
+    /// R32: the working line ends on the first agent event outside the
+    /// send-time set. R40: quotes need no client overlay anymore — the
+    /// server stores `replyTo` on the block payload and every text block
+    /// decodes it (`ThreadEvent.replyQuote`), so the merged rows render
+    /// web-made quotes as they arrive.
     private func applyRemote(_ fresh: [ThreadEvent]) {
         guard thread != nil else { return }
         var known = Dictionary(uniqueKeysWithValues: events.map { ($0.id, $0) })
         for event in fresh { known[event.id] = event }
-        reattachQuotes(into: &known)
         events = known.values.sorted {
             $0.createdAt != $1.createdAt ? $0.createdAt < $1.createdAt : $0.id < $1.id
         }
@@ -2702,44 +2736,6 @@ final class V2ChatModel: ObservableObject {
                 activityBegan = false
             }
         }
-    }
-
-    /// Attach each pending sent quote to its server event: the newest user
-    /// event with the exact sent text, created no earlier than the send,
-    /// that carries no quote yet. Exact-text match (not prefix, not fuzzy):
-    /// two legitimate sends may both say "yes".
-    private func reattachQuotes(into known: inout [String: ThreadEvent]) {
-        guard !pendingQuotes.isEmpty else { return }
-        for (_, pending) in pendingQuotes {
-            // The same message can be quoted by two different sends: the
-            // guard keys on (quote, text), never on the quote alone.
-            guard !known.values.contains(where: {
-                $0.author == .user && $0.replyQuote == pending.quote
-                    && Self.eventText($0) == pending.text
-            }) else { continue }
-            let candidates = known.values
-                .filter {
-                    $0.author == .user && $0.replyQuote == nil
-                        && Self.eventText($0) == pending.text
-                        && $0.createdAt >= pending.sentAt.addingTimeInterval(-5)
-                }
-                .sorted {
-                    $0.createdAt != $1.createdAt ? $0.createdAt < $1.createdAt : $0.id < $1.id
-                }
-            if let match = candidates.first {
-                var quoted = match
-                quoted.replyQuote = pending.quote
-                known[match.id] = quoted
-            }
-        }
-    }
-
-    /// The first text block's value, for quote re-attachment matching.
-    static func eventText(_ event: ThreadEvent) -> String? {
-        for block in event.blocks {
-            if case .text(let value) = block { return value }
-        }
-        return nil
     }
 
     private func refreshQueued() {

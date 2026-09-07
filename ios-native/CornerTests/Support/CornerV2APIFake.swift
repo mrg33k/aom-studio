@@ -72,6 +72,10 @@ final class CornerV2APIFake: CornerV2API {
     var threadProjectHandler: ((String) async throws -> Corner.Thread?)?
     var threadMissionHandler: ((String) async throws -> Corner.Thread?)?
     var threadEventsHandler: ((String) async throws -> [ThreadEvent])?
+    /// R40: every `threadEvents` window the fake has seen, in order — the
+    /// read-window tests assert the first load asks for 200 and "Earlier
+    /// messages" grows it.
+    private(set) var threadEventsLimits: [Int?] = []
     var sendHandler: ((String, [String], String?, String?) async throws -> RouteDecision)?
     var subscribeHandler: ((String, @escaping ([ThreadEvent]) -> Void) -> any Cancellable)?
     var visualTabsHandler: ((String) async throws -> [VisualWindowTab])?
@@ -151,8 +155,9 @@ final class CornerV2APIFake: CornerV2API {
         try await require(threadMissionHandler, op: "thread(missionID:)")(missionID)
     }
 
-    func threadEvents(threadID: String) async throws -> [ThreadEvent] {
-        try await require(threadEventsHandler, op: "threadEvents")(threadID)
+    func threadEvents(threadID: String, limit: Int? = nil) async throws -> [ThreadEvent] {
+        threadEventsLimits.append(limit)
+        return try await require(threadEventsHandler, op: "threadEvents")(threadID)
     }
 
     /// Modes the fake has seen, per send — the mode-fallback test asserts

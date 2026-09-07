@@ -392,7 +392,10 @@ final class R19ShootScreens: XCTestCase {
         shot("sheet-half")
         frames("sheet-half", ["visual-sheet-close", "review-toggle",
                               "sheet-tab-preview", "sheet-tab-context",
-                              "sheet-status-text"])
+                              "sheet-status-text",
+                              // P082: dumped to prove absence — a resting
+                              // tab draws icon + label only, never a ×.
+                              "visual-close"])
         sample("sheet-half", "sheet-bg", CGPoint(x: 200, y: 232))
         NSLog("R19STATUS sheet-half ok")
     }
@@ -456,7 +459,9 @@ final class R19ShootScreens: XCTestCase {
         start.press(forDuration: 0.3, thenDragTo: end)
         Thread.sleep(forTimeInterval: 2)
         shot("sheet-full")
-        frames("sheet-full", ["review-toggle", "review-send", "sheet-status-text"])
+        frames("sheet-full", ["review-toggle", "review-send", "sheet-status-text",
+                              // P082: dumped to prove absence (see half).
+                              "visual-close"])
         NSLog("R19STATUS sheet-full ok")
     }
 

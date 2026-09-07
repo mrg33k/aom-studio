@@ -2,7 +2,7 @@
 // corner:corner-v2 R32 — the phone uses the backend it now has.
 //
 // Pins the R32 wiring: run-state working line + nav status (P081), the
-// `replyTo` block field (bare text on the wire, quote overlay + reattach),
+// `replyTo` block field (bare text on the wire, server-field quotes),
 // server clear, staged uploads as artifacts (per-file retry, outbox never
 // blocked), the pending-image poll, artifact kind mapping, the ThreadEvent
 // quote lift, and the Shift+Return newline helper.
@@ -311,14 +311,29 @@ final class R32NativeWiringTests: XCTestCase {
     func testEchoCarriesQuoteAndServerEventKeepsIt() async throws {
         let (model, api, thread, project) = try await startedModel()
         api.sendHandler = { _, _, _, _ in self.routeDecision(project: project, threadID: thread.id) }
-        // The server echo carries no quote (threadEvents blocks do not
-        // return replyTo yet): the model re-attaches the sent quote.
+        // R40: the server event carries the stored `replyTo` itself — the
+        // model keeps the server field verbatim, no client re-attach runs.
+        let quote = V2ReplyQuote(messageID: "e1", sender: "Paige", snippet: "ship it")
+        var server = self.userEvent(id: "srv-user-9", text: "on it")
+        server.replyQuote = quote
+        api.threadEventsHandler = { _ in [server] }
+        await model.send("on it", quote: quote)
+        let kept = try XCTUnwrap(model.events.first(where: { $0.id == "srv-user-9" }))
+        XCTAssertEqual(kept.replyQuote, quote, "the server field renders as-is")
+        XCTAssertFalse(model.events.contains(where: { $0.id.hasPrefix(V2ChatModel.localPrefix) }))
+    }
+
+    func testQuotelessServerEventStaysQuoteless() async throws {
+        let (model, api, thread, project) = try await startedModel()
+        api.sendHandler = { _, _, _, _ in self.routeDecision(project: project, threadID: thread.id) }
+        // R40: the local re-attach is gone — a server event with no
+        // `replyTo` never gains the just-sent quote, even on exact-text
+        // match. The server field is the only source of truth.
         api.threadEventsHandler = { _ in [self.userEvent(id: "srv-user-9", text: "on it")] }
         let quote = V2ReplyQuote(messageID: "e1", sender: "Paige", snippet: "ship it")
         await model.send("on it", quote: quote)
         let kept = try XCTUnwrap(model.events.first(where: { $0.id == "srv-user-9" }))
-        XCTAssertEqual(kept.replyQuote, quote, "the quote survives the refresh on the server event")
-        XCTAssertFalse(model.events.contains(where: { $0.id.hasPrefix(V2ChatModel.localPrefix) }))
+        XCTAssertNil(kept.replyQuote, "no client stamping onto the server event")
     }
 
     func testRetryResendsQuoteAndOutboxId() async throws {

@@ -101,14 +101,11 @@ struct ThreadEvent: Codable, Identifiable, Equatable {
     let blocks: [ThreadBlock]
     let createdAt: Date
     /// R32 reply-to: the quote this message answers, when the backend
-    /// carried one. The server stores `replyTo` on the block payload; the
-    /// v2Workspace surface passes the payload through, while
-    /// `v2Native:threadEvents` text blocks do not carry it yet (backend
-    /// ask, see the R32 report). The client overlay covers all three
-    /// sources: decoded from a text block's `replyTo` key when present,
-    /// set on the optimistic echo at send, and re-attached to the matching
-    /// server event by `V2ChatModel`. Never encoded: it is a read overlay,
-    /// not wire state.
+    /// carried one. The server stores `replyTo` on the block payload and
+    /// both surfaces (`v2Workspace`, `v2Native:threadEvents`) pass it
+    /// through. Two sources: decoded from a text block's `replyTo` key
+    /// when present, and set on the optimistic echo at send. Never
+    /// encoded: it is a read overlay, not wire state.
     var replyQuote: V2ReplyQuote? = nil
 
     enum CodingKeys: String, CodingKey {

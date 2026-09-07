@@ -30,7 +30,10 @@ protocol CornerV2API {
     func workspaceTree() async throws -> WorkspaceSummary?
     func thread(projectID: String) async throws -> Thread?
     func thread(missionID: String) async throws -> Thread?
-    func threadEvents(threadID: String) async throws -> [ThreadEvent]
+    /// One windowed read. `limit` is the newest-N window (R40 L030: first
+    /// load 200, "Earlier messages" +200); nil means the server default,
+    /// which is the same 200. Polls never pass it — they keep `after`.
+    func threadEvents(threadID: String, limit: Int?) async throws -> [ThreadEvent]
     /// Send one message. `mode` is the commands menu's Work/Plan intent
     /// (R19): "work" rides only when a backend field exists for it — today
     /// only "plan" is sent, and a backend that does not know the field gets
@@ -113,6 +116,15 @@ extension CornerV2API {
 
 // MARK: - v2Native endpoints
 
+/// The thread read window (R40 L030, the web's R39 window twin): the phone
+/// loads the newest 200 rows, never the whole thread, and "Earlier
+/// messages" grows the window 200 at a time. Polls keep `after` and never
+/// pass a limit.
+enum V2ReadWindow {
+    static let firstPage = 200
+    static let pageStep = 200
+}
+
 extension ConvexEndpoint {
     private static func v2(_ function: String, kind: ConvexEndpointKind, args: [String: Any] = [:]) -> ConvexEndpoint {
         try! ConvexEndpoint(kind: kind, path: "v2Native:\(function)", args: args)
@@ -129,9 +141,16 @@ extension ConvexEndpoint {
         v2("threadForMission", kind: .query, args: ["missionId": missionID])
     }
 
-    static func v2ThreadEvents(threadID: String, after: String? = nil) -> ConvexEndpoint {
+    static func v2ThreadEvents(threadID: String, after: String? = nil, limit: Int? = nil) -> ConvexEndpoint {
         var args: [String: Any] = ["threadId": threadID]
-        if let after { args["after"] = after }
+        if let after {
+            // Polls keep the cursor: the window is the server's, not ours.
+            args["after"] = after
+        } else {
+            // First load asks for the newest window, never the whole
+            // thread (R40 L030: 200; explicit windows ride as given).
+            args["limit"] = limit ?? V2ReadWindow.firstPage
+        }
         return v2("threadEvents", kind: .query, args: args)
     }
 
@@ -263,8 +282,8 @@ final class DefaultCornerV2API: CornerV2API {
         try await service.requestOptional(.v2ThreadForMission(missionID), as: Thread.self)
     }
 
-    func threadEvents(threadID: String) async throws -> [ThreadEvent] {
-        try await service.request(.v2ThreadEvents(threadID: threadID), as: [ThreadEvent].self)
+    func threadEvents(threadID: String, limit: Int? = nil) async throws -> [ThreadEvent] {
+        try await service.request(.v2ThreadEvents(threadID: threadID, limit: limit), as: [ThreadEvent].self)
     }
 
     func send(
