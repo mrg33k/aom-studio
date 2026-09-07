@@ -85,6 +85,13 @@ struct CornerApp: App {
         if ProcessInfo.processInfo.arguments.contains("-v2ResetEntry") {
             UserDefaults.standard.removeObject(forKey: AppRouter.lastV2KindKey)
             UserDefaults.standard.removeObject(forKey: AppRouter.lastV2IDKey)
+            // R28: a reset entry is a fresh thread — drop per-thread disk
+            // drafts with it, so one UI test's typing never leaks into the
+            // next launch's composer.
+            for key in UserDefaults.standard.dictionaryRepresentation().keys
+            where key.hasPrefix("v2ComposerDraft.") {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
         }
         // R19 design-vs-sim proof: drop device-local recents (fixture runs on
         // the same simulator seed them with synthetic rows) so the drawer

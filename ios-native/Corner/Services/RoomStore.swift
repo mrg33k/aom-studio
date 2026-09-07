@@ -811,6 +811,15 @@ final class PreviewV2API: CornerV2API {
     /// `-v2SeedConfirmation`: one live cross-Project write confirmation from
     /// the Aster thread, consumed by `confirmCrossProjectWrite` (Task 6).
     private var seedConfirmation: Bool = PreviewV2API.launchHasFlag("-v2SeedConfirmation")
+    /// R28 `-v2SlowSend=N`: stall every send and visual open N seconds, so
+    /// the Stop-while-generating UI tests can catch a flight in progress.
+    /// Default 0 (instant, like every other fixture op).
+    private var slowSendSeconds: Int = PreviewV2API.launchIntFlag("-v2SlowSend")
+
+    private func stallForSlowSend() async {
+        guard slowSendSeconds > 0 else { return }
+        try? await Task.sleep(nanoseconds: UInt64(slowSendSeconds) * 1_000_000_000)
+    }
     private var confirmationConsumed = false
     private var compMatchSeeded = false
     private var shipSeeded = false
@@ -1125,6 +1134,8 @@ final class PreviewV2API: CornerV2API {
 
     func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String? = nil, threadId: String? = nil) async throws -> RouteDecision {
         _ = mode // the fixture preview answers every mode the same way.
+        await stallForSlowSend()
+        try Task.checkCancellation()
         if failSendsLeft > 0 {
             failSendsLeft -= 1
             throw URLError(.notConnectedToInternet)
@@ -1312,6 +1323,8 @@ final class PreviewV2API: CornerV2API {
     func openVisualTab(kind: VisualTabKind, threadID: String, artifactID: String?, title: String, state: [String: String]) async throws -> VisualWindowTab {
         seedVisualIfNeeded()
         guard seedVisual else { throw CornerV2APIError.unconfiguredFakeOperation }
+        await stallForSlowSend()
+        try Task.checkCancellation()
         let sessionID = "session-\(threadID)"
         let artifacts = try await artifacts(threadID: threadID)
         // The server dedupes open by target: reopening reselects, never dupes.

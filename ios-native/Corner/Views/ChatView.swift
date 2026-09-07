@@ -104,6 +104,31 @@ struct ChatView: View {
     /// Dictation for the v2 Record chip (P023): streams into the draft.
     @StateObject private var speech = SpeechService()
     @State private var dictationBase = ""
+    // ── R28 composer parity (v2 pill) ──────────────────────────────────────
+    // Talk aloud is per-thread state owned by the service; the view holds it
+    // once the thread is known (onAppear) so the toggle and the speak-on-
+    // reply trigger share one instance.
+    @State private var talkAloud: V2TalkAloud?
+    /// The armed reply-to quote (long-press a message → Reply). Rides the
+    /// next send as a `> sender: snippet` line, then clears.
+    @State private var v2ReplyQuote: V2ReplyQuote?
+    /// `/` hints inline and submits to the commands sheet (same rows).
+    @State private var v2ShowingSlash = false
+    /// Model/specialist pickers inside the slash sheet.
+    @State private var v2SlashPicking: V2SlashCommand.ID?
+    /// `/clear` (and the sheet's Clear row) confirm before anything clears.
+    @State private var v2ShowingClearConfirm = false
+    /// Generate-an-image prompt sheet (empty-field path).
+    @State private var v2ShowingImagePrompt = false
+    @State private var v2ImagePromptText = ""
+    /// In-flight image-tab opens, keyed by run id, so Stop cancels them.
+    @State private var v2ImageTasks: [String: Task<Void, Never>] = [:]
+    /// v2 attach: photo library / files / camera, multiple.
+    @State private var v2ShowingPhotoPicker = false
+    @State private var v2ShowingFilePicker = false
+    @State private var v2PickedPhotos: [PhotosPickerItem] = []
+    @State private var v2ShowingCamera = false
+    @State private var v2AttachNotice: String?
     @StateObject private var review = ReviewStore.shared
     @EnvironmentObject private var router: AppRouter
     @Environment(\.scenePhase) private var scenePhase
@@ -207,7 +232,7 @@ struct ChatView: View {
         VisualWindowHost(
             main: { v2Main },
             onCarryOn: { text in
-                Task { await v2model.send(text) }
+                v2model.startSend(text)
             },
             statusText: v2LastAgentText,
             projectName: v2?.project.name ?? ""
@@ -287,16 +312,94 @@ struct ChatView: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
         }
+        // R28: `/` opens the commands as a sheet (same rows, new host).
+        .sheet(isPresented: $v2ShowingSlash) {
+            V2SlashSheet(
+                draft: v2model.draft,
+                hasSpecialist: v2model.specialistRoster.count > 0,
+                modelChoice: v2model.modelChoice,
+                specialistChoice: v2model.specialistChoice,
+                specialistRoster: v2model.specialistRoster,
+                picking: $v2SlashPicking,
+                onPick: v2SlashPick,
+                onSelectModel: { id in
+                    v2model.selectModel(id)
+                    v2ShowingSlash = false
+                },
+                onSelectSpecialist: { slug in
+                    v2model.selectSpecialist(slug)
+                    v2ShowingSlash = false
+                },
+                onClear: { v2ShowingClearConfirm = true },
+                onDismiss: { v2ShowingSlash = false }
+            )
+            // Large, not medium: all eight rows are visible without
+            // scrolling (the UI test addresses the last row directly).
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
+        // R28: Generate-an-image prompt (empty-field path).
+        .sheet(isPresented: $v2ShowingImagePrompt) {
+            V2ImagePromptSheet(
+                text: $v2ImagePromptText,
+                onGenerate: {
+                    v2ShowingImagePrompt = false
+                    v2GenerateImage(prompt: v2ImagePromptText)
+                    v2ImagePromptText = ""
+                },
+                onCancel: { v2ShowingImagePrompt = false }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $v2ShowingCamera) {
+            V2CameraPicker { image in
+                v2ShowingCamera = false
+                if image != nil {
+                    v2model.stageAttachment(
+                        name: V2Attachments.nextPhotoName(existing: v2model.staged),
+                        kind: .camera
+                    )
+                }
+            }
+        }
+        // R28: `/clear` confirms before anything clears. View-local only
+        // (draft, staged, quote) — messages stay on the server, and the copy
+        // says so. Server-side clear waits on a clearThread backend row.
+        .alert("Clear this chat?", isPresented: $v2ShowingClearConfirm) {
+            Button("Cancel", role: .cancel) { }
+            Button("Clear", role: .destructive) { v2ClearView() }
+        } message: {
+            Text("Clears what you typed and staged here. Messages stay in this thread.")
+        }
+        // R28: Talk aloud speaks each new driver reply once.
+        .onChange(of: v2model.events) { _, _ in v2MaybeSpeak() }
         .onAppear {
             if let context = v2 {
                 V2RecentStore.shared.record(project: context.project, mission: context.mission)
                 // R23 P070: every thread arrival persists the entry — the
                 // next cold start opens this thread (or General's).
                 router.rememberV2(projectID: context.project.id, missionID: context.mission?.id)
+                // R28: Talk aloud is per-thread, like every other thread pref.
+                if talkAloud == nil { talkAloud = V2TalkAloud(threadID: context.thread.id) }
                 // Setup step 6 stages the first goal here — reviewed, never sent.
-                if v2model.draft.isEmpty,
-                   let staged = V2DraftStore.take(threadID: context.thread.id) {
-                    v2model.draft = staged
+                if v2model.draft.isEmpty {
+                    if let staged = V2DraftStore.take(threadID: context.thread.id) {
+                        v2model.draft = staged
+                    } else if let saved = V2ComposerDrafts.load(threadID: context.thread.id) {
+                        // R28: the disk draft — survives relaunch, per thread.
+                        v2model.draft = saved
+                    }
+                }
+                #if DEBUG
+                if ProcessInfo.processInfo.arguments.contains("-v2PreviewDictation") {
+                    speech.previewForceListening()
+                }
+                #endif
+                // R28 UI-test seed: one staged file chip, so the staged row
+                // and its remove control are addressable without a picker.
+                if ProcessInfo.processInfo.arguments.contains("-v2SeedStaged") {
+                    v2model.stageAttachment(name: "seed-deck.pdf", kind: .file)
                 }
                 Task { await v2model.start(thread: context.thread, project: context.project, mission: context.mission) }
                 Task { await window.start(threadID: context.thread.id) }
@@ -305,6 +408,14 @@ struct ChatView: View {
         .onDisappear {
             v2model.stop()
             window.stop()
+            // R28: leaving the thread silences Talk aloud and parks image
+            // runs as cancelled (their tabs, if opened, stay open).
+            talkAloud?.stop()
+            for (id, task) in v2ImageTasks {
+                task.cancel()
+                v2model.cancelImageRun(id: id)
+            }
+            v2ImageTasks.removeAll()
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active, v2 != nil {
@@ -404,7 +515,10 @@ struct ChatView: View {
                             threadID: v2?.thread.id ?? "",
                             agentName: v2?.project.name,
                             onSend: { text in
-                                Task { await v2model.send(text) }
+                                v2model.startSend(text)
+                            },
+                            onReply: { quote in
+                                v2ReplyQuote = quote
                             }
                         )
                         .id(event.id)
@@ -656,18 +770,28 @@ struct ChatView: View {
         .padding(.vertical, Theme.s2)
     }
 
-    /// Whether the `@brain` routing suggestion shows: the draft holds an
-    /// `@mention` token that is not yet `@brain`. Suggestions appear only
-    /// while editing, and `@brain` is the only one — never a roster.
-    private var showsBrainSuggestion: Bool {
-        let draft = v2model.draft
-        guard let at = draft.lastIndex(of: "@") else { return false }
-        let token = String(draft[at...]).lowercased()
-        guard token.hasPrefix("@") else { return false }
-        let slug = String(token.dropFirst())
-        if slug.isEmpty { return true }
-        if "brain".hasPrefix(slug) { return slug != "brain" }
-        return false
+    /// R28: the @mention token being typed, if the caret sits inside one.
+    /// Suggestions (`brain` + the thread's specialist roster) appear only
+    /// while editing; committed chips render separately above the pill.
+    private var mentionToken: String? {
+        V2Mentions.currentToken(in: v2model.draft)
+    }
+
+    private var mentionSuggestions: [(slug: String, title: String)] {
+        guard mentionToken != nil else { return [] }
+        let rows = V2Mentions.suggestions(token: mentionToken, roster: v2model.specialistRoster)
+        // A fully-typed committed slug is not a suggestion anymore.
+        let committed = Set(V2Mentions.committed(in: v2model.draft, roster: v2model.specialistRoster.map(\.slug)))
+        return rows.filter { !committed.contains($0.slug) }
+    }
+
+    /// R28: the paperclip joins the pill while there is content to send
+    /// with (typed text or staged files). Quote-arming alone does not show
+    /// it — the empty pill keeps R24 P076's exact layout so the full
+    /// placeholder still fits at 390 (the clip's ~33pt would truncate
+    /// General's placeholder, measured 201.1pt against ~180pt of room).
+    private var v2Composing: Bool {
+        !v2model.draft.isEmpty || !v2model.staged.isEmpty
     }
 
     /// R24 P076: the pill's fixed layout numbers in one place, so the
@@ -715,26 +839,32 @@ struct ChatView: View {
 
     private var v2Composer: some View {
         VStack(spacing: 8) {
-            if showsBrainSuggestion {
-                HStack {
-                    Button {
-                        completeBrainMention()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text("@brain")
-                                .font(.hanken(14).weight(.semibold))
-                                .foregroundStyle(Theme.accent)
-                            Text("route to a specialist — stays in this conversation")
-                                .font(.hanken(12))
-                                .foregroundStyle(Theme.inkSoft)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Theme.accentWeak, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    }
-                    .accessibilityIdentifier("v2-mention-brain")
-                    Spacer(minLength: 0)
-                }
+            // R28 trays — every row renders ABOVE the pill, never inside it,
+            // so the gated composer metrics never move (R27 web's tray rule).
+            if !mentionSuggestions.isEmpty {
+                v2MentionSuggestionRow
+            }
+            if !v2CommittedMentions.isEmpty {
+                v2MentionChipsRow
+            }
+            // R28: `/` hints the palette inline (Return opens the sheet).
+            if !v2SlashQuick.isEmpty {
+                v2SlashQuickRow
+            }
+            if let quote = v2ReplyQuote {
+                v2ReplyChip(quote: quote)
+            }
+            if !v2model.staged.isEmpty {
+                v2StagedRow
+            }
+            if !v2model.imageRuns.isEmpty {
+                v2ImageRunsRow
+            }
+            if let notice = v2AttachNotice {
+                Text(notice)
+                    .font(.hanken(12))
+                    .foregroundStyle(Theme.warning)
+                    .accessibilityIdentifier("v2-attach-notice")
             }
             // P023 artifact peek: 60px above the composer while the thread
             // has tabs — the active tab's thumbnail + change count. Tapping
@@ -764,12 +894,48 @@ struct ChatView: View {
                         .focused($composerFocused)
                         .foregroundStyle(Theme.ink)
                         .padding(.vertical, 8)
+                        .submitLabel(.send)
+                        .onSubmit { v2Submit() }
+                        .onChange(of: v2model.draft) { old, new in v2DraftChanged(old: old, new: new) }
                         .accessibilityIdentifier("v2-composer-field")
+                        .accessibilityLabel("Message")
+                        .accessibilitySortPriority(5)
+                    // R28: the paperclip joins the pill once composing begins
+                    // (see v2Composing for why it hides while empty).
+                    if v2Composing {
+                        Menu {
+                            Button { v2ShowingPhotoPicker = true } label: {
+                                Label("Photo Library", systemImage: "photo.on.rectangle")
+                            }
+                            Button { v2ShowingFilePicker = true } label: {
+                                Label("Choose Files", systemImage: "folder")
+                            }
+                            Button { v2CameraTapped() } label: {
+                                Label("Camera", systemImage: "camera")
+                            }
+                        } label: {
+                            Image(systemName: "paperclip")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(Theme.inkSoft)
+                                .frame(width: 30, height: 36)
+                        }
+                        .accessibilityIdentifier("v2-attach")
+                        .accessibilityLabel("Attach and upload files")
+                        .accessibilitySortPriority(4)
+                    }
                     // R19: the commands chip lives inside the pill, left of
                     // Record — the design's pill with one more chip. R24
                     // P076: icon-only while the field is empty so the full
                     // placeholder fits at 390; the label returns with typing.
                     v2CommandsChip(collapsed: v2model.draft.isEmpty)
+                    // R28: the live level meter rides beside Record while
+                    // dictating — the CV6 live-meter twin, in the pill.
+                    if speech.isListening {
+                        V2LevelMeter(level: speech.level)
+                            .accessibilityIdentifier("v2-dictation-meter")
+                            .accessibilityLabel("Dictation level")
+                            .accessibilitySortPriority(1.5)
+                    }
                     if speech.supported {
                         // P041: a bare muted glyph — no circle behind it.
                         Button(action: toggleV2Dictation) {
@@ -780,6 +946,7 @@ struct ChatView: View {
                         }
                         .accessibilityIdentifier("v2-record")
                         .accessibilityLabel(speech.isListening ? "Stop dictation" : "Speak your message")
+                        .accessibilitySortPriority(2)
                     }
                 }
                 .padding(.leading, V2ComposerMetrics.pillLeading)
@@ -791,29 +958,231 @@ struct ChatView: View {
                         .strokeBorder(composerFocused ? Theme.accent : Color.clear, lineWidth: 1)
                 )
                 // P023 + P040: the 50px round send — always accent with an
-                // up-arrow, even with an empty draft.
-                Button {
-                    if speech.isListening { speech.stop() }
-                    let text = v2model.draft
-                    Task { await v2model.send(text) }
-                } label: {
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(Color.white)
-                        .frame(width: 50, height: 50)
-                        .background(Theme.accent, in: Circle())
+                // up-arrow, even with an empty draft. R28: while a send or an
+                // image run is generating, it becomes Stop.
+                if v2model.isSending || v2model.hasActiveImageRuns {
+                    Button {
+                        v2StopGenerating()
+                    } label: {
+                        Image(systemName: "stop.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.white)
+                            .frame(width: 50, height: 50)
+                            .background(Theme.warning, in: Circle())
+                    }
+                    .accessibilityIdentifier("v2-composer-stop")
+                    .accessibilityLabel("Stop generating")
+                    .accessibilitySortPriority(1)
+                } else {
+                    Button {
+                        v2Submit()
+                    } label: {
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(Color.white)
+                            .frame(width: 50, height: 50)
+                            .background(Theme.accent, in: Circle())
+                    }
+                    .accessibilityIdentifier("v2-composer-send")
+                    .accessibilityLabel("Send message")
+                    .accessibilitySortPriority(1)
+                    .disabled(!v2CanSend)
                 }
-                .accessibilityIdentifier("v2-composer-send")
-                .accessibilityLabel("Send message")
-                .disabled(!v2CanSend)
             }
         }
         .padding(.horizontal, 21)
         .padding(.bottom, Theme.s2)
+        .photosPicker(
+            isPresented: $v2ShowingPhotoPicker, selection: $v2PickedPhotos,
+            maxSelectionCount: 5, matching: .images
+        )
+        .onChange(of: v2PickedPhotos) { _, items in
+            guard !items.isEmpty else { return }
+            v2PickedPhotos = []
+            for _ in items {
+                v2model.stageAttachment(
+                    name: V2Attachments.nextPhotoName(existing: v2model.staged),
+                    kind: .photo
+                )
+            }
+            v2AttachNotice = nil
+        }
+        .fileImporter(
+            isPresented: $v2ShowingFilePicker,
+            allowedContentTypes: [.item], allowsMultipleSelection: true
+        ) { result in
+            guard case .success(let urls) = result else { return }
+            for url in urls {
+                v2model.stageAttachment(name: url.lastPathComponent, kind: .file)
+            }
+            v2AttachNotice = nil
+        }
     }
 
     private var v2CanSend: Bool {
         !v2model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !v2model.staged.isEmpty
+    }
+
+    // MARK: - R28 composer actions
+
+    /// Every send path funnels here: the send button, hardware Return
+    /// (onSubmit), and the soft Return key (see v2DraftChanged). Slash
+    /// drafts never send — `/clear` confirms, anything else opens the
+    /// commands sheet (the same menu, new host).
+    private func v2Submit() {
+        let trimmed = v2model.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        if V2SlashPalette.isSlashDraft(trimmed) {
+            if V2SlashPalette.token(in: trimmed) == "clear" {
+                v2model.draft = ""
+                v2ShowingSlash = false
+                v2ShowingClearConfirm = true
+            } else {
+                v2ShowingSlash = true
+            }
+            return
+        }
+        guard !trimmed.isEmpty || !v2model.staged.isEmpty else { return }
+        if speech.isListening { speech.stop() }
+        let quote = v2ReplyQuote
+        let staged = v2model.staged
+        v2model.startSend(trimmed, quote: quote, attachments: staged)
+        v2ReplyQuote = nil
+        if let threadID = v2?.thread.id {
+            V2ComposerDrafts.clear(threadID: threadID)
+        }
+    }
+
+    /// The soft Return key sends (Slack-style): a single typed `\n` reverts
+    /// and submits instead of entering a newline. Pasted text never matches
+    /// (a paste inserts more than one character), and `/` drafts route to
+    /// the slash flow through v2Submit. Multiline entry survives via paste.
+    private func v2DraftChanged(old: String, new: String) {
+        if let inserted = extractInserted(old: old, new: new), inserted == "\n" {
+            v2model.draft = old
+            v2Submit()
+            return
+        }
+        // Per-thread disk draft (a send clears it explicitly in v2Submit).
+        if let threadID = v2?.thread.id {
+            V2ComposerDrafts.save(new, threadID: threadID)
+        }
+    }
+
+    /// Stop while generating: cancel the send flight and any image-tab
+    /// opens (their runs park as cancelled, dismissible).
+    private func v2StopGenerating() {
+        v2model.stopSending()
+        for (id, task) in v2ImageTasks {
+            task.cancel()
+            v2model.cancelImageRun(id: id)
+        }
+        v2ImageTasks.removeAll()
+    }
+
+    /// View-local clear (the `/clear` confirm): draft, staged, quote. The
+    /// thread on the server is untouched — the alert copy says so.
+    private func v2ClearView() {
+        v2model.draft = ""
+        v2model.clearStaged()
+        v2ReplyQuote = nil
+        if let threadID = v2?.thread.id {
+            V2ComposerDrafts.clear(threadID: threadID)
+        }
+    }
+
+    /// Talk aloud speaks each new driver reply once (the service dedupes by
+    /// event id, so reloads and re-renders stay silent).
+    private func v2MaybeSpeak() {
+        guard let talk = talkAloud, talk.enabled else { return }
+        guard let last = v2model.events.last(where: { $0.author == .agent }) else { return }
+        talk.speakReply(eventID: last.id, text: V2SpeakText.speakableText(blocks: last.blocks))
+    }
+
+    private func v2CameraTapped() {
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+            v2AttachNotice = "Camera isn't available on this device."
+            return
+        }
+        v2ShowingCamera = true
+    }
+
+    // MARK: - R28 slash actions
+
+    private func v2SlashPick(_ command: V2SlashCommand) {
+        // Typing `/…` never sends: every pick consumes the slash token.
+        // Capture the remainder first (`/image a lighthouse` prompts).
+        let remainder = v2SlashRemainder()
+        v2model.draft = ""
+        if let threadID = v2?.thread.id {
+            V2ComposerDrafts.clear(threadID: threadID)
+        }
+        switch command.id {
+        case .plan:
+            v2model.setMode("plan")
+            v2ShowingSlash = false
+        case .work:
+            v2model.setMode("work")
+            v2ShowingSlash = false
+        case .model, .specialist:
+            // The pickers live inside the sheet (list + Back to commands).
+            v2SlashPicking = command.id
+            v2ShowingSlash = true
+        case .files:
+            v2ShowingSlash = false
+            window.isPresented = true
+        case .image:
+            v2ShowingSlash = false
+            v2GenerateImage(prompt: remainder)
+        case .talk:
+            if let talk = talkAloud { talk.setEnabled(!talk.enabled) }
+            v2ShowingSlash = false
+        case .integrations:
+            v2ShowingSlash = false
+            router.showingSettings = true
+        case .clear:
+            // Clear always confirms (the sheet shows the confirm inline).
+            break
+        }
+    }
+
+    /// The text after the `/token`, for `/image a lighthouse` prompts.
+    private func v2SlashRemainder() -> String {
+        let trimmed = v2model.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("/") else { return "" }
+        let rest = String(trimmed.dropFirst())
+        guard let space = rest.firstIndex(of: " ") else { return "" }
+        return String(rest[rest.index(after: space)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Generate an image: a local Generating… run plus a real artifact tab.
+    /// Empty prompt opens the prompt sheet instead of guessing.
+    private func v2GenerateImage(prompt: String) {
+        let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            v2ShowingImagePrompt = true
+            return
+        }
+        guard let threadID = v2?.thread.id else { return }
+        let runID = v2model.startImageRun(prompt: trimmed)
+        // Main-actor task: every touch below (window, model, @State) is main
+        // state, and cancellation parks the run as cancelled, never failed.
+        let task = Task { @MainActor in
+            do {
+                try await window.open(
+                    .photo, threadID: threadID, artifactID: nil,
+                    title: trimmed,
+                    state: ["prompt": trimmed, "status": "generating", "tool": "image"]
+                )
+                v2model.finishImageRun(id: runID)
+            } catch is CancellationError {
+                v2model.cancelImageRun(id: runID)
+            } catch {
+                v2model.failImageRun(id: runID, error: "Couldn't open an image tab — the prompt is kept above.")
+            }
+            v2ImageTasks.removeValue(forKey: runID)
+        }
+        v2ImageTasks[runID] = task
     }
 
     /// P023 artifact peek bar (60px): the active tab's live thumbnail and
@@ -894,12 +1263,224 @@ struct ChatView: View {
         }
     }
 
-    /// Complete the `@…` token under the cursor to `@brain `.
-    private func completeBrainMention() {
-        var draft = v2model.draft
-        guard let at = draft.lastIndex(of: "@") else { return }
-        draft.replaceSubrange(at..., with: "@brain ")
-        v2model.draft = draft
+    // MARK: - R28 composer trays
+
+    private var v2CommittedMentions: [String] {
+        V2Mentions.committed(in: v2model.draft, roster: v2model.specialistRoster.map(\.slug))
+    }
+
+    /// The slash commands matching the draft's `/token`, for the inline
+    /// hint row. Empty when the draft is not a slash draft.
+    private var v2SlashQuick: [V2SlashCommand] {
+        guard V2SlashPalette.isSlashDraft(v2model.draft) else { return [] }
+        return V2SlashPalette.filtered(v2model.draft, hasSpecialist: v2model.specialistRoster.count > 0)
+    }
+
+    /// Inline `/` hints: the same rows as the sheet, as tappable chips.
+    /// Clear confirms through the alert; the rest act immediately.
+    private var v2SlashQuickRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(v2SlashQuick) { command in
+                    Button {
+                        if command.id == .clear {
+                            v2model.draft = ""
+                            if let threadID = v2?.thread.id {
+                                V2ComposerDrafts.clear(threadID: threadID)
+                            }
+                            v2ShowingClearConfirm = true
+                        } else {
+                            v2SlashPick(command)
+                        }
+                    } label: {
+                        Text(command.name)
+                            .font(.hanken(13).weight(.semibold))
+                            .foregroundStyle(Theme.accent)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Theme.accentWeak, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+                    .accessibilityIdentifier("v2-slashquick-\(command.id.rawValue)")
+                    .accessibilityLabel("Slash command \(command.name): \(command.detail)")
+                }
+            }
+        }
+    }
+
+    /// The @mention type-ahead row (replaces the brain-only suggestion).
+    private var v2MentionSuggestionRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(mentionSuggestions, id: \.slug) { row in
+                    Button {
+                        v2model.draft = V2Mentions.complete(slug: row.slug, in: v2model.draft)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text("@\(row.slug)")
+                                .font(.hanken(14).weight(.semibold))
+                                .foregroundStyle(Theme.accent)
+                            Text(row.slug == "brain"
+                                 ? "route to a specialist — stays in this conversation"
+                                 : row.title)
+                                .font(.hanken(12))
+                                .foregroundStyle(Theme.inkSoft)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Theme.accentWeak, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    }
+                    .accessibilityIdentifier(row.slug == "brain" ? "v2-mention-brain" : "v2-mention-\(row.slug)")
+                    .accessibilityLabel("Mention \(row.slug)")
+                }
+            }
+        }
+    }
+
+    /// Committed @mention chips — one per routable slug in the draft, each
+    /// removable (the CV6 `composer-chip` twin).
+    private var v2MentionChipsRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(v2CommittedMentions, id: \.self) { slug in
+                    HStack(spacing: 6) {
+                        Text("@\(slug)")
+                            .font(.hanken(12).weight(.semibold))
+                        Button {
+                            v2model.draft = V2Mentions.removing(slug: slug, from: v2model.draft)
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .accessibilityLabel("Remove @\(slug) mention")
+                    }
+                    .foregroundStyle(Theme.accent)
+                    .padding(.horizontal, 10)
+                    .frame(height: 26)
+                    .background(Theme.accentWeak, in: Capsule())
+                    .accessibilityIdentifier("v2-mention-chip-\(slug)")
+                }
+            }
+        }
+    }
+
+    /// The reply-to quote chip (long-press a message → Reply). × cancels.
+    private func v2ReplyChip(quote: V2ReplyQuote) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "arrowshape.turn.up.left")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Theme.accent)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Replying to \(quote.sender)")
+                    .font(.hanken(12).weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                Text(quote.snippet)
+                    .font(.hanken(12))
+                    .foregroundStyle(Theme.inkSoft)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+            Button {
+                v2ReplyQuote = nil
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Theme.inkSoft)
+                    .frame(width: 28, height: 28)
+            }
+            .accessibilityIdentifier("v2-reply-cancel")
+            .accessibilityLabel("Cancel reply")
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    }
+
+    /// Staged attachments, as removable chips above the pill (photos, files,
+    /// camera — multiple). Their names ride the next send.
+    private var v2StagedRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(Array(v2model.staged.enumerated()), id: \.element.id) { index, file in
+                    HStack(spacing: 6) {
+                        Image(systemName: file.kind == .photo || file.kind == .camera ? "photo" : "doc")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text(file.name)
+                            .font(.hanken(11.5).weight(.semibold))
+                            .lineLimit(1)
+                        Button { v2model.removeStaged(id: file.id) } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .accessibilityIdentifier("v2-staged-remove-\(index)")
+                        .accessibilityLabel("Remove \(file.name)")
+                    }
+                    .foregroundStyle(Theme.accent)
+                    .padding(.horizontal, 10)
+                    .frame(height: 26)
+                    .background(Theme.accentWeak, in: Capsule())
+                }
+            }
+        }
+        .accessibilityIdentifier("v2-staged-row")
+    }
+
+    /// Image runs: Generating… with Stop, failures with their reason and a
+    /// dismiss. Done hands off to the opened tab and the row goes away.
+    private var v2ImageRunsRow: some View {
+        VStack(spacing: 6) {
+            ForEach(v2model.imageRuns) { run in
+                HStack(spacing: 8) {
+                    if run.state == .generating {
+                        ProgressView()
+                            .controlSize(.small)
+                            .tint(Theme.accent)
+                    } else {
+                        Image(systemName: run.state == .failed ? "exclamationmark.circle" : "checkmark.circle")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(run.state == .failed ? Theme.warning : Theme.success)
+                    }
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(run.state == .generating ? "Generating…" : run.prompt)
+                            .font(.hanken(13).weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                            .lineLimit(1)
+                        Text(run.state == .generating ? run.prompt : (run.error ?? "Stopped"))
+                            .font(.hanken(12))
+                            .foregroundStyle(Theme.inkSoft)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                    if run.state == .generating {
+                        Button {
+                            v2ImageTasks[run.id]?.cancel()
+                            v2ImageTasks.removeValue(forKey: run.id)
+                            v2model.cancelImageRun(id: run.id)
+                        } label: {
+                            Text("Stop")
+                                .font(.hanken(13).weight(.semibold))
+                                .foregroundStyle(Theme.warning)
+                                .frame(minWidth: 44, minHeight: 32)
+                        }
+                        .accessibilityIdentifier("v2-image-stop")
+                        .accessibilityLabel("Stop generating images")
+                    } else {
+                        Button {
+                            v2model.dismissImageRun(id: run.id)
+                        } label: {
+                            Text("Dismiss")
+                                .font(.hanken(13).weight(.medium))
+                                .foregroundStyle(Theme.inkSoft)
+                                .frame(minWidth: 44, minHeight: 32)
+                        }
+                        .accessibilityIdentifier("v2-image-dismiss")
+                        .accessibilityLabel("Dismiss image run")
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+        }
     }
 
     private var legacyBody: some View {
@@ -2113,13 +2694,14 @@ struct ChatView: View {
     }
 
     /// The v2 pill's adapter: per-thread persisted prefs on the v2 model;
-    /// Files opens the conversation's Visual Window, the generator is the
-    /// same sheet the legacy path presents.
+    /// Files opens the conversation's Visual Window. R28: Generate an image
+    /// runs the v2 image flow (Generating… run + a real artifact tab, or the
+    /// prompt sheet when the field is empty) — never the legacy room sheet.
     private var v2CommandsState: V2CommandsState {
         V2CommandsState(
             model: v2model,
             onOpenFiles: { window.isPresented = true },
-            onOpenImageGenerator: { showingImageGenerator = true }
+            onOpenImageGenerator: { v2GenerateImage(prompt: v2model.draft) }
         )
     }
 
@@ -2142,6 +2724,22 @@ struct ChatView: View {
     private func v2CommandsChip(collapsed: Bool) -> some View {
         Menu {
             commandsMenuContent(state: v2CommandsState)
+            // R28: Talk aloud lives in the menu (R27 web's placement — a bar
+            // button would overflow narrow composers), plus checklist
+            // playback of the filled review notes.
+            Divider()
+            Toggle(isOn: Binding(
+                get: { talkAloud?.enabled ?? false },
+                set: { talkAloud?.setEnabled($0) }
+            )) {
+                Label("Talk aloud", systemImage: "speaker.wave.2")
+            }
+            Button {
+                talkAloud?.speakChecklist(texts: v2review.sendablePins.map(\.text))
+            } label: {
+                Label("Read checklist aloud", systemImage: "list.bullet")
+            }
+            .disabled(v2review.sendablePins.isEmpty)
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: "sparkles")
@@ -2163,6 +2761,7 @@ struct ChatView: View {
         .accessibilityIdentifier("v2-commands")
         .accessibilityValue(collapsed ? "collapsed" : "expanded")
         .accessibilityLabel("Commands — specialist, mode, model, files, image generation")
+        .accessibilitySortPriority(3)
     }
 
     /// Staged files, as removable chips above the shell — the web's pinned-chip row.
@@ -2332,6 +2931,9 @@ struct V2EventRow: View {
     /// The owning project name — the design's agent line reads `Aster 6:41`.
     let agentName: String?
     let onSend: (String) -> Void
+    /// R28 reply-to: long-press a message → Reply arms the composer's quote
+    /// chip. Defaults to no-op so previews stay untouched.
+    var onReply: (V2ReplyQuote) -> Void = { _ in }
 
     // NOTE: no identifier on these layout containers — it would overwrite
     // the agent label's and block text's own identifiers (same finding as
@@ -2342,6 +2944,16 @@ struct V2EventRow: View {
     private var displayAgentName: String {
         if let label = event.agentLabel, label != "Corner" { return label }
         return agentName ?? event.agentLabel ?? "Corner"
+    }
+
+    /// Who wrote this row, for the quote chip ("You" for own messages).
+    private var replySender: String {
+        event.author == .user ? "You" : displayAgentName
+    }
+
+    /// The quotable text of this row, if it carries any.
+    private var replyQuote: V2ReplyQuote? {
+        V2ReplyQuote.quote(messageID: event.id, sender: replySender, blocks: event.blocks)
     }
     var body: some View {
         if event.author == .user {
@@ -2360,6 +2972,7 @@ struct V2EventRow: View {
                     .foregroundStyle(Theme.inkFaint)
                     .accessibilityIdentifier("v2-event-time")
             }
+            .v2ReplyMenu(quote: replyQuote, onReply: onReply)
         } else {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .bottom, spacing: 8) {
@@ -2384,6 +2997,26 @@ struct V2EventRow: View {
                     }
                     Spacer(minLength: 48)
                 }
+            }
+            .v2ReplyMenu(quote: replyQuote, onReply: onReply)
+        }
+    }
+}
+
+/// R28 reply-to: the long-press menu on a v2 message row. A row with no
+/// quotable text (steps-only, artifacts-only) offers no Reply — a menu that
+/// cannot quote would be a dead end.
+private extension View {
+    func v2ReplyMenu(quote: V2ReplyQuote?, onReply: @escaping (V2ReplyQuote) -> Void) -> some View {
+        contextMenu {
+            if let quote {
+                Button {
+                    onReply(quote)
+                } label: {
+                    Label("Reply", systemImage: "arrowshape.turn.up.left")
+                }
+                .accessibilityIdentifier("v2-reply-action")
+                .accessibilityLabel("Reply to this message")
             }
         }
     }
@@ -3240,6 +3873,218 @@ fileprivate struct PastePreviewSheet: View {
                     }
                 }
             }
+        }
+    }
+}
+
+// MARK: - R28 composer parity subviews
+
+/// `/` opens the commands as a sheet: the same rows as the commands menu
+/// (Work/Plan, Model, Specialist, Files, Generate an image) plus Talk aloud,
+/// Integrations, and Clear chat with its confirm. Model/Specialist pick from
+/// an inline list with a labeled Back to commands (R27 web's placement
+/// rule); Clear never acts on the pick — it confirms inline first.
+struct V2SlashSheet: View {
+    let draft: String
+    let hasSpecialist: Bool
+    let modelChoice: String
+    let specialistChoice: String
+    let specialistRoster: [(slug: String, title: String)]
+    @Binding var picking: V2SlashCommand.ID?
+    let onPick: (V2SlashCommand) -> Void
+    let onSelectModel: (String) -> Void
+    let onSelectSpecialist: (String) -> Void
+    let onClear: () -> Void
+    let onDismiss: () -> Void
+
+    @State private var confirmingClear = false
+
+    private var rows: [V2SlashCommand] {
+        V2SlashPalette.filtered(draft.isEmpty ? "/" : draft, hasSpecialist: hasSpecialist)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if picking == .model {
+                    List(ChatView.modelOptions, id: \.id) { option in
+                        Button {
+                            onSelectModel(option.id)
+                            picking = nil
+                        } label: {
+                            HStack {
+                                Text(option.label)
+                                Spacer()
+                                if option.id == modelChoice {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                        .accessibilityIdentifier("v2-slash-model-\(option.id)")
+                    }
+                } else if picking == .specialist {
+                    List(specialistRoster, id: \.slug) { row in
+                        Button {
+                            onSelectSpecialist(row.slug)
+                            picking = nil
+                        } label: {
+                            HStack {
+                                Text(row.title)
+                                Spacer()
+                                if row.slug == specialistChoice {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                        .accessibilityIdentifier("v2-slash-specialist-\(row.slug)")
+                    }
+                } else {
+                    List {
+                        ForEach(rows) { command in
+                            if command.id == .clear {
+                                Button {
+                                    confirmingClear = true
+                                } label: {
+                                    HStack {
+                                        Text(command.title)
+                                            .foregroundStyle(Theme.warning)
+                                        Spacer()
+                                    }
+                                }
+                                .accessibilityIdentifier("v2-slash-clear")
+                            } else {
+                                Button {
+                                    onPick(command)
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(command.title)
+                                            .foregroundStyle(Theme.ink)
+                                        Text(command.detail)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .accessibilityIdentifier("v2-slash-\(command.id.rawValue)")
+                            }
+                        }
+                        if confirmingClear {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Clear what you typed and staged here. Messages stay in this thread.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                HStack {
+                                    Button("Cancel", role: .cancel) { confirmingClear = false }
+                                    Button("Clear chat", role: .destructive) {
+                                        confirmingClear = false
+                                        onClear()
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle(picking == nil ? "Commands" : (picking == .model ? "Model" : "Specialist"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if picking != nil {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Back to commands") { picking = nil }
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { onDismiss() }
+                }
+            }
+        }
+        .accessibilityIdentifier("v2-slash-sheet")
+    }
+}
+
+/// Generate-an-image prompt sheet (the empty-field path: no prompt to run).
+struct V2ImagePromptSheet: View {
+    @Binding var text: String
+    let onGenerate: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField("Describe the image…", text: $text, axis: .vertical)
+                    .lineLimit(2...5)
+                    .accessibilityIdentifier("v2-image-prompt-field")
+                    .accessibilityLabel("Image description")
+                Button {
+                    onGenerate()
+                } label: {
+                    Text("Generate image")
+                        .frame(maxWidth: .infinity)
+                }
+                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityIdentifier("v2-image-generate")
+            }
+            .navigationTitle("Generate an image")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { onCancel() }
+                }
+            }
+        }
+        .accessibilityIdentifier("v2-image-prompt")
+    }
+}
+
+/// The pill's live dictation meter: four bars lit by the tap's RMS level.
+/// Decorative beside its labelled container — VoiceOver names the level.
+struct V2LevelMeter: View {
+    let level: Float
+
+    private var lit: Int {
+        min(4, max(0, Int((level * 4).rounded(.up))))
+    }
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(0..<4, id: \.self) { bar in
+                RoundedRectangle(cornerRadius: 1, style: .continuous)
+                    .fill(bar < lit ? Color.red : Theme.inkFaint.opacity(0.35))
+                    .frame(width: 3, height: 6 + CGFloat(bar) * 3)
+            }
+        }
+        .frame(width: 24, height: 20)
+        .accessibilityValue("\(Int((min(1, max(0, level)) * 100).rounded())) percent")
+    }
+}
+
+/// Camera capture for the v2 attach menu. The caller guards availability;
+/// cancel stages nothing.
+struct V2CameraPicker: UIViewControllerRepresentable {
+    let onDone: (UIImage?) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onDone: onDone) }
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let onDone: (UIImage?) -> Void
+        init(onDone: @escaping (UIImage?) -> Void) { self.onDone = onDone }
+        func imagePickerController(
+            _ picker: UIImagePickerController,
+            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
+        ) {
+            onDone(info[.originalImage] as? UIImage)
+        }
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            onDone(nil)
         }
     }
 }

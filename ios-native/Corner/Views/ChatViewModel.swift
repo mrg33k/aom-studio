@@ -2018,6 +2018,17 @@ final class V2ChatModel: ObservableObject {
     private var awaitingReply = false
     private var activityBegan = false
     private var isReplaying = false
+    /// R28: the in-flight send task (for Stop) and its observable state.
+    private var sendTask: Task<Void, Never>?
+    /// R28: true from send until the reply lands, the send fails, or Stop
+    /// cancels it. The composer swaps Send for Stop while set.
+    @Published private(set) var isSending = false
+    /// R28: files staged in the pill (photos/files/camera, multiple).
+    /// Names ride the send; bytes wait on a backend send-attachments field.
+    @Published private(set) var staged: [V2StagedAttachment] = []
+    /// R28: local "Generate an image" runs (the Generating… card + Stop).
+    /// Done hands off to the opened artifact tab and the row goes away.
+    @Published private(set) var imageRuns: [V2ImageRun] = []
 
     init(api: (any CornerV2API)? = nil, outbox: V2OutboxStore = .shared) {
         self.api = api ?? DefaultCornerV2API()
@@ -2172,6 +2183,9 @@ final class V2ChatModel: ObservableObject {
     func stop() {
         subscription?.cancel()
         subscription = nil
+        sendTask?.cancel()
+        sendTask = nil
+        isSending = false
         awaitingReply = false
         if activityBegan {
             TurnActivityService.shared.turnEnded(outcomeWord: "Closed", startedAt: nil)
@@ -2189,41 +2203,61 @@ final class V2ChatModel: ObservableObject {
     /// outbox (visible, retryable) instead of vanishing it. `@brain` slugs
     /// ride as routing metadata; the thread, files, and Visual Window stay
     /// exactly where they are.
-    func send(_ text: String) async {
+    ///
+    /// R28: an optional reply quote prefixes the text (`> sender: snippet`)
+    /// and staged attachment names ride a `[attached: …]` trailer, so the
+    /// server stores exactly what the user saw staged. Cancellation (Stop)
+    /// parks quietly: the entry stays queued with no failure stamped, so no
+    /// "Not sent" banner follows a deliberate stop.
+    func send(_ text: String, quote: V2ReplyQuote? = nil, attachments: [V2StagedAttachment] = []) async {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, let thread else { return }
+        let final = V2SendText.build(text: trimmed, quote: quote, attachments: attachments)
         draft = ""
-        let mentioning = BrainMention.parse(trimmed)
+        if !attachments.isEmpty { staged.removeAll() }
+        let mentioning = BrainMention.parse(final)
         let entry = outbox.enqueue(
-            threadID: thread.id, text: trimmed,
+            threadID: thread.id, text: final,
             mentioning: mentioning, preferredProjectID: nil
         )
         refreshQueued()
         let echo = ThreadEvent(
             id: Self.echoID(for: entry.clientEventID), threadID: thread.id,
-            author: .user, agentLabel: nil, blocks: [.text(trimmed)], createdAt: Date()
+            author: .user, agentLabel: nil, blocks: [.text(final)], createdAt: Date()
         )
         events.append(echo)
         loadState = .ready
         // The Live Activity follows THIS thread's run only: it begins on send
         // and ends on the first agent event (or when the thread closes).
-        TurnActivityService.shared.turnBegan(roomTitle: displayTitle, ask: trimmed)
+        TurnActivityService.shared.turnBegan(roomTitle: displayTitle, ask: final)
         activityBegan = true
         awaitingReply = true
+        isSending = true
+        defer { isSending = false }
         do {
             // The thread's Work/Plan intent rides the send; the transport
             // drops Work (the server default) and falls back field-less when
             // the backend does not know `mode` yet. `threadId` pins the send
             // to this thread (R24 P080): no routing, no `Routed to` receipt,
             // and an open question is answered here — never globally.
-            lastDecision = try await api.send(
-                text: trimmed, mentioning: mentioning, preferredProjectID: nil,
+            let decision = try await api.send(
+                text: final, mentioning: mentioning, preferredProjectID: nil,
                 mode: chatMode, threadId: thread.id
             )
+            // A Stop that landed while an uncooperative transport still flew
+            // must not apply the late success (no verdict, no entry removal,
+            // no refresh).
+            try Task.checkCancellation()
+            lastDecision = decision
             outbox.remove(threadID: thread.id, clientEventID: entry.clientEventID)
             events.removeAll { $0.id == echo.id }
             refreshQueued()
             await refreshEvents()
+        } catch is CancellationError {
+            // Stop, not failure: the entry stays queued (replayable), the
+            // echo stays on screen, and no reason is stamped — stamping one
+            // would paint a "Not sent" banner over a deliberate stop.
+            refreshQueued()
         } catch {
             // R24 P075: the reason is the diagnosis — a rejection is not
             // "Offline". It rides the entry so the banner tells the truth.
@@ -2233,6 +2267,80 @@ final class V2ChatModel: ObservableObject {
             )
             refreshQueued()
         }
+    }
+
+    /// R28: fire-and-forget send behind the composer's Send button. The task
+    /// handle is kept so Stop can cancel it; a previous send is cancelled
+    /// first (one flight at a time — the outbox keeps the order honest).
+    func startSend(_ text: String, quote: V2ReplyQuote? = nil, attachments: [V2StagedAttachment] = []) {
+        sendTask?.cancel()
+        sendTask = Task { await send(text, quote: quote, attachments: attachments) }
+    }
+
+    /// R28: Stop while generating. Cancels the flight, drops the spinner,
+    /// ends the activity, and re-reads the thread (a cancelled request may
+    /// still have landed server-side; the refresh reconciles the echo).
+    func stopSending() {
+        sendTask?.cancel()
+        sendTask = nil
+        isSending = false
+        awaitingReply = false
+        if activityBegan {
+            TurnActivityService.shared.turnEnded(outcomeWord: "Stopped", startedAt: nil)
+            activityBegan = false
+        }
+        Task { await refreshEvents() }
+    }
+
+    // MARK: - R28 staged attachments
+
+    func stageAttachment(name: String, kind: V2StagedAttachment.Kind) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard !staged.contains(where: { $0.name == trimmed }) else { return }
+        staged.append(V2StagedAttachment(id: UUID().uuidString, name: trimmed, kind: kind))
+    }
+
+    func removeStaged(id: String) {
+        staged.removeAll { $0.id == id }
+    }
+
+    func clearStaged() {
+        staged.removeAll()
+    }
+
+    // MARK: - R28 image runs
+
+    /// Arm a "Generating…" run. The caller performs the artifact open, then
+    /// finishes or fails the run. Returns the run id.
+    @discardableResult
+    func startImageRun(prompt: String) -> String {
+        let run = V2ImageRun(id: UUID().uuidString, prompt: prompt, state: .generating)
+        imageRuns.append(run)
+        return run.id
+    }
+
+    func finishImageRun(id: String) {
+        imageRuns.removeAll { $0.id == id }
+    }
+
+    func failImageRun(id: String, error: String) {
+        guard let index = imageRuns.firstIndex(where: { $0.id == id }) else { return }
+        imageRuns[index].state = .failed
+        imageRuns[index].error = error
+    }
+
+    func cancelImageRun(id: String) {
+        guard let index = imageRuns.firstIndex(where: { $0.id == id }) else { return }
+        imageRuns[index].state = .cancelled
+    }
+
+    func dismissImageRun(id: String) {
+        imageRuns.removeAll { $0.id == id }
+    }
+
+    var hasActiveImageRuns: Bool {
+        imageRuns.contains { $0.state == .generating }
     }
 
     /// Flush the queue in order, at most once per entry per call. Stops at

@@ -325,7 +325,11 @@ final class R19ShootScreens: XCTestCase {
                           "v2-status-dot", "v2-composer-field", "v2-composer-send",
                           "v2-record", "v2-commands", "visual-peek",
                           "visual-peek-count", "v2-agent-label"])
-        sample("thread", "ground", CGPoint(x: 195, y: 400))
+        // R28: the left gutter (content insets at 21pt; bubbles/cards never
+        // reach x=10), not mid-thread — live message cards (option rows,
+        // raised fill) collided with the old point and tested content, not
+        // ground. Same fixed-zone reasoning as the drawer's (8,56) sample.
+        sample("thread", "ground", CGPoint(x: 10, y: 400))
         let send = app.descendants(matching: .any).matching(identifier: "v2-composer-send").firstMatch
         if send.exists {
             // Offset from center: the arrow glyph itself is white.
@@ -345,6 +349,12 @@ final class R19ShootScreens: XCTestCase {
         app.swipeUp()
         settle(1)
         shot("drawer-scrolled")
+        // R28: measure back at the top (symmetric swipe reverses the proof
+        // scroll). A flooded drawer (probe missions) scrolls the header rows
+        // out of the lazy AX tree; measuring post-scroll tested list depth,
+        // not the header. Thresholds unchanged.
+        app.swipeDown()
+        settle(1)
         frames("drawer", ["v2-drawer", "v2-drawer-close", "v2-drawer-new",
                           "v2-drawer-new-project", "v2-drawer-record",
                           "v2-drawer-settings", "v2-drawer-bell"])

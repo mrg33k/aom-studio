@@ -1,0 +1,407 @@
+// ComposerParityUITests.swift — Corner native iOS
+// corner:corner-v2 R28 — one UI test per composer control, in the v2 pill.
+//
+// Fixture mode throughout (deterministic, no backend). Each test launches
+// its own app on General's thread (-v2ResetEntry pins it) and drives the
+// pill like a person: attach menu, commands chip + Talk aloud, slash sheet,
+// /clear confirm, reply quote, dictation meter, Stop, drafts across a
+// relaunch, @mention chips, image generation, Return-to-send, and the
+// accessibility labels of every control.
+
+import XCTest
+
+final class ComposerParityUITests: XCTestCase {
+    private var app: XCUIApplication!
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+    }
+
+    // MARK: - launchers
+
+    private static let base = ["-v2FixtureUITest", "-v2SkipSetup", "-v2SuppressHaptics", "-v2ResetEntry"]
+
+    @discardableResult
+    private func launch(_ args: [String]) -> XCUIApplication {
+        app = XCUIApplication()
+        app.launchArguments += args
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        return app
+    }
+
+    private func openThread(_ scope: XCUIApplication, timeout: TimeInterval = 20) {
+        let marker = scope.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch
+        XCTAssertTrue(marker.waitForExistence(timeout: timeout), "the entry thread never appeared")
+    }
+
+    private func field(_ scope: XCUIApplication) -> XCUIElement {
+        scope.textFields.matching(identifier: "v2-composer-field").firstMatch
+    }
+
+    private func waitForText(_ scope: XCUIApplication, _ text: String, timeout: TimeInterval = 15) -> Bool {
+        let query = scope.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text))
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if query.count > 0 { return true }
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+        return query.count > 0
+    }
+
+    /// Empty the composer field through the delete key (bounded loop —
+    /// select-all is flaky across iOS versions).
+    private func clearField(_ scope: XCUIApplication) {
+        let f = field(scope)
+        guard f.waitForExistence(timeout: 10) else { return }
+        f.tap()
+        let delete = scope.keyboards.keys["delete"].firstMatch
+        for _ in 0..<240 {
+            guard let value = f.value as? String, !value.isEmpty else { return }
+            if delete.waitForExistence(timeout: 2) {
+                delete.tap()
+            } else {
+                return
+            }
+        }
+    }
+
+    private func waitForTextGone(_ scope: XCUIApplication, _ text: String, timeout: TimeInterval = 10) -> Bool {
+        let query = scope.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", text))
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if query.count == 0 { return true }
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+        return query.count == 0
+    }
+
+    private func evidence(_ name: String) {
+        let shot = XCUIScreen.main.screenshot()
+        let attach = XCTAttachment(screenshot: shot)
+        attach.name = name
+        attach.lifetime = .keepAlways
+        add(attach)
+        let dir = ProcessInfo.processInfo.environment["R14_EVIDENCE_DIR"] ?? "/tmp/r28-evidence"
+        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        try? shot.pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/R28-native-\(name).png"))
+    }
+
+    // MARK: - paperclip
+
+    /// The paperclip joins the pill once composing begins, with Photos /
+    /// Files / Camera rows.
+    func testAttachMenu() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        let clip = app.descendants(matching: .any).matching(identifier: "v2-attach").firstMatch
+        XCTAssertFalse(clip.exists, "the clip shows before composing (P076 placeholder at risk)")
+        let f = field(app)
+        XCTAssertTrue(f.waitForExistence(timeout: 15), "no composer field")
+        f.tap()
+        f.typeText("x")
+        XCTAssertTrue(clip.waitForExistence(timeout: 10), "no paperclip while composing")
+        XCTAssertEqual(clip.label, "Attach and upload files")
+        clip.tap()
+        XCTAssertTrue(app.buttons["Photo Library"].waitForExistence(timeout: 10), "no Photo Library row")
+        XCTAssertTrue(app.buttons["Choose Files"].exists, "no Choose Files row")
+        XCTAssertTrue(app.buttons["Camera"].exists, "no Camera row")
+        evidence("attach-menu")
+        // Dismiss the menu without picking (a pick would leave the app).
+        clip.tap()
+    }
+
+    /// Seeded staged chips render above the pill and remove cleanly.
+    func testStagedRow() throws {
+        let app = launch(Self.base + ["-v2SeedStaged"])
+        openThread(app)
+        let row = app.descendants(matching: .any).matching(identifier: "v2-staged-row").firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 15), "no staged row")
+        XCTAssertTrue(waitForText(app, "seed-deck.pdf"), "no staged file name")
+        evidence("staged-row")
+        app.buttons.matching(identifier: "v2-staged-remove-0").firstMatch.tap()
+        XCTAssertFalse(waitForText(app, "seed-deck.pdf", timeout: 5), "the staged chip did not remove")
+    }
+
+    // MARK: - commands chip + Talk aloud
+
+    /// The chip menu carries the Talk aloud toggle and checklist playback.
+    func testCommandsChipTalkRows() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        let chip = app.descendants(matching: .any).matching(identifier: "v2-commands").firstMatch
+        XCTAssertTrue(chip.waitForExistence(timeout: 15), "no commands chip in the pill")
+        XCTAssertFalse(chip.label.isEmpty, "the chip has no accessibility label")
+        chip.tap()
+        XCTAssertTrue(app.buttons["Talk aloud"].waitForExistence(timeout: 10), "no Talk aloud toggle")
+        XCTAssertTrue(app.buttons["Read checklist aloud"].exists, "no checklist playback row")
+        // The toggle flips without leaving the thread (flipped back when
+        // the menu stays open, so reruns inherit a silent thread).
+        app.buttons["Talk aloud"].tap()
+        evidence("commands-talk")
+        if app.buttons["Talk aloud"].waitForExistence(timeout: 3) {
+            app.buttons["Talk aloud"].tap()
+        }
+        app.tap()
+        openThread(app)
+    }
+
+    // MARK: - slash commands
+
+    /// `/` hints the palette inline; Return opens the commands as a sheet
+    /// with the full row set.
+    func testSlashSheet() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        clearField(app)
+        let f = field(app)
+        XCTAssertTrue(f.waitForExistence(timeout: 15), "no composer field")
+        f.tap()
+        f.typeText("/")
+        // Inline hints first (typing keeps focus — no focus theft).
+        let quick = app.buttons.matching(identifier: "v2-slashquick-plan").firstMatch
+        XCTAssertTrue(quick.waitForExistence(timeout: 10), "no inline slash hints")
+        // Return submits to the sheet.
+        f.typeText("\n")
+        let sheet = app.descendants(matching: .any).matching(identifier: "v2-slash-sheet").firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: 10), "no slash sheet")
+        for id in ["plan", "work", "model", "files", "image", "talk", "integrations", "clear"] {
+            XCTAssertTrue(
+                app.buttons.matching(identifier: "v2-slash-\(id)").firstMatch.exists,
+                "no slash row /\(id)"
+            )
+        }
+        evidence("slash-sheet")
+        // Clear confirms inline — the pick alone clears nothing.
+        app.buttons.matching(identifier: "v2-slash-clear").firstMatch.tap()
+        XCTAssertTrue(waitForText(app, "Messages stay in this thread"), "no inline clear confirm")
+        app.buttons["Cancel"].firstMatch.tap()
+        app.buttons["Done"].firstMatch.tap()
+        XCTAssertTrue(sheet.waitForNonExistence(timeout: 10), "the slash sheet did not close")
+    }
+
+    /// `/clear` + Return confirms (alert) and clears view-local state only.
+    func testSlashClearConfirm() throws {
+        let app = launch(Self.base + ["-v2SeedStaged"])
+        openThread(app)
+        clearField(app)
+        let f = field(app)
+        XCTAssertTrue(f.waitForExistence(timeout: 15), "no composer field")
+        f.tap()
+        f.typeText("/clear")
+        f.typeText("\n")
+        let alert = app.alerts["Clear this chat?"].firstMatch
+        XCTAssertTrue(alert.waitForExistence(timeout: 10), "no /clear confirm alert")
+        evidence("slash-clear")
+        alert.buttons["Clear"].tap()
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "v2-staged-row").firstMatch.exists,
+                       "clear left staged files behind")
+    }
+
+    // MARK: - reply-to
+
+    /// Long-press a message → Reply arms the quote chip; × cancels; a send
+    /// carries the `> sender: snippet` line.
+    func testReplyQuote() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        clearField(app)
+        let f = field(app)
+        XCTAssertTrue(f.waitForExistence(timeout: 15), "no composer field")
+        f.tap()
+        f.typeText("quotable r28")
+        f.typeText("\n")
+        XCTAssertTrue(waitForText(app, "quotable r28"), "the sent text never echoed")
+        let bubble = app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "quotable r28")).firstMatch
+        bubble.press(forDuration: 1.2)
+        let reply = app.buttons.matching(identifier: "v2-reply-action").firstMatch
+        if !reply.waitForExistence(timeout: 5) {
+            // The system menu hosts the row under its visible title instead.
+            XCTAssertTrue(app.buttons["Reply"].waitForExistence(timeout: 5), "no Reply row on long-press")
+            app.buttons["Reply"].firstMatch.tap()
+        } else {
+            reply.tap()
+        }
+        XCTAssertTrue(waitForText(app, "Replying to"), "no reply quote chip")
+        XCTAssertTrue(waitForText(app, "quotable r28"), "the chip shows no snippet")
+        evidence("reply-chip")
+        // Cancel arms nothing…
+        app.buttons.matching(identifier: "v2-reply-cancel").firstMatch.tap()
+        XCTAssertTrue(waitForTextGone(app, "Replying to"), "the quote chip did not cancel")
+        // …and a re-armed reply rides the next send as a quote line.
+        bubble.press(forDuration: 1.2)
+        if app.buttons.matching(identifier: "v2-reply-action").firstMatch.waitForExistence(timeout: 5) {
+            app.buttons.matching(identifier: "v2-reply-action").firstMatch.tap()
+        } else {
+            app.buttons["Reply"].firstMatch.tap()
+        }
+        XCTAssertTrue(waitForText(app, "Replying to"), "no reply quote chip on re-arm")
+        f.tap()
+        f.typeText("answer r28")
+        app.buttons.matching(identifier: "v2-composer-send").firstMatch.tap()
+        XCTAssertTrue(waitForText(app, "> You: quotable r28"), "the sent text carries no quote line")
+        XCTAssertTrue(waitForTextGone(app, "Replying to"), "the quote survived its send")
+    }
+
+    // MARK: - dictation meter
+
+    /// While dictating, the pill shows the live level meter beside Record.
+    func testDictationMeter() throws {
+        let app = launch(Self.base + ["-v2PreviewDictation"])
+        openThread(app)
+        let meter = app.descendants(matching: .any).matching(identifier: "v2-dictation-meter").firstMatch
+        XCTAssertTrue(meter.waitForExistence(timeout: 15), "no dictation level meter")
+        let record = app.buttons.matching(identifier: "v2-record").firstMatch
+        XCTAssertTrue(record.exists, "no Record while dictating")
+        XCTAssertEqual(record.label, "Stop dictation")
+        evidence("dictation-meter")
+    }
+
+    // MARK: - stop while generating
+
+    /// A slow send swaps Send for Stop; Stop parks the flight quietly.
+    func testStopWhileSending() throws {
+        let app = launch(Self.base + ["-v2SlowSend=4"])
+        openThread(app)
+        clearField(app)
+        let f = field(app)
+        XCTAssertTrue(f.waitForExistence(timeout: 15), "no composer field")
+        f.tap()
+        f.typeText("slow r28")
+        app.buttons.matching(identifier: "v2-composer-send").firstMatch.tap()
+        let stop = app.buttons.matching(identifier: "v2-composer-stop").firstMatch
+        XCTAssertTrue(stop.waitForExistence(timeout: 10), "no Stop while generating")
+        XCTAssertEqual(stop.label, "Stop generating")
+        evidence("stop-generating")
+        stop.tap()
+        XCTAssertTrue(app.buttons.matching(identifier: "v2-composer-send").firstMatch.waitForExistence(timeout: 10),
+                      "Send did not return after Stop")
+        // A deliberate stop stamps no failure: no Not-sent banner follows.
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "v2-notsent-banner").firstMatch.exists,
+                       "Stop painted a Not-sent banner")
+    }
+
+    // MARK: - drafts per thread
+
+    /// A typed draft survives a relaunch on the same thread.
+    func testDraftSurvivesRelaunch() throws {
+        var app = launch(Self.base)
+        openThread(app)
+        clearField(app)
+        let f = field(app)
+        XCTAssertTrue(f.waitForExistence(timeout: 15), "no composer field")
+        f.tap()
+        f.typeText("r28 draft xyz")
+        app.terminate()
+        // Relaunch WITHOUT -v2ResetEntry: the entry restores General's
+        // thread (the draft's thread) with the disk draft intact.
+        app = XCUIApplication()
+        app.launchArguments += ["-v2FixtureUITest", "-v2SkipSetup", "-v2SuppressHaptics"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "relaunch never foregrounded")
+        openThread(app)
+        let reopened = field(app)
+        XCTAssertTrue(reopened.waitForExistence(timeout: 15), "no composer field after relaunch")
+        XCTAssertEqual(reopened.value as? String, "r28 draft xyz", "the disk draft did not survive relaunch")
+        evidence("draft-relaunch")
+        // Leave no trace for later suites: send it away.
+        reopened.tap()
+        app.buttons.matching(identifier: "v2-composer-send").firstMatch.tap()
+    }
+
+    // MARK: - @mentions
+
+    /// `@b` suggests @brain; the pick commits a removable chip.
+    func testMentionSuggestionAndChip() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        clearField(app)
+        let f = field(app)
+        XCTAssertTrue(f.waitForExistence(timeout: 15), "no composer field")
+        f.tap()
+        f.typeText("ask @b")
+        let suggestion = app.buttons.matching(identifier: "v2-mention-brain").firstMatch
+        XCTAssertTrue(suggestion.waitForExistence(timeout: 10), "no @brain suggestion")
+        suggestion.tap()
+        let chip = app.descendants(matching: .any).matching(identifier: "v2-mention-chip-brain").firstMatch
+        XCTAssertTrue(chip.waitForExistence(timeout: 10), "no committed @brain chip")
+        evidence("mention-chip")
+        app.buttons["Remove @brain mention"].firstMatch.tap()
+        XCTAssertTrue(chip.waitForNonExistence(timeout: 10), "the mention chip did not remove")
+    }
+
+    // MARK: - generate an image
+
+    /// Generate an image (prompt in the field) opens a real artifact tab.
+    func testImageGenerateOpensTab() throws {
+        let app = launch(Self.base + ["-v2SeedVisual", "-v2ResetVisual"])
+        openThread(app)
+        clearField(app)
+        let f = field(app)
+        XCTAssertTrue(f.waitForExistence(timeout: 15), "no composer field")
+        f.tap()
+        f.typeText("a lighthouse at dusk")
+        app.descendants(matching: .any).matching(identifier: "v2-commands").firstMatch.tap()
+        XCTAssertTrue(app.buttons["Generate an image"].waitForExistence(timeout: 10), "no Generate row")
+        app.buttons["Generate an image"].firstMatch.tap()
+        let peek = app.descendants(matching: .any).matching(identifier: "visual-peek").firstMatch
+        XCTAssertTrue(peek.waitForExistence(timeout: 15), "no artifact tab after Generate")
+        evidence("image-tab")
+    }
+
+    /// A slow visual open shows Generating… with a Stop that parks the run.
+    func testImageStop() throws {
+        let app = launch(Self.base + ["-v2SeedVisual", "-v2ResetVisual", "-v2SlowSend=30"])
+        openThread(app)
+        clearField(app)
+        let f = field(app)
+        XCTAssertTrue(f.waitForExistence(timeout: 15), "no composer field")
+        f.tap()
+        f.typeText("a slow harbor")
+        app.descendants(matching: .any).matching(identifier: "v2-commands").firstMatch.tap()
+        XCTAssertTrue(app.buttons["Generate an image"].waitForExistence(timeout: 10), "no Generate row")
+        app.buttons["Generate an image"].firstMatch.tap()
+        XCTAssertTrue(waitForText(app, "Generating…"), "no Generating… run")
+        evidence("image-generating")
+        app.buttons.matching(identifier: "v2-image-stop").firstMatch.tap()
+        XCTAssertTrue(app.buttons.matching(identifier: "v2-image-dismiss").firstMatch.waitForExistence(timeout: 10),
+                      "the stopped run offers no dismiss")
+    }
+
+    // MARK: - return sends + labels
+
+    /// The Return key sends (Slack-style); the sent text echoes in-thread.
+    func testReturnSends() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        clearField(app)
+        let f = field(app)
+        XCTAssertTrue(f.waitForExistence(timeout: 15), "no composer field")
+        f.tap()
+        f.typeText("return r28")
+        f.typeText("\n")
+        XCTAssertTrue(waitForText(app, "return r28"), "Return did not send")
+        XCTAssertEqual((field(app).value as? String) ?? "", "", "the field kept its text after send")
+        evidence("return-send")
+    }
+
+    /// Every pill control names itself for VoiceOver.
+    func testAccessibilityLabels() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        XCTAssertEqual(
+            app.descendants(matching: .any).matching(identifier: "v2-commands").firstMatch.label,
+            "Commands — specialist, mode, model, files, image generation"
+        )
+        XCTAssertEqual(app.buttons.matching(identifier: "v2-record").firstMatch.label, "Speak your message")
+        XCTAssertEqual(app.buttons.matching(identifier: "v2-composer-send").firstMatch.label, "Send message")
+        XCTAssertFalse(field(app).label.isEmpty, "the field has no accessibility label")
+        // The clip names itself once composing begins.
+        field(app).tap()
+        field(app).typeText("x")
+        XCTAssertEqual(
+            app.descendants(matching: .any).matching(identifier: "v2-attach").firstMatch.label,
+            "Attach and upload files"
+        )
+    }
+}

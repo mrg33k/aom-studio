@@ -37,6 +37,9 @@ final class SpeechService: ObservableObject {
 
     @Published private(set) var isListening = false
     @Published private(set) var guidance: Guidance?
+    /// R28 live dictation level, 0…1, for the pill's level meter. Updated on
+    /// the audio tap while listening; 0 whenever the mic is off.
+    @Published private(set) var level: Float = 0
 
     /// Current locale's recognizer, falling back to en-US so an exotic region setting
     /// still gets a working mic rather than a hidden one.
@@ -63,6 +66,7 @@ final class SpeechService: ObservableObject {
     func stop() {
         guard isListening else { return }
         isListening = false
+        level = 0
         generation += 1
         audioEngine.stop()
         audioEngine.inputNode.removeTap(onBus: 0)
@@ -124,8 +128,15 @@ final class SpeechService: ObservableObject {
 
             let input = audioEngine.inputNode
             let format = input.outputFormat(forBus: 0)
-            input.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
+            input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
                 request.append(buffer)
+                // R28: the pill's live meter reads this tap — RMS → 0…1.
+                // The tap is NOT the main actor; hop home before publishing.
+                let metered = Self.meterLevel(for: buffer)
+                Task { @MainActor [weak self] in
+                    guard let self, self.isListening else { return }
+                    self.level = metered
+                }
             }
             audioEngine.prepare()
             try audioEngine.start()
@@ -170,6 +181,33 @@ final class SpeechService: ObservableObject {
         }
     }
 
+    // MARK: - Level metering (R28)
+
+    /// RMS of float samples → 0…1 for the pill meter. Silence reads 0;
+    /// anything at or above -6 dBFS reads 1; the floor between is linear in
+    /// dB (-48 dB … -6 dB). Pure and nonisolated so tests pin it directly.
+    nonisolated static func normalizedLevel(rms: Float) -> Float {
+        guard rms > 0 else { return 0 }
+        let db = 20 * log10(rms)
+        if db <= -48 { return 0 }
+        if db >= -6 { return 1 }
+        return (db + 48) / 42
+    }
+
+    /// RMS of the first float channel of a tap buffer. Nil channel data (or
+    /// an empty buffer) reads as silence, never NaN.
+    nonisolated static func meterLevel(for buffer: AVAudioPCMBuffer) -> Float {
+        guard let channel = buffer.floatChannelData?[0] else { return 0 }
+        let count = Int(buffer.frameLength)
+        guard count > 0 else { return 0 }
+        var sum: Float = 0
+        for i in 0..<count {
+            let s = channel[i]
+            sum += s * s
+        }
+        return normalizedLevel(rms: sqrt(sum / Float(count)))
+    }
+
     // MARK: - Draft joining
 
     /// Where dictation appends: the draft as it stood at mic-tap, with exactly one
@@ -184,7 +222,7 @@ final class SpeechService: ObservableObject {
     #if DEBUG
     /// Force the visual states for the no-network design proofs only (PreviewHarness).
     /// Nothing here touches the mic or the recognizer.
-    func previewForceListening() { isListening = true }
+    func previewForceListening() { isListening = true; level = 0.6 }
     func previewForceDenied() {
         guidance = Guidance(
             text: "Microphone access is off for Corner. Turn it on in Settings to dictate.",
