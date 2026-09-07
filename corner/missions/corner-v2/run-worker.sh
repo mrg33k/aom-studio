@@ -13,6 +13,7 @@
 # and the orchestrator verifies every claim before anything is pushed.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
+AOMEA="$(cd "$HERE/../../../.." && pwd)"
 NAME="${1:?brief name}"; EFFORT="${2:-xhigh}"; STEPS="${3:-900}"
 SANDBOX_FLAG="--disable-sandbox"
 [[ "${4:-}" == "--safe" ]] && SANDBOX_FLAG=""
@@ -21,11 +22,13 @@ BRIEF="$HERE/briefs/$NAME.md"; LOG="$HERE/rounds/logs/$NAME.log"
 mkdir -p "$HERE/rounds/logs"
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH:$HOME/.local/bin"
 export CORNER_AGENT=muse AOM_TAB="corner-v2-$NAME"
-cd /Users/aom-inhouse/aom-studio-transfer || exit 2
+TRANSFER="$(cd "$AOMEA/.." && pwd)"
+cd "$TRANSFER" || exit 2
+START_TS="$(date +%s)"
 echo "start $(date '+%Y-%m-%d %H:%M:%S') effort=$EFFORT steps=$STEPS" > "$LOG"
 "$HOME/.local/bin/muse" exec \
   --prompt-file "$BRIEF" \
-  --workspace /Users/aom-inhouse/aom-studio-transfer \
+  --workspace "$TRANSFER" \
   --reasoning-effort "$EFFORT" \
   --max-model-steps "$STEPS" \
   --disable-approval \
@@ -35,5 +38,10 @@ echo "start $(date '+%Y-%m-%d %H:%M:%S') effort=$EFFORT steps=$STEPS" > "$LOG"
   >> "$LOG" 2>&1
 rc=$?
 echo "exit=$rc at $(date '+%Y-%m-%d %H:%M:%S')" >> "$LOG"
+# corner:gateway G1 — one ledger item per round, from the report's first
+# verdict line (or an honest failure item). Never fails the script.
+python3 "$AOMEA/scripts/gateway/round-append.py" \
+  --mission corner-v2 --rounds-dir "$HERE/rounds" --brief "$NAME" \
+  --rc "$rc" --log "$LOG" --since "$START_TS" >/dev/null 2>&1 || true
 tail -5 "$LOG"
 exit $rc
