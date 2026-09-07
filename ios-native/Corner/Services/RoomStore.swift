@@ -1436,6 +1436,56 @@ final class PreviewV2API: CornerV2API {
         ]
     }
 
+    /// R41 home: navigation nodes derived from the workspace tree (the
+    /// backend's `getNavigation` shape: flat projects + missions with the
+    /// thread each tap opens).
+    func navigation() async throws -> [V2NavNode] {
+        seedShipIfNeeded()
+        var nodes: [V2NavNode] = []
+        for project in workspace.projects {
+            nodes.append(V2NavNode(
+                id: project.id, threadId: project.threadID, kind: "project",
+                title: project.name, projectId: project.id,
+                tint: project.tintHex, needsYou: project.needsAttention
+            ))
+            for mission in project.missions {
+                nodes.append(V2NavNode(
+                    id: mission.id, threadId: mission.threadID, kind: "mission",
+                    title: mission.title, projectId: project.id,
+                    parentProjectId: project.id, tint: project.tintHex
+                ))
+            }
+        }
+        return nodes
+    }
+
+    /// R41 home: `ledger:latest` for the world. Unseeded launches serve no
+    /// rows (three onboarding cards); `-v2SeedHome` serves a fixed window
+    /// with one noise row and one foreign subject, so the UI test proves
+    /// the drop + skip + fill on the fixture.
+    func ledgerLatest(world: String, limit: Int) async throws -> [WorldLedgerItem] {
+        guard PreviewV2API.launchHasFlag("-v2SeedHome") else { return [] }
+        let now = Date().timeIntervalSince1970
+        return [
+            WorldLedgerItem(
+                id: "home-noise-1", world: world, what: "Started a corner-v2-chat run for the spring deck.",
+                subjects: ["aster"], kind: "started", atMs: (now + 30) * 1000
+            ),
+            WorldLedgerItem(
+                id: "home-aster-1", world: world, what: "Shipped the Aster home page hero.",
+                subjects: ["aster"], kind: "did", atMs: now * 1000
+            ),
+            WorldLedgerItem(
+                id: "home-general-1", world: world, what: "Tidied the General thread.",
+                subjects: ["general"], kind: "did", atMs: (now - 60) * 1000
+            ),
+            WorldLedgerItem(
+                id: "home-far-1", world: world, what: "Did something elsewhere.",
+                subjects: ["faraway"], kind: "did", atMs: (now - 120) * 1000
+            ),
+        ]
+    }
+
     func confirmCrossProjectWrite(id: String) async throws {
         confirmationConsumed = true
     }

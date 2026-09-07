@@ -583,7 +583,9 @@ final class CompMatchUITests: XCTestCase {
         let app = launch(Self.base)
         openThread(app)
         openDrawer(app)
-        for id in ["v2-drawer-new", "v2-drawer-new-project", "v2-drawer-record",
+        // R41 sync: HEAD dropped "Record a call" per Patrik's annotation —
+        // the row (and its identifier) no longer exists to assert.
+        for id in ["v2-drawer-new", "v2-drawer-new-project",
                    "v2-drawer-recent-row", "v2-drawer-project-row",
                    "v2-drawer-bell", "v2-drawer-settings"] {
             XCTAssertTrue(

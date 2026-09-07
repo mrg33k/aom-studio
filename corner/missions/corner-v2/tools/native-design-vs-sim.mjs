@@ -84,7 +84,7 @@ function usage() {
   console.log(`usage: node tools/native-design-vs-sim.mjs [options]
   --sim-390 UDID  --sim-402 UDID  --sim-440 UDID
   --design DIR  --out DIR  --modules DIR
-  --screens login,setup-1,setup-6,thread,drawer,settings,sheet-half,sheet-context,sheet-review,sheet-full,empty
+  --screens login,setup-1,setup-6,thread,drawer,settings,sheet-half,sheet-context,sheet-review,sheet-full,empty,home
   --skip-shoot (reuse last shots)  --keep-handoff`);
 }
 
@@ -101,6 +101,10 @@ const SCREENS = {
   "sheet-review":  { test: "testShoot09SheetReview", design: null,                              h: 844 },
   "sheet-full":    { test: "testShoot09bSheetFull", design: "R17-native-sheet-full-review-design.png", h: 844 },
   "empty":         { test: "testShoot10Empty",   design: "R17-native-empty-design.png",        h: 844 },
+  // R41 home: no design PNG (the welcome is phone-only; the desktop "new"
+  // screen is the reference, not a frame) — anchors only, like the empty
+  // screen's unreachable case but with required elements.
+  "home":          { test: "testShoot11Home",    design: null,                                h: 844 },
 };
 
 const DEVICES = [
@@ -157,9 +161,11 @@ const ANCHORS = {
       { label: "send", rgb: [91, 155, 255], tol: 8 },
     ],
   },
+  // R41 sync: HEAD dropped "Record a call" per Patrik's annotation —
+  // the row no longer exists to require.
   "drawer": {
     required: ["v2-drawer-close", "v2-drawer-new", "v2-drawer-new-project",
-               "v2-drawer-record", "v2-drawer-settings", "v2-drawer-bell"],
+               "v2-drawer-settings", "v2-drawer-bell"],
     frames: [
       { id: "v2-drawer-new", h: 48, tol: 2 },
       { id: "v2-drawer-new-project", h: 48, tol: 2 },
@@ -199,6 +205,17 @@ const ANCHORS = {
     scans: [{ kind: "sheet-handle-full", tol: 3 }],
   },
   "empty": { required: [], frames: [], pixels: [] }, // unreachable on a populated account
+  // R41 home: the centred content-column logo (never the nav — the nav
+  // shows no title here, hence the forbidden chat-title), the welcome
+  // line, and the three cards. The composer pair rides along as dumped
+  // evidence (required by the thread screen's own anchors, not this one).
+  "home": {
+    required: ["v2-home-logo", "v2-home-welcome",
+               "v2-home-card-0", "v2-home-card-1", "v2-home-card-2"],
+    forbidden: ["chat-title"],
+    frames: [],
+    pixels: [{ label: "ground", rgb: [15, 19, 25], tol: 6 }],
+  },
 };
 
 function readCreds() {

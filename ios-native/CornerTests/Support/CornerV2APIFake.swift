@@ -83,6 +83,10 @@ final class CornerV2APIFake: CornerV2API {
     var closeTabHandler: ((String) async throws -> Void)?
     var submitReviewHandler: ((String, [ReviewPin]) async throws -> SubmitReviewResult)?
     var ledgerHandler: ((String, String?) async throws -> [LedgerItem])?
+    var navigationHandler: (() async throws -> [V2NavNode])?
+    var ledgerLatestHandler: ((String, Int) async throws -> [WorldLedgerItem])?
+    /// Every `ledgerLatest` call's (world, limit), in order.
+    private(set) var ledgerLatestCalls: [(world: String, limit: Int)] = []
     var confirmCrossProjectWriteHandler: ((String) async throws -> Void)?
     var ensureWorkspaceHandler: (() async throws -> EnsureWorkspaceResult)?
     var confirmProposalHandler: ((String) async throws -> ConfirmProposalResult)?
@@ -222,6 +226,15 @@ final class CornerV2APIFake: CornerV2API {
 
     func ledger(workspaceID: String, after: String?) async throws -> [LedgerItem] {
         try await require(ledgerHandler, op: "ledger")(workspaceID, after)
+    }
+
+    func navigation() async throws -> [V2NavNode] {
+        try await require(navigationHandler, op: "navigation")()
+    }
+
+    func ledgerLatest(world: String, limit: Int) async throws -> [WorldLedgerItem] {
+        ledgerLatestCalls.append((world: world, limit: limit))
+        return try await require(ledgerLatestHandler, op: "ledgerLatest")(world, limit)
     }
 
     func confirmCrossProjectWrite(id: String) async throws {

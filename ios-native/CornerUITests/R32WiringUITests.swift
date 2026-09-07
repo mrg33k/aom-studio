@@ -143,8 +143,8 @@ final class R32WiringUITests: XCTestCase {
 
     // MARK: - clear chat
 
-    /// `/clear` confirms with the every-device copy; Clear empties the
-    /// thread to its empty state.
+    /// `/clear` confirms with the every-device copy; clearing General lands
+    /// on the welcome home (R41) — never the old empty-state bubble.
     func testClearEmptiesThread() throws {
         let app = launch(Self.base)
         openThread(app)
@@ -166,7 +166,12 @@ final class R32WiringUITests: XCTestCase {
         )
         evidence("clear-confirm")
         alert.buttons["Clear chat"].tap()
-        XCTAssertTrue(waitForText(app, "No messages yet", timeout: 15), "the thread did not empty")
+        let welcome = app.descendants(matching: .any).matching(identifier: "v2-home-welcome").firstMatch
+        XCTAssertTrue(welcome.waitForExistence(timeout: 15), "clearing did not land on home")
+        XCTAssertEqual(
+            app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "No messages yet")).count, 0,
+            "the empty-state bubble survived clear"
+        )
         evidence("clear-empty")
     }
 

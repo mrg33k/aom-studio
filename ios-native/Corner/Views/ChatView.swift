@@ -94,6 +94,9 @@ struct ChatView: View {
     /// Corner v2 conversation model (native Task 5). Inert on the legacy
     /// path; the v2 path below is the only thing that ever starts it.
     @StateObject private var v2model: V2ChatModel
+    /// R41 home: the welcome column's two reads + cards, loaded when the
+    /// General thread shows empty.
+    @StateObject private var v2home: V2HomeModel
     /// Corner v2 Visual Window state (native Task 7). Owned per thread: the
     /// server session is the durable copy, so a rebuild restores via load().
     /// Inert on the legacy path.
@@ -205,6 +208,7 @@ struct ChatView: View {
     init(room: Room) {
         _model = StateObject(wrappedValue: ChatViewModel(room: room))
         _v2model = StateObject(wrappedValue: V2ChatModel())
+        _v2home = StateObject(wrappedValue: V2HomeModel())
         _window = StateObject(wrappedValue: VisualWindowStore(api: WorkspaceStore.shared.v2api, visualSessionID: "legacy"))
         _v2review = StateObject(wrappedValue: V2ReviewStore(api: WorkspaceStore.shared.v2api))
         v2 = nil
@@ -218,6 +222,7 @@ struct ChatView: View {
         let context = V2ChatContext(thread: thread, project: project, mission: mission)
         _model = StateObject(wrappedValue: ChatViewModel(room: context.compatRoom))
         _v2model = StateObject(wrappedValue: V2ChatModel(api: WorkspaceStore.shared.v2api))
+        _v2home = StateObject(wrappedValue: V2HomeModel())
         _window = StateObject(wrappedValue: VisualWindowStore(api: WorkspaceStore.shared.v2api, visualSessionID: thread.visualSessionID))
         _v2review = StateObject(wrappedValue: V2ReviewStore(api: WorkspaceStore.shared.v2api))
         v2 = context
@@ -470,19 +475,23 @@ struct ChatView: View {
             // marker stays a 1pt overlay leaf — never on the VStack (R14: a
             // container identifier overwrites its children, and the title
             // must keep its own).
+            // R41 home: the nav keeps this layout and simply shows no title
+            // — the welcome carries the logo + greeting instead.
             VStack(spacing: 1) {
-                if let mission = v2?.mission {
-                    Text(v2?.project.name ?? mission.title)
-                        .font(.hanken(12.5).weight(.medium))
-                        .foregroundStyle(Theme.inkSoft)
+                if !v2ShowingHome {
+                    if let mission = v2?.mission {
+                        Text(v2?.project.name ?? mission.title)
+                            .font(.hanken(12.5).weight(.medium))
+                            .foregroundStyle(Theme.inkSoft)
+                            .lineLimit(1)
+                            .accessibilityIdentifier("chat-subtitle")
+                    }
+                    Text(v2?.title ?? v2model.displayTitle)
+                        .font(.hanken(16).weight(.semibold))
+                        .foregroundStyle(Theme.ink)
                         .lineLimit(1)
-                        .accessibilityIdentifier("chat-subtitle")
+                        .accessibilityIdentifier("chat-title")
                 }
-                Text(v2?.title ?? v2model.displayTitle)
-                    .font(.hanken(16).weight(.semibold))
-                    .foregroundStyle(Theme.ink)
-                    .lineLimit(1)
-                    .accessibilityIdentifier("chat-title")
             }
             .overlay(alignment: .top) {
                 Color.clear.frame(width: 1, height: 1)
@@ -506,6 +515,29 @@ struct ChatView: View {
         }
         .padding(.trailing, 12)
         .frame(height: 52)
+    }
+
+    /// R41 home: the General thread with no messages (and nothing queued)
+    /// is the welcome screen — and the app's entry when the last thread
+    /// was General. The nav keeps its layout and shows no title there.
+    private var v2ShowingHome: Bool {
+        guard let context = v2, context.mission == nil, context.project.kind == .general else {
+            return false
+        }
+        return v2model.loadState == .empty && v2model.unsentWithoutEcho.isEmpty
+    }
+
+    /// A home card tap: the destination thread opens with the composer
+    /// pre-filled "Pick up where we left off on <project>." — staged as a
+    /// draft, never sent. A card naming this very thread pre-fills in
+    /// place (opening it would be a no-op and strand the stash).
+    private func v2HomeOpen(_ suggestion: HomeSuggestion) {
+        if suggestion.projectID == v2?.project.id {
+            v2model.draft = suggestion.prefillText
+            return
+        }
+        V2DraftStore.stash(suggestion.prefillText, threadID: suggestion.projectThreadID)
+        router.open(.project(projectID: suggestion.projectID))
     }
 
     /// R32 P081: an open run — or a send still waiting on its first agent
@@ -566,7 +598,18 @@ struct ChatView: View {
                     case .error(let message):
                         centeredNotice(message, systemImage: "wifi.exclamationmark")
                     case .empty where v2model.unsentWithoutEcho.isEmpty:
-                        centeredNotice("No messages yet — say something.", systemImage: "bubble.left")
+                        // R41 home: the General thread with no messages is
+                        // the welcome screen. Any other empty thread keeps
+                        // the plain notice.
+                        if v2ShowingHome {
+                            V2HomeWelcomeView(
+                                home: v2home,
+                                onOpenProject: v2HomeOpen,
+                                onPrefill: { v2model.draft = $0 }
+                            )
+                        } else {
+                            centeredNotice("No messages yet — say something.", systemImage: "bubble.left")
+                        }
                     case .empty, .ready:
                         // R40 L030: the window is full when exactly the
                         // window's rows came back — the web's

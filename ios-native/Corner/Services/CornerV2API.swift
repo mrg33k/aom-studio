@@ -75,6 +75,11 @@ protocol CornerV2API {
     func closeVisualTab(id: String) async throws
     func submitReview(artifactID: String, pins: [ReviewPin]) async throws -> SubmitReviewResult
     func ledger(workspaceID: String, after: String?) async throws -> [LedgerItem]
+    /// R41 home: the flat projects + missions list (`v2Workspace:getNavigation`).
+    func navigation() async throws -> [V2NavNode]
+    /// R41 home: the organization ledger's newest rows (`ledger:latest` for
+    /// the account's world). `limit` is newest-N, newest first.
+    func ledgerLatest(world: String, limit: Int) async throws -> [WorldLedgerItem]
     func confirmCrossProjectWrite(id: String) async throws
     // Beyond the plan's protocol: the subscribable reads are queries that
     // resolve only after `ensureWorkspace`, and proposals need confirming.
@@ -238,6 +243,17 @@ extension ConvexEndpoint {
         var args: [String: Any] = ["workspaceId": workspaceID]
         if let after { args["after"] = after }
         return v2("ledger", kind: .query, args: args)
+    }
+
+    /// R41 home: `v2Workspace:getNavigation` (projects + missions, no args —
+    /// the viewer picks the world).
+    static var v2Navigation: ConvexEndpoint {
+        try! ConvexEndpoint(kind: .query, path: "v2Workspace:getNavigation", args: [:])
+    }
+
+    /// R41 home: `ledger:latest` for the account's world, newest first.
+    static func ledgerLatest(world: String, limit: Int) -> ConvexEndpoint {
+        try! ConvexEndpoint(kind: .query, path: "ledger:latest", args: ["world": world, "limit": limit])
     }
 
     static var v2PendingConfirmations: ConvexEndpoint {
@@ -415,6 +431,14 @@ final class DefaultCornerV2API: CornerV2API {
 
     func ledger(workspaceID: String, after: String?) async throws -> [LedgerItem] {
         try await service.request(.v2Ledger(workspaceID: workspaceID, after: after), as: [LedgerItem].self)
+    }
+
+    func navigation() async throws -> [V2NavNode] {
+        try await service.request(.v2Navigation, as: [V2NavNode].self)
+    }
+
+    func ledgerLatest(world: String, limit: Int) async throws -> [WorldLedgerItem] {
+        try await service.request(.ledgerLatest(world: world, limit: limit), as: [WorldLedgerItem].self)
     }
 
     func confirmCrossProjectWrite(id: String) async throws {

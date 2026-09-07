@@ -196,7 +196,14 @@ final class CornerV2FlowUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
         openEntryThread(app)
-        XCTAssertEqual(chatTitle.label, "General", "a clean launch does not open General's thread")
+        // A clean launch lands on General's empty thread: the welcome home
+        // (R41) — no nav title, the greeting, three cards — never a tree.
+        XCTAssertFalse(
+            app.staticTexts.matching(identifier: "chat-title").firstMatch.exists,
+            "home shows a nav title"
+        )
+        let home = app.descendants(matching: .any).matching(identifier: "v2-home-welcome").firstMatch
+        XCTAssertTrue(home.waitForExistence(timeout: 15), "a clean launch does not open General's home")
         assertNoTree(app)
         evidence("R23-entry-general")
 
@@ -288,9 +295,8 @@ final class CornerV2FlowUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
         openEntryThread(app)
-        let title = app.staticTexts.matching(identifier: "chat-title").firstMatch
-        XCTAssertTrue(title.waitForExistence(timeout: 15), "project chat has no title")
-        let projectName = title.label
+        // The entry is General's empty thread: the welcome home shows no
+        // title until the first message lands (R41).
 
         let probe = "@research find competitors \(Int(Date().timeIntervalSince1970))"
         let field = v2Field(in: app)
@@ -309,7 +315,10 @@ final class CornerV2FlowUITests: XCTestCase {
         XCTAssertTrue(labels.matching(NSPredicate(format: "label == 'Research'")).count >= 1,
                       "the @research reply carries no visible Research label")
         evidence("05-send-reply")
-        XCTAssertEqual(title.label, projectName, "sending navigated away from the thread")
+        // The first message ends the welcome: the title is back, still the project.
+        let title = app.staticTexts.matching(identifier: "chat-title").firstMatch
+        XCTAssertTrue(title.waitForExistence(timeout: 15), "the first message did not return the title")
+        XCTAssertEqual(title.label, "General", "sending navigated away from the thread")
     }
 
     // MARK: - native Task 6 flows
@@ -505,10 +514,15 @@ final class CornerV2FlowUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
 
-        // 1. The launch lands straight on the thread — General, no tree.
+        // 1. The launch lands straight on the thread — General's empty
+        // thread, i.e. the welcome home (R41): no title, the greeting.
         openEntryThread(app)
-        XCTAssertTrue(chatTitle.waitForExistence(timeout: 15), "entry thread has no title")
-        XCTAssertEqual(chatTitle.label, "General", "a clean launch does not open General's thread")
+        XCTAssertFalse(
+            chatTitle.exists,
+            "home shows a nav title"
+        )
+        let home = app.descendants(matching: .any).matching(identifier: "v2-home-welcome").firstMatch
+        XCTAssertTrue(home.waitForExistence(timeout: 15), "a clean launch does not open General's home")
         assertNoTree(app)
         evidence("01-entry")
 

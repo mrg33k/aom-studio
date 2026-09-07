@@ -301,7 +301,9 @@ final class VisualWindowUITests: XCTestCase {
         app.launchArguments += ["-v2RouteMode=confirm"]
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
-        // A project chat: title only, no subtitle line.
+        // A project chat: title only, no subtitle line. (-v2SeedVisual
+        // seeds file cards on this thread, so General is NOT empty here —
+        // the R41 welcome only replaces the empty General thread.)
         openGeneralChat(app)
         XCTAssertEqual(
             app.staticTexts.matching(identifier: "chat-title").firstMatch.label, "General"

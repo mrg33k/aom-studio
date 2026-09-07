@@ -482,4 +482,42 @@ final class R19ShootScreens: XCTestCase {
             NSLog("R19STATUS empty missing no-home")
         }
     }
+
+    /// R41 home: the entry IS General's thread (-v2ResetEntry pins it) and
+    /// on the e2e account that thread is empty — so the entry is the
+    /// welcome. Shoots it with its real ledger-driven cards and dumps the
+    /// gate anchors, including chat-title to prove the nav shows no title.
+    func testShoot11Home() throws {
+        launch(Self.harness + ["-v2SkipSetup"])
+        let welcome = app.descendants(matching: .any).matching(identifier: "v2-home-welcome").firstMatch
+        guard welcome.waitForExistence(timeout: 40) else {
+            if threadUp() {
+                NSLog("R19STATUS home missing general-not-empty")
+            } else {
+                NSLog("R19STATUS home missing no-home")
+            }
+            return
+        }
+        // The three cards ride two network reads; the shot waits for them.
+        let cards = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'v2-home-card-'"))
+        let deadline = Date().addingTimeInterval(25)
+        while Date() < deadline, cards.count < 3 {
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+        guard cards.count >= 3 else {
+            NSLog("R19STATUS home missing no-cards")
+            return
+        }
+        settle()
+        shot("home")
+        frames("home", ["v2-home-logo", "v2-home-illustration", "v2-home-welcome",
+                        "v2-home-card-0", "v2-home-card-1", "v2-home-card-2",
+                        "v2-composer-field", "v2-composer-send",
+                        // Dumped to prove absence: home shows no nav title.
+                        "chat-title"])
+        // The left gutter (cards live inside the 21pt content column, like
+        // the thread) — always flat ground, never card fill.
+        sample("home", "ground", CGPoint(x: 10, y: 400))
+        NSLog("R19STATUS home ok")
+    }
 }

@@ -532,6 +532,147 @@ struct LedgerItem: Codable, Identifiable, Equatable {
     let supersedesID: String?
 }
 
+/// One `v2Workspace:getNavigation` node (R41 home): the flat projects +
+/// missions list. Titles (not slugs) ride the wire, so the home suggestion
+/// builder matches ledger subjects against `slugifiedTitle` — the backend's
+/// `slugify` lowercases and turns every non-alphanumeric run into one dash.
+struct V2NavNode: Codable, Equatable {
+    let id: String
+    let threadId: String
+    let kind: String // "project" or "mission"
+    let title: String
+    let projectId: String
+    let parentProjectId: String?
+    let tint: String?
+    let needsYou: Bool
+    let lastActivityAt: Double?
+
+    var isProject: Bool { kind == "project" }
+
+    /// The backend's `slugify(name)`: lowercase, `[^a-z0-9]+` → `-`, trim
+    /// dashes. Ledger subjects are slugs, so this is the join key.
+    var slugifiedTitle: String {
+        var out = ""
+        var dashed = true
+        for scalar in title.lowercased().unicodeScalars {
+            let v = scalar.value
+            let alnum = (v >= 97 && v <= 122) || (v >= 48 && v <= 57)
+            if alnum {
+                out.unicodeScalars.append(scalar)
+                dashed = false
+            } else if !dashed {
+                out.append("-")
+                dashed = true
+            }
+        }
+        while out.hasSuffix("-") { out.removeLast() }
+        return out
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, threadId, kind, title, projectId, parentProjectId, tint, needsYou, lastActivityAt
+    }
+
+    init(
+        id: String, threadId: String, kind: String, title: String, projectId: String,
+        parentProjectId: String? = nil, tint: String? = nil,
+        needsYou: Bool = false, lastActivityAt: Double? = nil
+    ) {
+        self.id = id
+        self.threadId = threadId
+        self.kind = kind
+        self.title = title
+        self.projectId = projectId
+        self.parentProjectId = parentProjectId
+        self.tint = tint
+        self.needsYou = needsYou
+        self.lastActivityAt = lastActivityAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        threadId = try container.decode(String.self, forKey: .threadId)
+        kind = (try? container.decode(String.self, forKey: .kind)) ?? "project"
+        title = try container.decode(String.self, forKey: .title)
+        projectId = (try? container.decode(String.self, forKey: .projectId)) ?? ""
+        parentProjectId = try? container.decodeIfPresent(String.self, forKey: .parentProjectId)
+        tint = try? container.decodeIfPresent(String.self, forKey: .tint)
+        needsYou = (try? container.decodeIfPresent(Bool.self, forKey: .needsYou)) ?? false
+        if let ms = try? container.decodeIfPresent(Double.self, forKey: .lastActivityAt) {
+            lastActivityAt = ms
+        } else if let ms = try? container.decodeIfPresent(Int.self, forKey: .lastActivityAt) {
+            lastActivityAt = Double(ms)
+        } else {
+            lastActivityAt = nil
+        }
+    }
+}
+
+/// One `ledger:latest` row (R41 home): the organization ledger's plain
+/// sentence (`what`) plus its subject slugs. A different shape from the
+/// workspace `LedgerItem` (that one is `description` + `subjectIDs`).
+struct WorldLedgerItem: Codable, Equatable {
+    let id: String
+    let world: String?
+    let who: String?
+    let surface: String?
+    let what: String
+    let subjects: [String]
+    let kind: String?
+    /// Authoritative freshness: the backend stores both `atMs` (number)
+    /// and `at` (ISO string).
+    let atMs: Double?
+    let at: Date?
+
+    /// Seconds since epoch — `atMs` first, `at` second, never nil (an
+    /// undated row sorts oldest instead of failing the decode).
+    var freshness: TimeInterval {
+        if let atMs { return atMs / 1000 }
+        if let at { return at.timeIntervalSince1970 }
+        return 0
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, world, who, surface, what, subjects, kind, atMs, at
+    }
+
+    init(
+        id: String, world: String? = nil, who: String? = nil, surface: String? = nil,
+        what: String, subjects: [String], kind: String? = nil,
+        atMs: Double? = nil, at: Date? = nil
+    ) {
+        self.id = id
+        self.world = world
+        self.who = who
+        self.surface = surface
+        self.what = what
+        self.subjects = subjects
+        self.kind = kind
+        self.atMs = atMs
+        self.at = at
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        world = try? container.decodeIfPresent(String.self, forKey: .world)
+        who = try? container.decodeIfPresent(String.self, forKey: .who)
+        surface = try? container.decodeIfPresent(String.self, forKey: .surface)
+        what = try container.decode(String.self, forKey: .what)
+        subjects = (try? container.decodeIfPresent([String].self, forKey: .subjects)) ?? []
+        kind = try? container.decodeIfPresent(String.self, forKey: .kind)
+        if let ms = try? container.decodeIfPresent(Double.self, forKey: .atMs) {
+            atMs = ms
+        } else if let ms = try? container.decodeIfPresent(Int.self, forKey: .atMs) {
+            atMs = Double(ms)
+        } else {
+            atMs = nil
+        }
+        at = try? container.decodeIfPresent(Date.self, forKey: .at)
+    }
+}
+
 struct CrossProjectWriteConfirmation: Codable, Equatable {
     let id: String
     let sourceThreadID: String
