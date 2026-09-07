@@ -1078,6 +1078,11 @@ final class PreviewV2API: CornerV2API {
 
     func threadEvents(threadID: String) async throws -> [ThreadEvent] {
         seedCompMatchIfNeeded()
+        // R23 P070: the visual card event seeds here, not only behind the
+        // window's first load. The entry opens the thread directly, so the
+        // first fetch must already carry the cards — winning or losing a
+        // task race against window.start is not a seeding strategy.
+        seedVisualIfNeeded()
         return chatEvents
     }
 

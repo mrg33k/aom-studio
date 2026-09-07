@@ -1,19 +1,25 @@
 import XCTest
 
-// corner:corner-smooth-loop R0-ios — the native screen tour.
+// corner:corner-smooth-loop R0-ios — the native screen tour, R23-rebased.
 //
-// Visits every home surface and every room surface, photographs each one, and
+// R23 P070 retired the home tree: the app opens INTO the last thread (or
+// General's) and every navigation happens through the drawer. The tour walks
+// the new product path — thread, drawer, search, intake sheet, composer,
+// review sheet, files, settings, notifications — photographs each one, and
 // keeps going when an element is missing: a MISSING frame plus an XCTFail per
 // absent step, then on to the next step. A missing element is a finding, not a
 // reason to abort.
 //
-// The tour never sends a message, never creates a room, never deletes anything,
-// and never leaves a setting changed. Composer typing is always cleared, never
-// sent. The theme round-trip (21/22) restores whatever theme it started from.
+// The tour never sends a message, never creates anything, never deletes
+// anything, and never leaves a setting changed. Composer typing is always
+// cleared, never sent. The intake sheet is opened, never submitted.
 //
 // R0b: launches with -screenTour (frozen ambient animation) and the real
 // backend. Stops after the sign-in verdict (01c) while tour credentials are
 // known bad; every later frame is MISSING with reason `credentials`.
+//
+// Retired with the tree (R23, no UI path anymore — see the round report):
+// tracker, review-queue card, email card, background work, theme round-trip.
 final class ScreenTour: XCTestCase {
 
     private var app: XCUIApplication!
@@ -34,8 +40,9 @@ final class ScreenTour: XCTestCase {
         // R0b gate: freeze ambient animation (ASCIIBackground timeline +
         // repeatForever pulses) so the main thread idles for snapshots.
         app.launchArguments += ["-screenTour"]
-        // The tour walks the legacy screens, not first-run setup.
-        app.launchArguments += ["-v2SkipSetup"]
+        // The tour walks the signed-in app, not first-run setup — and R23 pins
+        // the entry to General's thread so every run starts in the same place.
+        app.launchArguments += ["-v2SkipSetup", "-v2ResetEntry"]
         addUIInterruptionMonitor(withDescription: "System Dialog") { alert in
             for label in ["Allow", "Don't Allow", "OK", "Not Now"] {
                 let button = alert.buttons[label]
@@ -67,17 +74,27 @@ final class ScreenTour: XCTestCase {
     /// one per frame — per-frame MISSING shots would all show the same screen.
     private func markPostSigninMissing(reason: String) {
         let tail = [
-            "02-home", "03-home-scrolled", "04-home-bottom", "05-search-open",
-            "06-menu-open", "07-new-room-sheet", "08-room", "09-room-scrolled-up",
-            "10-room-keyboard", "11-room-typed", "12a-room-files",
-            "12b-room-settings", "12c-room-history", "13-back-home", "14-files",
-            "15-tracker", "16-review", "17-email", "18-settings-sheet",
-            "19-notifications-sheet", "20-background-work", "21-theme-light",
-            "22-theme-restored",
+            "02-thread", "03-thread-scrolled", "04-thread-bottom",
+            "05-drawer-search", "06-drawer-open", "07-intake-sheet",
+            "08-thread-deck", "09-sheet", "10-thread-keyboard",
+            "11-thread-typed", "12-files", "13-settings", "14-notifications",
         ]
         missingFrames.append(contentsOf: tail)
         note("captured=\(capturedFrames.count) missing=\(missingFrames.joined(separator: ","))")
         XCTFail("tour stops at sign-in (\(reason)): \(tail.count) later frames MISSING")
+    }
+
+    /// Real-backend creds: the shell never reaches the on-sim runner (R19
+    /// finding), so the gate script drops /tmp/r19-diag-env.json first.
+    private func backendCreds() -> (String, String)? {
+        let env = ProcessInfo.processInfo.environment
+        if let e = env["TOUR_EMAIL"], !e.isEmpty,
+           let p = env["TOUR_PASSWORD"], !p.isEmpty { return (e, p) }
+        if let data = try? Data(contentsOf: URL(fileURLWithPath: "/tmp/r19-diag-env.json")),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: String],
+           let e = json["email"], !e.isEmpty,
+           let p = json["password"], !p.isEmpty { return (e, p) }
+        return nil
     }
 
     private func note(_ line: String) {
@@ -120,118 +137,102 @@ final class ScreenTour: XCTestCase {
         return app.otherElements[id].firstMatch
     }
 
-    private func roomListUp(timeout: TimeInterval) -> Bool {
+    /// R23: signed in means the entry thread is up — the chat screen IS home.
+    /// Gentle polling (one snapshot a second) rather than waitForExistence:
+    /// on a saturated cold start the waiter's snapshot hammering starves the
+    /// main thread it is waiting on, while spaced single snapshots get
+    /// through (R23 gate-1: chat rendered in 5s, the waiter still found
+    /// nothing in 30s).
+    private func threadUp(timeout: TimeInterval) -> Bool {
+        let marker = app.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
-            if scoped("room-list-screen").exists { return true }
+            if marker.exists { return true }
+            Thread.sleep(forTimeInterval: 1)
         }
-        return false
+        return marker.exists
     }
 
-    private func chatScreenUp(timeout: TimeInterval) -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if scoped("chat-screen").exists { return true }
-        }
-        return false
-    }
-
-    private var firstRoomRow: XCUIElement {
-        // The row combines its children and carries .isButton: it is a Button.
-        app.buttons.matching(identifier: "room-row").firstMatch
-    }
-
-    private var composer: XCUIElement {
-        app.textFields["chat-composer"].firstMatch
-    }
-
-    private var searchChip: XCUIElement {
-        let byID = app.buttons["search-chip"].firstMatch
-        if byID.waitForExistence(timeout: 3) { return byID }
-        return app.buttons.matching(NSPredicate(format: "label == 'Search rooms'")).firstMatch
-    }
-
-    private var homeMenu: XCUIElement {
-        let byID = app.buttons["home-menu"].firstMatch
-        if byID.waitForExistence(timeout: 3) { return byID }
-        return app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Menu'")).firstMatch
-    }
-
-    private var newRoomButton: XCUIElement {
-        let byID = app.buttons["new-room-button"].firstMatch
-        if byID.waitForExistence(timeout: 3) { return byID }
-        return app.buttons["New room"].firstMatch
-    }
-
-    private var roomMoreOptions: XCUIElement {
-        let byID = app.buttons["room-more-options"].firstMatch
-        if byID.waitForExistence(timeout: 3) { return byID }
-        return app.buttons["More options"].firstMatch
+    /// The v2 composer field, whichever AX type the OS surfaces it as.
+    private func v2Composer() -> XCUIElement {
+        let field = app.textFields.matching(identifier: "v2-composer-field").firstMatch
+        if field.waitForExistence(timeout: 5) { return field }
+        return app.textViews.matching(identifier: "v2-composer-field").firstMatch
     }
 
     private func navBar(named title: String) -> XCUIElement {
         app.navigationBars[title].firstMatch
     }
 
-    // MARK: - menu helpers
+    // MARK: - drawer helpers (R23: the drawer is the navigation)
 
-    /// Open the home hamburger menu. Returns false (and records MISSING) when absent.
+    /// Open the drawer from a thread. Returns false (and records MISSING)
+    /// when the burger is absent. Idempotent: a tap on the covered burger
+    /// would hit the scrim and close the drawer instead.
     @discardableResult
-    private func openMenu(frame: String, step: String) -> Bool {
-        let menu = homeMenu
-        guard menu.waitForExistence(timeout: 10) else {
-            recordMissing(frame: frame, step: step, element: "home menu button")
+    private func openDrawer(frame: String, step: String) -> Bool {
+        if scoped("v2-drawer").exists { return true }
+        let burger = app.buttons["v2-drawer-button"].firstMatch
+        guard burger.waitForExistence(timeout: 10) else {
+            recordMissing(frame: frame, step: step, element: "drawer button")
             return false
         }
-        menu.tap()
+        burger.tap()
         settle(1)
+        guard scoped("v2-drawer").exists else {
+            recordMissing(frame: frame, step: step, element: "drawer")
+            return false
+        }
         return true
     }
 
-    /// Dismiss an open menu by tapping the Corner logo (a tap outside the menu).
-    private func dismissMenu() {
-        let logo = app.images.matching(NSPredicate(format: "label == 'Corner'")).firstMatch
-        if logo.waitForExistence(timeout: 5) { logo.tap() }
+    private func closeDrawer() {
+        let close = app.buttons["v2-drawer-close"].firstMatch
+        if close.waitForExistence(timeout: 5) { close.tap() }
         settle(1)
     }
 
-    /// Tap the navigation back chevron and wait for the room list. Frame-scoped.
+    /// Tap the drawer row (project or mission) whose label contains the text.
     @discardableResult
-    private func backToHome(frame: String, step: String) -> Bool {
+    private func tapDrawerRow(id: String, contains text: String, frame: String, step: String) -> Bool {
+        let rows = app.buttons.matching(identifier: id)
+        guard rows.firstMatch.waitForExistence(timeout: 10) else {
+            recordMissing(frame: frame, step: step, element: "drawer rows \(id)")
+            return false
+        }
+        for i in 0..<rows.count {
+            let row = rows.element(boundBy: i)
+            if row.label.localizedCaseInsensitiveContains(text) {
+                row.tap()
+                settle(1)
+                return true
+            }
+        }
+        recordMissing(frame: frame, step: step, element: "drawer row \(text)")
+        return false
+    }
+
+    /// Pop a pushed screen (Files, archive) back to the entry thread.
+    @discardableResult
+    private func backToThread(frame: String, step: String) -> Bool {
         let back = app.navigationBars.firstMatch.buttons.firstMatch
         guard back.waitForExistence(timeout: 10) else {
             recordMissing(frame: frame, step: step, element: "navigation back button")
             return false
         }
         back.tap()
-        guard roomListUp(timeout: 10) else {
-            recordMissing(frame: frame, step: step, element: "room list after back")
+        guard threadUp(timeout: 10) else {
+            recordMissing(frame: frame, step: step, element: "thread after back")
             return false
         }
         settle(1)
         return true
     }
 
-    private func themeButton() -> XCUIElement {
-        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Theme:'")).firstMatch
-    }
-
-    /// "Theme: Dark" -> "Dark". Nil when the menu is not open or has no theme row.
-    private func currentThemeName() -> String? {
-        let button = themeButton()
-        guard button.waitForExistence(timeout: 5) else { return nil }
-        guard let colon = button.label.firstIndex(of: ":") else { return nil }
-        return String(button.label[button.label.index(after: colon)...])
-            .trimmingCharacters(in: .whitespaces)
-    }
-
     // MARK: - the tour
 
     func testTour() {
-        guard let email = ProcessInfo.processInfo.environment["TOUR_EMAIL"],
-              !email.isEmpty,
-              let password = ProcessInfo.processInfo.environment["TOUR_PASSWORD"],
-              !password.isEmpty else {
+        guard let (email, password) = backendCreds() else {
             XCTFail("TOUR_EMAIL / TOUR_PASSWORD must be set in the test environment")
             return
         }
@@ -240,16 +241,9 @@ final class ScreenTour: XCTestCase {
         app.launch()
 
         // --- auth branch -----------------------------------------------------
-        if roomListUp(timeout: 15) {
+        if threadUp(timeout: 15) {
             let ms = Int(Date().timeIntervalSince(launchDate) * 1000)
-            note("signin=skipped (Keychain session survived; room-list in \(ms) ms)")
-        } else if chatScreenUp(timeout: 5) {
-            // Restoration landed straight in the last room: back out to home.
-            let ms = Int(Date().timeIntervalSince(launchDate) * 1000)
-            note("launch restored into a room (\(ms) ms); backing out to home")
-            if backToHome(frame: "02-home", step: "restore-back-out") {
-                note("signin=skipped (session survived; restored into a room)")
-            }
+            note("signin=skipped (Keychain session survived; thread in \(ms) ms)")
         } else {
             // Cold sign-in. Primary path: real element interaction on the real
             // sign-in screen — the -screenTour gate keeps the main thread idle
@@ -272,9 +266,17 @@ final class ScreenTour: XCTestCase {
                 emailField.typeText(email)
                 settle(1)
 
-                if emailContinue.exists && emailContinue.isHittable {
+                // The keyboard covers the Continue button (email step sits at
+                // the bottom) and its return key carries no text label, so
+                // submit with Return through the field — its onSubmit advances
+                // to the password step. The button is the fallback when it is
+                // hittable.
+                emailField.typeText("\n")
+                settle(2)
+                if !app.secureTextFields.firstMatch.waitForExistence(timeout: 5),
+                   emailContinue.exists && emailContinue.isHittable {
                     emailContinue.tap()
-                    settle(1)
+                    settle(2)
                 }
 
                 let passwordField = app.secureTextFields.firstMatch
@@ -304,13 +306,13 @@ final class ScreenTour: XCTestCase {
                 var needsPassword = false
                 let deadline = Date().addingTimeInterval(20)
                 while Date() < deadline {
-                    if roomListUp(timeout: 2) { signedIn = true; break }
+                    if threadUp(timeout: 2) { signedIn = true; break }
                     if app.staticTexts["Set your password"].firstMatch.exists {
                         needsPassword = true; break
                     }
                 }
                 if signedIn {
-                    note("signin_tap_to_home_ms=\(Int(Date().timeIntervalSince(tapDate) * 1000))")
+                    note("signin_tap_to_thread_ms=\(Int(Date().timeIntervalSince(tapDate) * 1000))")
                 } else {
                     settle(1)
                     shot("01c-signin-rejected")
@@ -327,19 +329,19 @@ final class ScreenTour: XCTestCase {
                 // Fallback: even the gate did not free the snapshot service.
                 // No element query is needed for a screenshot, so photograph
                 // the sign-in screen raw, then relaunch with the app's own
-                // auto-sign-in hook and continue from the home screen.
+                // auto-sign-in hook and continue from the entry thread.
                 note("signin_path=fallback-auto-signin (no sign-in button in 10 s under -screenTour)")
                 shot("00-signin-empty")
                 app.terminate()
                 app.launchEnvironment["AUTO_SIGNIN_EMAIL"] = email
                 app.launchEnvironment["AUTO_SIGNIN_PASSWORD"] = password
                 app.launch()
-                if roomListUp(timeout: 30) {
-                    note("signin=auto (fallback relaunch reached home)")
+                if threadUp(timeout: 30) {
+                    note("signin=auto (fallback relaunch reached the thread)")
                 } else {
                     settle(1)
                     shot("01c-signin-rejected")
-                    note("signin=fallback relaunch did not reach home")
+                    note("signin=fallback relaunch did not reach the thread")
                     markPostSigninMissing(reason: "credentials")
                     attachTiming()
                     return
@@ -347,394 +349,229 @@ final class ScreenTour: XCTestCase {
             }
         }
 
-        // --- 02/03/04 home ---------------------------------------------------
-        guard roomListUp(timeout: 15) else {
-            recordMissing(frame: "02-home", step: "home", element: "room list")
+        // --- 02/03/04 entry thread -------------------------------------------
+        guard threadUp(timeout: 15) else {
+            recordMissing(frame: "02-thread", step: "thread", element: "entry thread")
             attachTiming()
             return
         }
         settle(2)
-        shot("02-home")
+        shot("02-thread")
         app.swipeUp()
         settle(1)
-        shot("03-home-scrolled")
-        app.swipeUp()
+        shot("03-thread-scrolled")
         app.swipeUp()
         app.swipeUp()
         settle(1)
-        shot("04-home-bottom")
+        shot("04-thread-bottom")
 
-        // --- 05 search -------------------------------------------------------
+        // --- 05 drawer search --------------------------------------------------
         do {
-            let chip = searchChip
-            guard chip.waitForExistence(timeout: 10) else {
-                recordMissing(frame: "05-search-open", step: "search", element: "search chip")
-                throw SearchDone()
-            }
-            chip.tap()
-            let field = app.textFields["Search rooms"].firstMatch
+            guard openDrawer(frame: "05-drawer-search", step: "search") else { throw SearchDone() }
+            let field = app.textFields.matching(identifier: "v2-drawer-search").firstMatch
             guard field.waitForExistence(timeout: 10) else {
-                recordMissing(frame: "05-search-open", step: "search", element: "search field")
+                recordMissing(frame: "05-drawer-search", step: "search", element: "drawer search field")
                 throw SearchDone()
             }
             field.tap()
             field.typeText("a")
             settle(1)
-            shot("05-search-open")
-            let clear = app.buttons["Clear and close search"].firstMatch
-            if clear.waitForExistence(timeout: 5) { clear.tap() } else {
-                // Fallback close: the chip toggles the field row.
-                chip.tap()
-            }
+            shot("05-drawer-search")
+            let clear = app.buttons["v2-drawer-search-clear"].firstMatch
+            if clear.waitForExistence(timeout: 5) { clear.tap() }
             settle(1)
+            closeDrawer()
         } catch { /* SearchDone: continue with the next step */ }
 
-        // --- 06 menu ---------------------------------------------------------
-        if openMenu(frame: "06-menu-open", step: "menu") {
-            shot("06-menu-open")
-            dismissMenu()
+        // --- 06 drawer ---------------------------------------------------------
+        if openDrawer(frame: "06-drawer-open", step: "drawer") {
+            shot("06-drawer-open")
+            closeDrawer()
         }
 
-        // --- 07 new room sheet (opened, never created) -----------------------
+        // --- 07 intake sheet (opened, never submitted) -------------------------
         do {
-            // The 02–04 swipes leave the list at the bottom and SwiftUI
-            // virtualizes the top chips away — come back up first, or the
-            // New button (and the first room row in step 08) exist but are
-            // not hittable.
-            for _ in 0..<5 { app.swipeDown() }
-            settle(1)
-            let button = newRoomButton
+            guard openDrawer(frame: "07-intake-sheet", step: "intake") else { throw SearchDone() }
+            let button = app.buttons["v2-drawer-new"].firstMatch
             guard button.waitForExistence(timeout: 10) else {
-                recordMissing(frame: "07-new-room-sheet", step: "new-room", element: "\"New room\" button")
+                recordMissing(frame: "07-intake-sheet", step: "intake", element: "\"New\" button")
                 throw SearchDone()
             }
             button.tap()
-            let sheet = scoped("new-room-sheet")
-            let sheetShown: Bool
-            if sheet.waitForExistence(timeout: 5) {
-                sheetShown = true
-            } else {
-                // Fallback: the sheet's nav title (mission mode is the default).
-                sheetShown = navBar(named: "Start a mission").waitForExistence(timeout: 5)
-                    || navBar(named: "New project").waitForExistence(timeout: 2)
-            }
-            guard sheetShown else {
-                recordMissing(frame: "07-new-room-sheet", step: "new-room", element: "new-room sheet")
+            let field = app.textFields.matching(identifier: "global-intake-field").firstMatch
+            guard field.waitForExistence(timeout: 15) else {
+                recordMissing(frame: "07-intake-sheet", step: "intake", element: "intake sheet")
                 throw SearchDone()
             }
             settle(1)
-            shot("07-new-room-sheet")
-            let cancel = app.buttons["Cancel"].firstMatch
-            if cancel.waitForExistence(timeout: 5) { cancel.tap() } else { app.swipeDown() }
+            shot("07-intake-sheet")
+            let close = app.buttons["intake-close"].firstMatch
+            if close.waitForExistence(timeout: 5) { close.tap() } else { app.swipeDown() }
             settle(1)
         } catch { /* continue */ }
 
-        // --- 08/09/10/11 room -----------------------------------------------
+        // --- 08 thread with files: the Spring launch deck mission --------------
         do {
-            let row = firstRoomRow
-            guard row.waitForExistence(timeout: 15) else {
-                recordMissing(frame: "08-room", step: "room", element: "room row")
+            guard openDrawer(frame: "08-thread-deck", step: "deck") else { throw SearchDone() }
+            let expands = app.buttons.matching(identifier: "v2-drawer-project-expand")
+            if expands.firstMatch.waitForExistence(timeout: 10) {
+                for i in 0..<expands.count {
+                    let exp = expands.element(boundBy: i)
+                    if exp.label.localizedCaseInsensitiveContains("aster"),
+                       exp.label.hasPrefix("Expand") {
+                        exp.tap()
+                        break
+                    }
+                }
+                settle(1)
+            }
+            guard tapDrawerRow(id: "v2-drawer-mission-row", contains: "Spring launch deck",
+                               frame: "08-thread-deck", step: "deck") else { throw SearchDone() }
+            guard threadUp(timeout: 15) else {
+                recordMissing(frame: "08-thread-deck", step: "deck", element: "mission thread")
                 throw SearchDone()
             }
-            row.tap()
-            guard chatScreenUp(timeout: 30) else {
-                recordMissing(frame: "08-room", step: "room", element: "chat screen")
-                throw SearchDone()
-            }
-            settle(3)
-            shot("08-room")
-            app.swipeDown()
-            settle(1)
-            shot("09-room-scrolled-up")
+            settle(2)
+            shot("08-thread-deck")
+        } catch { /* continue */ }
 
-            let box = composer
+        // --- 09 review sheet -----------------------------------------------------
+        do {
+            let cards = app.buttons.matching(
+                NSPredicate(format: "identifier BEGINSWITH 'visual-open-'"))
+            let card = cards.firstMatch
+            var peeked = false
+            if card.waitForExistence(timeout: 10) {
+                card.tap()
+                peeked = true
+            } else {
+                let peek = app.buttons.matching(identifier: "visual-peek").firstMatch
+                if peek.waitForExistence(timeout: 10) {
+                    peek.tap()
+                    peeked = true
+                }
+            }
+            guard peeked else {
+                recordMissing(frame: "09-sheet", step: "sheet", element: "file card or peek bar")
+                throw SearchDone()
+            }
+            guard scoped("visual-sheet").exists else {
+                recordMissing(frame: "09-sheet", step: "sheet", element: "review sheet")
+                throw SearchDone()
+            }
+            settle(2)
+            shot("09-sheet")
+            let close = app.buttons["visual-sheet-close"].firstMatch
+            if close.waitForExistence(timeout: 10) { close.tap() } else { app.swipeDown() }
+            settle(1)
+        } catch { /* continue */ }
+
+        // --- 10/11 composer: keyboard, typed, cleared (never sent) --------------
+        do {
+            let box = v2Composer()
             guard box.waitForExistence(timeout: 10) else {
-                recordMissing(frame: "10-room-keyboard", step: "room", element: "chat composer")
+                recordMissing(frame: "10-thread-keyboard", step: "composer", element: "v2 composer")
                 throw SearchDone()
             }
             box.tap()
             guard app.keyboards.firstMatch.waitForExistence(timeout: 15) else {
-                recordMissing(frame: "10-room-keyboard", step: "room", element: "keyboard")
+                recordMissing(frame: "10-thread-keyboard", step: "composer", element: "keyboard")
                 throw SearchDone()
             }
             settle(1)
-            shot("10-room-keyboard")
+            shot("10-thread-keyboard")
 
             let draft = "tour draft, not sent"
-            let before = (box.value as? String) ?? ""
             box.typeText(draft)
             settle(1)
-            shot("11-room-typed")
-            // Clear exactly what was typed, leaving any pre-existing draft intact.
-            // NEVER tap `send`.
+            shot("11-thread-typed")
+            // Clear exactly what was typed. NEVER tap `send`.
             box.tap()
             for _ in 0..<draft.count {
                 app.keyboards.keys["delete"].firstMatch.tap()
             }
-            _ = before
-            // The thread scrolls the keyboard away interactively.
             app.swipeDown()
             settle(1)
-
-            // --- 12 room toolbar: files / settings / history -----------------
-            do {
-                let more = roomMoreOptions
-                guard more.waitForExistence(timeout: 10) else {
-                    recordMissing(frame: "12a-room-files", step: "room-toolbar", element: "More options menu")
-                    throw SearchDone()
-                }
-                more.tap()
-                settle(1)
-                let filesItem = app.buttons["Files"].firstMatch
-                guard filesItem.waitForExistence(timeout: 5) else {
-                    recordMissing(frame: "12a-room-files", step: "room-toolbar", element: "\"Files\" menu item")
-                    dismissMenu()
-                    throw SearchDone()
-                }
-                filesItem.tap()
-                if navBar(named: "Files").waitForExistence(timeout: 10) {
-                    settle(1)
-                    shot("12a-room-files")
-                } else {
-                    recordMissing(frame: "12a-room-files", step: "room-toolbar", element: "room files sheet")
-                }
-                // RoomFilesView has an explicit Done button (no drag needed).
-                let filesDone = app.buttons["Done"].firstMatch
-                if filesDone.waitForExistence(timeout: 5) { filesDone.tap() } else { app.swipeDown() }
-                settle(1)
-
-                more.tap()
-                settle(1)
-                let settingsItem = app.buttons["Room settings"].firstMatch
-                guard settingsItem.waitForExistence(timeout: 5) else {
-                    recordMissing(frame: "12b-room-settings", step: "room-toolbar", element: "\"Room settings\" menu item")
-                    dismissMenu()
-                    throw SearchDone()
-                }
-                settingsItem.tap()
-                if navBar(named: "Room settings").waitForExistence(timeout: 10) {
-                    settle(1)
-                    shot("12b-room-settings")
-                    let historyTab = app.segmentedControls.firstMatch.buttons["History"].firstMatch
-                    let historyTarget: XCUIElement
-                    if historyTab.waitForExistence(timeout: 3) {
-                        historyTarget = historyTab
-                    } else {
-                        historyTarget = app.buttons["History"].firstMatch
-                    }
-                    if historyTarget.waitForExistence(timeout: 5) {
-                        historyTarget.tap()
-                        settle(1)
-                        shot("12c-room-history")
-                    } else {
-                        recordMissing(frame: "12c-room-history", step: "room-toolbar", element: "\"History\" settings tab")
-                    }
-                } else {
-                    recordMissing(frame: "12b-room-settings", step: "room-toolbar", element: "room settings sheet")
-                }
-                let settingsDone = app.buttons["Done"].firstMatch
-                if settingsDone.waitForExistence(timeout: 5) { settingsDone.tap() } else { app.swipeDown() }
-                settle(1)
-            } catch { /* continue */ }
-
-            // --- 13 back home -------------------------------------------------
-            if backToHome(frame: "13-back-home", step: "back-home") {
-                shot("13-back-home")
-            }
-        } catch { /* room block skipped; home steps below still run if home is up */ }
-
-        // --- 14 files / 15 tracker (Tools section) ----------------------------
-        for (frame, id, label, nav) in [
-            ("14-files", "tools-files", "Files", "Files"),
-            ("15-tracker", "tools-tracker", "Tracker", "Tracker"),
-        ] as [(String, String, String, String)] {
-            guard roomListUp(timeout: 15) else {
-                recordMissing(frame: frame, step: label.lowercased(), element: "room list")
-                continue
-            }
-            var entry = app.buttons[id].firstMatch
-            if !entry.waitForExistence(timeout: 3) {
-                entry = app.buttons[label].firstMatch
-            }
-            guard entry.waitForExistence(timeout: 10) else {
-                recordMissing(frame: frame, step: label.lowercased(), element: "\"\(label)\" entry")
-                continue
-            }
-            entry.tap()
-            guard navBar(named: nav).waitForExistence(timeout: 15) else {
-                recordMissing(frame: frame, step: label.lowercased(), element: "\"\(nav)\" screen")
-                continue
-            }
-            settle(2)
-            shot(frame)
-            _ = backToHome(frame: frame, step: label.lowercased())
-        }
-
-        // --- 16 review (waiting card; gated to waitingCount > 0) --------------
-        do {
-            guard roomListUp(timeout: 15) else {
-                recordMissing(frame: "16-review", step: "review", element: "room list")
-                throw SearchDone()
-            }
-            var card = app.buttons["waiting-card"].firstMatch
-            if !card.waitForExistence(timeout: 3) {
-                card = app.buttons.matching(
-                    NSPredicate(format: "label CONTAINS 'Waiting on you'")).firstMatch
-            }
-            guard card.waitForExistence(timeout: 5) else {
-                recordMissing(frame: "16-review", step: "review", element: "waiting card (empty queue hides it)")
-                throw SearchDone()
-            }
-            card.tap()
-            guard navBar(named: "Waiting on you").waitForExistence(timeout: 15) else {
-                recordMissing(frame: "16-review", step: "review", element: "review screen")
-                throw SearchDone()
-            }
-            settle(2)
-            shot("16-review")
-            _ = backToHome(frame: "16-review", step: "review")
         } catch { /* continue */ }
 
-        // --- 17 email ---------------------------------------------------------
+        // --- 12 files (the drawer's Files row → Files browser) -------------------
+        // The row is per project thread (tree parity): walk the projects and
+        // take the first one whose own thread holds files.
         do {
-            guard roomListUp(timeout: 15) else {
-                recordMissing(frame: "17-email", step: "email", element: "room list")
+            guard openDrawer(frame: "12-files", step: "files") else { throw SearchDone() }
+            let projects = app.buttons.matching(identifier: "v2-drawer-project-row")
+            guard projects.firstMatch.waitForExistence(timeout: 10) else {
+                recordMissing(frame: "12-files", step: "files", element: "drawer project rows")
                 throw SearchDone()
             }
-            var card = app.buttons["email-card"].firstMatch
-            if !card.waitForExistence(timeout: 3) {
-                card = app.buttons.matching(
-                    NSPredicate(format: "label BEGINSWITH 'Email'")).firstMatch
+            var opened = false
+            for i in 0..<min(projects.count, 10) {
+                let exp = app.buttons.matching(identifier: "v2-drawer-project-expand").element(boundBy: i)
+                if exp.waitForExistence(timeout: 5), exp.label.hasPrefix("Expand") {
+                    exp.tap()
+                    settle(1)
+                }
+                let files = app.buttons.matching(identifier: "v2-drawer-files-row").firstMatch
+                if files.waitForExistence(timeout: 8) {
+                    files.tap()
+                    if navBar(named: "Files").waitForExistence(timeout: 15) {
+                        settle(2)
+                        shot("12-files")
+                        opened = true
+                        _ = backToThread(frame: "12-files", step: "files")
+                    } else {
+                        recordMissing(frame: "12-files", step: "files", element: "\"Files\" screen")
+                    }
+                    break
+                }
             }
-            guard card.waitForExistence(timeout: 5) else {
-                recordMissing(frame: "17-email", step: "email", element: "email card (non-owners have none)")
-                throw SearchDone()
+            if !opened {
+                // No project thread on this account holds files (the row
+                // correctly hides — the fixture suite locks the row itself),
+                // so photograph the expanded drawer instead of failing: there
+                // is no Files browser to open without writing files, and the
+                // tour never writes.
+                settle(1)
+                shot("12-files")
+                note("files=none-on-account (drawer expanded, row hidden, no failure)")
+                closeDrawer()
             }
-            card.tap()
-            guard navBar(named: "Email").waitForExistence(timeout: 15) else {
-                recordMissing(frame: "17-email", step: "email", element: "email screen")
-                throw SearchDone()
-            }
-            settle(2)
-            shot("17-email")
-            _ = backToHome(frame: "17-email", step: "email")
         } catch { /* continue */ }
 
-        // --- 18 settings sheet / 19 notifications sheet ------------------------
-        for (frame, id, label, nav) in [
-            ("18-settings-sheet", "settings-sheet", "Settings", "Settings"),
-            ("19-notifications-sheet", "notifications-sheet", "Notifications", "Notifications"),
-        ] as [(String, String, String, String)] {
-            guard roomListUp(timeout: 15) else {
-                recordMissing(frame: frame, step: label.lowercased(), element: "room list")
-                continue
+        // --- 13 settings (drawer gear) -------------------------------------------
+        do {
+            guard openDrawer(frame: "13-settings", step: "settings") else { throw SearchDone() }
+            let gear = app.buttons["v2-drawer-settings"].firstMatch
+            guard gear.waitForExistence(timeout: 10) else {
+                recordMissing(frame: "13-settings", step: "settings", element: "settings gear")
+                throw SearchDone()
             }
-            guard openMenu(frame: frame, step: label.lowercased()) else { continue }
-            let item = app.buttons[label].firstMatch
-            guard item.waitForExistence(timeout: 5) else {
-                recordMissing(frame: frame, step: label.lowercased(), element: "\"\(label)\" menu item")
-                dismissMenu()
-                continue
-            }
-            item.tap()
-            settle(1)
-            let sheet = scoped(id)
-            var shown = sheet.waitForExistence(timeout: 10)
-            if !shown {
-                shown = navBar(named: nav).waitForExistence(timeout: 5)
-            }
-            guard shown else {
-                recordMissing(frame: frame, step: label.lowercased(), element: "\"\(label)\" sheet")
-                continue
+            gear.tap()
+            guard scoped("settings-screen").exists else {
+                recordMissing(frame: "13-settings", step: "settings", element: "settings screen")
+                throw SearchDone()
             }
             settle(1)
-            shot(frame)
+            shot("13-settings")
+            let back = app.buttons["settings-back"].firstMatch
+            if back.waitForExistence(timeout: 5) { back.tap() } else { app.swipeDown() }
+            settle(1)
+        } catch { /* continue */ }
+
+        // --- 14 notifications (drawer bell) ----------------------------------------
+        do {
+            guard openDrawer(frame: "14-notifications", step: "notifications") else { throw SearchDone() }
+            let bell = app.buttons["v2-drawer-bell"].firstMatch
+            guard bell.waitForExistence(timeout: 10) else {
+                recordMissing(frame: "14-notifications", step: "notifications", element: "notifications bell")
+                throw SearchDone()
+            }
+            bell.tap()
+            settle(1)
+            shot("14-notifications")
             let done = app.buttons["Done"].firstMatch
             if done.waitForExistence(timeout: 5) { done.tap() } else { app.swipeDown() }
             settle(1)
-        }
-
-        // --- 20 background work (menu entry; drag to dismiss, no Done button) --
-        do {
-            guard roomListUp(timeout: 15) else {
-                recordMissing(frame: "20-background-work", step: "background-work", element: "room list")
-                throw SearchDone()
-            }
-            guard openMenu(frame: "20-background-work", step: "background-work") else {
-                throw SearchDone()
-            }
-            let item = app.buttons.matching(
-                NSPredicate(format: "label BEGINSWITH 'Background work'")).firstMatch
-            guard item.waitForExistence(timeout: 5) else {
-                recordMissing(frame: "20-background-work", step: "background-work", element: "\"Background work\" menu item")
-                dismissMenu()
-                throw SearchDone()
-            }
-            item.tap()
-            settle(1)
-            let sheet = scoped("background-work-sheet")
-            var shown = sheet.waitForExistence(timeout: 10)
-            if !shown { shown = navBar(named: "Background work").waitForExistence(timeout: 5) }
-            guard shown else {
-                recordMissing(frame: "20-background-work", step: "background-work", element: "background work sheet")
-                throw SearchDone()
-            }
-            settle(1)
-            shot("20-background-work")
-            app.swipeDown()
-            settle(1)
-        } catch { /* continue */ }
-
-        // --- 21/22 theme round-trip (light, then back to the original) --------
-        do {
-            guard roomListUp(timeout: 15) else {
-                recordMissing(frame: "21-theme-light", step: "theme", element: "room list")
-                throw SearchDone()
-            }
-            guard openMenu(frame: "21-theme-light", step: "theme") else {
-                throw SearchDone()
-            }
-            let original = currentThemeName() ?? "unknown"
-            note("theme_original=\(original)")
-            // Cycle (at most 3 taps: Dark -> Light -> Glass -> Dark) to Light.
-            var light = (original == "Light")
-            for _ in 0..<3 {
-                if light { break }
-                let button = themeButton()
-                guard button.waitForExistence(timeout: 5) else { break }
-                button.tap()
-                settle(1)
-                _ = openMenu(frame: "21-theme-light", step: "theme")
-                if currentThemeName() == "Light" { light = true }
-            }
-            if light {
-                dismissMenu()
-                settle(1)
-                shot("21-theme-light")
-            } else {
-                dismissMenu()
-                recordMissing(frame: "21-theme-light", step: "theme", element: "light theme after cycling")
-            }
-            // Restore the original theme the same way.
-            if light, original != "Light", original != "unknown" {
-                _ = openMenu(frame: "22-theme-restored", step: "theme-restore")
-                for _ in 0..<3 {
-                    if currentThemeName() == original { break }
-                    let button = themeButton()
-                    guard button.waitForExistence(timeout: 5) else { break }
-                    button.tap()
-                    settle(1)
-                    _ = openMenu(frame: "22-theme-restored", step: "theme-restore")
-                }
-                dismissMenu()
-            }
-            settle(1)
-            shot("22-theme-restored")
-            _ = openMenu(frame: "22-theme-restored", step: "theme-verify")
-            if let now = currentThemeName(), now != original {
-                XCTFail("theme not restored: started \(original), now \(now)")
-            }
-            dismissMenu()
         } catch { /* continue */ }
 
         note("captured=\(capturedFrames.count) missing=\(missingFrames.joined(separator: ","))")

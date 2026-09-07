@@ -79,6 +79,13 @@ struct CornerApp: App {
             UserDefaults.standard.removeObject(forKey: "corner.v2.setup-done")
             UserDefaults.standard.removeObject(forKey: "navigation.lastRoomID")
         }
+        // R23 P070: forget the last thread so the entry resolves
+        // deterministically (General) no matter what an earlier run left
+        // behind. Debug builds only.
+        if ProcessInfo.processInfo.arguments.contains("-v2ResetEntry") {
+            UserDefaults.standard.removeObject(forKey: AppRouter.lastV2KindKey)
+            UserDefaults.standard.removeObject(forKey: AppRouter.lastV2IDKey)
+        }
         // R19 design-vs-sim proof: drop device-local recents (fixture runs on
         // the same simulator seed them with synthetic rows) so the drawer
         // shows this device's genuine history only. Debug builds only.

@@ -26,7 +26,10 @@ final class R19ShootScreens: XCTestCase {
 
     // MARK: - launchers
 
-    private static let harness = ["-screenTour", "-v2SuppressHaptics", "-v2ClearRecents"]
+    // R23: -v2ResetEntry pins the entry to General's thread on every launch —
+    // the gate then navigates to the design's thread through the drawer,
+    // deterministically, no matter what an earlier test left behind.
+    private static let harness = ["-screenTour", "-v2SuppressHaptics", "-v2ClearRecents", "-v2ResetEntry"]
 
     /// Runner-side credentials: the shell environment does NOT reach the
     /// on-sim test runner (proven: R19PROBE runner-email-present=0), so the
@@ -59,9 +62,17 @@ final class R19ShootScreens: XCTestCase {
 
     // MARK: - queries
 
+    /// Gentle polling (one snapshot a second) rather than waitForExistence:
+    /// on a saturated cold start the waiter's snapshot hammering starves the
+    /// main thread it is waiting on (R23 gate-1: chat rendered in 5s, the
+    /// waiter still found nothing in 30s).
     private func any(_ id: String, timeout: TimeInterval = 20) -> XCUIElement {
         let el = app.descendants(matching: .any).matching(identifier: id).firstMatch
-        _ = el.waitForExistence(timeout: timeout)
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if el.exists { break }
+            Thread.sleep(forTimeInterval: 1)
+        }
         return el
     }
 
@@ -79,7 +90,22 @@ final class R19ShootScreens: XCTestCase {
         NSLog("R19STATUS \(screen) shot")
     }
 
+    /// R23 P073: the element read waits for the sheet to settle — the dump
+    /// runs only after the sheet anchor stops moving, and ids that still read
+    /// MISSING get one more dump after a further settle, so the gate reads
+    /// what the picture shows.
     private func frames(_ screen: String, _ ids: [String]) {
+        settleSheetIfAny()
+        let missing = dumpFrames(screen, ids)
+        if !missing.isEmpty {
+            settle(3)
+            dumpFrames(screen, missing)
+        }
+    }
+
+    @discardableResult
+    private func dumpFrames(_ screen: String, _ ids: [String]) -> [String] {
+        var missing: [String] = []
         for id in ids {
             let el = app.descendants(matching: .any).matching(identifier: id).firstMatch
             if el.waitForExistence(timeout: 4) {
@@ -89,7 +115,29 @@ final class R19ShootScreens: XCTestCase {
                              el.label.replacingOccurrences(of: "\n", with: " ")))
             } else {
                 NSLog("R19FRAME \(screen) \(id) MISSING")
+                missing.append(id)
             }
+        }
+        return missing
+    }
+
+    /// The sheet anchor stops moving once the rise animation lands. Frames
+    /// sampled mid-animation read back transitional rects and a stale tree.
+    private func settleSheetIfAny() {
+        let anchor = app.descendants(matching: .any).matching(identifier: "visual-sheet-close").firstMatch
+        guard anchor.waitForExistence(timeout: 3) else { return }
+        waitForStable(anchor, timeout: 8)
+    }
+
+    private func waitForStable(_ el: XCUIElement, timeout: TimeInterval) {
+        var last = el.frame
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            Thread.sleep(forTimeInterval: 0.5)
+            let now = el.frame
+            if abs(now.minX - last.minX) < 0.5 && abs(now.minY - last.minY) < 0.5
+                && abs(now.width - last.width) < 0.5 && abs(now.height - last.height) < 0.5 { return }
+            last = now
         }
     }
 
@@ -125,39 +173,44 @@ final class R19ShootScreens: XCTestCase {
 
     // MARK: - shared navigation (real backend)
 
-    /// Home tree up (signed in). False when sign-in did not complete.
-    private func homeUp() -> Bool {
-        any("room-list-screen", timeout: 30).exists
+    /// R23: the entry IS a thread — signed in means the chat screen is up.
+    /// False when sign-in did not complete.
+    private func threadUp() -> Bool {
+        any("chat-screen", timeout: 30).exists
     }
 
-    /// The design's thread is Aster / Spring launch deck: prefer that mission
-    /// row (expanding Aster first when collapsed), else the Aster project
-    /// row, else the first project row. False when the tree has no rows.
+    /// The design's thread is the Spring launch deck mission: from the entry,
+    /// through the drawer — expand Aster, tap the mission row. False when the
+    /// tree has no such rows.
     @discardableResult
-    private func openFirstThread() -> Bool {
-        guard homeUp() else { return false }
-        if tapRow(id: "workspace-mission-row", contains: "Spring launch deck") {
-            if any("chat-screen", timeout: 20).exists { return true }
-        }
-        // Expand Aster, then try the mission row again.
-        let expands = app.buttons.matching(identifier: "workspace-project-expand")
-        if expands.firstMatch.waitForExistence(timeout: 5) {
+    private func openDesignThread() -> Bool {
+        guard threadUp() else { return false }
+        let title = app.staticTexts.matching(identifier: "chat-title").firstMatch
+        if title.waitForExistence(timeout: 10), title.label == "Spring launch deck" { return true }
+        guard openDrawer() else { return false }
+        // Expand Aster when collapsed, then tap the mission row.
+        let expands = app.buttons.matching(identifier: "v2-drawer-project-expand")
+        if expands.firstMatch.waitForExistence(timeout: 10) {
             for i in 0..<expands.count {
                 let exp = expands.element(boundBy: i)
-                if exp.label.localizedCaseInsensitiveContains("aster") { exp.tap(); break }
+                if exp.label.localizedCaseInsensitiveContains("aster") {
+                    if exp.label.hasPrefix("Expand") { exp.tap() }
+                    break
+                }
             }
             Thread.sleep(forTimeInterval: 1)
-            if tapRow(id: "workspace-mission-row", contains: "Spring launch deck") {
-                if any("chat-screen", timeout: 20).exists { return true }
+        }
+        if tapRow(id: "v2-drawer-mission-row", contains: "Spring launch deck") {
+            // The old thread's chat-screen is still showing until the replace
+            // lands — wait for the mission title, not just any chat.
+            let want = app.staticTexts.matching(identifier: "chat-title").firstMatch
+            let deadline = Date().addingTimeInterval(20)
+            while Date() < deadline {
+                if want.exists, want.label == "Spring launch deck" { return true }
+                Thread.sleep(forTimeInterval: 0.5)
             }
         }
-        if tapRow(id: "workspace-project-row", contains: "Aster") {
-            return any("chat-screen", timeout: 20).exists
-        }
-        let rows = app.buttons.matching(identifier: "workspace-project-row")
-        guard rows.firstMatch.waitForExistence(timeout: 10) else { return false }
-        rows.firstMatch.tap()
-        return any("chat-screen", timeout: 20).exists
+        return false
     }
 
     @discardableResult
@@ -200,7 +253,11 @@ final class R19ShootScreens: XCTestCase {
             peek.tap()
         }
         settle(1.5)
-        return any("visual-sheet", timeout: 15).exists
+        // R23 P073: never hand a rising sheet to the shot/dump — the rise
+        // must have landed first.
+        guard any("visual-sheet", timeout: 15).exists else { return false }
+        settleSheetIfAny()
+        return true
     }
 
     // MARK: - screens
@@ -259,7 +316,7 @@ final class R19ShootScreens: XCTestCase {
 
     func testShoot04Thread() throws {
         launch(Self.harness + ["-v2SkipSetup"])
-        guard openFirstThread() else {
+        guard openDesignThread() else {
             NSLog("R19STATUS thread missing no-thread"); return
         }
         settle(2)
@@ -279,7 +336,7 @@ final class R19ShootScreens: XCTestCase {
 
     func testShoot05Drawer() throws {
         launch(Self.harness + ["-v2SkipSetup"])
-        guard openFirstThread(), openDrawer() else {
+        guard openDesignThread(), openDrawer() else {
             NSLog("R19STATUS drawer missing no-drawer"); return
         }
         shot("drawer")
@@ -299,7 +356,7 @@ final class R19ShootScreens: XCTestCase {
 
     func testShoot06Settings() throws {
         launch(Self.harness + ["-v2SkipSetup"])
-        guard openFirstThread(), openDrawer() else {
+        guard openDesignThread(), openDrawer() else {
             NSLog("R19STATUS settings missing no-drawer"); return
         }
         let gear = btn("v2-drawer-settings")
@@ -319,7 +376,7 @@ final class R19ShootScreens: XCTestCase {
 
     func testShoot07SheetHalf() throws {
         launch(Self.harness + ["-v2SkipSetup"])
-        guard openFirstThread(), openSheet() else {
+        guard openDesignThread(), openSheet() else {
             NSLog("R19STATUS sheet-half missing no-sheet"); return
         }
         shot("sheet-half")
@@ -332,7 +389,7 @@ final class R19ShootScreens: XCTestCase {
 
     func testShoot08SheetContext() throws {
         launch(Self.harness + ["-v2SkipSetup"])
-        guard openFirstThread(), openSheet() else {
+        guard openDesignThread(), openSheet() else {
             NSLog("R19STATUS sheet-context missing no-sheet"); return
         }
         let ctx = app.buttons.matching(identifier: "sheet-tab-context").firstMatch
@@ -349,7 +406,7 @@ final class R19ShootScreens: XCTestCase {
 
     func testShoot09SheetReview() throws {
         launch(Self.harness + ["-v2SkipSetup"])
-        guard openFirstThread(), openSheet() else {
+        guard openDesignThread(), openSheet() else {
             NSLog("R19STATUS sheet-review missing no-sheet"); return
         }
         let toggle = app.buttons.matching(identifier: "review-toggle").firstMatch
@@ -366,7 +423,7 @@ final class R19ShootScreens: XCTestCase {
 
     func testShoot09bSheetFull() throws {
         launch(Self.harness + ["-v2SkipSetup"])
-        guard openFirstThread(), openSheet() else {
+        guard openDesignThread(), openSheet() else {
             NSLog("R19STATUS sheet-full missing no-sheet"); return
         }
         let toggle = app.buttons.matching(identifier: "review-toggle").firstMatch
@@ -404,7 +461,7 @@ final class R19ShootScreens: XCTestCase {
             frames("empty", ["v2-empty-headline", "v2-empty-start",
                              "v2-empty-context", "v2-empty-sample"])
             NSLog("R19STATUS empty ok")
-        } else if homeUp() {
+        } else if threadUp() {
             NSLog("R19STATUS empty missing populated-account")
         } else {
             NSLog("R19STATUS empty missing no-home")

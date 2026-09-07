@@ -90,6 +90,7 @@
 		95BB18BC5C4BD42CFC48C94D /* VisualWindowStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAAE25249A8C83FA2409D041 /* VisualWindowStoreTests.swift */; };
 		96F12042B4E0DE57D03335D5 /* CommandsMenuState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA5112852AE7AD38AA88DDC6 /* CommandsMenuState.swift */; };
 		97D0B387A6639C5A5AB59DE3 /* AirPodsVoiceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99FB8DFF3ED23530DF860CA1 /* AirPodsVoiceView.swift */; };
+		9C82F9A98703F46F6B8E1BE3 /* V2IntakeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85FF71AEBE8D9EF46363DE28 /* V2IntakeSheet.swift */; };
 		A1AEA03D8041FEA6FBEA89F9 /* PushService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131E1F3ED0F460574DE878C8 /* PushService.swift */; };
 		A22E60838F4603A0CDEF0E27 /* CornerWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD47F90E2DE3A97BBC7C7CCE /* CornerWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A25EBBEA8AECF2C1629DB981 /* SetPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40845571B718FF82471F844C /* SetPasswordView.swift */; };
@@ -274,6 +275,7 @@
 		7CF99DF9192383E26F1255FB /* IntegrationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationsView.swift; sourceTree = "<group>"; };
 		80716889B1EAF64D5F4D475E /* AttachmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentTests.swift; sourceTree = "<group>"; };
 		81D8FE03F68E468709423ABF /* RoomStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomStore.swift; sourceTree = "<group>"; };
+		85FF71AEBE8D9EF46363DE28 /* V2IntakeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V2IntakeSheet.swift; sourceTree = "<group>"; };
 		873E8286324C24FC3DC9BCFD /* SharedBackendAcceptance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedBackendAcceptance.swift; sourceTree = "<group>"; };
 		87C433E0BF6B480BF2498620 /* EmailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmailView.swift; sourceTree = "<group>"; };
 		8899E5EB7B22DB9ECBE0F3AD /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
@@ -388,6 +390,7 @@
 				30D577DF665C37F7C6CDC690 /* TrackerView.swift */,
 				B367859B24AAEF52EBFEE774 /* Typography.swift */,
 				37A4E08805DDA8C292933E3C /* V2DrawerView.swift */,
+				85FF71AEBE8D9EF46363DE28 /* V2IntakeSheet.swift */,
 				ABC46B4A3A7F0833A3E7AC0C /* V2Onboarding.swift */,
 				97992C432BB995FF09A83BBC /* V2SettingsView.swift */,
 			);
@@ -922,6 +925,7 @@
 				A2EAF0E7C9A5AF056437FB67 /* TurnStreamEvent.swift in Sources */,
 				5CCD87F91BDBF76B032178E5 /* Typography.swift in Sources */,
 				78CCD69E75CFB96D57688755 /* V2DrawerView.swift in Sources */,
+				9C82F9A98703F46F6B8E1BE3 /* V2IntakeSheet.swift in Sources */,
 				6D00A6B43B7F1D709BD0D463 /* V2Onboarding.swift in Sources */,
 				5AD09E432403F26619A274F5 /* V2SettingsView.swift in Sources */,
 				8AE0480EF196A5B191CEA961 /* VideoArtifactView.swift in Sources */,

@@ -17,7 +17,8 @@ final class DesignMatchUITests: XCTestCase {
 
     // MARK: - launchers
 
-    private static let fixture = ["-v2FixtureUITest", "-v2SkipSetup", "-v2SuppressHaptics"]
+    // R23: -v2ResetEntry pins the entry to General's thread.
+    private static let fixture = ["-v2FixtureUITest", "-v2SkipSetup", "-v2SuppressHaptics", "-v2ResetEntry"]
     private static let seed = fixture + ["-v2SeedVisual", "-v2ResetVisual", "-v2SeedCompMatch"]
 
     @discardableResult
@@ -43,14 +44,10 @@ final class DesignMatchUITests: XCTestCase {
         return nil
     }
 
+    /// R23: the entry IS the thread — the launch lands on it, no tree, no taps.
     private func openThread(_ app: XCUIApplication) {
-        let home = app.descendants(matching: .any).matching(identifier: "room-list-screen").firstMatch
-        XCTAssertTrue(home.waitForExistence(timeout: 20), "the home tree never appeared")
-        let row = app.buttons.matching(identifier: "workspace-project-row").firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 15), "no project row on the home tree")
-        row.tap()
         let chat = app.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch
-        XCTAssertTrue(chat.waitForExistence(timeout: 15), "the thread never opened")
+        XCTAssertTrue(chat.waitForExistence(timeout: 20), "the entry thread never appeared")
     }
 
     private var windowFrame: CGRect { app.windows.firstMatch.frame }

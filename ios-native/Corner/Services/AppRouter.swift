@@ -90,12 +90,13 @@ struct DeepLink: Equatable {
 /// Every destination the navigation stack can hold. Hashable because it IS the
 /// NavigationStack path — SwiftUI needs value identity to diff it.
 ///
-/// Corner v2 navigation (native Task 4) is Workspace → Project → Mission →
-/// Thread: `.project` opens the project's direct thread, `.mission` the
-/// mission's narrower thread, `.workspace` the tree, `.visualTab` a Visual
-/// Window tab's owning thread (Task 6 wires the window itself), and
-/// `.legacyArchive` the migrated-room search. The `room` cases stay for
-/// compatibility clients and notifications until cutover.
+/// Corner v2 navigation (native Task 4) is Project → Mission → Thread:
+/// `.project` opens the project's direct thread, `.mission` the mission's
+/// narrower thread, `.visualTab` a Visual Window tab's owning thread, and
+/// `.legacyArchive` the migrated-room search. R23 P070 retired the
+/// `.workspace` tree as a home: thread routes replace the stack root (which
+/// IS a thread), and `.workspace` resolves to the entry thread. The `room`
+/// cases stay for compatibility clients and notifications until cutover.
 enum Route: Hashable {
     case room(Room)
     case review
@@ -202,12 +203,23 @@ final class AppRouter: ObservableObject {
     private static let lastRoomIDKey = "navigation.lastRoomID"
     private static let lastRoomTitleKey = "navigation.lastRoomTitle"
     private static let lastRoomSubtitleKey = "navigation.lastRoomSubtitle"
+    /// R23 P070: the last v2 thread the person had open. The stack root IS a
+    /// thread now (the home tree is retired), so this is the entry identity.
+    static let lastV2KindKey = "navigation.lastV2Kind" // "project" | "mission"
+    static let lastV2IDKey = "navigation.lastV2ID"
     private let defaults: UserDefaults
 
     /// The navigation stack. One element deep in practice, but a path rather than a
     /// binding so a notification tap can replace the destination outright instead of
     /// pushing a second copy of a screen already on screen.
     @Published var path: [Route] = []
+
+    /// R23 P070: the thread the stack root shows. The home tree is retired, so
+    /// the root IS a conversation: thread destinations replace the root
+    /// instead of stacking on it, and an empty path means this thread.
+    @Published var entryRoute: Route?
+    /// A thread replace armed but not yet applied (see open).
+    private var pendingEntry: Route?
 
     /// Set when a deep link names a destination this app cannot construct — a world the
     /// user is not in, or a route that did not exist when this build shipped. Surfaced as
@@ -254,6 +266,54 @@ final class AppRouter: ObservableObject {
         defaults.set(room.roomID, forKey: Self.lastRoomIDKey)
         defaults.set(room.title, forKey: Self.lastRoomTitleKey)
         defaults.set(room.subtitle, forKey: Self.lastRoomSubtitleKey)
+    }
+
+    /// R23 P070: persist the open v2 thread. ChatView calls this once per
+    /// thread appearance, so every arrival — entry, drawer, deep link,
+    /// intake confirmation — is the next cold start's entry.
+    func rememberV2(projectID: String, missionID: String?) {
+        if let missionID {
+            defaults.set("mission", forKey: Self.lastV2KindKey)
+            defaults.set(missionID, forKey: Self.lastV2IDKey)
+        } else {
+            defaults.set("project", forKey: Self.lastV2KindKey)
+            defaults.set(projectID, forKey: Self.lastV2IDKey)
+        }
+    }
+
+    /// R23 P070: the entry thread for a fresh workspace. The last open thread
+    /// when it still exists; General's thread when there is no stored thread,
+    /// it went stale, or it belongs to another account's tree. Never nil when
+    /// the workspace holds projects — the entry is a thread, never an error.
+    func resolveEntryRoute(in workspace: WorkspaceSummary) -> Route? {
+        if let kind = defaults.string(forKey: Self.lastV2KindKey),
+           let id = defaults.string(forKey: Self.lastV2IDKey), !id.isEmpty {
+            if kind == "mission" {
+                for project in workspace.projects {
+                    if project.missions.contains(where: { $0.id == id }) {
+                        return .mission(missionID: id)
+                    }
+                }
+            } else if kind == "project",
+                      workspace.projects.contains(where: { $0.id == id }) {
+                return .project(projectID: id)
+            }
+        }
+        if let general = workspace.projects.first(where: { $0.kind == .general }) {
+            return .project(projectID: general.id)
+        }
+        if let first = workspace.projects.first {
+            return .project(projectID: first.id)
+        }
+        return nil
+    }
+
+    /// R23 P070: sign-out closes the entry too. The stored last thread
+    /// survives (the next sign-in on this device re-resolves it, falling back
+    /// to General when it is foreign), but nothing renders until then.
+    func forgetEntry() {
+        entryRoute = nil
+        pendingEntry = nil
     }
 
     var openRoom: Room? {
@@ -337,12 +397,51 @@ final class AppRouter: ObservableObject {
     /// A replace that is armed but not yet applied. See `open(_ route:)`.
     private(set) var deferredPush: Route?
 
+    /// True for the destinations the stack root renders: thread screens
+    /// replace the entry instead of stacking (R23 P070 — the root IS a
+    /// thread). Everything else pushes over the entry as before.
+    static func isEntryRoute(_ route: Route) -> Bool {
+        switch route {
+        case .project, .mission, .visualTab: return true
+        case .room, .review, .organize, .tracker, .email, .workspace, .legacyArchive: return false
+        }
+    }
+
     func open(_ route: Route) {
         unresolvedLink = nil
         if path.last == route { deferredPush = nil; return }
+        if Self.isEntryRoute(route) {
+            // Thread-to-thread is a replace, never a stack: the entry becomes
+            // the destination and any pushed screen above it goes away. The
+            // duplicate guard covers the root too — opening the visible thread
+            // is a no-op, not a second copy of it.
+            if path.isEmpty, entryRoute == route || pendingEntry == route {
+                deferredPush = nil
+                return
+            }
+            deferredPush = nil
+            // The replace lands a beat after the current update. Entry swaps
+            // are usually fired from a disappearing overlay (the drawer, a
+            // sheet): a root replacement in the same update as the overlay's
+            // dismissal is swallowed — the same failure the 60ms deferred
+            // push below works around. Latest navigation wins.
+            pendingEntry = route
+            path = []
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 60_000_000)
+                if self.pendingEntry == route {
+                    self.pendingEntry = nil
+                    self.entryRoute = route
+                }
+            }
+            return
+        }
 
         // Replace rather than stack: tapping three banners for three rooms should leave
         // one screen open, not a three-deep back stack the user has to unwind.
+        // A legacy screen is the latest navigation: it cancels an armed entry
+        // replace the same way closeAll does.
+        pendingEntry = nil
         if path.isEmpty {
             // A second link can arrive inside the 60ms pop-then-push window of a first.
             // Without clearing the armed push, it fires later into a stack it no longer
@@ -441,7 +540,11 @@ final class AppRouter: ObservableObject {
             guard let want = link.resolveRoom() else { return false }
             return openRoom?.roomID == want.roomID
         case .route(let route):
-            return path.last == route
+            if path.last == route { return true }
+            // A thread destination with nothing pushed is showing when it is
+            // the entry (R23 P070).
+            if path.isEmpty, Self.isEntryRoute(route) { return entryRoute == route }
+            return false
         case .rail:
             return path.isEmpty
         }
@@ -475,6 +578,7 @@ final class AppRouter: ObservableObject {
         // not fire into the next one — neither the held target nor an armed replace.
         pendingTarget = nil
         deferredPush = nil
+        pendingEntry = nil
         messageFocus = nil
     }
 }

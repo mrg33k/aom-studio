@@ -14,7 +14,9 @@ final class VisualWindowUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments += ["-v2FixtureUITest", "-v2SeedVisual", "-v2ResetVisual"]
+        // R23: -v2ResetEntry pins the entry to General's thread, so every
+        // test starts on the same thread with the shared seeded cards.
+        app.launchArguments += ["-v2FixtureUITest", "-v2SeedVisual", "-v2ResetVisual", "-v2ResetEntry"]
         addUIInterruptionMonitor(withDescription: "System dialog") { alert in
             for label in ["Allow", "OK", "Not Now", "Don't Allow", "Continue"] {
                 let b = alert.buttons[label]
@@ -37,14 +39,12 @@ final class VisualWindowUITests: XCTestCase {
         try? shot.pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/R11-native-\(name).png"))
     }
 
+    /// R23: the entry IS General's thread — the launch lands on it, no tree,
+    /// no taps. (The seeded file cards ride the shared event buffer, so they
+    /// render on whatever thread is showing.)
     private func openGeneralChat(_ scope: XCUIApplication) {
-        let tree = scope.staticTexts.matching(identifier: "workspace-project-name")
-            .matching(NSPredicate(format: "label == 'General'")).firstMatch
-        XCTAssertTrue(tree.waitForExistence(timeout: 120),
-                      "workspace tree never appeared — sign-in or ensureWorkspace failed")
-        scope.buttons.matching(identifier: "workspace-project-row").firstMatch.tap()
         XCTAssertTrue(scope.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch
-            .waitForExistence(timeout: 30), "tapping General did not open a chat")
+            .waitForExistence(timeout: 30), "the entry thread never appeared")
     }
 
     private func openCard(_ scope: XCUIApplication, artifactID: String, file: StaticString = #file, line: UInt = #line) {
@@ -281,7 +281,7 @@ final class VisualWindowUITests: XCTestCase {
             app.staticTexts.matching(identifier: "chat-subtitle").firstMatch.exists,
             "a project chat shows no subtitle line"
         )
-        // Route into the seeded mission: `Project / Mission` + project above.
+        // Route into the seeded mission: mission name + project above (P071).
         let field = app.textFields.matching(identifier: "v2-composer-field").firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 15), "no v2 composer field")
         field.tap()
@@ -292,8 +292,9 @@ final class VisualWindowUITests: XCTestCase {
             "no route block arrived"
         )
         app.buttons.matching(identifier: "route-move").firstMatch.tap()
+        // R23 P071: the title is the mission name only, the project above it.
         let missionTitle = app.staticTexts.matching(identifier: "chat-title")
-            .matching(NSPredicate(format: "label == 'Aster / Ship home page'")).firstMatch
+            .matching(NSPredicate(format: "label == 'Ship home page'")).firstMatch
         XCTAssertTrue(missionTitle.waitForExistence(timeout: 30), "Move did not open the mission chat")
         let subtitle = app.staticTexts.matching(identifier: "chat-subtitle").firstMatch
         XCTAssertTrue(subtitle.waitForExistence(timeout: 10), "a mission chat shows no project line")

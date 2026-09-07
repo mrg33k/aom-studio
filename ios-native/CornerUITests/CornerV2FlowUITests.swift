@@ -1,7 +1,12 @@
 import XCTest
 
-/// Native plan Task 4, Step 1: Workspace → Project → Mission navigation on
-/// the rehearsal deployment, driven like a person.
+/// Native plan Task 4, Step 1: Workspace → Project → Mission navigation,
+/// R23-rebased on the thread entry.
+///
+/// R23 P070 retired the home tree: the app opens INTO the last thread (or
+/// General's) and every navigation happens through the drawer. These tests
+/// drive the app like a person — entry thread, drawer rows, intake sheet —
+/// and never touch the tree identifiers.
 ///
 /// Backend: the rehearsal deployment (CONVEX_BASE_URL in the test
 /// environment, forwarded to the app — never hardcoded here). Credentials:
@@ -25,7 +30,10 @@ final class CornerV2FlowUITests: XCTestCase {
         // drives the real deployment once its password sign-in works again.
         let stubMode = (env["V2_FIXTURE_STUB"] ?? "1") == "1"
         if stubMode {
-            app.launchArguments += ["-v2FixtureUITest"]
+            // R23: -v2ResetEntry pins the entry to General's thread, so every
+            // test starts on the same thread. Tests that assert persistence
+            // across a relaunch build their own app without it.
+            app.launchArguments += ["-v2FixtureUITest", "-v2ResetEntry"]
         } else {
             app.launchEnvironment["UITEST_REAL_BACKEND"] = "1"
             if let base = env["CONVEX_BASE_URL"], !base.isEmpty {
@@ -64,52 +72,13 @@ final class CornerV2FlowUITests: XCTestCase {
         try? shot.pngRepresentation.write(to: URL(fileURLWithPath: "\(dir)/\(prefix)-\(name).png"))
     }
 
-    /// The tree's presence, read off the General project name: container
-    /// identifiers swallow row identifiers in this hierarchy, so the test
-    /// never identifies containers.
-    private var workspaceTree: XCUIElement {
-        projectNames().matching(NSPredicate(format: "label == 'General'")).firstMatch
-    }
-
-    private func projectRows() -> XCUIElementQuery {
-        app.descendants(matching: .any).matching(identifier: "workspace-project-row")
-    }
-
-    private func projectNames() -> XCUIElementQuery {
-        app.staticTexts.matching(identifier: "workspace-project-name")
-    }
-
-    private func missionRows() -> XCUIElementQuery {
-        app.descendants(matching: .any).matching(identifier: "workspace-mission-row")
-    }
-
-    private func missionNames() -> XCUIElementQuery {
-        app.staticTexts.matching(identifier: "workspace-mission-name")
-    }
-
-    /// The chat header title (exact: `Project` or `Project / Mission`).
+    /// The chat header title (exact: `Project` or the mission name — R23 P071).
     private var chatTitle: XCUIElement {
         app.staticTexts.matching(identifier: "chat-title").firstMatch
     }
 
-    private func agentRows() -> XCUIElementQuery {
-        app.descendants(matching: .any).matching(identifier: "workspace-agent-row")
-    }
-
     private var chatScreen: XCUIElement {
         app.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch
-    }
-
-    private var intakeField: XCUIElement {
-        app.textFields.matching(identifier: "global-intake-field").firstMatch
-    }
-
-    private var intakeSend: XCUIElement {
-        app.buttons.matching(identifier: "global-intake-send").firstMatch
-    }
-
-    private var intakeConfirmSheet: XCUIElement {
-        app.buttons.matching(identifier: "intake-confirm-cancel").firstMatch
     }
 
     private func waitForCount(_ query: XCUIElementQuery, _ count: Int, timeout: TimeInterval) -> Bool {
@@ -119,6 +88,78 @@ final class CornerV2FlowUITests: XCTestCase {
             Thread.sleep(forTimeInterval: 2.0)
         }
         return query.count >= count
+    }
+
+    // MARK: - v2 entry + drawer helpers (R23 P070)
+
+    /// The entry thread is up — no tree, no taps. The launch lands on it.
+    private func openEntryThread(_ scope: XCUIApplication, timeout: TimeInterval = 30) {
+        XCTAssertTrue(scope.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch
+            .waitForExistence(timeout: timeout), "the entry thread never appeared")
+    }
+
+    /// No home tree anywhere: the retired identifiers never resolve.
+    private func assertNoTree(_ scope: XCUIApplication) {
+        XCTAssertEqual(scope.descendants(matching: .any).matching(identifier: "workspace-project-row").count, 0,
+                       "the retired home tree is on screen")
+        XCTAssertFalse(scope.descendants(matching: .any).matching(identifier: "room-list-screen").firstMatch.exists,
+                       "the retired home screen is on screen")
+    }
+
+    private func openDrawer(_ scope: XCUIApplication) {
+        let drawer = scope.descendants(matching: .any).matching(identifier: "v2-drawer").firstMatch
+        // Idempotent: the burger sits under the open drawer, so tapping it
+        // again would hit the scrim and close what the test wants open.
+        if drawer.waitForExistence(timeout: 3) { return }
+        scope.buttons.matching(identifier: "v2-drawer-button").firstMatch.tap()
+        XCTAssertTrue(drawer.waitForExistence(timeout: 10), "the drawer never opened")
+    }
+
+    /// Tap the drawer row (project or mission) whose label contains the text,
+    /// then wait for the thread with that exact title.
+    private func tapDrawerRow(_ scope: XCUIApplication, id: String, contains text: String, title: String) {
+        let rows = scope.buttons.matching(identifier: id)
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 15), "no \(id) rows in the drawer")
+        var tapped = false
+        for i in 0..<rows.count {
+            let row = rows.element(boundBy: i)
+            if row.label.localizedCaseInsensitiveContains(text) {
+                row.tap()
+                tapped = true
+                break
+            }
+        }
+        XCTAssertTrue(tapped, "no \(id) row contains \(text)")
+        let want = scope.staticTexts.matching(identifier: "chat-title")
+            .matching(NSPredicate(format: "label == %@", title)).firstMatch
+        XCTAssertTrue(want.waitForExistence(timeout: 30), "tapping the row did not open \(title)")
+    }
+
+    /// The intake sheet's field (TextField or TextView — the multiline field
+    /// exposes either shape depending on OS version).
+    private func intakeField(_ scope: XCUIApplication) -> XCUIElement {
+        let field = scope.textFields.matching(identifier: "global-intake-field").firstMatch
+        if field.waitForExistence(timeout: 10) { return field }
+        return scope.textViews.matching(identifier: "global-intake-field").firstMatch
+    }
+
+    /// Raise the intake sheet from the drawer (optionally scoped to a project
+    /// via its `+`), type, and send. Leaves the confirm sheet up.
+    private func sendIntake(_ scope: XCUIApplication, _ text: String, projectAdd: String? = nil) {
+        openDrawer(scope)
+        if let projectAdd {
+            scope.buttons.matching(identifier: "v2-drawer-project-add")
+                .matching(NSPredicate(format: "label == %@", "New mission in \(projectAdd)")).firstMatch.tap()
+        } else {
+            scope.buttons.matching(identifier: "v2-drawer-new").firstMatch.tap()
+        }
+        let field = intakeField(scope)
+        XCTAssertTrue(field.waitForExistence(timeout: 15), "the intake sheet never appeared")
+        field.tap()
+        field.typeText(text)
+        scope.buttons.matching(identifier: "global-intake-send").firstMatch.tap()
+        XCTAssertTrue(scope.buttons.matching(identifier: "intake-confirm-create").firstMatch
+            .waitForExistence(timeout: 30), "no creation confirmation for the intake")
     }
 
     // MARK: - v2 chat helpers (native Task 5)
@@ -135,15 +176,109 @@ final class CornerV2FlowUITests: XCTestCase {
         scope.buttons.matching(identifier: "v2-composer-send").firstMatch
     }
 
-    private func openFirstProjectChatOn(_ scope: XCUIApplication) {
-        let tree = scope.staticTexts.matching(identifier: "workspace-project-name")
-            .matching(NSPredicate(format: "label == 'General'")).firstMatch
-        XCTAssertTrue(tree.waitForExistence(timeout: 120),
-                      "workspace tree never appeared — sign-in or ensureWorkspace failed")
-        scope.descendants(matching: .any).matching(identifier: "workspace-project-row").firstMatch.tap()
-        XCTAssertTrue(scope.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch
-            .waitForExistence(timeout: 30), "tapping a project did not open a chat")
+    private func sendInV2Chat(_ scope: XCUIApplication, _ text: String) {
+        let field = v2Field(in: scope)
+        XCTAssertTrue(field.waitForExistence(timeout: 15), "no v2 composer field in the chat")
+        field.tap()
+        field.typeText(text)
+        let send = v2Send(in: scope)
+        XCTAssertTrue(send.waitForExistence(timeout: 10), "no v2 composer send button")
+        send.tap()
     }
+
+    // MARK: - R23 P070 entry tests
+
+    /// Launching lands straight on the last thread — never on a tree. From a
+    /// clean slate that is General's thread; after visiting the seeded Ship
+    /// mission, a relaunch restores the mission (R23 P071: mission name only).
+    func testLaunchOpensLastThreadNotATree() throws {
+        app.launchArguments += ["-v2FixtureUITest", "-v2RouteMode=confirm"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openEntryThread(app)
+        XCTAssertEqual(chatTitle.label, "General", "a clean launch does not open General's thread")
+        assertNoTree(app)
+        evidence("R23-entry-general")
+
+        // Visit the seeded mission through the drawer: its thread becomes the
+        // stored last thread. (The seed re-seeds every launch, so the stored
+        // id still resolves after the relaunch below.)
+        openDrawer(app)
+        let expand = app.buttons.matching(identifier: "v2-drawer-project-expand")
+            .matching(NSPredicate(format: "label == 'Expand Aster'")).firstMatch
+        if expand.waitForExistence(timeout: 10) { expand.tap() }
+        tapDrawerRow(app, id: "v2-drawer-mission-row",
+                     contains: "Ship home page", title: "Ship home page")
+        XCTAssertTrue(app.staticTexts.matching(identifier: "chat-subtitle").firstMatch.exists,
+                      "the mission thread shows no project line")
+        assertNoTree(app)
+        evidence("R23-entry-mission")
+        app.terminate()
+
+        // Relaunch with no taps: the mission thread is the entry, not a tree.
+        let back = XCUIApplication()
+        back.launchArguments += ["-v2FixtureUITest", "-v2RouteMode=confirm"]
+        back.launch()
+        XCTAssertTrue(back.wait(for: .runningForeground, timeout: 30), "app did not relaunch")
+        openEntryThread(back)
+        XCTAssertEqual(back.staticTexts.matching(identifier: "chat-title").firstMatch.label, "Ship home page",
+                       "relaunch did not restore the last thread")
+        assertNoTree(back)
+    }
+
+    /// The drawer carries every home action the tree offered: search, New /
+    /// Project +, Record a call, projects with missions, per-project `+`,
+    /// Files rows, and identity + bell + gear.
+    func testDrawerCarriesEveryHomeAction() throws {
+        app.launchArguments += ["-v2FixtureUITest", "-v2SeedVisual"]
+        app.launch()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
+        openEntryThread(app)
+        openDrawer(app)
+
+        for id in ["v2-drawer-close", "v2-drawer-search", "v2-drawer-new",
+                   "v2-drawer-new-project", "v2-drawer-record",
+                   "v2-drawer-project-row", "v2-drawer-project-add",
+                   "v2-drawer-project-expand", "v2-drawer-new-mission",
+                   "v2-drawer-bell", "v2-drawer-settings"] {
+            XCTAssertTrue(app.descendants(matching: .any).matching(identifier: id).firstMatch
+                .waitForExistence(timeout: 10), "the drawer is missing \(id)")
+        }
+        // General + Aster ride the fixture.
+        XCTAssertGreaterThanOrEqual(
+            app.buttons.matching(identifier: "v2-drawer-project-row").count, 2,
+            "the drawer does not list the projects")
+        // The entry project's missions + New-mission row are expanded by default.
+        XCTAssertTrue(app.buttons.matching(identifier: "v2-drawer-new-mission").firstMatch.exists,
+                      "no New-mission row under the entry project")
+        // General's seeded artifacts surface as its Files row.
+        let files = app.descendants(matching: .any).matching(identifier: "v2-drawer-files-row").firstMatch
+        XCTAssertTrue(files.waitForExistence(timeout: 30), "no Files row under General")
+        XCTAssertTrue(files.label.contains("6"), "General's Files row is not the 6 seeded artifacts: \(files.label)")
+        evidence("R23-drawer-full")
+
+        // Search filters to the match: Aster survives, General does not.
+        let search = app.textFields.matching(identifier: "v2-drawer-search").firstMatch
+        search.tap()
+        search.typeText("Aster")
+        let asterRow = app.buttons.matching(identifier: "v2-drawer-project-row")
+            .matching(NSPredicate(format: "label == 'Aster'")).firstMatch
+        XCTAssertTrue(asterRow.waitForExistence(timeout: 10), "search hid the Aster project")
+        XCTAssertEqual(app.buttons.matching(identifier: "v2-drawer-project-row")
+            .matching(NSPredicate(format: "label == 'General'")).count, 0,
+            "search did not filter General out")
+        app.buttons.matching(identifier: "v2-drawer-search-clear").firstMatch.tap()
+
+        // The per-project `+` opens the intake scoped to that project.
+        app.buttons.matching(identifier: "v2-drawer-project-add")
+            .matching(NSPredicate(format: "label == 'New mission in Aster'")).firstMatch.tap()
+        let scope = app.buttons.matching(identifier: "intake-project-context").firstMatch
+        XCTAssertTrue(scope.waitForExistence(timeout: 15), "the intake sheet shows no Aster scope")
+        XCTAssertTrue(scope.label.contains("Aster"), "the intake scope is not Aster: \(scope.label)")
+        app.buttons.matching(identifier: "intake-close").firstMatch.tap()
+    }
+
+    // MARK: - native Task 5+ flows on the entry
 
     /// Send/reply with a visible agent label: `@research` rides as routing
     /// metadata, the reply carries the Research label, and the thread never
@@ -152,7 +287,7 @@ final class CornerV2FlowUITests: XCTestCase {
         app.launchArguments += ["-v2FixtureUITest"]
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
-        openFirstProjectChatOn(app)
+        openEntryThread(app)
         let title = app.staticTexts.matching(identifier: "chat-title").firstMatch
         XCTAssertTrue(title.waitForExistence(timeout: 15), "project chat has no title")
         let projectName = title.label
@@ -175,57 +310,17 @@ final class CornerV2FlowUITests: XCTestCase {
                       "the @research reply carries no visible Research label")
         evidence("05-send-reply")
         XCTAssertEqual(title.label, projectName, "sending navigated away from the thread")
-        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "workspace-agent-row").count, 0,
-                       "no agent rows anywhere after a mention send")
-    }
-
-    /// Open the named project's chat (rows and names pair by index).
-    /// Open the named project's chat. Rows are matched by their accessible
-    /// label (the project name), not by the inner name text: the row
-    /// button's own identifier swallows the inner text identifier on every
-    /// row but the first (measured: 2 rows, 1 named text), so name-text
-    /// matching can only ever find General.
-    private func openProjectChatOn(_ scope: XCUIApplication, named name: String) {
-        let row = scope.buttons.matching(identifier: "workspace-project-row")
-            .matching(NSPredicate(format: "label == '\(name)'")).firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 120),
-                      "workspace tree never appeared — sign-in or ensureWorkspace failed")
-        row.tap()
-        XCTAssertTrue(scope.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch
-            .waitForExistence(timeout: 30), "tapping \(name) did not open a chat")
-    }
-
-    /// Back to the tree from a thread. The thread hides the system bar (its
-    /// custom header carries the drawer button, by design), so there is no
-    /// NavigationBar back to tap: the drawer's New pops to the root, and the
-    /// intake focus it raises is the same field the journey uses next.
-    private func backToTree(_ app: XCUIApplication) {
-        app.buttons.matching(identifier: "v2-drawer-button").firstMatch.tap()
-        let drawer = app.descendants(matching: .any).matching(identifier: "v2-drawer").firstMatch
-        XCTAssertTrue(drawer.waitForExistence(timeout: 10), "the drawer never opened")
-        app.buttons.matching(identifier: "v2-drawer-new").firstMatch.tap()
-        XCTAssertTrue(workspaceTree.waitForExistence(timeout: 15), "did not return to the workspace tree")
-    }
-
-    private func sendInV2Chat(_ scope: XCUIApplication, _ text: String) {
-        let field = v2Field(in: scope)
-        XCTAssertTrue(field.waitForExistence(timeout: 15), "no v2 composer field in the chat")
-        field.tap()
-        field.typeText(text)
-        let send = v2Send(in: scope)
-        XCTAssertTrue(send.waitForExistence(timeout: 10), "no v2 composer send button")
-        send.tap()
     }
 
     // MARK: - native Task 6 flows
 
     /// A route block shows `Project > Mission` + reason + Move; Move opens
-    /// the destination mission's chat.
+    /// the destination mission's chat (R23 P071: mission name only).
     func testV2RouteBlockWithMove() throws {
         app.launchArguments += ["-v2FixtureUITest", "-v2RouteMode=confirm"]
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
-        openFirstProjectChatOn(app)
+        openEntryThread(app)
 
         sendInV2Chat(app, "Where should this go \(Int(Date().timeIntervalSince1970))")
         let title = app.staticTexts.matching(identifier: "route-title").firstMatch
@@ -238,10 +333,16 @@ final class CornerV2FlowUITests: XCTestCase {
         evidence("07-route-block")
         app.buttons.matching(identifier: "route-move").firstMatch.tap()
         let moved = app.staticTexts.matching(identifier: "chat-title")
-            .matching(NSPredicate(format: "label == 'Aster / Ship home page'")).firstMatch
+            .matching(NSPredicate(format: "label == 'Ship home page'")).firstMatch
         XCTAssertTrue(moved.waitForExistence(timeout: 30),
                       "Move did not open the destination mission chat")
         evidence("07b-route-moved")
+    }
+
+    /// Open a project's chat through the drawer, by its accessible label.
+    private func openProjectChatOn(_ scope: XCUIApplication, named name: String) {
+        openDrawer(scope)
+        tapDrawerRow(scope, id: "v2-drawer-project-row", contains: name, title: name)
     }
 
     /// A pending confirmation card confirms once and disappears; a second
@@ -265,25 +366,6 @@ final class CornerV2FlowUITests: XCTestCase {
         evidence("08b-confirm-done")
     }
 
-    /// The Activity screen lists ledger items, opened from the tree list's
-    /// home menu — never from a room.
-    func testV2ActivityListsLedger() throws {
-        app.launchArguments += ["-v2FixtureUITest", "-v2SeedLedger"]
-        app.launch()
-        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
-        let tree = app.staticTexts.matching(identifier: "workspace-project-name")
-            .matching(NSPredicate(format: "label == 'General'")).firstMatch
-        XCTAssertTrue(tree.waitForExistence(timeout: 120),
-                      "workspace tree never appeared — sign-in or ensureWorkspace failed")
-        app.buttons.matching(identifier: "home-menu").firstMatch.tap()
-        app.buttons.matching(identifier: "activity-row").firstMatch.tap()
-        let items = app.descendants(matching: .any).matching(identifier: "ledger-item")
-        XCTAssertTrue(waitForCount(items, 2, timeout: 60),
-                      "the Activity screen never listed the ledger items")
-        evidence("09-activity")
-        app.buttons.matching(identifier: "ledger-close").firstMatch.tap()
-    }
-
     /// Offline queue: with sends failing, the message parks in the banner;
     /// after a relaunch with the network back, it sends once and the banner
     /// clears (the disk outbox survives the process death).
@@ -291,7 +373,7 @@ final class CornerV2FlowUITests: XCTestCase {
         app.launchArguments += ["-v2FixtureUITest", "-v2FailNextSends=999"]
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
-        openFirstProjectChatOn(app)
+        openEntryThread(app)
 
         let probe = "Offline draft \(Int(Date().timeIntervalSince1970))"
         let field = v2Field(in: app)
@@ -310,7 +392,7 @@ final class CornerV2FlowUITests: XCTestCase {
         back.launchArguments += ["-v2FixtureUITest"]
         back.launch()
         XCTAssertTrue(back.wait(for: .runningForeground, timeout: 30), "app did not relaunch")
-        openFirstProjectChatOn(back)
+        openEntryThread(back)
         XCTAssertTrue(back.staticTexts[probe].waitForExistence(timeout: 60),
                       "the queued message never sent after reconnect")
         evidence("06b-offline-replayed")
@@ -318,146 +400,68 @@ final class CornerV2FlowUITests: XCTestCase {
                        "the offline banner did not clear after the replay succeeded")
     }
 
-    // MARK: - the flow
+    // MARK: - the flow: entry thread + drawer + intake sheet
 
-    func testWorkspaceProjectMissionFlow() throws {
+    /// The person journey on the new entry: the launch IS General's thread;
+    /// projects + missions live in the drawer; a mission is created through
+    /// the intake sheet (scoped per project); a one-off proposes a General
+    /// mission and cancels without creating anything.
+    func testEntryThreadDrawerFlow() throws {
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
 
-        // 1. Signed-in list: the workspace tree, General exactly once.
-        XCTAssertTrue(workspaceTree.waitForExistence(timeout: 120),
-                      "workspace tree never appeared — sign-in or ensureWorkspace failed")
-        evidence("01-workspace")
-        let generals = projectNames().matching(NSPredicate(format: "label == 'General'"))
-        XCTAssertEqual(generals.count, 1, "General must appear exactly once, with the normal projects")
-        XCTAssertGreaterThanOrEqual(projectRows().count, 1, "expected at least the General project row")
-        XCTAssertEqual(agentRows().count, 0, "no agent rows anywhere on the workspace list")
-        XCTAssertEqual(
-            app.buttons.matching(identifier: "workspace-filter").matching(NSPredicate(format: "label == 'Agents'")).count,
-            0, "no agent filter on the workspace list"
-        )
+        // 1. The launch lands straight on the thread — General, no tree.
+        openEntryThread(app)
+        XCTAssertTrue(chatTitle.waitForExistence(timeout: 15), "entry thread has no title")
+        XCTAssertEqual(chatTitle.label, "General", "a clean launch does not open General's thread")
+        assertNoTree(app)
+        evidence("01-entry")
 
-        // 2. Missions indent under their project. Pair the first project that
-        // owns a visible mission (mission row below the project row, above
-        // the next project row).
-        var missionHeader = ""
-        var missionTitle = ""
-        var missionEl: XCUIElement? = nil
-        do {
-            let prows = projectRows()
-            let mrows = missionRows()
-            let pnames = projectNames()
-            let mnames = missionNames()
-            for i in 0..<prows.count {
-                let prow = prows.element(boundBy: i)
-                let nextMinY: CGFloat = (i + 1 < prows.count)
-                    ? prows.element(boundBy: i + 1).frame.minY : CGFloat.greatestFiniteMagnitude
-                for j in 0..<mrows.count {
-                    let mrow = mrows.element(boundBy: j)
-                    if mrow.frame.minY > prow.frame.minY && mrow.frame.minY < nextMinY {
-                        XCTAssertGreaterThan(mrow.frame.minX, prow.frame.minX,
-                                              "mission rows indent under their project row")
-                        missionHeader = pnames.element(boundBy: i).label
-                        missionTitle = mnames.element(boundBy: j).label
-                        missionEl = mrow
-                        break
-                    }
-                }
-                if missionEl != nil { break }
-            }
-        }
+        // 2. The drawer lists the projects; Aster starts collapsed.
+        openDrawer(app)
+        let projectRows = app.buttons.matching(identifier: "v2-drawer-project-row")
+        XCTAssertTrue(waitForCount(projectRows, 2, timeout: 30), "the drawer does not list the projects")
+        evidence("02-drawer")
 
-        // 3. Tapping a project opens the chat titled with the project.
-        let projectName = projectNames().firstMatch.label
-        projectRows().firstMatch.tap()
-        XCTAssertTrue(chatScreen.waitForExistence(timeout: 30), "tapping a project did not open a chat")
-        XCTAssertTrue(chatTitle.waitForExistence(timeout: 15), "project chat has no title")
-        XCTAssertEqual(chatTitle.label, projectName,
-                       "project chat is not titled with the project (\(projectName))")
-        evidence("02-project-chat")
+        // 3. A mission created through the per-project `+` opens its chat,
+        // titled with the mission name only (R23 P071).
+        sendIntake(app, "UI Mission alpha", projectAdd: "Aster")
+        XCTAssertTrue(app.staticTexts["Create in Aster."].waitForExistence(timeout: 10),
+                      "no creation confirmation for the new mission")
+        evidence("02b-mission-confirm")
+        app.buttons.matching(identifier: "intake-confirm-create").firstMatch.tap()
+        let missionTitle = app.staticTexts.matching(identifier: "chat-title")
+            .matching(NSPredicate(format: "label == 'UI Mission alpha'")).firstMatch
+        XCTAssertTrue(missionTitle.waitForExistence(timeout: 30),
+                      "confirming did not open the new mission chat")
+        evidence("02c-mission-created")
 
-        // Back to the tree.
-        backToTree(app)
-
-        // 3b. No missions yet: create one through the UI — that live tree is
-        // the fixture. (Later runs find it and skip this.)
-        if missionRows().count == 0 {
-            intakeField.tap()
-            intakeField.typeText("UI Mission alpha")
-            intakeSend.tap()
-            XCTAssertTrue(intakeConfirmSheet.waitForExistence(timeout: 60),
-                          "no creation confirmation for the new mission")
-            evidence("02b-mission-confirm")
-            app.buttons.matching(identifier: "intake-confirm-create").firstMatch.tap()
-            // Creation navigates straight into the new mission's chat (the
-            // covered list virtualizes its rows away, so assert here first).
-            XCTAssertTrue(chatScreen.waitForExistence(timeout: 60),
-                          "confirming did not open the new mission chat")
-            XCTAssertTrue(chatTitle.waitForExistence(timeout: 15), "new mission chat has no title")
-            evidence("02c-mission-created")
-            do {
-                // Title is `Project / Mission`; split it back apart for step 4.
-                let parts = chatTitle.label.components(separatedBy: " / ")
-                XCTAssertGreaterThanOrEqual(parts.count, 2, "new mission chat is not titled Project / Mission")
-                missionHeader = parts.first ?? ""
-                missionTitle = parts.dropFirst().joined(separator: " / ")
-                missionEl = nil
-            }
-            backToTree(app)
-            XCTAssertTrue(waitForCount(missionRows(), 1, timeout: 60),
-                          "confirmed mission never appeared under its project")
-        }
-
-        // 4. Tapping a mission opens the chat titled Project / Mission.
-        // Re-pair after the possible creation above (rows may have shifted).
-        if missionEl == nil || missionRows().count == 0 {
-            let prows = projectRows()
-            let mrows = missionRows()
-            let pnames = projectNames()
-            let mnames = missionNames()
-            for i in 0..<prows.count {
-                let prow = prows.element(boundBy: i)
-                let nextMinY: CGFloat = (i + 1 < prows.count)
-                    ? prows.element(boundBy: i + 1).frame.minY : CGFloat.greatestFiniteMagnitude
-                for j in 0..<mrows.count {
-                    let mrow = mrows.element(boundBy: j)
-                    if mrow.frame.minY > prow.frame.minY && mrow.frame.minY < nextMinY {
-                        missionHeader = pnames.element(boundBy: i).label
-                        missionTitle = mnames.element(boundBy: j).label
-                        missionEl = mrow
-                        break
-                    }
-                }
-                if missionEl != nil { break }
-            }
-        }
-        if let mission = missionEl {
-            mission.tap()
-            XCTAssertTrue(chatScreen.waitForExistence(timeout: 30), "tapping a mission did not open a chat")
-            let combined = "\(missionHeader) / \(missionTitle)"
-            XCTAssertTrue(chatTitle.waitForExistence(timeout: 15), "mission chat has no title")
-            XCTAssertEqual(chatTitle.label, combined,
-                           "mission chat is not titled Project / Mission (\(combined))")
-            evidence("03-mission-chat")
-            backToTree(app)
-        } else {
-            XCTFail("no mission row to tap — creation step above must have failed")
-        }
+        // 4. The new mission is a drawer row under Aster now.
+        openDrawer(app)
+        let expand = app.buttons.matching(identifier: "v2-drawer-project-expand")
+            .matching(NSPredicate(format: "label == 'Expand Aster'")).firstMatch
+        if expand.waitForExistence(timeout: 10) { expand.tap() }
+        tapDrawerRow(app, id: "v2-drawer-mission-row",
+                     contains: "UI Mission alpha", title: "UI Mission alpha")
+        evidence("03-mission-chat")
 
         // 5. An unrelated one-off proposes a General mission instead of creating.
         let probe = "Summarize this invoice \(Int(Date().timeIntervalSince1970))"
-        XCTAssertTrue(intakeField.waitForExistence(timeout: 15), "no global intake field on the workspace list")
-        intakeField.tap()
-        intakeField.typeText(probe)
-        XCTAssertTrue(intakeSend.waitForExistence(timeout: 10), "no global intake send button")
-        intakeSend.tap()
-        XCTAssertTrue(intakeConfirmSheet.waitForExistence(timeout: 60),
-                      "typing a one-off did not show the creation confirmation")
+        openDrawer(app)
+        app.buttons.matching(identifier: "v2-drawer-new").firstMatch.tap()
+        let field = intakeField(app)
+        XCTAssertTrue(field.waitForExistence(timeout: 15), "no intake field in the sheet")
+        field.tap()
+        field.typeText(probe)
+        app.buttons.matching(identifier: "global-intake-send").firstMatch.tap()
+        XCTAssertTrue(app.buttons.matching(identifier: "intake-confirm-create").firstMatch
+            .waitForExistence(timeout: 30), "typing a one-off did not show the creation confirmation")
         XCTAssertTrue(app.staticTexts["Create mission in General"].waitForExistence(timeout: 10),
                       "confirmation does not propose creating the mission in General")
         evidence("04-intake-confirm")
         // Dismiss without creating: nothing is silently created.
         app.buttons.matching(identifier: "intake-confirm-cancel").firstMatch.tap()
-        XCTAssertTrue(workspaceTree.waitForExistence(timeout: 15), "did not return to the workspace tree")
+        app.buttons.matching(identifier: "intake-close").firstMatch.tap()
+        openEntryThread(app)
     }
 }

@@ -258,4 +258,169 @@ final class RouteTests: XCTestCase {
         router.closeAll()
         XCTAssertNil(router.pendingTarget)
     }
+
+    // MARK: - R23 P070 entry (the stack root is a thread)
+
+    @MainActor
+    private func entryRouter() -> (AppRouter, UserDefaults) {
+        let defaults = UserDefaults(suiteName: "r23-entry-\(UUID().uuidString)")!
+        return (AppRouter(defaults: defaults), defaults)
+    }
+
+    private func entryWorkspace() -> WorkspaceSummary {
+        let general = ProjectSummary(
+            id: "proj-general-1", workspaceID: "world-1", name: "General",
+            kind: .general, tintHex: "#8B5CF6", needsAttention: false,
+            threadID: "thread-general-1", missions: []
+        )
+        let aster = ProjectSummary(
+            id: "proj-aster-1", workspaceID: "world-1", name: "Aster",
+            kind: .standard, tintHex: "#5B9BFF", needsAttention: false,
+            threadID: "thread-aster-1",
+            missions: [MissionSummary(
+                id: "mission-ship-1", projectID: "proj-aster-1",
+                title: "Ship home page", status: .live, threadID: "thread-ship-1"
+            )]
+        )
+        return WorkspaceSummary(
+            id: "world-1", name: "test",
+            generalProjectID: general.id, projects: [general, aster]
+        )
+    }
+
+    /// No stored thread: the entry is General's thread, never an error.
+    @MainActor
+    func testEntryFallsBackToGeneralWithNoStoredThread() {
+        let (router, _) = entryRouter()
+        XCTAssertEqual(
+            router.resolveEntryRoute(in: entryWorkspace()),
+            .project(projectID: "proj-general-1")
+        )
+    }
+
+    /// General wins even when it does not ride first.
+    @MainActor
+    func testEntryPrefersGeneralOverFirstProject() {
+        let (router, _) = entryRouter()
+        var workspace = entryWorkspace()
+        workspace = WorkspaceSummary(
+            id: workspace.id, name: workspace.name,
+            generalProjectID: workspace.generalProjectID,
+            projects: Array(workspace.projects.reversed())
+        )
+        XCTAssertEqual(
+            router.resolveEntryRoute(in: workspace),
+            .project(projectID: "proj-general-1")
+        )
+    }
+
+    /// A stored thread that still exists restores — project and mission.
+    @MainActor
+    func testEntryRestoresStoredThread() {
+        let (router, _) = entryRouter()
+        router.rememberV2(projectID: "proj-aster-1", missionID: nil)
+        XCTAssertEqual(
+            router.resolveEntryRoute(in: entryWorkspace()),
+            .project(projectID: "proj-aster-1")
+        )
+        router.rememberV2(projectID: "proj-aster-1", missionID: "mission-ship-1")
+        XCTAssertEqual(
+            router.resolveEntryRoute(in: entryWorkspace()),
+            .mission(missionID: "mission-ship-1")
+        )
+    }
+
+    /// Stale, foreign, and unknown-kind ids all fall back to General — never
+    /// to an error, never to a blank root.
+    @MainActor
+    func testEntryFallsBackToGeneralOnStaleOrForeignIDs() {
+        let general = Route.project(projectID: "proj-general-1")
+        let (stale, _) = entryRouter()
+        stale.rememberV2(projectID: "proj-gone", missionID: nil)
+        XCTAssertEqual(stale.resolveEntryRoute(in: entryWorkspace()), general)
+
+        let (foreign, _) = entryRouter()
+        foreign.rememberV2(projectID: "proj-aster-1", missionID: "mission-foreign-9")
+        XCTAssertEqual(foreign.resolveEntryRoute(in: entryWorkspace()), general)
+
+        let weirdDefaults = UserDefaults(suiteName: "r23-entry-\(UUID().uuidString)")!
+        weirdDefaults.set("room", forKey: AppRouter.lastV2KindKey)
+        weirdDefaults.set("proj-aster-1", forKey: AppRouter.lastV2IDKey)
+        XCTAssertEqual(
+            AppRouter(defaults: weirdDefaults).resolveEntryRoute(in: entryWorkspace()), general)
+    }
+
+    /// Thread destinations replace the entry root instead of stacking; opening
+    /// the visible thread is a no-op; legacy screens still push over it; the
+    /// rail (closeAll) keeps the entry. The replace lands a beat after the
+    /// open (the drawer-dismissal swallow), so this test waits it out.
+    @MainActor
+    func testThreadRoutesReplaceEntryRoot() async throws {
+        let (router, _) = entryRouter()
+        router.entryRoute = .project(projectID: "proj-general-1")
+
+        router.open(.mission(missionID: "mission-ship-1"))
+        XCTAssertTrue(router.path.isEmpty, "a thread replace must not stack")
+        try await Task.sleep(nanoseconds: 200_000_000)
+        XCTAssertEqual(router.entryRoute, .mission(missionID: "mission-ship-1"))
+
+        router.open(.mission(missionID: "mission-ship-1"))
+        XCTAssertEqual(router.entryRoute, .mission(missionID: "mission-ship-1"))
+        XCTAssertTrue(router.path.isEmpty, "re-opening the visible thread stacks a copy")
+
+        router.open(.organize)
+        XCTAssertEqual(router.path, [.organize], "a legacy screen pushes over the entry")
+        XCTAssertEqual(router.entryRoute, .mission(missionID: "mission-ship-1"))
+
+        router.closeAll()
+        XCTAssertTrue(router.path.isEmpty)
+        XCTAssertEqual(router.entryRoute, .mission(missionID: "mission-ship-1"),
+                       "the rail is the entry, not a cleared root")
+    }
+
+    /// A thread route with nothing pushed is showing when it is the entry.
+    @MainActor
+    func testIsShowingThreadRouteAtEntry() {
+        let (router, _) = entryRouter()
+        router.entryRoute = .project(projectID: "proj-general-1")
+        XCTAssertTrue(router.isShowing(.route(.project(projectID: "proj-general-1"))))
+        XCTAssertFalse(router.isShowing(.route(.project(projectID: "proj-aster-1"))))
+    }
+
+    /// Sign-out forgets the rendered entry but keeps the stored last thread
+    /// for the next sign-in to re-resolve.
+    @MainActor
+    func testForgetEntryKeepsStoredThread() {
+        let (router, _) = entryRouter()
+        router.rememberV2(projectID: "proj-aster-1", missionID: "mission-ship-1")
+        router.entryRoute = .mission(missionID: "mission-ship-1")
+        router.closeAll()
+        router.forgetEntry()
+        XCTAssertNil(router.entryRoute)
+        XCTAssertEqual(
+            router.resolveEntryRoute(in: entryWorkspace()),
+            .mission(missionID: "mission-ship-1")
+        )
+    }
+
+    /// R23 P071: the displayed title is the mission name only — the project
+    /// rides the line above, never twice.
+    @MainActor
+    func testV2ChatContextTitleIsMissionNameOnly() {
+        let workspace = entryWorkspace()
+        let aster = workspace.projects[1]
+        let ship = aster.missions[0]
+        let mission = V2ChatContext(
+            thread: Thread(id: ship.threadID, ownerType: .mission,
+                           projectID: aster.id, missionID: ship.id, visualSessionID: "s"),
+            project: aster, mission: ship
+        )
+        XCTAssertEqual(mission.title, "Ship home page")
+        let project = V2ChatContext(
+            thread: Thread(id: aster.threadID, ownerType: .project,
+                           projectID: aster.id, missionID: nil, visualSessionID: "s"),
+            project: aster, mission: nil
+        )
+        XCTAssertEqual(project.title, "Aster")
+    }
 }

@@ -20,7 +20,9 @@ final class CompMatchUITests: XCTestCase {
 
     // MARK: - launchers
 
-    private static let base = ["-v2FixtureUITest", "-v2SkipSetup", "-v2SuppressHaptics"]
+    // R23: -v2ResetEntry pins the entry to General's thread — every lock
+    // starts on the same thread no matter what an earlier test stored.
+    private static let base = ["-v2FixtureUITest", "-v2SkipSetup", "-v2SuppressHaptics", "-v2ResetEntry"]
     private static let visual = base + ["-v2SeedVisual", "-v2ResetVisual"]
     private static let comp = base + ["-v2SeedCompMatch"]
     private static let compVisual = visual + ["-v2SeedCompMatch"]
@@ -37,20 +39,16 @@ final class CompMatchUITests: XCTestCase {
 
     // MARK: - navigation
 
-    /// The home tree (room-list screen) is up.
+    /// R23: the entry IS the thread — no tree, no taps. The launch lands on
+    /// General's thread (-v2ResetEntry pins it).
     private func expectHome(_ app: XCUIApplication, timeout: TimeInterval = 20) {
-        let marker = app.descendants(matching: .any).matching(identifier: "room-list-screen").firstMatch
-        XCTAssertTrue(marker.waitForExistence(timeout: timeout), "the home tree never appeared")
+        openThread(app, timeout: timeout)
     }
 
-    /// Open the first project thread from the home tree.
-    private func openThread(_ app: XCUIApplication) {
-        expectHome(app)
-        let row = app.buttons.matching(identifier: "workspace-project-row").firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 15), "no project row on the home tree")
-        row.tap()
+    /// The entry thread is up.
+    private func openThread(_ app: XCUIApplication, timeout: TimeInterval = 20) {
         let marker = app.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch
-        XCTAssertTrue(marker.waitForExistence(timeout: 15), "the thread never opened")
+        XCTAssertTrue(marker.waitForExistence(timeout: timeout), "the entry thread never appeared")
     }
 
     /// Frames sampled mid-animation read back transitional colours, so
@@ -163,14 +161,24 @@ final class CompMatchUITests: XCTestCase {
             "v2-composer-field", "v2-composer-send", "visual-peek", "visual-peek-count",
             "review-toggle", "visual-sheet-close", "visual-tab",
             "sheet-tab-preview", "sheet-tab-context", "v2-agent-label",
-            "workspace-project-row", "workspace-mission-row",
         ]
         for id in ids {
             let el = app.descendants(matching: .any).matching(identifier: id).firstMatch
             if el.waitForExistence(timeout: 5) {
-                print("R17FRAME \(id) \(frameString(el.frame)) label=\(el.label)")
+                print("R23FRAME \(id) \(frameString(el.frame)) label=\(el.label)")
             } else {
-                print("R17FRAME \(id) MISSING")
+                print("R23FRAME \(id) MISSING")
+            }
+        }
+        dismissSheetIfAny(app)
+        openDrawer(app)
+        for id in ["v2-drawer-project-row", "v2-drawer-mission-row",
+                   "v2-drawer-new-mission", "v2-drawer-search"] {
+            let el = app.descendants(matching: .any).matching(identifier: id).firstMatch
+            if el.waitForExistence(timeout: 5) {
+                print("R23FRAME \(id) \(frameString(el.frame)) label=\(el.label)")
+            } else {
+                print("R23FRAME \(id) MISSING")
             }
         }
         XCTAssertTrue(true)
@@ -593,26 +601,29 @@ final class CompMatchUITests: XCTestCase {
 
     /// P056: the visible row reads exactly `New mission` — one plus icon,
     /// never `+ + New mission`. (The button's VoiceOver label keeps the
-    /// project context; the visible text is what this locks.)
+    /// project context; the visible text is what this locks.) R23: the row
+    /// lives in the drawer — the entry project's is expanded by default.
     func testP056NewMissionRow() throws {
         let app = launch(Self.base)
-        expectHome(app)
-        let row = app.buttons.matching(identifier: "workspace-new-mission").firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 15), "no New-mission row")
+        openThread(app)
+        openDrawer(app)
+        let row = app.buttons.matching(identifier: "v2-drawer-new-mission").firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 15), "no New-mission row in the drawer")
         XCTAssertEqual(row.staticTexts.firstMatch.label, "New mission")
     }
 
     /// P057: mission rows are 14pt muted titles with a dot, no LIVE tag.
-    /// The home loads projects collapsed, so the test expands the first.
+    /// R23: the rows live in the drawer. General rides first with no
+    /// missions: expand the second project.
     func testP057MissionRows() throws {
         let app = launch(Self.base + ["-v2SeedScale"])
-        expectHome(app)
-        // General rides first with no missions: expand the second project.
+        openThread(app)
+        openDrawer(app)
         // The chevron label reports the state, so a tap that lands during a
         // re-render is retried instead of silently collapsing again.
-        let expand = app.buttons.matching(identifier: "workspace-project-expand").element(boundBy: 1)
+        let expand = app.buttons.matching(identifier: "v2-drawer-project-expand").element(boundBy: 1)
         XCTAssertTrue(expand.waitForExistence(timeout: 20), "no project rows at scale")
-        let name = app.staticTexts.matching(identifier: "workspace-mission-name").firstMatch
+        let name = app.staticTexts.matching(identifier: "v2-drawer-mission-name").firstMatch
         // The seed starts expanded: only tap when collapsed, otherwise a tap
         // hides the rows the test is looking for.
         for _ in 0..<6 {
@@ -625,13 +636,14 @@ final class CompMatchUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["LIVE"].waitForExistence(timeout: 3), "the caps status tag is still here")
     }
 
-    /// P058: project rows lost the GENERAL tag.
+    /// P058: project rows lost the GENERAL tag. R23: the rows live in the drawer.
     func testP058ProjectRows() throws {
         let app = launch(Self.base)
-        expectHome(app)
+        openThread(app)
+        openDrawer(app)
         XCTAssertFalse(app.staticTexts["GENERAL"].waitForExistence(timeout: 3), "the GENERAL tag is still here")
-        let name = app.staticTexts.matching(identifier: "workspace-project-name").firstMatch
-        XCTAssertTrue(name.exists, "no project names")
+        let name = app.staticTexts.matching(identifier: "v2-drawer-project-name").firstMatch
+        XCTAssertTrue(name.exists, "no project names in the drawer")
     }
 
     // MARK: - login (P059–P060)

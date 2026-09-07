@@ -6,11 +6,13 @@
 // Projects with missions, and identity + bell + gear at the bottom.
 //
 // Every action does its real thing:
-// - New focuses the home intake; Project + calls v2Projects:createProject
+// - New raises the intake sheet; Project + calls v2Projects:createProject
 //   (the web's `onNewProject` creates `New Project` the same way).
-// - Record a call raises the voice sheet via RoomListView (which owns it).
+// - Record a call / notifications raise their sheets via the entry (which
+//   owns them since the home tree retired, R23 P070).
 // - Recent is the device's own last-opened threads (UserDefaults) — the
 //   server exposes no recency signal, so recency is honestly local.
+// - Search filters projects + missions in place, like the tree's search did.
 // - Rows navigate with router.open, which replaces rather than stacks.
 // Identifiers live on leaf buttons only (the R14 container finding).
 
@@ -76,11 +78,12 @@ final class V2RecentStore: ObservableObject {
 }
 
 extension Notification.Name {
-    /// RoomListView focuses the home intake (userInfo: projectID or omitted).
+    /// The entry raises the intake sheet (userInfo: projectID or omitted).
+    /// Kept for compatibility senders; the drawer opens V2IntakeStore itself.
     static let v2FocusIntake = Notification.Name("corner.v2.focus-intake")
-    /// RoomListView raises the voice sheet.
+    /// The entry raises the voice sheet.
     static let v2RecordCall = Notification.Name("corner.v2.record-call")
-    /// RoomListView raises notifications.
+    /// The entry raises notifications.
     static let v2ShowNotifications = Notification.Name("corner.v2.show-notifications")
 }
 
@@ -99,6 +102,50 @@ struct V2DrawerView: View {
     @State private var expandedProjectIDs: Set<String> = []
     @State private var errorText: String?
     @State private var busy = false
+    /// R23 P070: the tree's search, in the design's rows.
+    @State private var searchQuery = ""
+
+    private var searchText: String {
+        searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var isSearching: Bool { !searchText.isEmpty }
+
+    /// Projects matching the search (by project or mission title), or all of
+    /// them when the field is empty.
+    private var visibleProjects: [ProjectSummary] {
+        guard let workspace = v2.workspace else { return [] }
+        guard isSearching else { return workspace.projects }
+        return workspace.projects.filter { project in
+            project.name.localizedCaseInsensitiveContains(searchText)
+                || project.missions.contains {
+                    $0.title.localizedCaseInsensitiveContains(searchText)
+                }
+        }
+    }
+
+    private func visibleMissions(of project: ProjectSummary) -> [MissionSummary] {
+        guard isSearching else { return project.missions }
+        if project.name.localizedCaseInsensitiveContains(searchText) { return project.missions }
+        return project.missions.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
+    }
+
+    /// Searching expands every match; otherwise the open thread's project.
+    private func isExpanded(_ project: ProjectSummary) -> Bool {
+        isSearching || expandedProjectIDs.contains(project.id)
+    }
+
+    /// Raise the intake sheet once the drawer is gone — presenting into the
+    /// same update as the overlay dismissal is swallowed, the same failure
+    /// the tree's 350ms focus delay worked around.
+    private func raiseIntake(projectID: String? = nil) {
+        isPresented = false
+        router.path = []
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            V2IntakeStore.shared.open(projectID: projectID)
+        }
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -111,24 +158,33 @@ struct V2DrawerView: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 0) {
                             newRow
+                            searchRow
                             recordCallRow
-                            if !recents.recents.isEmpty {
+                            if !recents.recents.isEmpty, !isSearching {
                                 drawerLabel("Recent")
                                 ForEach(Array(recents.recents.enumerated()), id: \.offset) { _, recent in
                                     recentRow(recent)
                                 }
                             }
                             projectsHeader
-                            if let workspace = v2.workspace {
-                                ForEach(workspace.projects) { project in
-                                    projectRow(project)
-                                    if expandedProjectIDs.contains(project.id) {
-                                        ForEach(project.missions) { mission in
-                                            missionRow(project: project, mission: mission)
-                                        }
-                                        newMissionRow(project: project)
+                            ForEach(visibleProjects) { project in
+                                projectRow(project)
+                                if isExpanded(project) {
+                                    ForEach(visibleMissions(of: project)) { mission in
+                                        missionRow(project: project, mission: mission)
                                     }
+                                    filesRow(project: project)
+                                    newMissionRow(project: project)
                                 }
+                            }
+                            if isSearching, visibleProjects.isEmpty {
+                                drawerLabel("No projects or missions match")
+                            }
+                            if let error = errorText {
+                                Text(error)
+                                    .font(.hanken(12))
+                                    .foregroundStyle(Theme.warning)
+                                    .padding(.vertical, 8)
                             }
                         }
                         .padding(.horizontal, 12)
@@ -157,6 +213,8 @@ struct V2DrawerView: View {
                }) {
                 expandedProjectIDs = [found.id]
             }
+            // File counts for the Files rows (absent, never zero, on failure).
+            Task { await v2.refreshFileCounts() }
         }
     }
 
@@ -189,12 +247,42 @@ struct V2DrawerView: View {
 
     // MARK: New / Project +
 
+    /// R23 P070: the tree's search as a drawer row — magnifier, field,
+    /// clear. Filters projects + missions in place.
+    private var searchRow: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 15, weight: .regular))
+                .foregroundStyle(Theme.inkFaint)
+                .frame(width: 24)
+            TextField("Search projects & missions", text: $searchQuery)
+                .font(.hanken(14.5))
+                .foregroundStyle(Theme.ink)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .accessibilityIdentifier("v2-drawer-search")
+                .accessibilityLabel("Search projects and missions")
+            if !searchQuery.isEmpty {
+                Button { searchQuery = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundStyle(Theme.inkFaint)
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("v2-drawer-search-clear")
+                .accessibilityLabel("Clear search")
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(height: 44)
+        .padding(.top, 4)
+    }
+
     private var newRow: some View {
         HStack(spacing: 8) {
             Button {
-                isPresented = false
-                router.path = []
-                NotificationCenter.default.post(name: .v2FocusIntake, object: nil)
+                raiseIntake()
             } label: {
                 Text("New")
                     .font(.hanken(14).weight(.semibold))
@@ -339,7 +427,7 @@ struct V2DrawerView: View {
     }
 
     private func projectRow(_ project: ProjectSummary) -> some View {
-        let expanded = expandedProjectIDs.contains(project.id)
+        let expanded = isExpanded(project)
         return HStack(spacing: 0) {
             Button { openProject(project) } label: {
                 HStack(spacing: 10) {
@@ -355,6 +443,7 @@ struct V2DrawerView: View {
                         .font(.hanken(15).weight(.medium))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
+                        .accessibilityIdentifier("v2-drawer-project-name")
                     Spacer(minLength: 0)
                     if project.needsAttention {
                         Circle().fill(Theme.warning).frame(width: 7, height: 7)
@@ -365,10 +454,27 @@ struct V2DrawerView: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("v2-drawer-project-row")
             .accessibilityLabel(project.name)
+            // NOTE: the explicit label stays (exact-match row lookup, clean
+            // VoiceOver) — unlike the mission row, the project title Text
+            // surfaces its identifier beside it (measured: 47/47 at scale).
+            // R23 P070: the per-project `+` — a mission scoped to this
+            // project, like the tree's per-project New-mission row.
+            Button { raiseIntake(projectID: project.id) } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(Theme.inkFaint)
+                    .frame(width: 32, height: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("v2-drawer-project-add")
+            .accessibilityLabel("New mission in \(project.name)")
             Button {
                 withAnimation(.easeOut(duration: 0.15)) {
-                    if expanded { expandedProjectIDs.remove(project.id) }
-                    else { expandedProjectIDs.insert(project.id) }
+                    if expandedProjectIDs.contains(project.id) { expandedProjectIDs.remove(project.id) }
+                    else {
+                        expandedProjectIDs.insert(project.id)
+                        Task { await v2.refreshFileCounts() }
+                    }
                 }
             } label: {
                 Image(systemName: expanded ? "chevron.down" : "chevron.right")
@@ -401,25 +507,54 @@ struct V2DrawerView: View {
                     .font(.hanken(14))
                     .foregroundStyle(Theme.inkSoft)
                     .lineLimit(1)
+                    .accessibilityIdentifier("v2-drawer-mission-name")
                 Spacer(minLength: 0)
             }
+            // The tree's recipe: no explicit label plus exposed children, or
+            // the title Text below never surfaces its identifier (measured).
+            .accessibilityElement(children: .contain)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .frame(height: 40)
         .padding(.leading, 26)
         .accessibilityIdentifier("v2-drawer-mission-row")
-        .accessibilityLabel(mission.title)
+    }
+
+    /// R23 P070: the tree's `Files · N` row — the thread's artifact count,
+    /// opening the files browser. Hidden until the count loads (the tree's
+    /// rule: absent, never zero, on failure).
+    @ViewBuilder
+    private func filesRow(project: ProjectSummary) -> some View {
+        if let count = v2.fileCounts[project.threadID], count > 0 {
+            Button {
+                isPresented = false
+                router.open(.organize)
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "folder")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Theme.inkSoft)
+                        .frame(width: 24)
+                    Text("Files · \(count)")
+                        .font(.hanken(14))
+                        .foregroundStyle(Theme.inkSoft)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .frame(height: 40)
+            .padding(.leading, 26)
+            .accessibilityIdentifier("v2-drawer-files-row")
+            .accessibilityLabel("Files, \(count)")
+        }
     }
 
     private func newMissionRow(project: ProjectSummary) -> some View {
         Button {
-            isPresented = false
-            router.path = []
-            NotificationCenter.default.post(
-                name: .v2FocusIntake, object: nil,
-                userInfo: ["projectID": project.id]
-            )
+            raiseIntake(projectID: project.id)
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: "plus")

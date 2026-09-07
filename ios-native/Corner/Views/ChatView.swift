@@ -56,27 +56,31 @@ fileprivate func extractInserted(old: String, new: String) -> String? {
 }
 
 /// Corner v2 conversation context (native Task 4): one surface for both
-/// project and mission threads. The title is `Project` or `Project / Mission`.
-/// Message rendering is untouched beyond these inputs — Task 5 rewires the model.
+/// project and mission threads. R23 P071: the title is the mission name only
+/// (`Spring launch deck`), the project living on the 12.5px line above —
+/// never `Project / Mission` twice. Message rendering is untouched beyond
+/// these inputs — Task 5 rewires the model.
 struct V2ChatContext {
     let thread: Thread
     let project: ProjectSummary
     let mission: MissionSummary?
 
     var title: String {
-        if let mission { return "\(project.name) / \(mission.title)" }
+        if let mission { return mission.title }
         return project.name
     }
 
     /// Compatibility room for the legacy model until Task 5 replaces it with
     /// the v2 event subscription. Never leaves the device as identity: sends
-    /// still go through the model's existing transport.
+    /// still go through the model's existing transport. Its title keeps the
+    /// `Project / Mission` shape so legacy-model identity (and draft keys)
+    /// never shifts under the displayed title.
     var compatRoom: Room {
         if let mission {
             Room(
                 world: "v2",
                 kind: .mission(slug: mission.id, project: project.id),
-                title: title,
+                title: "\(project.name) / \(mission.title)",
                 subtitle: project.name
             )
         } else {
@@ -179,8 +183,8 @@ struct ChatView: View {
         v2 = context
     }
 
-    /// The header title: `Project` for a project thread, `Project / Mission`
-    /// for a mission thread, the room title on the legacy path.
+    /// The header title: `Project` for a project thread, the mission name only
+    /// for a mission thread (R23 P071), the room title on the legacy path.
     private var displayTitle: String { v2?.title ?? model.room.title }
 
     private var draftStorageKey: String { "chatDraft.\(model.room.roomID)" }
@@ -275,6 +279,9 @@ struct ChatView: View {
         .onAppear {
             if let context = v2 {
                 V2RecentStore.shared.record(project: context.project, mission: context.mission)
+                // R23 P070: every thread arrival persists the entry — the
+                // next cold start opens this thread (or General's).
+                router.rememberV2(projectID: context.project.id, missionID: context.mission?.id)
                 // Setup step 6 stages the first goal here — reviewed, never sent.
                 if v2model.draft.isEmpty,
                    let staged = V2DraftStore.take(threadID: context.thread.id) {

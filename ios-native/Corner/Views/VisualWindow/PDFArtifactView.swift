@@ -28,7 +28,7 @@ struct PDFArtifactView: View {
     var body: some View {
         Group {
             if failed {
-                ErrorArtifactView(title: url.lastPathComponent, message: "This PDF could not be opened.", onRetry: load)
+                ErrorArtifactView(title: url.lastPathComponent, message: "This PDF could not be opened.", onRetry: { Task { await load() } })
             } else if let document {
                 VStack(spacing: 0) {
                     GeometryReader { stage in
@@ -83,7 +83,7 @@ struct PDFArtifactView: View {
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .task { load() }
+                    .task { await load() }
             }
         }
         .onAppear { currentPage = max(1, page) }
@@ -96,9 +96,20 @@ struct PDFArtifactView: View {
         return min(max(Double(value / total) * 100.0, 0.0), 100.0)
     }
 
-    private func load() {
+    /// R23 P072: the bytes load off the main thread. `PDFDocument(url:)`
+    /// fetches a remote URL synchronously — on the main actor that stalls the
+    /// sheet's rise (uncomposited white below the stage, a stale AX tree),
+    /// which is exactly the 6:37 PM sheet-half state. The in-memory parse
+    /// stays on the main actor; pages still render lazily.
+    private func load() async {
         failed = false
-        guard let loaded = PDFDocument(url: url), loaded.pageCount > 0 else {
+        let target = url
+        let bytes = await Task.detached(priority: .userInitiated) { () -> Data? in
+            try? Data(contentsOf: target)
+        }.value
+        guard let bytes,
+              let loaded = PDFDocument(data: bytes),
+              loaded.pageCount > 0 else {
             failed = true
             return
         }

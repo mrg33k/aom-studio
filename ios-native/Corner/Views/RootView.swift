@@ -24,6 +24,13 @@ struct RootView: View {
     @State private var showSetup = false
     @State private var setupInitialStep = 0
     @StateObject private var v2home = WorkspaceStore.shared
+    /// R23 P070: drawer-raised sheets, hosted at the entry above the stack.
+    @ObservedObject private var intake = V2IntakeStore.shared
+    @State private var showingVoice = false
+    @State private var showingNotifications = false
+    /// Legacy rail data for the notifications sheet (read-only since the
+    /// tree retired; the tree used to own this fetch).
+    @StateObject private var legacy = RoomStore()
 
     /// R17 P062: the workspace is loaded and holds no real projects and no
     /// missions. (General alone, fresh from ensureWorkspace, counts as empty.)
@@ -42,8 +49,11 @@ struct RootView: View {
                 SetPasswordView()
             } else if api.session != nil {
                 NavigationStack(path: $router.path) {
-                    // R17 P062: no real projects yet → the empty home, with
-                    // its CTAs jumping into setup at the matching step.
+                    // R23 P070: the entry IS a thread — the last one open, or
+                    // General's. The home tree is retired: no route leads to
+                    // RoomListView anymore (it stays compiled for the archive
+                    // types it defines). R17 P062: no real projects yet → the
+                    // empty home, with its CTAs jumping into setup.
                     Group {
                         if homeIsEmpty {
                             V2EmptyHomeView(
@@ -57,7 +67,7 @@ struct RootView: View {
                                 }
                             )
                         } else {
-                            RoomListView()
+                            V2EntryRoot()
                         }
                     }
                         .navigationDestination(for: Route.self) { route in
@@ -67,13 +77,38 @@ struct RootView: View {
                             case .organize:       OrganizeView()
                             case .tracker:        TrackerView()
                             case .email:          EmailView()
-                            case .workspace:      RoomListView()
+                            case .workspace:      V2EntryRoot()
                             case .project(let id): V2ProjectChatView(projectID: id)
                             case .mission(let id): V2MissionChatView(missionID: id)
                             case .visualTab(let id): V2VisualTabView(tabID: id)
                             case .legacyArchive:  LegacyArchiveView()
                             }
                         }
+                }
+                // R23 P070: the drawer owns no sheets, so the entry raises
+                // them — intake, voice, notifications, and settings live here,
+                // above the stack, reachable from every thread.
+                .sheet(isPresented: $router.showingSettings) {
+                    V2SettingsView()
+                        .environmentObject(api)
+                        .environmentObject(router)
+                }
+                .sheet(isPresented: $intake.isPresented) {
+                    V2IntakeSheetView()
+                }
+                .sheet(isPresented: $showingVoice) { AirPodsVoiceView() }
+                .sheet(isPresented: $showingNotifications) {
+                    NotificationsView(recent: legacy.recent)
+                        .environmentObject(router)
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .v2FocusIntake)) { note in
+                    V2IntakeStore.shared.open(projectID: note.userInfo?["projectID"] as? String)
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .v2RecordCall)) { _ in
+                    showingVoice = true
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .v2ShowNotifications)) { _ in
+                    showingNotifications = true
                 }
                 // R17 P061: first run lands in setup, over the home.
                 .fullScreenCover(isPresented: $showSetup) {
@@ -85,8 +120,14 @@ struct RootView: View {
                 .task(id: api.session?.user.id) {
                     guard api.session != nil else { return }
                     await v2home.refresh()
+                    resolveEntry()
+                    if !legacy.hasLoadedOnce { await legacy.load() }
                     if V2SetupStore.needsSetup { showSetup = true }
                 }
+                // The subscription can deliver a workspace after the refresh
+                // above resolved nothing (or after setup creates the first
+                // project): resolve into the entry, never over navigation.
+                .onChange(of: v2home.workspace) { _, _ in resolveEntry() }
                 .onReceive(NotificationCenter.default.publisher(for: .v2RerunSetup)) { _ in
                     setupInitialStep = 0
                     showSetup = true
@@ -111,6 +152,8 @@ struct RootView: View {
         .onChange(of: api.session?.user.id) { _, newValue in
             if newValue == nil {
                 router.closeAll()
+                // The next sign-in re-resolves from the stored last thread.
+                router.forgetEntry()
             } else {
                 // Signing in on a device that already holds a token would otherwise
                 // leave that phone unreachable until the next cold launch.
@@ -185,6 +228,66 @@ struct RootView: View {
             // notification. Say what happened, even when it is unflattering.
             Text("It points somewhere this version of Corner does not know how to open. It is still there on the web.")
         }
+    }
+
+    /// R23 P070: resolve the entry thread once per workspace arrival. A set
+    /// entry is navigation and is never clobbered by a tree refresh.
+    private func resolveEntry() {
+        guard router.entryRoute == nil, let workspace = v2home.workspace else { return }
+        router.entryRoute = router.resolveEntryRoute(in: workspace)
+    }
+}
+
+// MARK: - Corner v2 entry (R23 P070)
+
+// The stack root: the last open thread, or General's. While the workspace is
+// still loading the root is plain ground — no intermediate page, never the
+// retired tree, never an error. Stale or foreign stored threads already fell
+// back to General inside resolveEntryRoute.
+struct V2EntryRoot: View {
+    @EnvironmentObject private var router: AppRouter
+    @ObservedObject private var v2 = WorkspaceStore.shared
+
+    var body: some View {
+        Group {
+            // The `.id` keys are the whole trick: a thread replace renders the
+            // same loader TYPE at the same position, and without a new
+            // identity SwiftUI updates it in place — stale thread, `.task`
+            // never re-fires. Keyed by thread, every replace is a fresh load.
+            switch effectiveRoute {
+            case .project(let id):
+                V2ProjectChatView(projectID: id)
+                    .id("entry-project-\(id)")
+            case .mission(let id):
+                V2MissionChatView(missionID: id)
+                    .id("entry-mission-\(id)")
+            case .visualTab(let id):
+                V2VisualTabView(tabID: id)
+                    .id("entry-tab-\(id)")
+            default:
+                VStack {
+                    Spacer(minLength: 0)
+                    ProgressView()
+                        .tint(Theme.inkFaint)
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .groundBackground()
+                .overlay(alignment: .top) {
+                    Color.clear.frame(width: 1, height: 1)
+                        .accessibilityIdentifier("v2-entry-loading")
+                }
+            }
+        }
+    }
+
+    /// The stored entry when it is a thread route; the fresh resolution while
+    /// RootView's stored resolve is still in flight; nil (loading) until the
+    /// workspace arrives.
+    private var effectiveRoute: Route? {
+        if let entry = router.entryRoute, AppRouter.isEntryRoute(entry) { return entry }
+        if let workspace = v2.workspace { return router.resolveEntryRoute(in: workspace) }
+        return nil
     }
 }
 
