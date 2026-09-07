@@ -665,6 +665,16 @@
   ],
   "redirects": [
     {
+      "source": "/dashboard",
+      "destination": "https://corner-convex.vercel.app/",
+      "permanent": false
+    },
+    {
+      "source": "/dashboard/:path*",
+      "destination": "https://corner-convex.vercel.app/:path*",
+      "permanent": false
+    },
+    {
       "source": "/higher-orbits",
       "destination": "/higherorbits",
       "permanent": true
