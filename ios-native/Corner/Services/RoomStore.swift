@@ -1132,8 +1132,21 @@ final class PreviewV2API: CornerV2API {
         ))
     }
 
-    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String? = nil, threadId: String? = nil) async throws -> RouteDecision {
+    func send(
+        text: String, mentioning: [String], preferredProjectID: String?,
+        mode: String? = nil, threadId: String? = nil,
+        model: String? = nil, clientEventId: String? = nil,
+        imageTool: String? = nil, replyTo: V2ReplyTo? = nil
+    ) async throws -> RouteDecision {
         _ = mode // the fixture preview answers every mode the same way.
+        _ = model
+        _ = clientEventId
+        _ = imageTool
+        _ = replyTo
+        // R32 P081: the run opens with the send and closes when the agent
+        // reply lands below, so the working line and nav dot run live.
+        fixtureRunOpen = true
+        defer { fixtureRunOpen = false }
         await stallForSlowSend()
         try Task.checkCancellation()
         if failSendsLeft > 0 {
@@ -1390,8 +1403,20 @@ final class PreviewV2API: CornerV2API {
 
     func artifacts(threadID: String) async throws -> [Artifact] {
         seedVisualIfNeeded()
-        guard seedVisual, threadID == general.threadID else { return [] }
-        return [
+        artifactPolls += 1
+        var rows: [Artifact] = createdArtifacts.map { created in
+            Artifact(
+                id: created.id, threadID: threadID, title: created.title,
+                kind: created.kind, version: 1,
+                sourceURL: fixtureSourceURL(
+                    kind: created.kind, storageId: created.storageId,
+                    meta: created.meta, pollsSinceCreate: artifactPolls - created.pollsAtCreate
+                ),
+                metadata: created.meta
+            )
+        }
+        guard seedVisual, threadID == general.threadID else { return rows }
+        rows += [
             seedArtifact(id: "artifact-pdf-1", title: "Aster brief", kind: .pdf, file: "aster-brief", ext: "pdf"),
             seedArtifact(id: "artifact-site-1", title: "Launch site", kind: .web, file: "site", ext: "html"),
             seedArtifact(id: "artifact-video-1", title: "Teaser", kind: .video, file: "walkthrough", ext: "mp4"),
@@ -1399,6 +1424,7 @@ final class PreviewV2API: CornerV2API {
             seedArtifact(id: "artifact-code-1", title: "Hero code", kind: .code, file: "brief", ext: "tsx"),
             seedArtifact(id: "artifact-broken-1", title: "Broken file", kind: .pdf, dead: true),
         ]
+        return rows
     }
 
     func pendingConfirmations() async throws -> [CrossProjectWriteConfirmation] {
@@ -1409,6 +1435,103 @@ final class PreviewV2API: CornerV2API {
             summary: "update brief: Set primary to #5B9BFF",
             expiresAt: Date().addingTimeInterval(600)
         )]
+    }
+
+    // MARK: - R32 wiring (fixture)
+
+    /// R32 P081: an open run spans each fixture send — set when the send
+    /// starts, cleared when the agent reply lands — so the working line
+    /// and the nav dot run the real lifecycle in UI tests (including the
+    /// `-v2SlowSend` stall, where the line is visible mid-flight).
+    private var fixtureRunOpen = false
+
+    func runsForThread(threadID: String) async throws -> V2ThreadRuns {
+        if fixtureRunOpen {
+            return V2ThreadRuns(
+                open: [V2ThreadRun(
+                    id: "run-preview-1", status: "running", brain: "corner",
+                    provider: "fixture", createdAt: Date()
+                )],
+                lastDone: nil
+            )
+        }
+        return V2ThreadRuns(open: [], lastDone: nil)
+    }
+
+    /// R32 clear: `-v2FailClear` throws (the retry UI test); otherwise the
+    /// shared chat buffer empties like the server's `clearedAt` surface.
+    private(set) var didClearThread = false
+
+    func clearThread(threadID: String) async throws {
+        if PreviewV2API.launchHasFlag("-v2FailClear") {
+            throw ConvexServiceError.server("[Request ID: test-clear] Server Error")
+        }
+        chatEvents.removeAll()
+        didClearThread = true
+    }
+
+    /// R32 upload: `-v2FailUploads=N` fails the next N uploads with a
+    /// network error (the per-file retry UI test); otherwise mints a
+    /// fixture storage id. Counts every attempt, failed or not.
+    private var failUploadsLeft: Int = PreviewV2API.launchIntFlag("-v2FailUploads")
+    private var uploadCounter = 0
+
+    func uploadFile(data: Data, mimeType: String) async throws -> String {
+        if failUploadsLeft > 0 {
+            failUploadsLeft -= 1
+            throw URLError(.notConnectedToInternet)
+        }
+        uploadCounter += 1
+        return "storage-fixture-\(uploadCounter)"
+    }
+
+    /// R32 artifacts created in fixture: uploads (with storage) resolve to
+    /// a bundled file of the same kind so their tabs paint; pending image
+    /// artifacts (no storage, `status: "generating"`) resolve only after
+    /// `-v2ImageUpgradePolls` `artifacts` reads (default 0: ready on the
+    /// next read), mirroring the bridge's upgrade.
+    private struct FixtureCreatedArtifact {
+        let id: String
+        let kind: VisualTabKind
+        let title: String
+        let storageId: String?
+        let meta: [String: String]
+        let pollsAtCreate: Int
+    }
+
+    private var createdArtifacts: [FixtureCreatedArtifact] = []
+    private var artifactPolls = 0
+    private var imageUpgradePolls: Int = PreviewV2API.launchIntFlag("-v2ImageUpgradePolls")
+
+    func createArtifact(
+        threadID: String, kind: VisualTabKind, title: String,
+        storageId: String?, meta: [String: String], createdBy: String
+    ) async throws -> V2CreatedArtifact {
+        _ = createdBy
+        _ = threadID
+        let id = "artifact-created-\(createdArtifacts.count + 1)"
+        createdArtifacts.append(FixtureCreatedArtifact(
+            id: id, kind: kind, title: title, storageId: storageId,
+            meta: meta, pollsAtCreate: artifactPolls
+        ))
+        return V2CreatedArtifact(id: id)
+    }
+
+    private func fixtureSourceURL(kind: VisualTabKind, storageId: String?, meta: [String: String], pollsSinceCreate: Int) -> URL? {
+        // A pending image resolves only once the "bridge upgrade" lands.
+        if storageId == nil, meta["status"] == "generating" {
+            guard pollsSinceCreate > imageUpgradePolls else { return nil }
+            return bundleURL("hero", ext: "png")
+        }
+        guard storageId != nil else { return nil }
+        switch kind {
+        case .pdf: return bundleURL("aster-brief", ext: "pdf")
+        case .photo: return bundleURL("hero", ext: "png")
+        case .video: return bundleURL("walkthrough", ext: "mp4")
+        case .web: return bundleURL("site", ext: "html")
+        case .code: return bundleURL("brief", ext: "tsx")
+        default: return nil
+        }
     }
 }
 #endif

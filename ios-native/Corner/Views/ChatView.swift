@@ -110,8 +110,13 @@ struct ChatView: View {
     // reply trigger share one instance.
     @State private var talkAloud: V2TalkAloud?
     /// The armed reply-to quote (long-press a message → Reply). Rides the
-    /// next send as a `> sender: snippet` line, then clears.
+    /// next send as the `replyTo` block field, then clears.
     @State private var v2ReplyQuote: V2ReplyQuote?
+    /// A hardware Shift+Return just inserted a newline: the soft-Return
+    /// submit detector stands down for that one change.
+    @State private var v2AllowNewlineOnce = false
+    /// The server clear failed: the tray names it plainly with a retry.
+    @State private var v2ClearFailed = false
     /// `/` hints inline and submits to the commands sheet (same rows).
     @State private var v2ShowingSlash = false
     /// Model/specialist pickers inside the slash sheet.
@@ -355,25 +360,27 @@ struct ChatView: View {
         .sheet(isPresented: $v2ShowingCamera) {
             V2CameraPicker { image in
                 v2ShowingCamera = false
-                if image != nil {
-                    v2model.stageAttachment(
-                        name: V2Attachments.nextPhotoName(existing: v2model.staged),
-                        kind: .camera
-                    )
-                }
+                if let image { v2StageCameraImage(image) }
             }
         }
-        // R28: `/clear` confirms before anything clears. View-local only
-        // (draft, staged, quote) — messages stay on the server, and the copy
-        // says so. Server-side clear waits on a clearThread backend row.
+        // R32: `/clear` confirms, then `v2Workspace:clearThread` hides the
+        // thread's rows from the surface on every device (the web's copy
+        // twin: nothing is deleted, history keeps them). A backend failure
+        // changes nothing and raises the tray retry.
         .alert("Clear this chat?", isPresented: $v2ShowingClearConfirm) {
             Button("Cancel", role: .cancel) { }
-            Button("Clear", role: .destructive) { v2ClearView() }
+            Button("Clear chat", role: .destructive) { v2RunClear() }
         } message: {
-            Text("Clears what you typed and staged here. Messages stay in this thread.")
+            Text("Start fresh? This clears the chat on every device. Nothing is deleted — earlier messages stay in history.")
         }
         // R28: Talk aloud speaks each new driver reply once.
         .onChange(of: v2model.events) { _, _ in v2MaybeSpeak() }
+        // R32: an upload that finishes opens its tab in the background —
+        // the peek bar is the confirmation — and the chip goes away. A
+        // failed background open leaves the chip with its Open button.
+        .onChange(of: v2model.staged) { _, staged in
+            v2OpenFinishedUploads(staged)
+        }
         .onAppear {
             if let context = v2 {
                 V2RecentStore.shared.record(project: context.project, mission: context.mission)
@@ -396,10 +403,17 @@ struct ChatView: View {
                     speech.previewForceListening()
                 }
                 #endif
-                // R28 UI-test seed: one staged file chip, so the staged row
-                // and its remove control are addressable without a picker.
+                // R32 UI-test seed: one staged file WITH bytes, so the
+                // staged row, its upload, and its remove control run the
+                // real pipeline without a picker. The bundled brief stands
+                // in for picked-file bytes.
                 if ProcessInfo.processInfo.arguments.contains("-v2SeedStaged") {
-                    v2model.stageAttachment(name: "seed-deck.pdf", kind: .file)
+                    let bytes = Bundle.main.url(forResource: "aster-brief", withExtension: "pdf")
+                        .flatMap { try? Data(contentsOf: $0) }
+                    v2model.stageAttachment(
+                        name: "seed-deck.pdf", kind: .file,
+                        data: bytes, mimeType: "application/pdf"
+                    )
                 }
                 Task { await v2model.start(thread: context.thread, project: context.project, mission: context.mission) }
                 Task { await window.start(threadID: context.thread.id) }
@@ -467,12 +481,15 @@ struct ChatView: View {
             Spacer(minLength: 0)
             // P030: status as a 10px dot — mission status, or the project's
             // needs-you signal. A project with nothing to say shows no dot.
+            // R32 P081: an open run (or a send awaiting its first agent
+            // block) paints Working over all of that.
             if let dot = v2StatusDot {
                 Circle()
                     .fill(dot)
                     .frame(width: 10, height: 10)
                     .frame(width: 44, height: 44)
                     .accessibilityIdentifier("v2-status-dot")
+                    .accessibilityLabel(v2StatusLabel)
             } else {
                 Color.clear.frame(width: 44, height: 44)
             }
@@ -481,8 +498,17 @@ struct ChatView: View {
         .frame(height: 52)
     }
 
+    /// R32 P081: an open run — or a send still waiting on its first agent
+    /// block — reads as Working (success dot), driven by `runsForThread`
+    /// like the brief orders. Otherwise the mission status (or the
+    /// project's needs-you signal) paints, as before.
+    private var v2Working: Bool {
+        v2model.runWorking || v2model.workingLine != nil
+    }
+
     /// The nav dot colour, or nil when this thread carries no status.
     private var v2StatusDot: Color? {
+        if v2Working { return Theme.success }
         if let mission = v2?.mission {
             switch mission.status {
             case .live: return Theme.success
@@ -495,44 +521,76 @@ struct ChatView: View {
         return nil
     }
 
-    private var v2ThreadList: some View {
-        ScrollView {
-            // P044: the thread column is 348pt (21px gutters), not 16.
-            LazyVStack(alignment: .leading, spacing: Theme.s3) {
-                switch v2model.loadState {
-                case .loading:
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, Theme.s6)
-                case .error(let message):
-                    centeredNotice(message, systemImage: "wifi.exclamationmark")
-                case .empty where v2model.unsentWithoutEcho.isEmpty:
-                    centeredNotice("No messages yet — say something.", systemImage: "bubble.left")
-                case .empty, .ready:
-                    ForEach(v2model.events) { event in
-                        V2EventRow(
-                            event: event,
-                            threadID: v2?.thread.id ?? "",
-                            agentName: v2?.project.name,
-                            onSend: { text in
-                                v2model.startSend(text)
-                            },
-                            onReply: { quote in
-                                v2ReplyQuote = quote
-                            }
-                        )
-                        .id(event.id)
-                    }
-                    ForEach(v2model.unsentWithoutEcho) { entry in
-                        v2QueuedBubble(entry)
-                            .id(entry.id)
-                    }
-                }
-                Color.clear.frame(height: 1)
+    /// The dot's accessibility label, so the run state is testable (and
+    /// VoiceOver truthful): Working while a run is open or a send awaits
+    /// its first agent block.
+    private var v2StatusLabel: String {
+        if v2Working { return "Working" }
+        if let mission = v2?.mission {
+            switch mission.status {
+            case .live: return "Live"
+            case .blocked: return "Blocked"
+            case .ready, .done: return "Ready"
             }
-            .padding(.horizontal, 21)
-            .padding(.top, Theme.s3)
-            .padding(.bottom, 28)
+        }
+        if v2?.project.needsAttention == true { return "Needs you" }
+        return "Ready"
+    }
+
+    private var v2ThreadList: some View {
+        // R32: the reader serves quote tap-to-jump (the quoted message may
+        // be screens above). Event ids are already the row ids.
+        ScrollViewReader { proxy in
+            ScrollView {
+                // P044: the thread column is 348pt (21px gutters), not 16.
+                LazyVStack(alignment: .leading, spacing: Theme.s3) {
+                    switch v2model.loadState {
+                    case .loading:
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, Theme.s6)
+                    case .error(let message):
+                        centeredNotice(message, systemImage: "wifi.exclamationmark")
+                    case .empty where v2model.unsentWithoutEcho.isEmpty:
+                        centeredNotice("No messages yet — say something.", systemImage: "bubble.left")
+                    case .empty, .ready:
+                        ForEach(v2model.events) { event in
+                            V2EventRow(
+                                event: event,
+                                threadID: v2?.thread.id ?? "",
+                                agentName: v2?.project.name,
+                                onSend: { text in
+                                    v2model.startSend(text)
+                                },
+                                onReply: { quote in
+                                    v2ReplyQuote = quote
+                                },
+                                onQuoteTap: { messageID in
+                                    withAnimation(.easeOut(duration: 0.25)) {
+                                        proxy.scrollTo(messageID, anchor: .top)
+                                    }
+                                }
+                            )
+                            .id(event.id)
+                        }
+                        // R32 P081: the optimistic working line under the
+                        // just-sent message — the design's thinking
+                        // treatment (pulsing dot, muted text), like the
+                        // web's `v2-working-line` twin.
+                        if let line = v2model.workingLine {
+                            V2WorkingLineView(line: line)
+                        }
+                        ForEach(v2model.unsentWithoutEcho) { entry in
+                            v2QueuedBubble(entry)
+                                .id(entry.id)
+                        }
+                    }
+                    Color.clear.frame(height: 1)
+                }
+                .padding(.horizontal, 21)
+                .padding(.top, Theme.s3)
+                .padding(.bottom, 28)
+            }
         }
     }
 
@@ -866,6 +924,25 @@ struct ChatView: View {
                     .foregroundStyle(Theme.warning)
                     .accessibilityIdentifier("v2-attach-notice")
             }
+            // R32: a failed server clear changes nothing and offers a
+            // retry (the web's `clearFailed` twin).
+            if v2ClearFailed {
+                HStack(spacing: 8) {
+                    Text("Couldn't clear just now. Nothing changed, try again in a moment.")
+                        .font(.hanken(12))
+                        .foregroundStyle(Theme.warning)
+                        .accessibilityIdentifier("v2-clear-failed")
+                    Spacer(minLength: 0)
+                    Button("Retry") { v2RunClear() }
+                        .font(.hanken(12).weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                        .accessibilityIdentifier("v2-clear-retry")
+                        .accessibilityLabel("Retry clearing this chat")
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
             // P023 artifact peek: 60px above the composer while the thread
             // has tabs — the active tab's thumbnail + change count. Tapping
             // opens the sheet/column on the selected tab.
@@ -896,6 +973,18 @@ struct ChatView: View {
                         .padding(.vertical, 8)
                         .submitLabel(.send)
                         .onSubmit { v2Submit() }
+                        .onKeyPress(keys: [.return]) { press in
+                            // R32 multiline: hardware Shift+Return inserts
+                            // a newline instead of sending. The design
+                            // carries no newline key, so the invisible
+                            // hardware path is the design-consistent one;
+                            // soft Return still sends. Anything unshifted
+                            // falls through to the submit path.
+                            guard press.modifiers.contains(.shift) else { return .ignored }
+                            v2AllowNewlineOnce = true
+                            v2model.draft = V2ShiftReturn.newlineDraft(v2model.draft)
+                            return .handled
+                        }
                         .onChange(of: v2model.draft) { old, new in v2DraftChanged(old: old, new: new) }
                         .accessibilityIdentifier("v2-composer-field")
                         .accessibilityLabel("Message")
@@ -999,13 +1088,22 @@ struct ChatView: View {
         .onChange(of: v2PickedPhotos) { _, items in
             guard !items.isEmpty else { return }
             v2PickedPhotos = []
-            for _ in items {
-                v2model.stageAttachment(
-                    name: V2Attachments.nextPhotoName(existing: v2model.staged),
-                    kind: .photo
-                )
+            for item in items {
+                let name = V2Attachments.nextPhotoName(existing: v2model.staged)
+                Task { @MainActor in
+                    // Photos carry their bytes: the staged chip uploads at
+                    // stage time (the web's attach path). A photo whose
+                    // bytes will not load still chips, name-only, so the
+                    // person sees what they picked.
+                    if let data = try? await item.loadTransferable(type: Data.self) {
+                        let mime = item.supportedContentTypes.first?.preferredMIMEType ?? "image/jpeg"
+                        v2model.stageAttachment(name: name, kind: .photo, data: data, mimeType: mime)
+                    } else {
+                        v2model.stageAttachment(name: name, kind: .photo)
+                    }
+                    v2AttachNotice = nil
+                }
             }
-            v2AttachNotice = nil
         }
         .fileImporter(
             isPresented: $v2ShowingFilePicker,
@@ -1013,15 +1111,39 @@ struct ChatView: View {
         ) { result in
             guard case .success(let urls) = result else { return }
             for url in urls {
-                v2model.stageAttachment(name: url.lastPathComponent, kind: .file)
+                let name = url.lastPathComponent
+                // Files are read at stage time (security-scoped URLs do not
+                // survive the chip's lifetime). An unreadable file still
+                // chips, name-only.
+                let accessing = url.startAccessingSecurityScopedResource()
+                let data = try? Data(contentsOf: url)
+                if accessing { url.stopAccessingSecurityScopedResource() }
+                let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType
+                    ?? "application/octet-stream"
+                v2model.stageAttachment(name: name, kind: .file, data: data, mimeType: mime)
             }
             v2AttachNotice = nil
         }
     }
 
+    /// Stage camera bytes as JPEG (the simulator has no camera; the guard
+    /// above names that before this ever runs).
+    private func v2StageCameraImage(_ image: UIImage) {
+        guard let data = image.jpegData(compressionQuality: 0.85) else {
+            v2AttachNotice = "That photo couldn't be read."
+            return
+        }
+        v2model.stageAttachment(
+            name: V2Attachments.nextPhotoName(existing: v2model.staged),
+            kind: .camera, data: data, mimeType: "image/jpeg"
+        )
+        v2AttachNotice = nil
+    }
+
+    /// R32: the send carries no bytes — staged files upload as artifacts
+    /// of their own — so sendability is the text alone.
     private var v2CanSend: Bool {
         !v2model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            || !v2model.staged.isEmpty
     }
 
     // MARK: - R28 composer actions
@@ -1042,11 +1164,10 @@ struct ChatView: View {
             }
             return
         }
-        guard !trimmed.isEmpty || !v2model.staged.isEmpty else { return }
+        guard !trimmed.isEmpty else { return }
         if speech.isListening { speech.stop() }
         let quote = v2ReplyQuote
-        let staged = v2model.staged
-        v2model.startSend(trimmed, quote: quote, attachments: staged)
+        v2model.startSend(trimmed, quote: quote)
         v2ReplyQuote = nil
         if let threadID = v2?.thread.id {
             V2ComposerDrafts.clear(threadID: threadID)
@@ -1056,8 +1177,18 @@ struct ChatView: View {
     /// The soft Return key sends (Slack-style): a single typed `\n` reverts
     /// and submits instead of entering a newline. Pasted text never matches
     /// (a paste inserts more than one character), and `/` drafts route to
-    /// the slash flow through v2Submit. Multiline entry survives via paste.
+    /// the slash flow through v2Submit. Multiline entry arrives via paste
+    /// or hardware Shift+Return (see the field's onKeyPress).
     private func v2DraftChanged(old: String, new: String) {
+        // R32: a hardware Shift+Return newline stands down the submitter
+        // for exactly one change (the flag is set around the insertion).
+        if v2AllowNewlineOnce {
+            v2AllowNewlineOnce = false
+            if let threadID = v2?.thread.id {
+                V2ComposerDrafts.save(new, threadID: threadID)
+            }
+            return
+        }
         if let inserted = extractInserted(old: old, new: new), inserted == "\n" {
             v2model.draft = old
             v2Submit()
@@ -1080,14 +1211,24 @@ struct ChatView: View {
         v2ImageTasks.removeAll()
     }
 
-    /// View-local clear (the `/clear` confirm): draft, staged, quote. The
-    /// thread on the server is untouched — the alert copy says so.
-    private func v2ClearView() {
-        v2model.draft = ""
-        v2model.clearStaged()
-        v2ReplyQuote = nil
-        if let threadID = v2?.thread.id {
-            V2ComposerDrafts.clear(threadID: threadID)
+    /// The `/clear` confirm runner: server clear first, then the view-local
+    /// send state drops (draft, staged, quote, disk draft) so the emptied
+    /// surface is all there is. A failure changes nothing and raises the
+    /// tray retry (the web's `clearFailed` twin).
+    private func v2RunClear() {
+        v2ClearFailed = false
+        Task { @MainActor in
+            do {
+                try await v2model.clearThread()
+            } catch {
+                v2ClearFailed = true
+                return
+            }
+            v2model.clearStaged()
+            v2ReplyQuote = nil
+            if let threadID = v2?.thread.id {
+                V2ComposerDrafts.clear(threadID: threadID)
+            }
         }
     }
 
@@ -1155,8 +1296,11 @@ struct ChatView: View {
         return String(rest[rest.index(after: space)...]).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    /// Generate an image: a local Generating… run plus a real artifact tab.
-    /// Empty prompt opens the prompt sheet instead of guessing.
+    /// Generate an image (the web's `startImageRun` twin): create the
+    /// pending photo artifact (`meta.status: "generating"`, no storage),
+    /// open its tab, then poll `artifacts` until the bridge's upgrade
+    /// lands the bytes and the tab paints. Empty prompt opens the prompt
+    /// sheet instead of guessing.
     private func v2GenerateImage(prompt: String) {
         let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -1169,20 +1313,39 @@ struct ChatView: View {
         // state, and cancellation parks the run as cancelled, never failed.
         let task = Task { @MainActor in
             do {
-                try await window.open(
-                    .photo, threadID: threadID, artifactID: nil,
-                    title: trimmed,
-                    state: ["prompt": trimmed, "status": "generating", "tool": "image"]
+                let artifactID = try await v2model.createImageArtifact(
+                    runID: runID, prompt: trimmed, tool: v2ImageTool()
                 )
-                v2model.finishImageRun(id: runID)
+                try await window.open(
+                    .photo, threadID: threadID, artifactID: artifactID,
+                    title: "Generated image — \(trimmed.prefix(48))\(trimmed.count > 48 ? "…" : "")",
+                    state: ["prompt": trimmed, "status": "generating"]
+                )
+                let ready = await v2model.awaitImageReady(artifactID: artifactID)
+                // A cancelled wait parks as cancelled; a ready artifact
+                // finishes the run and refreshes the window so the tab
+                // paints without a manual reload.
+                if Task.isCancelled || !ready {
+                    v2model.cancelImageRun(id: runID)
+                } else {
+                    await window.loadArtifacts(threadID: threadID)
+                    v2model.finishImageRun(id: runID)
+                }
             } catch is CancellationError {
                 v2model.cancelImageRun(id: runID)
             } catch {
-                v2model.failImageRun(id: runID, error: "Couldn't open an image tab — the prompt is kept above.")
+                v2model.failImageRun(id: runID, error: "Couldn't start the image — the prompt is kept above.")
             }
             v2ImageTasks.removeValue(forKey: runID)
         }
         v2ImageTasks[runID] = task
+    }
+
+    /// The armed image tool for the pending artifact's meta. The commands
+    /// menu arms generation per prompt today (there is no standing tool
+    /// pick); the meta names the ask honestly.
+    private func v2ImageTool() -> String {
+        "image"
     }
 
     /// P023 artifact peek bar (60px): the active tab's live thumbnail and
@@ -1395,18 +1558,51 @@ struct ChatView: View {
         .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 
-    /// Staged attachments, as removable chips above the pill (photos, files,
-    /// camera — multiple). Their names ride the next send.
+    /// Staged attachments, as chips above the pill (photos, files, camera
+    /// — multiple). R32: each chip tracks its own upload — spinner while
+    /// uploading, Retry on failure (the outbox never waits), and a tap to
+    /// open the tab once done. The send carries no bytes.
     private var v2StagedRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 ForEach(Array(v2model.staged.enumerated()), id: \.element.id) { index, file in
                     HStack(spacing: 6) {
+                        switch file.upload {
+                        case .uploading, .queued:
+                            ProgressView()
+                                .controlSize(.mini)
+                                .tint(Theme.accent)
+                                .accessibilityIdentifier("v2-staged-uploading-\(index)")
+                        case .failed:
+                            Image(systemName: "exclamationmark.circle")
+                                .font(.system(size: 10, weight: .semibold))
+                        case .done:
+                            Image(systemName: "checkmark.circle")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
                         Image(systemName: file.kind == .photo || file.kind == .camera ? "photo" : "doc")
                             .font(.system(size: 10, weight: .semibold))
                         Text(file.name)
                             .font(.hanken(11.5).weight(.semibold))
                             .lineLimit(1)
+                        switch file.upload {
+                        case .failed(let reason):
+                            Button { v2model.retryUpload(id: file.id) } label: {
+                                Text("Retry")
+                                    .font(.hanken(11).weight(.semibold))
+                            }
+                            .accessibilityIdentifier("v2-staged-retry-\(index)")
+                            .accessibilityLabel("Retry uploading \(file.name). \(reason)")
+                        case .done(let artifactID):
+                            Button { v2OpenStagedArtifact(file, artifactID: artifactID) } label: {
+                                Text("Open")
+                                    .font(.hanken(11).weight(.semibold))
+                            }
+                            .accessibilityIdentifier("v2-staged-open-\(index)")
+                            .accessibilityLabel("Open \(file.name)")
+                        default:
+                            EmptyView()
+                        }
                         Button { v2model.removeStaged(id: file.id) } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 9, weight: .bold))
@@ -1422,6 +1618,48 @@ struct ChatView: View {
             }
         }
         .accessibilityIdentifier("v2-staged-row")
+    }
+
+    /// Open every finished upload's tab in the background, then dismiss
+    /// its chip. The server dedupes opens by target, so a repeated change
+    /// notification re-selects instead of duplicating.
+    private func v2OpenFinishedUploads(_ staged: [V2StagedAttachment]) {
+        guard let threadID = v2?.thread.id else { return }
+        for file in staged {
+            guard case .done(let artifactID) = file.upload else { continue }
+            Task { @MainActor in
+                do {
+                    try await window.openBackground(
+                        V2ArtifactKind.from(mimeType: file.mimeType, filename: file.name),
+                        threadID: threadID, artifactID: artifactID,
+                        title: file.name, state: [:]
+                    )
+                    v2model.removeStaged(id: file.id)
+                } catch {
+                    // The chip stays with its Open button: a missed open is
+                    // a retry, never a dismissal.
+                }
+            }
+        }
+    }
+
+    /// Open an uploaded file's tab, then dismiss its chip — the tab (and
+    /// the peek bar) is the confirmation, not the chip.
+    private func v2OpenStagedArtifact(_ file: V2StagedAttachment, artifactID: String) {
+        guard let threadID = v2?.thread.id else { return }
+        Task { @MainActor in
+            do {
+                try await window.open(
+                    V2ArtifactKind.from(mimeType: file.mimeType, filename: file.name),
+                    threadID: threadID, artifactID: artifactID,
+                    title: file.name, state: [:]
+                )
+                v2model.removeStaged(id: file.id)
+            } catch {
+                // The chip stays with its Open: a missed open is a retry,
+                // never a dismissal.
+            }
+        }
     }
 
     /// Image runs: Generating… with Stop, failures with their reason and a
@@ -2934,6 +3172,9 @@ struct V2EventRow: View {
     /// R28 reply-to: long-press a message → Reply arms the composer's quote
     /// chip. Defaults to no-op so previews stay untouched.
     var onReply: (V2ReplyQuote) -> Void = { _ in }
+    /// R32 reply-to: tap the rendered quote to jump to the quoted message.
+    /// Defaults to no-op so previews stay untouched.
+    var onQuoteTap: (String) -> Void = { _ in }
 
     // NOTE: no identifier on these layout containers — it would overwrite
     // the agent label's and block text's own identifiers (same finding as
@@ -2955,9 +3196,40 @@ struct V2EventRow: View {
     private var replyQuote: V2ReplyQuote? {
         V2ReplyQuote.quote(messageID: event.id, sender: replySender, blocks: event.blocks)
     }
+    /// R32 reply-to: the quote this message answers, rendered from the
+    /// block payload (the server-stored `replyTo`), never from text.
+    private func quoteCard(_ quote: V2ReplyQuote, isUser: Bool) -> some View {
+        Button {
+            onQuoteTap(quote.messageID)
+        } label: {
+            HStack(spacing: 0) {
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(isUser ? Color.white.opacity(0.7) : Theme.accent)
+                    .frame(width: 3)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(quote.sender)
+                        .font(.hanken(11).weight(.semibold))
+                        .foregroundStyle(isUser ? Color.white.opacity(0.85) : Theme.inkSoft)
+                        .lineLimit(1)
+                    Text(quote.snippet)
+                        .font(.hanken(12))
+                        .foregroundStyle(isUser ? Color.white : Theme.inkSoft)
+                        .lineLimit(1)
+                }
+                .padding(.leading, 8)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("v2-event-quote")
+        .accessibilityLabel("Quoted message from \(quote.sender). Activate to jump to it.")
+    }
+
     var body: some View {
         if event.author == .user {
             VStack(alignment: .trailing, spacing: 4) {
+                if let quote = event.replyQuote {
+                    quoteCard(quote, isUser: true)
+                }
                 HStack {
                     Spacer(minLength: 48)
                     VStack(alignment: .trailing, spacing: 4) {
@@ -2991,6 +3263,9 @@ struct V2EventRow: View {
                                 .foregroundStyle(Theme.inkFaint)
                                 .accessibilityIdentifier("v2-event-time")
                         }
+                        if let quote = event.replyQuote {
+                            quoteCard(quote, isUser: false)
+                        }
                         ForEach(Array(event.blocks.enumerated()), id: \.offset) { _, block in
                             V2BlockView(block: block, threadID: threadID, isUser: event.author == .user, onSend: onSend)
                         }
@@ -3000,6 +3275,55 @@ struct V2EventRow: View {
             }
             .v2ReplyMenu(quote: replyQuote, onReply: onReply)
         }
+    }
+}
+
+/// R32 P081: the optimistic "<driver> is on it…" line — the design's
+/// thinking treatment (8px success pulsing dot, 13px muted text), the
+/// web's `v2-working-line` twin. Quiet (past 45 s, still no reply) is
+/// still, never silent: the dot rests and the text says the reply will
+/// land here.
+private struct V2WorkingLineView: View {
+    let line: V2WorkingLine
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if !line.quiet {
+                Circle()
+                    .fill(Theme.success)
+                    .frame(width: 8, height: 8)
+                    .modifier(V2PulseModifier())
+                    .accessibilityHidden(true)
+            }
+            Text(V2RunState.workingText(driver: line.driver, quiet: line.quiet))
+                .font(.hanken(13))
+                .foregroundStyle(line.quiet ? Theme.inkFaint : Theme.inkSoft)
+                .lineLimit(2)
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("v2-working-line")
+        .accessibilityLabel(V2RunState.workingText(driver: line.driver, quiet: line.quiet))
+    }
+}
+
+/// The design's pulse: 1.6 s ease-in-out infinite (the web's `v2-pulse`
+/// twin). Static under the frozen tour (`-screenTour`) so gate pixels are
+/// deterministic, and off under Reduce Motion.
+private struct V2PulseModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pulsing = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(Config.screenTour || reduceMotion ? 1 : (pulsing ? 0.35 : 1))
+            .onAppear {
+                guard !Config.screenTour, !reduceMotion else { return }
+                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                    pulsing = true
+                }
+            }
     }
 }
 

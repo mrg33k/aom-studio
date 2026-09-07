@@ -181,6 +181,8 @@ final class ComposerParityUITests: XCTestCase {
     }
 
     /// `/clear` + Return confirms (alert) and clears view-local state only.
+    /// R32: `/clear` confirms with the server-clear copy; Clear empties
+    /// the thread on the backend and drops the view-local staged files.
     func testSlashClearConfirm() throws {
         let app = launch(Self.base + ["-v2SeedStaged"])
         openThread(app)
@@ -193,7 +195,7 @@ final class ComposerParityUITests: XCTestCase {
         let alert = app.alerts["Clear this chat?"].firstMatch
         XCTAssertTrue(alert.waitForExistence(timeout: 10), "no /clear confirm alert")
         evidence("slash-clear")
-        alert.buttons["Clear"].tap()
+        alert.buttons["Clear chat"].tap()
         XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "v2-staged-row").firstMatch.exists,
                        "clear left staged files behind")
     }
@@ -201,7 +203,8 @@ final class ComposerParityUITests: XCTestCase {
     // MARK: - reply-to
 
     /// Long-press a message → Reply arms the quote chip; × cancels; a send
-    /// carries the `> sender: snippet` line.
+    /// carries the bare text while the quote renders as a card from the
+    /// block payload (R32: no `> sender:` line in the text anymore).
     func testReplyQuote() throws {
         let app = launch(Self.base)
         openThread(app)
@@ -239,8 +242,20 @@ final class ComposerParityUITests: XCTestCase {
         f.tap()
         f.typeText("answer r28")
         app.buttons.matching(identifier: "v2-composer-send").firstMatch.tap()
-        XCTAssertTrue(waitForText(app, "> You: quotable r28"), "the sent text carries no quote line")
+        // The text lands bare; the quote renders as a card on the message.
+        XCTAssertTrue(waitForText(app, "answer r28"), "the reply never landed")
+        XCTAssertTrue(waitForTextGone(app, "> You:"), "the quote leaked into the text")
+        let quote = app.descendants(matching: .any).matching(identifier: "v2-event-quote").firstMatch
+        XCTAssertTrue(quote.waitForExistence(timeout: 10), "no rendered quote card on the reply")
+        evidence("reply-quote")
         XCTAssertTrue(waitForTextGone(app, "Replying to"), "the quote survived its send")
+        // Tap-to-jump: the quoted message is in this thread, so the jump
+        // lands without leaving it.
+        quote.tap()
+        XCTAssertTrue(
+            app.descendants(matching: .any).matching(identifier: "chat-screen").firstMatch.waitForExistence(timeout: 5),
+            "the quote jump left the thread"
+        )
     }
 
     // MARK: - dictation meter

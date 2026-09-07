@@ -145,6 +145,8 @@ final class V2CommandsTests: XCTestCase {
         XCTAssertEqual(api.sentModes.last, "plan")
     }
 
+    /// R32: Work is the server default, so Work sends omit the field (the
+    /// web's `sendThreadMessage` rule) — only Plan rides.
     func testWorkSendCarriesWorkMode() async throws {
         let api = CornerV2APIFake()
         let (thread, project, _) = try context()
@@ -154,7 +156,7 @@ final class V2CommandsTests: XCTestCase {
         await model.start(thread: thread, project: project, mission: nil)
 
         await model.send("hello")
-        XCTAssertEqual(api.sentModes.last, "work")
+        XCTAssertNil(api.sentModes.last ?? nil, "Work is the default and rides no field")
     }
 
     /// The clone does not know `mode`: the Plan attempt fails validation and

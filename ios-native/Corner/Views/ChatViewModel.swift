@@ -1794,9 +1794,24 @@ struct V2OutboxEntry: Codable, Equatable, Identifiable {
     let mentioning: [String]
     let preferredProjectID: String?
     let createdAt: Date
+    /// R32: the quote this send answers. Retries re-send the same `replyTo`
+    /// (the text itself carries no quote line anymore); old installs decode
+    /// this as nil, i.e. "no quote".
+    var replyTo: V2ReplyTo? = nil
     /// The last send attempt's outcome. Nil while an attempt is in flight;
     /// old installs decode this as nil (the default), i.e. "no failure yet".
     var lastFailure: V2SendFailure? = nil
+}
+
+/// R32: one plain sentence per upload-failure shape (the web's attach
+/// notice twin). The raw detail never reaches visible copy.
+enum V2UploadError {
+    static func plainReason(_ error: Error) -> String {
+        if (error as NSError).domain == NSURLErrorDomain {
+            return "Couldn't upload — check your connection, then retry."
+        }
+        return "Couldn't upload — tap Retry."
+    }
 }
 
 /// R24 P075: one plain sentence per send-failure shape (the web's
@@ -1869,11 +1884,14 @@ final class V2OutboxStore {
     }
 
     @discardableResult
-    func enqueue(threadID: String, text: String, mentioning: [String], preferredProjectID: String?) -> V2OutboxEntry {
+    func enqueue(
+        threadID: String, text: String, mentioning: [String],
+        preferredProjectID: String?, replyTo: V2ReplyTo? = nil
+    ) -> V2OutboxEntry {
         let entry = V2OutboxEntry(
             clientEventID: UUID().uuidString.lowercased(), threadID: threadID,
             text: text, mentioning: mentioning, preferredProjectID: preferredProjectID,
-            createdAt: Date()
+            createdAt: Date(), replyTo: replyTo
         )
         entries[threadID, default: []].append(entry)
         persist()
@@ -2029,10 +2047,43 @@ final class V2ChatModel: ObservableObject {
     /// R28: local "Generate an image" runs (the Generating… card + Stop).
     /// Done hands off to the opened artifact tab and the row goes away.
     @Published private(set) var imageRuns: [V2ImageRun] = []
+    /// R32 P081: the optimistic "<driver> is on it…" line under the
+    /// just-sent message. Set at send, cleared by the first new agent
+    /// event; past the quiet bound it becomes the still notice.
+    @Published private(set) var workingLine: V2WorkingLine? = nil
+    /// R32 P081: the nav status from `runsForThread` — open run = Working,
+    /// none = Ready. The nav dot reads this (or the working line while a
+    /// send is still waiting on its first run poll).
+    @Published private(set) var runWorking = false
 
-    init(api: (any CornerV2API)? = nil, outbox: V2OutboxStore = .shared) {
+    /// Quotes awaiting their server echo, by outbox id. `threadEvents`
+    /// text blocks do not carry `replyTo` yet (backend ask), so the model
+    /// re-attaches the sent quote to the matching server event on every
+    /// merge — the quote survives refreshes without depending on text.
+    private var pendingQuotes: [String: (text: String, quote: V2ReplyQuote, sentAt: Date)] = [:]
+    private var quietTask: Task<Void, Never>?
+    private var runsTask: Task<Void, Never>?
+    private let quietAfter: TimeInterval
+    private let runsPollInterval: TimeInterval
+    private let imagePollInterval: TimeInterval
+
+    init(
+        api: (any CornerV2API)? = nil, outbox: V2OutboxStore = .shared,
+        quietAfter: TimeInterval? = nil, runsPollInterval: TimeInterval = 5,
+        imagePollInterval: TimeInterval = 2
+    ) {
         self.api = api ?? DefaultCornerV2API()
         self.outbox = outbox
+        #if DEBUG
+        let flag = ProcessInfo.processInfo.arguments
+            .first(where: { $0.hasPrefix("-v2QuietAfter=") })
+            .flatMap { Double($0.dropFirst("-v2QuietAfter=".count)) }
+        #else
+        let flag: Double? = nil
+        #endif
+        self.quietAfter = quietAfter ?? flag ?? V2RunState.quietAfter
+        self.runsPollInterval = runsPollInterval
+        self.imagePollInterval = imagePollInterval
     }
 
     private var threadPrefsKey: String { "v2ThreadPrefs.\(thread?.id ?? "none")" }
@@ -2132,6 +2183,10 @@ final class V2ChatModel: ObservableObject {
             events = try await api.threadEvents(threadID: thread.id)
             loadState = events.isEmpty ? .empty : .ready
             subscribe()
+            startRunsPoll()
+            // Uploads staged before the thread arrived (seeds, fast picks)
+            // begin now that the thread pins them.
+            startPendingUploads()
             refreshQueued()
             await replayOutbox()
             await refreshConfirmations()
@@ -2187,6 +2242,15 @@ final class V2ChatModel: ObservableObject {
         sendTask = nil
         isSending = false
         awaitingReply = false
+        // R32: leaving the thread ends every thread-scoped wait — the
+        // working line, its quiet timer, and the runs poll. Queued outbox
+        // entries survive: they belong to the thread and replay on return
+        // (replay re-registers their quotes from the entry).
+        clearWorkingLine()
+        runWorking = false
+        runsTask?.cancel()
+        runsTask = nil
+        pendingQuotes.removeAll()
         if activityBegan {
             TurnActivityService.shared.turnEnded(outcomeWord: "Closed", startedAt: nil)
             activityBegan = false
@@ -2196,6 +2260,7 @@ final class V2ChatModel: ObservableObject {
     /// Foreground / reconnect: re-read the thread and flush the queue.
     func foreground() async {
         await refreshEvents()
+        await refreshRuns()
         await replayOutbox()
     }
 
@@ -2204,27 +2269,37 @@ final class V2ChatModel: ObservableObject {
     /// ride as routing metadata; the thread, files, and Visual Window stay
     /// exactly where they are.
     ///
-    /// R28: an optional reply quote prefixes the text (`> sender: snippet`)
-    /// and staged attachment names ride a `[attached: …]` trailer, so the
-    /// server stores exactly what the user saw staged. Cancellation (Stop)
-    /// parks quietly: the entry stays queued with no failure stamped, so no
-    /// "Not sent" banner follows a deliberate stop.
-    func send(_ text: String, quote: V2ReplyQuote? = nil, attachments: [V2StagedAttachment] = []) async {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, let thread else { return }
-        let final = V2SendText.build(text: trimmed, quote: quote, attachments: attachments)
+    /// R32: the send carries the bare text. The reply quote rides the
+    /// `replyTo` block field (stored on the block payload, like the web's
+    /// send) and staged files upload as artifacts of their own — the text
+    /// carries neither. The outbox id rides `clientEventId`, so a retried
+    /// send never appends twice. Cancellation (Stop) parks quietly: the
+    /// entry stays queued with no failure stamped, so no "Not sent" banner
+    /// follows a deliberate stop.
+    func send(_ text: String, quote: V2ReplyQuote? = nil) async {
+        let final = V2SendText.build(text: text)
+        guard !final.isEmpty, let thread else { return }
         draft = ""
-        if !attachments.isEmpty { staged.removeAll() }
         let mentioning = BrainMention.parse(final)
         let entry = outbox.enqueue(
             threadID: thread.id, text: final,
-            mentioning: mentioning, preferredProjectID: nil
+            mentioning: mentioning, preferredProjectID: nil,
+            replyTo: quote?.wire
         )
         refreshQueued()
-        let echo = ThreadEvent(
+        if let quote {
+            pendingQuotes[entry.clientEventID] = (text: final, quote: quote, sentAt: Date())
+        }
+        var echo = ThreadEvent(
             id: Self.echoID(for: entry.clientEventID), threadID: thread.id,
             author: .user, agentLabel: nil, blocks: [.text(final)], createdAt: Date()
         )
+        echo.replyQuote = quote
+        // R32 P081: the working line goes up with the send and lives until
+        // the first new agent event; the runs poll (refreshed now) drives
+        // the nav dot. The line reads the pre-echo load state: a send fired
+        // mid-load must not end on the first refresh's old rows.
+        beginWorkingLine()
         events.append(echo)
         loadState = .ready
         // The Live Activity follows THIS thread's run only: it begins on send
@@ -2233,16 +2308,21 @@ final class V2ChatModel: ObservableObject {
         activityBegan = true
         awaitingReply = true
         isSending = true
+        Task { await refreshRuns() }
         defer { isSending = false }
         do {
-            // The thread's Work/Plan intent rides the send; the transport
-            // drops Work (the server default) and falls back field-less when
-            // the backend does not know `mode` yet. `threadId` pins the send
-            // to this thread (R24 P080): no routing, no `Routed to` receipt,
-            // and an open question is answered here — never globally.
+            // The thread's Work/Plan intent and non-Auto model ride the
+            // send; the transport drops Work/Auto (the server defaults) and
+            // falls back field-less when the backend does not know the
+            // fields yet. `threadId` pins the send to this thread (R24
+            // P080): no routing, no `Routed to` receipt, and an open
+            // question is answered here — never globally.
             let decision = try await api.send(
                 text: final, mentioning: mentioning, preferredProjectID: nil,
-                mode: chatMode, threadId: thread.id
+                mode: chatMode == "plan" ? "plan" : nil, threadId: thread.id,
+                model: modelChoice == "default" ? nil : modelChoice,
+                clientEventId: entry.clientEventID,
+                imageTool: nil, replyTo: quote?.wire
             )
             // A Stop that landed while an uncooperative transport still flew
             // must not apply the late success (no verdict, no entry removal,
@@ -2257,10 +2337,13 @@ final class V2ChatModel: ObservableObject {
             // Stop, not failure: the entry stays queued (replayable), the
             // echo stays on screen, and no reason is stamped — stamping one
             // would paint a "Not sent" banner over a deliberate stop.
+            clearWorkingLine()
             refreshQueued()
         } catch {
             // R24 P075: the reason is the diagnosis — a rejection is not
             // "Offline". It rides the entry so the banner tells the truth.
+            // The working line comes down: nothing is coming for this send.
+            clearWorkingLine()
             outbox.recordFailure(
                 threadID: thread.id, clientEventID: entry.clientEventID,
                 failure: V2SendError.classify(error)
@@ -2272,9 +2355,9 @@ final class V2ChatModel: ObservableObject {
     /// R28: fire-and-forget send behind the composer's Send button. The task
     /// handle is kept so Stop can cancel it; a previous send is cancelled
     /// first (one flight at a time — the outbox keeps the order honest).
-    func startSend(_ text: String, quote: V2ReplyQuote? = nil, attachments: [V2StagedAttachment] = []) {
+    func startSend(_ text: String, quote: V2ReplyQuote? = nil) {
         sendTask?.cancel()
-        sendTask = Task { await send(text, quote: quote, attachments: attachments) }
+        sendTask = Task { await send(text, quote: quote) }
     }
 
     /// R28: Stop while generating. Cancels the flight, drops the spinner,
@@ -2285,6 +2368,7 @@ final class V2ChatModel: ObservableObject {
         sendTask = nil
         isSending = false
         awaitingReply = false
+        clearWorkingLine()
         if activityBegan {
             TurnActivityService.shared.turnEnded(outcomeWord: "Stopped", startedAt: nil)
             activityBegan = false
@@ -2292,21 +2376,169 @@ final class V2ChatModel: ObservableObject {
         Task { await refreshEvents() }
     }
 
-    // MARK: - R28 staged attachments
+    // MARK: - R32 run state (P081)
 
-    func stageAttachment(name: String, kind: V2StagedAttachment.Kind) {
+    /// Raise the working line for the just-sent message. The driver is the
+    /// newest agent voice (else the project, else Corner); the quiet timer
+    /// turns it still after the bound — never silent.
+    private func beginWorkingLine() {
+        let driver = V2RunState.driverName(events: events, projectName: project?.name)
+        workingLine = V2WorkingLine(
+            driver: driver, sentAt: Date(),
+            seenAgentIDs: Set(events.filter { $0.author == .agent }.map(\.id)),
+            // Ready or empty both mean the load finished (an empty thread
+            // has no old rows to replay); only a mid-load send is gated.
+            loadedAtSend: loadState == .ready || loadState == .empty
+        )
+        quietTask?.cancel()
+        quietTask = Task { [weak self, quietAfter] in
+            try? await Task.sleep(nanoseconds: UInt64(quietAfter * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            await MainActor.run { [weak self] in
+                self?.workingLine?.quiet = true
+            }
+        }
+    }
+
+    private func clearWorkingLine() {
+        workingLine = nil
+        quietTask?.cancel()
+        quietTask = nil
+    }
+
+    /// One `runsForThread` read. Failures keep the last status — a missed
+    /// poll is stale, never a status flip.
+    func refreshRuns() async {
+        guard let thread else { return }
+        do {
+            runWorking = try await api.runsForThread(threadID: thread.id).isWorking
+        } catch {
+            // Keep the last status.
+        }
+    }
+
+    private func startRunsPoll() {
+        runsTask?.cancel()
+        runsTask = Task { [weak self, runsPollInterval] in
+            await self?.refreshRuns()
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: UInt64(runsPollInterval * 1_000_000_000))
+                guard !Task.isCancelled else { return }
+                await self?.refreshRuns()
+            }
+        }
+    }
+
+    // MARK: - R32 clear chat
+
+    /// "Clear this chat" (R27 B2, the web's `handleClearRoom` twin): the
+    /// server hides this thread's rows from the surface on every device,
+    /// then the view-local send state drops — the emptied surface is all
+    /// there is. Queued outbox entries stay queued (unsent text is still
+    /// the user's). Throws on a backend failure so the view can say so and
+    /// change nothing.
+    func clearThread() async throws {
+        guard let thread else { return }
+        try await api.clearThread(threadID: thread.id)
+        events = []
+        loadState = .empty
+        lastDecision = nil
+        clearWorkingLine()
+        runWorking = false
+        draft = ""
+        await refreshEvents()
+    }
+
+    // MARK: - R32 staged attachments (upload at stage time)
+
+    /// Stage one file and start its upload (the web's attach path: picked
+    /// bytes → `files:generateUploadUrl` → POST → `v2Visual:createArtifact`
+    /// → tab). Each file uploads alone: a failure parks that chip with a
+    /// Retry and never touches the outbox — the send carries no bytes.
+    /// Name-only stages (no bytes) never upload; they chip and remove like
+    /// R28, for seeds and tests.
+    func stageAttachment(name: String, kind: V2StagedAttachment.Kind, data: Data? = nil, mimeType: String = "") {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         guard !staged.contains(where: { $0.name == trimmed }) else { return }
-        staged.append(V2StagedAttachment(id: UUID().uuidString, name: trimmed, kind: kind))
+        let item = V2StagedAttachment(id: UUID().uuidString, name: trimmed, kind: kind, data: data, mimeType: mimeType)
+        staged.append(item)
+        if data != nil { startUpload(id: item.id) }
     }
 
     func removeStaged(id: String) {
+        uploadTasks[id]?.cancel()
+        uploadTasks.removeValue(forKey: id)
         staged.removeAll { $0.id == id }
     }
 
     func clearStaged() {
+        for (_, task) in uploadTasks { task.cancel() }
+        uploadTasks.removeAll()
         staged.removeAll()
+    }
+
+    private var uploadTasks: [String: Task<Void, Never>] = [:]
+
+    /// Begin every staged upload that has bytes and is not already moving
+    /// or done. Runs at thread start for items staged before the thread
+    /// arrived; stage-time staging starts its own upload directly.
+    private func startPendingUploads() {
+        for item in staged where item.data != nil {
+            switch item.upload {
+            case .queued:
+                startUpload(id: item.id)
+            case .uploading, .failed, .done:
+                break
+            }
+        }
+    }
+
+    /// Retry one failed upload. Anything else (queued, uploading, done) is
+    /// already moving or moved — retrying it would double the artifact.
+    func retryUpload(id: String) {
+        guard let item = staged.first(where: { $0.id == id }), item.isRetryable else { return }
+        startUpload(id: id)
+    }
+
+    private func setUpload(id: String, _ state: V2UploadState) {
+        guard let index = staged.firstIndex(where: { $0.id == id }) else { return }
+        staged[index].upload = state
+    }
+
+    private func startUpload(id: String) {
+        guard let thread, let item = staged.first(where: { $0.id == id }) else { return }
+        guard let bytes = item.data else { return }
+        uploadTasks[id]?.cancel()
+        setUpload(id: id, .uploading)
+        uploadTasks[id] = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let storageId = try await self.api.uploadFile(data: bytes, mimeType: item.mimeType)
+                try Task.checkCancellation()
+                let kind = V2ArtifactKind.from(mimeType: item.mimeType, filename: item.name)
+                let created = try await self.api.createArtifact(
+                    threadID: thread.id, kind: kind, title: item.name,
+                    storageId: storageId,
+                    meta: ["size": String(bytes.count), "mimeType": item.mimeType],
+                    createdBy: "user"
+                )
+                try Task.checkCancellation()
+                await MainActor.run { [weak self] in
+                    self?.setUpload(id: id, .done(artifactID: created.id))
+                    self?.uploadTasks.removeValue(forKey: id)
+                }
+            } catch is CancellationError {
+                await MainActor.run { [weak self] in
+                    self?.uploadTasks.removeValue(forKey: id)
+                }
+            } catch {
+                await MainActor.run { [weak self] in
+                    self?.setUpload(id: id, .failed(reason: V2UploadError.plainReason(error)))
+                    self?.uploadTasks.removeValue(forKey: id)
+                }
+            }
+        }
     }
 
     // MARK: - R28 image runs
@@ -2343,8 +2575,50 @@ final class V2ChatModel: ObservableObject {
         imageRuns.contains { $0.state == .generating }
     }
 
+    // MARK: - R32 image artifacts (pending photo → bridge upgrade → paint)
+
+    /// Create the pending photo artifact the run tracks (the web's
+    /// `startImageRun` twin): kind photo, `meta.status: "generating"`, no
+    /// storage — the bridge's upgrade lands the bytes in place. Returns the
+    /// artifact id for the tab open.
+    func createImageArtifact(runID: String, prompt: String, tool: String) async throws -> String {
+        guard let thread else { throw CornerV2APIError.unconfiguredFakeOperation }
+        let title = "Generated image — \(prompt.prefix(48))\(prompt.count > 48 ? "…" : "")"
+        let created = try await api.createArtifact(
+            threadID: thread.id, kind: .photo, title: String(title),
+            storageId: nil,
+            meta: ["prompt": prompt, "imageTool": tool, "status": "generating"],
+            createdBy: "user"
+        )
+        if let index = imageRuns.firstIndex(where: { $0.id == runID }) {
+            imageRuns[index].artifactID = created.id
+        }
+        return created.id
+    }
+
+    /// Poll `artifacts` until the pending photo carries a `sourceURL` (the
+    /// bridge's upgrade landed `storageId`) — then the open tab paints.
+    /// True when ready; false when the wait was cancelled. The caller owns
+    /// the run lifecycle (finish/cancel/fail around this).
+    func awaitImageReady(artifactID: String, pollInterval: TimeInterval? = nil) async -> Bool {
+        guard let thread else { return false }
+        let interval = pollInterval ?? imagePollInterval
+        while !Task.isCancelled {
+            do {
+                let arts = try await api.artifacts(threadID: thread.id)
+                if arts.first(where: { $0.id == artifactID })?.sourceURL != nil { return true }
+            } catch {
+                // A missed poll is stale, never a verdict — keep waiting.
+            }
+            try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+        }
+        return false
+    }
+
     /// Flush the queue in order, at most once per entry per call. Stops at
     /// the first failure so transcript order survives a flaky network.
+    /// R32: replays carry the entry's quote and outbox id, like the first
+    /// attempt — a retry never appends twice and never drops the quote.
     func replayOutbox() async {
         guard let thread, !isReplaying else { return }
         isReplaying = true
@@ -2352,10 +2626,21 @@ final class V2ChatModel: ObservableObject {
         var didSucceed = false
         for entry in outbox.pending(threadID: thread.id) {
             do {
+                if let wire = entry.replyTo {
+                    pendingQuotes[entry.clientEventID] = (
+                        text: entry.text,
+                        quote: V2ReplyQuote(wire),
+                        sentAt: entry.createdAt
+                    )
+                }
                 lastDecision = try await api.send(
                     text: entry.text, mentioning: entry.mentioning,
-                    preferredProjectID: entry.preferredProjectID, mode: chatMode,
-                    threadId: thread.id
+                    preferredProjectID: entry.preferredProjectID,
+                    mode: chatMode == "plan" ? "plan" : nil,
+                    threadId: thread.id,
+                    model: modelChoice == "default" ? nil : modelChoice,
+                    clientEventId: entry.clientEventID,
+                    imageTool: nil, replyTo: entry.replyTo
                 )
                 outbox.remove(threadID: thread.id, clientEventID: entry.clientEventID)
                 events.removeAll { $0.id == Self.echoID(for: entry.clientEventID) }
@@ -2391,14 +2676,25 @@ final class V2ChatModel: ObservableObject {
 
     /// Merge server events over local state. Remote wins on id collisions;
     /// optimistic echoes survive until their entry is confirmed sent.
+    ///
+    /// R32: two overlays are re-applied after every merge (remote wins the
+    /// ids, the client keeps the meaning). The working line ends on the
+    /// first agent event outside the send-time set; sent quotes re-attach
+    /// to their matching server event, so a refresh never drops a quote
+    /// the backend does not return yet.
     private func applyRemote(_ fresh: [ThreadEvent]) {
         guard thread != nil else { return }
         var known = Dictionary(uniqueKeysWithValues: events.map { ($0.id, $0) })
         for event in fresh { known[event.id] = event }
+        reattachQuotes(into: &known)
         events = known.values.sorted {
             $0.createdAt != $1.createdAt ? $0.createdAt < $1.createdAt : $0.id < $1.id
         }
         if loadState != .ready { loadState = events.isEmpty ? .empty : .ready }
+        if let line = workingLine,
+           fresh.contains(where: { line.ends(on: $0) }) {
+            clearWorkingLine()
+        }
         if awaitingReply, fresh.contains(where: { $0.author == .agent }) {
             awaitingReply = false
             if activityBegan {
@@ -2406,6 +2702,44 @@ final class V2ChatModel: ObservableObject {
                 activityBegan = false
             }
         }
+    }
+
+    /// Attach each pending sent quote to its server event: the newest user
+    /// event with the exact sent text, created no earlier than the send,
+    /// that carries no quote yet. Exact-text match (not prefix, not fuzzy):
+    /// two legitimate sends may both say "yes".
+    private func reattachQuotes(into known: inout [String: ThreadEvent]) {
+        guard !pendingQuotes.isEmpty else { return }
+        for (_, pending) in pendingQuotes {
+            // The same message can be quoted by two different sends: the
+            // guard keys on (quote, text), never on the quote alone.
+            guard !known.values.contains(where: {
+                $0.author == .user && $0.replyQuote == pending.quote
+                    && Self.eventText($0) == pending.text
+            }) else { continue }
+            let candidates = known.values
+                .filter {
+                    $0.author == .user && $0.replyQuote == nil
+                        && Self.eventText($0) == pending.text
+                        && $0.createdAt >= pending.sentAt.addingTimeInterval(-5)
+                }
+                .sorted {
+                    $0.createdAt != $1.createdAt ? $0.createdAt < $1.createdAt : $0.id < $1.id
+                }
+            if let match = candidates.first {
+                var quoted = match
+                quoted.replyQuote = pending.quote
+                known[match.id] = quoted
+            }
+        }
+    }
+
+    /// The first text block's value, for quote re-attachment matching.
+    static func eventText(_ event: ThreadEvent) -> String? {
+        for block in event.blocks {
+            if case .text(let value) = block { return value }
+        }
+        return nil
     }
 
     private func refreshQueued() {

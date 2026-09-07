@@ -72,13 +72,31 @@ enum V2SlashPalette {
 
 // MARK: - Reply quotes
 
-/// A reply-to quote: who wrote it and the line being answered. The quote
-/// rides the sent text as a `> sender: snippet` line (the server stores
-/// exactly what it receives), so no mapping table can drift.
+/// A reply-to quote: who wrote it and the line being answered. R32: the
+/// quote rides the send as the `replyTo` block field (stored on the block
+/// payload, like the web's send) — the sent TEXT carries no quote line
+/// anymore, so cross-device quotes never depend on text parsing.
 struct V2ReplyQuote: Equatable {
     let messageID: String
     let sender: String
     let snippet: String
+
+    /// The wire field for `v2Native:send`.
+    var wire: V2ReplyTo {
+        V2ReplyTo(messageId: messageID, sender: sender, snippet: snippet)
+    }
+
+    init(messageID: String, sender: String, snippet: String) {
+        self.messageID = messageID
+        self.sender = sender
+        self.snippet = snippet
+    }
+
+    init(_ wire: V2ReplyTo) {
+        self.messageID = wire.messageId
+        self.sender = wire.sender
+        self.snippet = wire.snippet
+    }
 
     /// One message line, truncated to `max` graphemes with an ellipsis.
     /// Pure so the tests pin the truncation, not the view.
@@ -199,15 +217,67 @@ enum V2ComposerDrafts {
 
 // MARK: - Staged attachments
 
-/// A v2 staged attachment. Names ride the send (see buildSendText); bytes
-/// wait on a send-attachments field the backend does not take yet, which the
-/// R28 report files as a backend row. Session-only: relaunch drops staged
-/// names rather than restoring bytes-less ghosts.
+/// One file's upload lifecycle. Uploads start at stage time and run per
+/// file (the web's attach path): a failed file retries alone and never
+/// blocks the outbox — the send carries no bytes at all.
+enum V2UploadState: Equatable {
+    case queued
+    case uploading
+    case failed(reason: String)
+    case done(artifactID: String)
+}
+
+/// A v2 staged attachment. R32: bytes upload at stage time through
+/// `files:generateUploadUrl` → `v2Visual:createArtifact` (kind by MIME,
+/// `createdBy: "user"`); the staged row tracks the upload, and the opened
+/// tab dismisses the chip. Session-only: relaunch drops staged items
+/// rather than restoring bytes-less ghosts.
 struct V2StagedAttachment: Identifiable, Equatable {
-    enum Kind: String { case photo, file, camera }
+    enum Kind: String, Codable { case photo, file, camera }
     let id: String
     let name: String
     let kind: Kind
+    /// The file bytes (photos from the picker, files read at stage time,
+    /// camera JPEGs). Nil for name-only seeds, which never upload.
+    let data: Data?
+    /// MIME for the storage POST (`image/jpeg`, the file's own type, or
+    /// `application/octet-stream` when unknown).
+    let mimeType: String
+    var upload: V2UploadState
+
+    init(id: String = UUID().uuidString, name: String, kind: Kind, data: Data? = nil, mimeType: String = "", upload: V2UploadState = .queued) {
+        self.id = id
+        self.name = name
+        self.kind = kind
+        self.data = data
+        self.mimeType = mimeType.isEmpty ? V2StagedAttachment.defaultMIME(for: kind, name: name) : mimeType
+        self.upload = upload
+    }
+
+    /// Name-only seeds (and extension-less names) fall back by kind; real
+    /// picks always pass their own type explicitly.
+    static func defaultMIME(for kind: Kind, name: String) -> String {
+        let lower = name.lowercased()
+        if lower.hasSuffix(".pdf") { return "application/pdf" }
+        if lower.hasSuffix(".png") { return "image/png" }
+        if lower.hasSuffix(".jpg") || lower.hasSuffix(".jpeg") { return "image/jpeg" }
+        if lower.hasSuffix(".heic") || lower.hasSuffix(".heif") { return "image/heic" }
+        if lower.hasSuffix(".mp4") || lower.hasSuffix(".mov") { return "video/mp4" }
+        switch kind {
+        case .photo, .camera: return "image/jpeg"
+        case .file: return "application/octet-stream"
+        }
+    }
+
+    var isRetryable: Bool {
+        if case .failed = upload { return true }
+        return false
+    }
+
+    var isDone: Bool {
+        if case .done = upload { return true }
+        return false
+    }
 }
 
 enum V2Attachments {
@@ -228,32 +298,145 @@ enum V2Attachments {
 
 /// A "Generate an image" run. The run is local UI state: `generating` shows
 /// the card with its Stop; `done` hands off to the opened artifact tab and
-/// the row goes away; `failed`/`cancelled` show why with a dismiss.
+/// the row goes away; `failed`/`cancelled` show why with a dismiss. R32:
+/// the run tracks the pending photo artifact the client created
+/// (`meta.status: "generating"`); the model polls `artifacts` until the
+/// bridge's upgrade lands `storageId`, then the tab paints and the run
+/// finishes.
 struct V2ImageRun: Identifiable, Equatable {
     enum State: String, Equatable { case generating, done, failed, cancelled }
     let id: String
     let prompt: String
     var state: State
     var error: String?
+    /// The pending photo artifact, once `createArtifact` answers. Nil while
+    /// the create is still in flight.
+    var artifactID: String? = nil
 }
 
 // MARK: - Send-text builder
 
-/// The exact text a v2 send carries: an optional `> sender: snippet` reply
-/// line, the typed text, and an optional `[attached: …]` trailer naming the
-/// staged files. One builder, one test target — the view never concatenates
-/// send text itself.
+/// R32: the send carries the bare trimmed text — nothing else. The reply
+/// quote rides the `replyTo` block field and staged files upload as
+/// artifacts of their own, so neither is concatenated into the text (the
+/// R28 `> sender:` line and `[attached: …]` trailer are retired).
 enum V2SendText {
-    static func build(text: String, quote: V2ReplyQuote?, attachments: [V2StagedAttachment]) -> String {
-        var parts: [String] = []
-        if let quote {
-            parts.append("> \(quote.sender): \(quote.snippet)")
+    static func build(text: String) -> String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+// MARK: - R32 run state (P081)
+
+/// Client-side run state for the thread header and the optimistic working
+/// line (the web's `runState.ts` twin, adapted: the phone HAS the
+/// `runsForThread` query, so the nav status reads open runs — open =
+/// Working, none = Ready — instead of the web's turn-shape heuristic).
+enum V2RunState {
+    /// The web's quiet bound: 45 s with no reply turns "<driver> is on it…"
+    /// into the still notice — never silence.
+    static let quietAfter: TimeInterval = 45
+
+    /// The "<driver> is on it…" name: the newest agent voice in the thread,
+    /// else the thread's project, else Corner (the web's `driverFor` twin).
+    static func driverName(events: [ThreadEvent], projectName: String?) -> String {
+        let label = events.reversed().first(where: { $0.author == .agent })
+            .flatMap(\.agentLabel)?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !label.isEmpty { return label }
+        let fallback = (projectName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return fallback.isEmpty ? "Corner" : fallback
+    }
+
+    /// The working line's copy. Quiet (past the bound, still no reply) is
+    /// still, never silent: the dot stops pulsing and the text says the
+    /// reply will land here.
+    static func workingText(driver: String, quiet: Bool) -> String {
+        quiet ? "\(driver) is taking a while — the reply will land here." : "\(driver) is on it…"
+    }
+
+    /// True once the quiet bound has passed with no reply. Pure so the
+    /// bound is pinned without waiting 45 s.
+    static func isQuiet(sentAt: Date, now: Date, bound: TimeInterval = quietAfter) -> Bool {
+        now.timeIntervalSince(sentAt) >= bound
+    }
+}
+
+/// The optimistic working line under the just-sent message: set at send,
+/// cleared by the first new agent event, by Stop, by a send failure, or by
+/// leaving the thread. Past the quiet bound it becomes the still notice;
+/// it is never silence.
+struct V2WorkingLine: Equatable {
+    let driver: String
+    let sentAt: Date
+    /// Agent event ids known when the send went out. The first agent event
+    /// outside this set ends the line.
+    let seenAgentIDs: Set<String>
+    /// The thread was fully loaded when the send went out. When it was
+    /// (the common case) arrival is purely id-based — client/server skew
+    /// can never wedge the line on. A send fired mid-load (empty seen set)
+    /// additionally requires the arrival to be newer than the send, so the
+    /// first refresh — replaying old agent rows the model had not seen —
+    /// cannot end the wait before it began.
+    let loadedAtSend: Bool
+    var quiet: Bool = false
+
+    /// Whether this fresh agent event ends the line.
+    func ends(on event: ThreadEvent) -> Bool {
+        guard event.author == .agent, !seenAgentIDs.contains(event.id) else { return false }
+        if loadedAtSend { return true }
+        return event.createdAt >= sentAt.addingTimeInterval(-5)
+    }
+}
+
+// MARK: - R32 artifact kinds
+
+/// MIME/extension → artifact kind (the web's `artifactKindForFile` twin),
+/// then native tab kind → CORE kind for `createArtifact` (the backend
+/// validates the literal union: `site`/`file`, never `web`/`genericFile`).
+enum V2ArtifactKind {
+    static func from(mimeType: String, filename: String) -> VisualTabKind {
+        let type = mimeType.lowercased()
+        let name = filename.lowercased()
+        if type == "application/pdf" || name.hasSuffix(".pdf") { return .pdf }
+        if type.hasPrefix("image/") { return .photo }
+        if type.hasPrefix("video/") { return .video }
+        if type == "text/html" || name.hasSuffix(".html") || name.hasSuffix(".htm") { return .web }
+        if name.hasSuffix(".ppt") || name.hasSuffix(".pptx") || name.hasSuffix(".key") { return .deck }
+        if name.hasSuffix(".doc") || name.hasSuffix(".docx") || name.hasSuffix(".md")
+            || name.hasSuffix(".txt") || name.hasSuffix(".rtf") || name.hasSuffix(".pages")
+            || type == "text/plain" { return .document }
+        if name.hasSuffix(".ts") || name.hasSuffix(".tsx") || name.hasSuffix(".js")
+            || name.hasSuffix(".jsx") || name.hasSuffix(".py") || name.hasSuffix(".swift")
+            || name.hasSuffix(".css") || name.hasSuffix(".json") || name.hasSuffix(".sh")
+            || name.hasSuffix(".rb") || name.hasSuffix(".go") || name.hasSuffix(".rs")
+            || name.hasSuffix(".java") || name.hasSuffix(".c") || name.hasSuffix(".cpp")
+            || name.hasSuffix(".h") { return .code }
+        return .genericFile
+    }
+
+    /// Native tab kind → the CORE kind literal `createArtifact` validates.
+    static func coreName(for kind: VisualTabKind) -> String {
+        switch kind {
+        case .web: return "site"
+        case .genericFile: return "file"
+        default: return kind.rawValue
         }
-        parts.append(text.trimmingCharacters(in: .whitespacesAndNewlines))
-        if !attachments.isEmpty {
-            parts.append("[attached: \(attachments.map(\.name).joined(separator: ", "))]")
-        }
-        return parts.joined(separator: "\n")
+    }
+}
+
+// MARK: - R32 multiline entry
+
+/// Hardware Shift+Return inserts a newline instead of sending (Return alone
+/// still sends, soft or hardware). The single `\n` the key inserts must not
+/// trip the soft-Return submit detector, so the decision lives here — one
+/// helper, one test target — not in the view's change handler.
+enum V2ShiftReturn {
+    /// The draft after a hardware Shift+Return: the newline appended. The
+    /// view sets its submit-bypass flag around this call so the soft-Return
+    /// detector does not submit the inserted newline.
+    static func newlineDraft(_ draft: String) -> String {
+        draft + "\n"
     }
 }
 

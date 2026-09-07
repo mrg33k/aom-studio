@@ -190,28 +190,13 @@ final class R28ComposerParityTests: XCTestCase {
         XCTAssertEqual(V2Attachments.nextPhotoName(existing: one), "photo-2.jpg")
     }
 
+    /// R32: the send carries the bare trimmed text — the quote rides the
+    /// `replyTo` field and staged files upload as artifacts, so the R28
+    /// `> sender:` line and `[attached: …]` trailer are retired.
     func testSendTextBuilder() {
-        XCTAssertEqual(
-            V2SendText.build(text: "hi", quote: nil, attachments: []),
-            "hi"
-        )
-        let quote = V2ReplyQuote(messageID: "e1", sender: "Aster", snippet: "need numbers")
-        XCTAssertEqual(
-            V2SendText.build(text: "on it", quote: quote, attachments: []),
-            "> Aster: need numbers\non it"
-        )
-        let staged = [
-            V2StagedAttachment(id: "1", name: "deck.pdf", kind: .file),
-            V2StagedAttachment(id: "2", name: "photo.jpg", kind: .photo),
-        ]
-        XCTAssertEqual(
-            V2SendText.build(text: "see attached", quote: nil, attachments: staged),
-            "see attached\n[attached: deck.pdf, photo.jpg]"
-        )
-        XCTAssertEqual(
-            V2SendText.build(text: "  padded  ", quote: quote, attachments: staged),
-            "> Aster: need numbers\npadded\n[attached: deck.pdf, photo.jpg]"
-        )
+        XCTAssertEqual(V2SendText.build(text: "hi"), "hi")
+        XCTAssertEqual(V2SendText.build(text: "  padded  "), "padded")
+        XCTAssertEqual(V2SendText.build(text: "  "), "")
     }
 
     // MARK: - speakable text
@@ -332,15 +317,19 @@ final class R28ComposerParityTests: XCTestCase {
         XCTAssertTrue(model.staged.isEmpty)
     }
 
+    /// R32: the send carries the bare text; the quote rides `replyTo` and
+    /// staged files stay staged (their uploads run on their own) — neither
+    /// is concatenated into the text anymore.
     func testSendCarriesQuoteAndAttachmentNames() async throws {
         let (model, api, thread, project) = try await startedModel()
         api.sendHandler = { _, _, _, _ in self.routeDecision(project: project, threadID: thread.id) }
         let quote = V2ReplyQuote(messageID: "e1", sender: "Aster", snippet: "need numbers")
         model.stageAttachment(name: "deck.pdf", kind: .file)
-        await model.send("on it", quote: quote, attachments: model.staged)
-        XCTAssertEqual(api.sentTexts, ["> Aster: need numbers\non it\n[attached: deck.pdf]"])
-        // A send consumes its staged attachments.
-        XCTAssertTrue(model.staged.isEmpty)
+        await model.send("on it", quote: quote)
+        XCTAssertEqual(api.sentTexts, ["on it"])
+        XCTAssertEqual(api.sentReplyTos, [quote.wire])
+        // A send no longer consumes its staged files: uploads own them.
+        XCTAssertEqual(model.staged.map(\.name), ["deck.pdf"])
         XCTAssertFalse(model.isSending)
     }
 

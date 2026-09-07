@@ -85,6 +85,10 @@ final class CornerV2APIFake: CornerV2API {
     var artifactsHandler: ((String) async throws -> [Artifact])?
     var pendingConfirmationsHandler: (() async throws -> [CrossProjectWriteConfirmation])?
     var subscribeWorkspaceHandler: ((@escaping (WorkspaceSummary?) -> Void) -> any Cancellable)?
+    var runsHandler: ((String) async throws -> V2ThreadRuns)?
+    var clearThreadHandler: ((String) async throws -> Void)?
+    var uploadHandler: ((Data, String) async throws -> String)?
+    var createArtifactHandler: ((String, VisualTabKind, String, String?, [String: String], String) async throws -> V2CreatedArtifact)?
 
     /// Every `send` call's routing metadata, in order.
     private(set) var sentMentions: [[String]] = []
@@ -157,13 +161,35 @@ final class CornerV2APIFake: CornerV2API {
     /// Thread ids the fake has seen, per send — the in-thread test asserts
     /// a thread send carries its thread and a global send carries none.
     private(set) var sentThreadIDs: [String?] = []
+    /// R32 wiring the fake has seen, per send.
+    private(set) var sentModels: [String?] = []
+    private(set) var sentClientEventIDs: [String?] = []
+    private(set) var sentImageTools: [String?] = []
+    private(set) var sentReplyTos: [V2ReplyTo?] = []
+    /// Every `uploadFile` call's (byte count, MIME), in order.
+    private(set) var uploadedFiles: [(bytes: Int, mimeType: String)] = []
+    /// Every `createArtifact` call, in order.
+    private(set) var createdArtifacts: [(threadID: String, kind: VisualTabKind, title: String, storageId: String?, meta: [String: String], createdBy: String)] = []
+    /// Every `clearThread` thread id, in order.
+    private(set) var clearedThreadIDs: [String] = []
+    /// Every `runsForThread` thread id, in order.
+    private(set) var runsThreadIDs: [String] = []
 
-    func send(text: String, mentioning: [String], preferredProjectID: String?, mode: String? = nil, threadId: String? = nil) async throws -> RouteDecision {
+    func send(
+        text: String, mentioning: [String], preferredProjectID: String?,
+        mode: String? = nil, threadId: String? = nil,
+        model: String? = nil, clientEventId: String? = nil,
+        imageTool: String? = nil, replyTo: V2ReplyTo? = nil
+    ) async throws -> RouteDecision {
         sentTexts.append(text)
         sentMentions.append(mentioning)
         sentPreferredProjectIDs.append(preferredProjectID)
         sentModes.append(mode)
         sentThreadIDs.append(threadId)
+        sentModels.append(model)
+        sentClientEventIDs.append(clientEventId)
+        sentImageTools.append(imageTool)
+        sentReplyTos.append(replyTo)
         return try await require(sendHandler, op: "send")(text, mentioning, preferredProjectID, threadId)
     }
 
@@ -218,6 +244,29 @@ final class CornerV2APIFake: CornerV2API {
     func subscribeWorkspace(receive: @escaping (WorkspaceSummary?) -> Void) -> any Cancellable {
         if let handler = subscribeWorkspaceHandler { return handler(receive) }
         return AnyCancellableTask {}
+    }
+
+    func runsForThread(threadID: String) async throws -> V2ThreadRuns {
+        runsThreadIDs.append(threadID)
+        return try await require(runsHandler, op: "runsForThread")(threadID)
+    }
+
+    func clearThread(threadID: String) async throws {
+        clearedThreadIDs.append(threadID)
+        return try await require(clearThreadHandler, op: "clearThread")(threadID)
+    }
+
+    func uploadFile(data: Data, mimeType: String) async throws -> String {
+        uploadedFiles.append((bytes: data.count, mimeType: mimeType))
+        return try await require(uploadHandler, op: "uploadFile")(data, mimeType)
+    }
+
+    func createArtifact(
+        threadID: String, kind: VisualTabKind, title: String,
+        storageId: String?, meta: [String: String], createdBy: String
+    ) async throws -> V2CreatedArtifact {
+        createdArtifacts.append((threadID: threadID, kind: kind, title: title, storageId: storageId, meta: meta, createdBy: createdBy))
+        return try await require(createArtifactHandler, op: "createArtifact")(threadID, kind, title, storageId, meta, createdBy)
     }
 }
 

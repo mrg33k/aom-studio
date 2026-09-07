@@ -100,6 +100,170 @@ struct ThreadEvent: Codable, Identifiable, Equatable {
     let agentLabel: String?
     let blocks: [ThreadBlock]
     let createdAt: Date
+    /// R32 reply-to: the quote this message answers, when the backend
+    /// carried one. The server stores `replyTo` on the block payload; the
+    /// v2Workspace surface passes the payload through, while
+    /// `v2Native:threadEvents` text blocks do not carry it yet (backend
+    /// ask, see the R32 report). The client overlay covers all three
+    /// sources: decoded from a text block's `replyTo` key when present,
+    /// set on the optimistic echo at send, and re-attached to the matching
+    /// server event by `V2ChatModel`. Never encoded: it is a read overlay,
+    /// not wire state.
+    var replyQuote: V2ReplyQuote? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case id, threadID, author, agentLabel, blocks, createdAt
+    }
+
+    init(
+        id: String, threadID: String, author: ThreadAuthor, agentLabel: String?,
+        blocks: [ThreadBlock], createdAt: Date, replyQuote: V2ReplyQuote? = nil
+    ) {
+        self.id = id
+        self.threadID = threadID
+        self.author = author
+        self.agentLabel = agentLabel
+        self.blocks = blocks
+        self.createdAt = createdAt
+        self.replyQuote = replyQuote
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        threadID = try container.decode(String.self, forKey: .threadID)
+        author = try container.decode(ThreadAuthor.self, forKey: .author)
+        agentLabel = try container.decodeIfPresent(String.self, forKey: .agentLabel)
+        blocks = try container.decode([ThreadBlock].self, forKey: .blocks)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        // A text block may carry the quote the backend stored (the surface
+        // passes the payload through). The first quoted text block wins;
+        // anything else leaves the overlay unset.
+        replyQuote = Self.quoteFromRawBlocks(try? container.decode([RawThreadBlock].self, forKey: .blocks))
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(threadID, forKey: .threadID)
+        try container.encode(author, forKey: .author)
+        try container.encodeIfPresent(agentLabel, forKey: .agentLabel)
+        try container.encode(blocks, forKey: .blocks)
+        try container.encode(createdAt, forKey: .createdAt)
+    }
+
+    private static func quoteFromRawBlocks(_ raw: [RawThreadBlock]?) -> V2ReplyQuote? {
+        guard let raw else { return nil }
+        for block in raw {
+            if block.type == "text", let reply = block.replyTo,
+               !reply.messageId.isEmpty, !reply.sender.isEmpty {
+                return V2ReplyQuote(messageID: reply.messageId, sender: reply.sender, snippet: reply.snippet)
+            }
+        }
+        return nil
+    }
+}
+
+/// The untyped shape of one wire block, decoded alongside `ThreadBlock`
+/// only to lift the `replyTo` the backend stored on text payloads. Unknown
+/// keys are ignored, so a block the typed decode rejects still cannot fail
+/// the quote lift (and a block with no quote decodes to nils).
+private struct RawThreadBlock: Decodable {
+    var type: String = ""
+    var replyTo: V2ReplyTo? = nil
+
+    enum CodingKeys: String, CodingKey { case type, replyTo }
+}
+
+// MARK: - R32 wiring: reply-to, runs, artifacts
+
+/// The wire shape of a reply-to reference: `{messageId, sender, snippet}`.
+/// Stored on the user text block's payload by `v2Native:send` /
+/// `v2Workspace:sendMessage`; read back wherever the surface passes the
+/// payload through.
+struct V2ReplyTo: Codable, Equatable {
+    let messageId: String
+    let sender: String
+    let snippet: String
+}
+
+/// One backend run row, as `v2Native:runsForThread` shapes it: open rows
+/// (`running`/`queued`) plus the last `done` one. `createdAt` arrives as ms
+/// epoch (a number), never an ISO string.
+struct V2ThreadRun: Codable, Equatable {
+    let id: String
+    let status: String
+    let brain: String?
+    let provider: String
+    let createdAt: Date
+
+    var isOpen: Bool { status == "running" || status == "queued" }
+
+    enum CodingKeys: String, CodingKey { case id, status, brain, provider, createdAt }
+
+    init(id: String, status: String, brain: String?, provider: String, createdAt: Date) {
+        self.id = id
+        self.status = status
+        self.brain = brain
+        self.provider = provider
+        self.createdAt = createdAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        status = try container.decode(String.self, forKey: .status)
+        brain = try container.decodeIfPresent(String.self, forKey: .brain)
+        provider = try container.decode(String.self, forKey: .provider)
+        // The runs query shapes ms epoch; accept an ISO string too so a
+        // future shaped envelope never fails the decode.
+        if let ms = try? container.decode(Double.self, forKey: .createdAt) {
+            createdAt = Date(timeIntervalSince1970: ms / 1000)
+        } else {
+            createdAt = try container.decode(Date.self, forKey: .createdAt)
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(status, forKey: .status)
+        try container.encodeIfPresent(brain, forKey: .brain)
+        try container.encode(provider, forKey: .provider)
+        try container.encode(createdAt.timeIntervalSince1970 * 1000, forKey: .createdAt)
+    }
+}
+
+struct V2ThreadRuns: Codable, Equatable {
+    let open: [V2ThreadRun]
+    let lastDone: V2ThreadRun?
+
+    var isWorking: Bool { !open.isEmpty }
+}
+
+/// What `v2Visual:createArtifact` returns: the raw inserted row, not the
+/// shaped surface artifact (no `id`/`sourceURL` envelope). Only the id is
+/// decoded — the client already holds the title, kind, and thread.
+struct V2CreatedArtifact: Decodable, Equatable {
+    /// The `_id` of the inserted `artifacts` row.
+    let id: String
+
+    enum CodingKeys: String, CodingKey { case id = "_id" }
+}
+
+/// What `v2Workspace:clearThread` returns. The client keeps nothing from it
+/// (the re-read shows the emptied surface); the decode only proves success.
+/// Lenient by design: a shaped-envelope change must never read as a failed
+/// clear when the server already hid the rows.
+struct V2ClearThreadResult: Decodable, Equatable {
+    let clearedAt: Double?
+
+    enum CodingKeys: String, CodingKey { case clearedAt }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        clearedAt = try? container.decodeIfPresent(Double.self, forKey: .clearedAt)
+    }
 }
 
 // MARK: - Thread blocks (tagged by `type`)

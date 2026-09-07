@@ -170,6 +170,25 @@ final class ConvexService {
         }
     }
 
+    /// POST raw bytes to a Convex storage upload URL (R32 attachments: the
+    /// web's `files:generateUploadUrl` path). The mint URL carries its own
+    /// authorization, so no session header rides along — same as the web's
+    /// `fetch(url, { method: "POST", body })`. Runs through the injected
+    /// transport so the scripted stub covers it.
+    func postBytes(to url: URL, data: Data, mimeType: String) async throws -> Data {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(mimeType.isEmpty ? "application/octet-stream" : mimeType, forHTTPHeaderField: "Content-Type")
+        request.httpBody = data
+        request.timeoutInterval = 120
+        let (body, response) = try await transport.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            let msg = String(data: body.prefix(500), encoding: .utf8) ?? "HTTP \(http.statusCode)"
+            throw ConvexServiceError.http(http.statusCode, msg)
+        }
+        return body
+    }
+
     /// Build, authorize, and send one request. The access token is set exactly
     /// once, here — never by callers, never in endpoint args.
     func authorizedData(for endpoint: ConvexEndpoint) async throws -> Data {

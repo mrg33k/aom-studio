@@ -25,6 +25,20 @@ enum ArtifactViewType: String, Equatable {
     case unsupported
 }
 
+/// R32 image tool: a pending artifact (no `sourceURL` yet, `meta.status:
+/// "generating") is a generation in flight — not a broken link. The tab
+/// shows the Generating state until the bridge's upgrade lands the bytes
+/// (the window's artifact poll picks them up) and the media paints.
+enum V2ArtifactPending {
+    static func isPending(_ artifact: Artifact) -> Bool {
+        artifact.sourceURL == nil && artifact.metadata["status"] == "generating"
+    }
+
+    static func prompt(_ artifact: Artifact) -> String {
+        artifact.metadata["prompt"] ?? artifact.title
+    }
+}
+
 struct ArtifactRenderer {
     static func viewType(for kind: VisualTabKind) -> ArtifactViewType {
         switch kind {
@@ -69,6 +83,8 @@ struct ArtifactRenderer {
         case .unsupported:
             UnsupportedArtifactView(kind: tab.kind)
         }
+        } else if let artifact, V2ArtifactPending.isPending(artifact) {
+            PendingArtifactView(prompt: V2ArtifactPending.prompt(artifact))
         } else {
             ErrorArtifactView(
                 title: tab.title,
@@ -76,6 +92,35 @@ struct ArtifactRenderer {
                 onRetry: {}
             )
         }
+    }
+}
+
+/// The pending generation state: the prompt being rendered, under a
+/// spinner — never the broken-link card. Addressable as
+/// `visual-stage-generating` so the image UI test can tell "still
+/// generating" from "painted".
+private struct PendingArtifactView: View {
+    let prompt: String
+
+    var body: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+                .controlSize(.large)
+                .tint(Theme.accent)
+            Text("Generating…")
+                .font(.hanken(15).weight(.semibold))
+                .foregroundStyle(Theme.ink)
+            Text(prompt)
+                .font(.hanken(13))
+                .foregroundStyle(Theme.inkSoft)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .padding(.horizontal, 24)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("visual-stage-generating")
+        .accessibilityLabel("Generating image: \(prompt)")
     }
 }
 

@@ -117,10 +117,33 @@ final class VisualWindowStore: ObservableObject {
         _ kind: VisualTabKind, threadID: String, artifactID: String?,
         title: String, state: [String: String]
     ) async throws {
-        let tab = try await api.openVisualTab(
-            kind: kind, threadID: threadID, artifactID: artifactID,
-            title: title, state: state
+        try await adopt(
+            try await api.openVisualTab(
+                kind: kind, threadID: threadID, artifactID: artifactID,
+                title: title, state: state
+            ),
+            state: state
         )
+        isPresented = true
+    }
+
+    /// R32 uploads: the tab opens without presenting — the peek bar is the
+    /// confirmation, not a sheet yank per file. A person opening the window
+    /// finds the new tab selected.
+    func openBackground(
+        _ kind: VisualTabKind, threadID: String, artifactID: String?,
+        title: String, state: [String: String]
+    ) async throws {
+        try await adopt(
+            try await api.openVisualTab(
+                kind: kind, threadID: threadID, artifactID: artifactID,
+                title: title, state: state
+            ),
+            state: state
+        )
+    }
+
+    private func adopt(_ tab: VisualWindowTab, state: [String: String]) async {
         if !state.isEmpty {
             var cached = localState[tab.id] ?? [:]
             for (key, value) in state { cached[key] = value }
@@ -131,7 +154,6 @@ final class VisualWindowStore: ObservableObject {
         }
         selectedTabID = tab.id
         Self.persistSelection(tab.id, sessionID: visualSessionID)
-        isPresented = true
     }
 
     /// Selection only: no network, no reorder, unknown ids ignored.
