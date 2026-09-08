@@ -3,13 +3,14 @@
 **Plan:** `PLAN-astra-finish.md` (Astra/Codex, 2026-09-08 2:41 AM, 15 rounds; supersedes `~/.claude/plans/fuzzy-cuddling-hopcroft.md`). **Done =** chat knows every
 project (test A) + Visual Window companion (test B) + styled per design (test C). **Order:** chat → native → desktop.
 
-## Now (9:46 AM Sep 8, loop tick 15)
+## Now (9:45 AM Sep 8 — LOOP STOPPED by Patrik after Round 3)
 - Round 3b DONE 9:05 PM: R52 chat referents + instant pull-up live (`r52-1`, AOM-EA `dbedc4a45`); design-thread proof 3.7 s.
 - Round 5 — native composer round: `R42b` in its pre-ship full gate (3rd design-gate pass, 3h). Then commit → TestFlight 19.
 - G6 DONE 9:15 PM by hand: attribution (C019), OPEN asks resolved by ledger deeds, titled ticks, verified posts. C020 video preview still open.
 - R53 DONE 10:27 PM (`rounds/R53-chat-combined-asks-and-siblings.md`): combined asks, sibling subjects, aheadofmarket.com indexed, junk mission titles out. Aom re-proof 2/2.
 - Astra's plan landed (`PLAN-astra-finish.md`): Round 1 = walk 4 as Patrik, NO fixes mid-walk (misses → Round 2, Codex repair) → Round 3 re-proof → Round 4 clear + clean re-run → R43 native (Muse) → TestFlight 20 → view state (Codex) → native companion → TestFlight 21 → desktop R44 + eye/multi-chat → production → G7 → punch-list closeout → final acceptance.
-- Round 1 DONE (walk 4): Wolfpack 7 · Ambition 7.5 · Kraken 6.5 · Aom 6 · AZ Tech 6. Round 2 DONE 9:45 AM (R54; Codex hit its usage limit mid-round, finished by hand). Round 3 (full re-proof) running now.
+- Rounds 1-3 DONE: walk 4 (7 / 7.5 / 6.5 / 6 / 6) → R54 repairs → re-proof **8 / 8 / 7 / 8 / 7.5**, all ≥ 7. Handoff: `handoffs/2026-09-08-handoff-after-round-3.md`.
+- NEXT FIRING = Round 4: `clearThread` on the five project threads, re-ask the four questions from empty, record `rounds/GOAL-clean-rerun.md` (test A closes when green). Then Round 5 = R43 native builder.
 - Codex note: usage limit resets 1:25 PM; rounds owned by Codex before then fall to Claude by hand.
 - Wolfpack week 5 DID go out Fri Sep 4 (Resend, Ross only); week 6 draft auto-sends Fri Sep 12 (fix the "this morning" intro before then).
 - **TestFlight build 19 shipped 9:56 PM** (R42: CV6 composer, command card, thread rows, loader, glow) — attached to Corner testers, beta review WAITING_FOR_REVIEW.

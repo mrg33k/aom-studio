@@ -28,3 +28,17 @@ within ~10 s. No filesystem paths anywhere. Chat contract `r53-1`.
 5. **Ambition's Sep 7 6:20 PM captions delivery** (three files to Google Drive) still missing from the ledger.
 6. (Tooling) The Chrome extension dropped mid-batch once and my retry re-sent three Ambition questions; the
    thread carries duplicates from 8:15 AM. Not a product miss.
+
+## Re-proof (Astra Round 3, 2026-09-08 9:28 → 9:38 AM, after R54)
+| Project | Latest | Next + waiting | Facts | Pull-up | Total |
+|---|---|---|---|---|---|
+| Wolfpack | 2 — "Today you changed the Wolfpack home hero stat from $5.5M to $10.5M… pushed to the branch" (a real deed logged this morning) | 2 | 2 | 2 — "latest weekly report" opened **Wolfpack: Week 5** as a live page in the Visual Window, with the link and "Last logged today…" | **8** |
+| Ambition | 2 — "Today Patrik delivered the Ambition captions overlay for Elephante pt 2… all three files went to the Drive folder" | 2 | 2 | 2 — Ambition: Week 1 opened via the gateway, one step | **8** |
+| Kraken Corps | 2 | 2 | 2 | 1 — "logo review sheet" opened the project context doc (the project's own name words counted toward the 0.34 bar) | **7** |
+| Aom | 2 | 2 | 2 — "Homepage hero is locked to the MasterClass direction, and Syne is the one banned font… confirmed on the sibling project Ahead of Market" | 2 — AOM — Brand Guidelines | **8** |
+| AZ Tech Council | 2 | 2 | 1.5 — contact TBD (honest), event right | 2 — the aerospace QR flyer PDF rendered in the Visual Window with its link | **7.5** |
+
+**All five ≥ 7/8.** Every reply landed within 26 s; every open within ~10 s; no paths. Round 4 (clear all five
+threads, re-ask from empty) is the next firing. Carry-forward for the next repair round: drop the subject's own
+name tokens from the pull-up score so "logo review sheet" never matches "Kraken Corps -- Project Context".
+
