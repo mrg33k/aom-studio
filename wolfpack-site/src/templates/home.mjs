@@ -82,7 +82,7 @@ function hero() {
         </div>
       </div>
       <div class="home-stats">
-        <div class="home-stat"><span class="home-stat-value"><b data-count-to="5.5" data-count-format="money">$5.5M</b><i>+</i></span><span class="home-stat-label">Completed contracts</span></div>
+        <div class="home-stat"><span class="home-stat-value"><b data-count-to="10.5" data-count-format="money">$10.5M</b><i>+</i></span><span class="home-stat-label">Completed contracts</span></div>
         <div class="home-stat"><span class="home-stat-value home-stat-blue"><b>24/7</b></span><span class="home-stat-label">Emergency response</span></div>
         <div class="home-stat"><span class="home-stat-value"><b data-count-to="15" data-count-format="plus">15+</b></span><span class="home-stat-label">Cities served</span></div>
         <div class="home-stat"><span class="home-stat-value"><i class="home-stat-roc">ROC</i><b>326629</b></span><span class="home-stat-label">Arizona licensed contractor</span></div>
