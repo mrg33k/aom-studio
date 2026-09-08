@@ -3,13 +3,14 @@
 **Plan:** `~/.claude/plans/fuzzy-cuddling-hopcroft.md` (approved 2026-09-07 6:12 PM). **Done =** chat knows every
 project (test A) + Visual Window companion (test B) + styled per design (test C). **Order:** chat → native → desktop.
 
-## Now (9:07 PM, loop tick 7)
+## Now (9:15 PM, loop tick 8)
 - Round 3b DONE 9:05 PM: R52 chat referents + instant pull-up live (`r52-1`, AOM-EA `dbedc4a45`); design-thread proof 3.7 s.
 - Round 5 — native composer round: `R42b` in its pre-ship full gate (3rd design-gate pass, 3h). Then commit → TestFlight 19.
-- Next by hand while R42b gates: G6 (attribution C019, OPEN facts vs ledger deeds, video preview). Then walk 3 as Patrik.
+- G6 DONE 9:15 PM by hand: attribution (C019), OPEN asks resolved by ledger deeds, titled ticks, verified posts. C020 video preview still open.
+- Next: walk 3 as Patrik (Wolfpack, Ambition, Kraken, Aom, AZ Tech) → clear + clean re-run; TestFlight 19 when R42b commits.
 
 ## Next
-G6 gateway truth (C019 attribution, OPEN facts resolved by deeds, video previews) → 3 walk 3 as Patrik → 4 clear + clean re-run (test A) → 6 home-first + eye (R43,
+3 walk 3 as Patrik → 4 clear + clean re-run (test A) → 6 home-first + eye (R43,
 TestFlight 20) → 7 view state → 8 website-as-video + agent open/close (TestFlight 21) → 9 desktop artifact
 links + glow (R44) → 10 desktop eye + multi-chat (test B).
 
