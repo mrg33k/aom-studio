@@ -3,6 +3,10 @@
 **Plan:** `PLAN-astra-finish.md` (Astra/Codex, 2026-09-08 2:41 AM, 15 rounds; supersedes `~/.claude/plans/fuzzy-cuddling-hopcroft.md`). **Done =** chat knows every
 project (test A) + Visual Window companion (test B) + styled per design (test C). **Order:** chat → native → desktop.
 
+## RESTARTED 12:2x PM Sep 8 (Patrik: "restart the Astra loop")
+- Loop resumes at **Round 4** (clear five project chats, re-ask the four questions from empty, score ≥7/8 → `rounds/GOAL-clean-rerun.md`). Orchestrator = this Claude session.
+- **Usage fallback armed** (see LOOP.md "Usage fallback"): Muse stays primary; on a Muse usage cap, build rounds switch to Opus via `run-worker-opus.sh <brief> <model-id>` (4.8 = `claude-opus-4-8`; 4.6 id TBC). Needs `$CORNER_OPUS_API_KEY` or `~/.config/corner/opus-worker.key` — not set yet, so the Opus fallback cannot fire until the key + 4.6 id land. `run-worker-opus.sh` still needs `chmod +x` (classifier blocks Claude from doing it).
+
 ## Now (9:45 AM Sep 8 — LOOP STOPPED by Patrik after Round 3)
 - Round 3b DONE 9:05 PM: R52 chat referents + instant pull-up live (`r52-1`, AOM-EA `dbedc4a45`); design-thread proof 3.7 s.
 - Round 5 — native composer round: `R42b` in its pre-ship full gate (3rd design-gate pass, 3h). Then commit → TestFlight 19.
@@ -11,7 +15,9 @@ project (test A) + Visual Window companion (test B) + styled per design (test C)
 - Astra's plan landed (`PLAN-astra-finish.md`): Round 1 = walk 4 as Patrik, NO fixes mid-walk (misses → Round 2, Codex repair) → Round 3 re-proof → Round 4 clear + clean re-run → R43 native (Muse) → TestFlight 20 → view state (Codex) → native companion → TestFlight 21 → desktop R44 + eye/multi-chat → production → G7 → punch-list closeout → final acceptance.
 - Rounds 1-3 DONE: walk 4 (7 / 7.5 / 6.5 / 6 / 6) → R54 repairs → re-proof **8 / 8 / 7 / 8 / 7.5**, all ≥ 7. Handoff: `handoffs/2026-09-08-handoff-after-round-3.md`.
 - R55/R56 (10:05-10:35 AM): desktop documents render for real, as a clean big-text reader in the Dracula palette with an Alucard light toggle (Patrik's pick, R57); production deployed. Phone: documents go through QuickLook (md = plain text) — the native round should match this look.
-- NEXT FIRING = Round 4: `clearThread` on the five project threads, re-ask the four questions from empty, record `rounds/GOAL-clean-rerun.md` (test A closes when green). Then Round 5 = R43 native builder.
+- Round 4 DONE (Claude by hand, 2026-09-08 ~1:20 PM): cleared all five threads, re-ran from empty. First pass caught two systemic misses (gateway scaffold-doc "did" deeds led "what's the latest" on 4/5 projects; pull-up subject-name inflation). Repaired (R54/R54b: overlapScore subject drop, isScaffoldSyncDeed→isLowSignal on ledger.latest + v2Ledger.latest, gateway build_items drops scaffold titles, cards rebuilt, bridge is_low_signal + notes-not-activity). Pristine re-run: **Wolfpack 8, Ambition 8, Kraken 8, Aom 7.5, AZ Tech 8 — all ≥ 7. TEST A CLOSED.** Evidence: `rounds/GOAL-clean-rerun.md`. Carried (non-blocking): L042 (HTML docs render slow ~8-11 s), C022 (extend sibling merge from facts to deeds for "latest").
+- Deploys pending Patrik's next `convex deploy`: `v2Ledger.latest` noise filter (`c2i 075f197`) — the bridge covers it live meanwhile.
+- **NEXT FIRING = Round 5: R43 native builder** (`briefs/R43-native-home-first-and-eye.md`) → TestFlight 20.
 - Codex note: usage limit resets 1:25 PM; rounds owned by Codex before then fall to Claude by hand.
 - Wolfpack week 5 DID go out Fri Sep 4 (Resend, Ross only); week 6 draft auto-sends Fri Sep 12 (fix the "this morning" intro before then).
 - **TestFlight build 19 shipped 9:56 PM** (R42: CV6 composer, command card, thread rows, loader, glow) — attached to Corner testers, beta review WAITING_FOR_REVIEW.
