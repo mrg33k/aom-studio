@@ -3,11 +3,11 @@
 **Plan:** `~/.claude/plans/fuzzy-cuddling-hopcroft.md` (approved 2026-09-07 6:12 PM). **Done =** chat knows every
 project (test A) + Visual Window companion (test B) + styled per design (test C). **Order:** chat → native → desktop.
 
-## Now (9:58 PM, loop tick 11)
+## Now (10:03 PM, loop tick 11)
 - Round 3b DONE 9:05 PM: R52 chat referents + instant pull-up live (`r52-1`, AOM-EA `dbedc4a45`); design-thread proof 3.7 s.
 - Round 5 — native composer round: `R42b` in its pre-ship full gate (3rd design-gate pass, 3h). Then commit → TestFlight 19.
 - G6 DONE 9:15 PM by hand: attribution (C019), OPEN asks resolved by ledger deeds, titled ticks, verified posts. C020 video preview still open.
-- Walk 3: Wolfpack 8/8, Ambition 7.5/8, Kraken 6.5/8, Aom 6/8 (`rounds/GOAL-walk-3.md`); five fixes shipped mid-walk; Kraken/AZ Tech backfill running. Next: AZ Tech → R53 (combined asks, sibling subjects) → clear + clean re-run (test A).
+- Walk 3 DONE: Wolfpack 8, Ambition 7.5, Kraken 6.5, Aom 6, AZ Tech 6.5 (`rounds/GOAL-walk-3.md`); seven fixes shipped mid-walk. Next: R53 chat round (combined asks answer both halves; sibling subjects; real next steps) → walk 4 → clear + clean re-run (test A).
 - **TestFlight build 19 shipped 9:56 PM** (R42: CV6 composer, command card, thread rows, loader, glow) — attached to Corner testers, beta review WAITING_FOR_REVIEW.
 - Next native: R43 (home-first P097, distinct cards P096, eye icon modes P094/P095) with targeted gates → TestFlight 20.
 

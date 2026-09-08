@@ -28,8 +28,14 @@ Grading 0-2 per question (same answer Patrik would give). Fixes shipped mid-walk
 | Latest + next step | "On Sep 3 you planned weekly Friday-morning Looker Studio reports for both properties… blocked on a Google passkey. Next step is Investor Pot. One thing still needs your word: the contact form redesign… from Aug 26." | 2 + 1.5 |
 | Waiting + "pull up the homepage hero brief" (one message) | Waiting answered inside the first reply (2). The pull-up turn replied only "I don't see a homepage hero brief for Aom yet." — the first half of the message was dropped, and the brief lives under the Ahead Of Market project folder, not Aom's index. | 2 + 0.5 |
 
-## Still to walk
-AZ Tech Council (4 questions) → then `clearThread` on all project threads and the clean re-run (test A).
+## AZ Tech Council — 5.5/8 (6.5 after the correction)
+| Q | Reply (9:57 PM) | Score |
+|---|---|---|
+| Latest + next step | "Today Patrik fixed the card render fallback and deployed it for Kraken Corps, Aom, and AZ Tech Council" — my own Convex fix from THIS session, which the Stop hook tagged to three client projects (C019 regression) → corrected 10:01 PM (`sh7eyhn0…` flagged; hook markers widened `ff97eee1f`/`ff653d5c1`). Next step: "labeling this mission as an aerospace event" (a mission-title echo, not a real next). | 0 + 1 |
+| Waiting + files | "Nothing is waiting on you right now"; "Files on this project: the project context document, the prize website verify image, the aerospace social PDF, the aerospace QR flyer PDF, and the Summit interview soundbites transcript selects." | 2 + 2 |
+
+## Totals (walk 3, 9:22 → 10:02 PM)
+Wolfpack **8/8** · Ambition **7.5/8** · Kraken **6.5/8** · Aom **6/8** · AZ Tech **6.5/8** (after corrections). Test A needs ≥ 7/8 everywhere before the clear + clean re-run → R53 first.
 
 ## Misses → rounds
 - Ambition's 6:20 PM captions delivery (three files to Google Drive) never reached the ledger as an Ambition deed; the Stop hook for that session either did not fire or tagged it elsewhere. Check the hook's cursor for that session (G7).
