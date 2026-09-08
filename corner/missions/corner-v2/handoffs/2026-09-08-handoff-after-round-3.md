@@ -1,4 +1,4 @@
-# Handoff — Corner v2, after Astra Round 3 (2026-09-08, 9:45 AM Phoenix)
+# Handoff — Corner v2, what's left (2026-09-08, 11:30 AM Phoenix; loop stopped after Astra Round 3)
 
 Written by Claude when Patrik stopped the loop. Whoever picks this up (Patrik, Astra/Codex, a fresh Claude
 session): read `STATUS.md`, `PLAN-astra-finish.md`, and this file; nothing else is required to start.
@@ -14,6 +14,27 @@ session): read `STATUS.md`, `PLAN-astra-finish.md`, and this file; nothing else 
   `7c3c3c21` on aom-studio) is submitted and WAITING_FOR_REVIEW; build 18 is on Patrik's phone.
 - **Desktop:** production = the R43 tree; R44 (artifact links + composer glow) not started.
 - **Plan:** `PLAN-astra-finish.md` (15 rounds). Rounds 1-3 done. Round 4 next.
+
+## Known issues (as of 11:30 AM)
+- **Phone documents** render through QuickLook (HTML fine, markdown as plain text). Needs the desktop's reader
+  look: `src/v2/markdown.ts` (`renderDocument`: rendered markdown, dates as words, metadata header → one
+  "Updated …" line) and the calm Dracula palette in `visual-window.css` (`.v2-doc-pane--dark/--light`,
+  `.v2-doc-reader`), light option = Alucard, toggle stored as `v2-doc-theme`.
+- **Pull-up scoring counts the project's own name.** "Kraken Corps logo review sheet" opened "Kraken Corps --
+  Project Context" (2 of 5 tokens = 0.4 ≥ the 0.34 bar). Drop the subject's name tokens from the query in
+  `pullup_tokens` (bridge) and `overlapScore` (`convex/lib/stateCard.ts`), then that ask is an honest miss.
+- **Big videos never open.** The 85 MB Elephante cut breaks the Convex upload; the gateway needs the ffmpeg
+  720p ≤ 20 MB preview (C020, G7).
+- **Internal notes read like internal notes.** The reader makes words readable; it cannot rewrite "Option D
+  (General Contractors page, 200)". If documents are for Patrik or clients, the writing rule belongs in
+  `WRITING-RULES.md` / the agents' brief, not the renderer.
+- **Thin ledgers:** Kraken Corps and AZ Tech Council have nothing logged since Aug 25 (backfill found no
+  relevant sessions); "latest" reads honest but empty until real work is logged there.
+- **Codex** is out of usage credits until ~1:25 PM Sep 8; Codex-owned rounds fall to Claude by hand until then.
+- **Wolfpack week 6 draft** auto-sends Friday Sep 12 at noon with "Look forward to talking this morning" in the
+  intro, to Ross only (Robert and Brian are not on the recipient list). Patrik edits it in the /reports editor.
+- **Walk tooling:** the Claude-in-Chrome extension dropped once mid-batch (Sep 8, 8:15 AM) and re-sent three
+  Ambition questions; keep walk batches to one project.
 
 ## Do next, in order (each = one visible round)
 1. **Round 4 — clear + clean re-run (test A).** Call `clearThread` on the Wolfpack, Ambition, Kraken Corps, Aom,
