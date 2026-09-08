@@ -19,6 +19,14 @@ extension Font {
         .custom("Hanken Grotesk", size: size, relativeTo: style)
     }
 
+    /// R42 P092: Hanken at a FIXED size — never scaled by Dynamic Type. The
+    /// design's thread type (agent name 12.5, time 11, body 15/22) is the
+    /// design's fixed sizes; a larger system text size must not reflow the
+    /// thread. (`.custom(_:size:)` without `relativeTo` does not scale.)
+    static func hankenFixed(_ size: CGFloat) -> Font {
+        .custom("Hanken Grotesk", size: size)
+    }
+
     static let hkLargeTitle = hanken(34, relativeTo: .largeTitle)
     static let hkTitle = hanken(28, relativeTo: .title)
     static let hkTitle2 = hanken(22, relativeTo: .title2)

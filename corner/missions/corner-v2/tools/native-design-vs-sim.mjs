@@ -150,11 +150,18 @@ const ANCHORS = {
   },
   "thread": {
     required: ["chat-title", "v2-drawer-button", "v2-composer-field",
-               "v2-composer-send", "v2-record", "v2-commands"],
+               "v2-composer-send", "v2-record", "v2-commands",
+               "v2-agent-label"],
     frames: [
       { id: "v2-composer-send", w: 50, h: 50, tol: 1.5 },
       { id: "v2-commands", h: 32, tol: 1.5 },
       { id: "v2-record", w: 36, h: 36, tol: 1.5 },
+      // R42 P092: the design's thread type at 390 — 16pt gutter, the
+      // 12.5pt agent line (17pt box), the 11pt stamps (14pt box), all
+      // measured live on the 390 sim across two tour runs.
+      { id: "v2-agent-label", x: 16, tol: 1.5 },
+      { id: "v2-agent-label", h: 17, tol: 1.5 },
+      { id: "v2-event-time", h: 14, tol: 1.5 },
     ],
     pixels: [
       { label: "ground", rgb: [15, 19, 25], tol: 6 },
@@ -258,7 +265,10 @@ function parseTour(output) {
   for (const line of output.split("\n")) {
     let m = line.match(/R19STATUS (\S+) (shot|ok|missing.*)$/);
     if (m) { status[m[1]] = m[2]; continue; }
-    m = line.match(/R19FRAME (\S+) (\S+) \{([\d.]+),([\d.]+)\} ([\d.]+)x([\d.]+) label=(.*)$/);
+    // R42: off-screen rows report negative origins (the live design thread
+    // lands at its tail, so the first rows sit above the viewport) — the
+    // anchored x/w/h are scroll-invariant, so the parse accepts the minus.
+    m = line.match(/R19FRAME (\S+) (\S+) \{(-?[\d.]+),(-?[\d.]+)\} ([\d.]+)x([\d.]+) label=(.*)$/);
     if (m) {
       (frames[m[1]] ??= {})[m[2]] = {
         x: +m[3], y: +m[4], w: +m[5], h: +m[6], label: m[7],
@@ -347,12 +357,22 @@ function px(png, x, y) {
   return [png.data[i], png.data[i + 1], png.data[i + 2]];
 }
 
-/// Drawer right edge at y=250: first surface pixel scanning from the right.
+/// Drawer right edge at y=250: first 12pt RUN of surface scanning from the
+/// right. R42: a lone dimmed hairline behind the drawer (the home card's
+/// edge, surface ±10 through the scrim) fooled the old first-pixel scan
+/// while the drawer sat correct at 326.
 function scanDrawerWidth(simPath) {
   const png = readPNG(simPath);
+  let runStart = null, run = 0;
   for (let x = png.width - 1; x > 0; x--) {
     const [r, g, b] = px(png, x, 250);
-    if (Math.abs(r - 22) <= 10 && Math.abs(g - 27) <= 10 && Math.abs(b - 35) <= 10) return x + 1;
+    if (Math.abs(r - 22) <= 10 && Math.abs(g - 27) <= 10 && Math.abs(b - 35) <= 10) {
+      if (runStart === null) runStart = x;
+      if (++run >= 12) return runStart + 1;
+    } else {
+      runStart = null;
+      run = 0;
+    }
   }
   return null;
 }
@@ -416,6 +436,7 @@ function checkAnchors(screen, tour, sim390) {
     const got = fr[f.id];
     if (!got) { fail(`${f.id} geometry`, "present", "MISSING", "—", "UI"); continue; }
     const dims = [];
+    if (f.x !== undefined) dims.push([`x${f.x}`, got.x]);
     if (f.w !== undefined) dims.push([`w${f.w}`, got.w]);
     if (f.h !== undefined) dims.push([`h${f.h}`, got.h]);
     for (const [name, value] of dims) {

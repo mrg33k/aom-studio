@@ -121,11 +121,24 @@ final class CompMatchUITests: XCTestCase {
     /// The drawer's right edge: scan left from the screen edge for the first
     /// surface pixel (the scrim/thread behind is far darker). No container
     /// identifier needed — and none wanted (R14).
+    /// R42: the edge is the first 12pt RUN of surface, not the first
+    /// surface pixel — a single dimmed hairline behind the drawer (the home
+    /// card's edge at ~373, which reads surface ±10 through the scrim)
+    /// fooled the old first-pixel scan while the drawer sat correct at 326.
     private func scanDrawerEdge(_ shot: XCUIScreenshot, window: CGRect, y: CGFloat) -> CGFloat? {
         var x = window.width - 1
+        var runStart: CGFloat?
+        var run = 0
         while x > 0 {
             guard let p = pixel(shot, at: CGPoint(x: x, y: y), window: window) else { return nil }
-            if abs(p.r - 22) <= 10 && abs(p.g - 27) <= 10 && abs(p.b - 35) <= 10 { return x }
+            if abs(p.r - 22) <= 10 && abs(p.g - 27) <= 10 && abs(p.b - 35) <= 10 {
+                if runStart == nil { runStart = x }
+                run += 1
+                if run >= 6 { return runStart }
+            } else {
+                runStart = nil
+                run = 0
+            }
             x -= 2
         }
         return nil
@@ -306,17 +319,21 @@ final class CompMatchUITests: XCTestCase {
         XCTAssertEqual(label.label, "General")
     }
 
-    /// P034: agent body is 16pt. The seeded line wraps, so the single-line
-    /// question text (same style rule) carries the line-box assert; the body
-    /// itself must render.
+    /// R42 P092: agent body is the design's fixed 15/22 — the 15pt line in
+    /// its single-line box, and the seeded two-line body on the 22pt
+    /// rhythm (lineSpacing pins the second line a full 22 down).
+    /// (Contract change from the R17 16pt reading, ordered by the R42
+    /// brief's re-measure against R17-native-thread-design.png.)
     func testP034AgentBodySize() throws {
         let app = launch(Self.comp)
         openThread(app)
         let body = app.staticTexts["Before I start, two things I cannot guess from the brand kit."].firstMatch
         XCTAssertTrue(body.waitForExistence(timeout: 15), "the seeded agent text never rendered")
         let single = app.staticTexts["Pick a lane"].firstMatch
-        XCTAssertTrue((20.3...22.5).contains(single.frame.height),
-                      "agent text height \(frameString(single.frame)) is not the 16pt line box")
+        XCTAssertTrue((18.6...20.8).contains(single.frame.height),
+                      "agent text height \(frameString(single.frame)) is not the 15pt line box")
+        XCTAssertTrue((41.5...45.5).contains(body.frame.height),
+                      "wrapped body height \(frameString(body.frame)) is not two 22pt lines")
     }
 
     /// P035: options are 57px cards carrying their detail line.
@@ -419,13 +436,15 @@ final class CompMatchUITests: XCTestCase {
         XCTAssertEqual(count.label, "No changes yet")
     }
 
-    /// P044: the thread column starts at x=21.
+    /// R42 P092: the thread column starts at x=16 (the design at 390).
+    /// (Contract change from the R17 21px reading, ordered by the R42
+    /// brief's re-measure against R17-native-thread-design.png.)
     func testP044Gutter() throws {
         let app = launch(Self.comp)
         openThread(app)
         let label = app.staticTexts.matching(identifier: "v2-agent-label").firstMatch
         XCTAssertTrue(label.waitForExistence(timeout: 15), "no agent line")
-        XCTAssertEqualWithAccuracy(label.frame.minX, 21, accuracy: 1.5, "the thread gutter is not 21px")
+        XCTAssertEqualWithAccuracy(label.frame.minX, 16, accuracy: 1.5, "the thread gutter is not 16px")
     }
 
     /// P045: every message carries a `h:mm` stamp.

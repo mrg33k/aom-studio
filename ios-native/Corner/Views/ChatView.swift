@@ -138,6 +138,16 @@ struct ChatView: View {
     @State private var v2Follow = V2FollowState()
     @State private var v2DistanceFromBottom: CGFloat = 0
     @State private var v2ViewportHeight: CGFloat = 0
+    /// R42 P090: the CV6 command card above the sparkle chip (a custom
+    /// popover, never the system Menu).
+    @State private var v2ShowingCommands = false
+    /// R42 P093: the glow brightens for a second when a reply arrives.
+    @State private var v2GlowBoost = false
+    @State private var v2GlowBoostAgentID: String?
+    /// R42 P092: the measured thread width — the user bubble caps at 74 %
+    /// of it (V2ThreadType).
+    @State private var v2ThreadWidth: CGFloat = 390
+    @Environment(\.accessibilityReduceMotion) private var v2ReduceMotion
     /// The first row id before an "Earlier messages" expansion: after the
     /// wider window lands, the scroll returns to it — the read holds.
     @State private var v2HeldTopID: String?
@@ -324,6 +334,53 @@ struct ChatView: View {
                 V2DrawerView(isPresented: $v2ShowingDrawer, currentThreadID: v2?.thread.id)
             }
         }
+        // R42 P090: the command card floats above the chip that raised it —
+        // a solid CV6 card, no blur, no scrim (the catcher is transparent).
+        // An outside tap dismisses it.
+        // R42 P090: the command card floats above the chip that raised it —
+        // a solid CV6 card, no blur, no scrim (the catcher is transparent).
+        // An outside tap dismisses it.
+        .overlayPreferenceValue(V2CommandsAnchorKey.self) { anchors in
+            GeometryReader { geo in
+                if v2ShowingCommands, let anchor = anchors.first {
+                    let chip = geo[anchor]
+                    let cardW = V2CommandsCard.width
+                    let minX = min(max(chip.midX - cardW / 2, 16), geo.size.width - 16 - cardW)
+                    let bottomPad = max(0, geo.size.height - chip.minY + 8)
+                    ZStack {
+                        Color.clear
+                            .contentShape(Rectangle())
+                            .onTapGesture { v2ShowingCommands = false }
+                        VStack(spacing: 0) {
+                            Spacer(minLength: 0)
+                            HStack(spacing: 0) {
+                                Spacer(minLength: 0).frame(width: minX)
+                                V2CommandsCard(
+                                    data: v2CommandsCardData,
+                                    modelOptions: ChatView.modelOptions,
+                                    specialistRoster: v2model.specialistRoster,
+                                    specialistChoice: v2model.specialistChoice,
+                                    onMode: { v2model.setMode($0) },
+                                    onModel: { v2model.selectModel($0) },
+                                    onSpecialist: { v2model.selectSpecialist($0) },
+                                    onFiles: { window.isPresented = true },
+                                    onImage: { v2GenerateImage(prompt: v2model.draft) },
+                                    onTalkToggle: {
+                                        talkAloud?.setEnabled(!(talkAloud?.enabled ?? false))
+                                    },
+                                    onReadChecklist: {
+                                        talkAloud?.speakChecklist(texts: v2review.sendablePins.map(\.text))
+                                    },
+                                    onActed: { v2ShowingCommands = false }
+                                )
+                                Spacer(minLength: 0)
+                            }
+                            Spacer(minLength: 0).frame(height: bottomPad)
+                        }
+                    }
+                }
+            }
+        }
         // R19: the commands menu's generator on the v2 path — the same sheet
         // the legacy composer presents. Generation + save/share work; staging
         // into the v2 thread waits on a send-attachments field.
@@ -389,7 +446,11 @@ struct ChatView: View {
             Text("Start fresh? This clears the chat on every device. Nothing is deleted — earlier messages stay in history.")
         }
         // R28: Talk aloud speaks each new driver reply once.
-        .onChange(of: v2model.events) { _, _ in v2MaybeSpeak() }
+        // R42 P093: an awaited reply also brightens the composer glow.
+        .onChange(of: v2model.events) { _, _ in
+            v2MaybeSpeak()
+            v2BoostGlowIfReplied()
+        }
         // R32: an upload that finishes opens its tab in the background —
         // the peek bar is the confirmation — and the chip goes away. A
         // failed background open leaves the chip with its Open button.
@@ -588,8 +649,9 @@ struct ChatView: View {
         // "new messages" pill instead of yanking the scroll.
         ScrollViewReader { proxy in
             ScrollView {
-                // P044: the thread column is 348pt (21px gutters), not 16.
-                LazyVStack(alignment: .leading, spacing: Theme.s3) {
+                // R42 P092: the design's thread column — 16pt gutters, 14pt
+                // between rows (V2ThreadType, measured at 390).
+                LazyVStack(alignment: .leading, spacing: V2ThreadType.rowSpacing) {
                     switch v2model.loadState {
                     case .loading:
                         ProgressView()
@@ -631,6 +693,7 @@ struct ChatView: View {
                                 event: event,
                                 threadID: v2?.thread.id ?? "",
                                 agentName: v2?.project.name,
+                                userMaxWidth: V2ThreadType.bubbleMaxWidth(columnWidth: v2ThreadWidth),
                                 onSend: { text in
                                     v2model.startSend(text)
                                 },
@@ -659,19 +722,21 @@ struct ChatView: View {
                     }
                     Color.clear.frame(height: 1)
                 }
-                .padding(.horizontal, 21)
+                .padding(.horizontal, V2ThreadType.gutter)
                 .padding(.top, Theme.s3)
                 .padding(.bottom, 28)
                 // Continuous measurement for the follow state: content
                 // height + offset in the scroll's coordinate space (the
-                // legacy thread's ThreadMetricsKey, same math).
+                // legacy thread's ThreadMetricsKey, same math) — plus the
+                // thread width, which caps the user bubble at 74 % (P092).
                 .background(
                     GeometryReader { geo in
                         Color.clear.preference(
                             key: ThreadMetricsKey.self,
                             value: ThreadMetrics(
                                 contentHeight: geo.size.height,
-                                minY: geo.frame(in: .named("v2Thread")).minY
+                                minY: geo.frame(in: .named("v2Thread")).minY,
+                                width: geo.size.width
                             )
                         )
                     }
@@ -686,6 +751,7 @@ struct ChatView: View {
                 }
             )
             .onPreferenceChange(ThreadMetricsKey.self) { metrics in
+                if metrics.width > 0 { v2ThreadWidth = metrics.width }
                 v2DistanceFromBottom = max(0, metrics.contentHeight + metrics.minY - v2ViewportHeight)
                 // A deliberate scroll up releases the send pin: the next
                 // arrival raises the pill instead of yanking the read.
@@ -1202,9 +1268,10 @@ struct ChatView: View {
                     }
                     if speech.supported {
                         // P041: a bare muted glyph — no circle behind it.
+                        // R42 P091: the 15pt icon matches the sparkle chip.
                         Button(action: toggleV2Dictation) {
                             Image(systemName: speech.isListening ? "mic.fill" : "mic")
-                                .font(.system(size: 17, weight: .regular))
+                                .font(.system(size: 15, weight: .regular))
                                 .foregroundStyle(speech.isListening ? Color.red : Theme.inkSoft)
                                 .frame(width: 36, height: 36)
                         }
@@ -1218,8 +1285,10 @@ struct ChatView: View {
                 .frame(minHeight: 50)
                 .background(Theme.raised, in: Capsule())
                 .overlay(
+                    // R42 P091: the design's pill wears its hairline always;
+                    // focus promotes it to accent.
                     Capsule()
-                        .strokeBorder(composerFocused ? Theme.accent : Color.clear, lineWidth: 1)
+                        .strokeBorder(composerFocused ? Theme.accent : Theme.hairline, lineWidth: 1)
                 )
                 // P023 + P040: the 50px round send — always accent with an
                 // up-arrow, even with an empty draft. R28: while a send or an
@@ -1252,6 +1321,29 @@ struct ChatView: View {
                     .accessibilitySortPriority(1)
                     .disabled(!v2CanSend)
                 }
+            }
+        }
+        // R42 P093: the project-tinted glow sits behind the WHOLE composer
+        // (trays + pill) — strictly the pill's footprint, so the pill/send
+        // gap stays flat ground (P039) and the trays stay legible. A pill
+        // background would paint OVER the trays (later sibling) and eat
+        // their taps; the composer's own background stays behind them all.
+        // Hit testing is off: the band's reach over the thread's tail must
+        // never swallow a row's taps.
+        .background(alignment: .bottom) {
+            GeometryReader { geo in
+                V2ComposerGlow(
+                    tint: v2GlowTint,
+                    boost: v2GlowBoost && !v2ReduceMotion
+                )
+                .frame(
+                    width: max(0, geo.size.width - 2 * V2ComposerMetrics.outerPadding
+                        - V2ComposerMetrics.sendSpacing - V2ComposerMetrics.sendSize),
+                    height: 140
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .offset(x: V2ComposerMetrics.outerPadding)
+                .allowsHitTesting(false)
             }
         }
         .padding(.horizontal, 21)
@@ -2216,6 +2308,9 @@ struct ChatView: View {
     private struct ThreadMetrics: Equatable {
         var contentHeight: CGFloat = 0
         var minY: CGFloat = 0
+        /// R42 P092: the measured thread width (v2 thread only) — caps the
+        /// user bubble at 74 %. Zero on the legacy path, which never reads it.
+        var width: CGFloat = 0
     }
 
     private struct ThreadMetricsKey: PreferenceKey {
@@ -3133,30 +3228,19 @@ struct ChatView: View {
     /// so the pill still reads as the design with one more chip. R24 P076:
     /// icon-only while the field is empty (same height/radius/glyph, tighter
     /// padding) so the full placeholder fits at 390; the label returns the
-    /// moment there is text to send.
+    /// moment there is text to send. R42 P090: a Button (default style,
+    /// never `.plain` — a plain-styled Button in this pill stops the
+    /// paperclip Menu's popover from presenting on iPad, while iPhone's
+    /// sheet path is unaffected) — the tap raises the CV6 command CARD
+    /// (anchored above the chip), never the system Menu with its blur and
+    /// giant sheet.
     private func v2CommandsChip(collapsed: Bool) -> some View {
-        Menu {
-            commandsMenuContent(state: v2CommandsState)
-            // R28: Talk aloud lives in the menu (R27 web's placement — a bar
-            // button would overflow narrow composers), plus checklist
-            // playback of the filled review notes.
-            Divider()
-            Toggle(isOn: Binding(
-                get: { talkAloud?.enabled ?? false },
-                set: { talkAloud?.setEnabled($0) }
-            )) {
-                Label("Talk aloud", systemImage: "speaker.wave.2")
-            }
-            Button {
-                talkAloud?.speakChecklist(texts: v2review.sendablePins.map(\.text))
-            } label: {
-                Label("Read checklist aloud", systemImage: "list.bullet")
-            }
-            .disabled(v2review.sendablePins.isEmpty)
+        Button {
+            v2ShowingCommands.toggle()
         } label: {
             HStack(spacing: 5) {
                 Image(systemName: "sparkles")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 15, weight: .medium))
                 if !collapsed {
                     Text(v2CommandsChipLabel)
                         .font(.hanken(12).weight(.semibold))
@@ -3171,10 +3255,51 @@ struct ChatView: View {
                     .strokeBorder(Theme.hairline, lineWidth: 1)
             )
         }
+        .anchorPreference(key: V2CommandsAnchorKey.self, value: .bounds) { [$0] }
         .accessibilityIdentifier("v2-commands")
         .accessibilityValue(collapsed ? "collapsed" : "expanded")
         .accessibilityLabel("Commands — specialist, mode, model, files, image generation")
         .accessibilitySortPriority(3)
+    }
+
+    /// R42 P093: the glow's tint — the sidebar avatar colour for this
+    /// project (the drawer's mark colour), the app accent on General.
+    private var v2GlowTint: Color {
+        guard let project = v2?.project else { return Theme.accent }
+        return V2ProjectGlow.tint(for: project).color
+    }
+
+    /// R42 P090: the card's content from the shared menu state — the same
+    /// mode/model/specialist/files/image rows the legacy Menu carries, plus
+    /// the R28 Talk rows.
+    private var v2CommandsCardData: V2CommandsCardData {
+        let state = v2CommandsState
+        return V2CommandsCardData(
+            chatMode: state.chatMode,
+            modelChoice: state.modelChoice,
+            modelSub: ChatView.modelOptions.first(where: { $0.id == state.modelChoice })?.label
+                ?? state.modelChoice,
+            hasSpecialist: state.hasSpecialist,
+            specialistTitle: state.specialistTitle,
+            specialistCount: state.specialistRoster.count,
+            talkEnabled: talkAloud?.enabled ?? false,
+            canReadChecklist: !v2review.sendablePins.isEmpty
+        )
+    }
+
+    /// R42 P093: a reply landing on an awaited send brightens the glow for
+    /// a second. Initial loads never boost (nothing was awaited).
+    private func v2BoostGlowIfReplied() {
+        guard !Config.screenTour, !v2ReduceMotion else { return }
+        guard v2model.workingLine != nil || v2model.runWorking else { return }
+        guard let last = v2model.events.last(where: { $0.author == .agent }),
+              v2GlowBoostAgentID != last.id else { return }
+        v2GlowBoostAgentID = last.id
+        v2GlowBoost = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1))
+            v2GlowBoost = false
+        }
     }
 
     /// Staged files, as removable chips above the shell — the web's pinned-chip row.
@@ -3343,6 +3468,8 @@ struct V2EventRow: View {
     let threadID: String
     /// The owning project name — the design's agent line reads `Aster 6:41`.
     let agentName: String?
+    /// R42 P092: the user bubble caps at 74 % of the thread width.
+    var userMaxWidth: CGFloat = V2ThreadType.bubbleMaxWidth(columnWidth: 390)
     let onSend: (String) -> Void
     /// R28 reply-to: long-press a message → Reply arms the composer's quote
     /// chip. Defaults to no-op so previews stay untouched.
@@ -3406,17 +3533,19 @@ struct V2EventRow: View {
                     quoteCard(quote, isUser: true)
                 }
                 HStack {
-                    Spacer(minLength: 48)
+                    Spacer(minLength: 0)
                     VStack(alignment: .trailing, spacing: 4) {
                         ForEach(Array(event.blocks.enumerated()), id: \.offset) { _, block in
                             V2BlockView(block: block, threadID: threadID, isUser: event.author == .user, onSend: onSend)
                         }
                     }
+                    .frame(maxWidth: userMaxWidth, alignment: .trailing)
                 }
-                // P045: the design stamps every message `6:41`.
+                // R42 P092: the design stamps every message `6:41` — 11pt
+                // muted, right-aligned under the bubble.
                 Text(V2ThreadClock.string(event.createdAt))
-                    .font(.hanken(10.5))
-                    .foregroundStyle(Theme.inkFaint)
+                    .font(.hankenFixed(11))
+                    .foregroundStyle(Theme.inkSoft)
                     .accessibilityIdentifier("v2-event-time")
             }
             .v2ReplyMenu(quote: replyQuote, onReply: onReply)
@@ -3424,18 +3553,19 @@ struct V2EventRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .bottom, spacing: 8) {
                     VStack(alignment: .leading, spacing: 4) {
-                        // P033: `Aster` 14/600 fg + the 12px faint clock.
-                        // The line reads the agent: the project name for the
-                        // default agent, the specialist's own label when the
-                        // event names one (the @research flow).
+                        // R42 P092: `Aster` 12.5 semibold ink + the 11px
+                        // muted clock on one line. The line reads the agent:
+                        // the project name for the default agent, the
+                        // specialist's own label when the event names one
+                        // (the @research flow).
                         HStack(spacing: 6) {
                             Text(displayAgentName)
-                                .font(.hanken(14).weight(.semibold))
+                                .font(.hankenFixed(12.5).weight(.semibold))
                                 .foregroundStyle(Theme.ink)
                                 .accessibilityIdentifier("v2-agent-label")
                             Text(V2ThreadClock.string(event.createdAt))
-                                .font(.hanken(12))
-                                .foregroundStyle(Theme.inkFaint)
+                                .font(.hankenFixed(11))
+                                .foregroundStyle(Theme.inkSoft)
                                 .accessibilityIdentifier("v2-event-time")
                         }
                         if let quote = event.replyQuote {
@@ -3544,32 +3674,39 @@ private struct V2BlockView: View {
         switch block {
         case .text(let value):
             if isUser {
-                // P032: 16px white on accent, 18px corners with the 6px tail.
+                // R42 P092: 15/22 white on accent, 16px corners with the
+                // 6px tail (V2ThreadType).
                 Text(value)
-                    .font(.hanken(16))
+                    .font(.hankenFixed(15))
+                    .lineSpacing(V2ThreadType.bodyLineSpacing)
                     .foregroundStyle(Color.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                     .background(
                         Theme.accent,
                         in: UnevenRoundedRectangle(
-                            topLeadingRadius: 18, bottomLeadingRadius: 18,
-                            bottomTrailingRadius: 6, topTrailingRadius: 18,
+                            topLeadingRadius: V2ThreadType.bubbleRadius,
+                            bottomLeadingRadius: V2ThreadType.bubbleRadius,
+                            bottomTrailingRadius: V2ThreadType.bubbleTail,
+                            topTrailingRadius: V2ThreadType.bubbleRadius,
                             style: .continuous
                         )
                     )
                     .accessibilityIdentifier("v2-event-text")
             } else {
-                // P034: agent body is unbubbled 16px.
+                // R42 P092: agent body is unbubbled 15/22 ink, fixed (never
+                // Dynamic Type scaled).
                 Text(value)
-                    .font(.hanken(16))
+                    .font(.hankenFixed(15))
+                    .lineSpacing(V2ThreadType.bodyLineSpacing)
                     .foregroundStyle(Theme.ink)
                     .accessibilityIdentifier("v2-event-text")
             }
         case .question(_, let text, let options):
             VStack(alignment: .leading, spacing: 6) {
                 Text(text)
-                    .font(.hanken(16))
+                    .font(.hankenFixed(15))
+                    .lineSpacing(V2ThreadType.bodyLineSpacing)
                     .foregroundStyle(Theme.ink)
                 ForEach(options) { option in
                     // P035: 57px option cards — 22px radio, 14/600 title,

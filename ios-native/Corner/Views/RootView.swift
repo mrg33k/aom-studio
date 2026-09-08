@@ -265,12 +265,9 @@ struct V2EntryRoot: View {
                 V2VisualTabView(tabID: id)
                     .id("entry-tab-\(id)")
             default:
-                VStack {
-                    Spacer(minLength: 0)
-                    ProgressView()
-                        .tint(Theme.inkFaint)
-                    Spacer(minLength: 0)
-                }
+                // R42 P089: the living Corner mark — cold start shows the
+                // logo breathing on the ground, never a spinner, never text.
+                V2LoadingMark(tint: Theme.accent)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .groundBackground()
                 .overlay(alignment: .top) {
@@ -320,7 +317,8 @@ struct V2ProjectChatView: View {
                 .padding(Theme.s4)
                 .groundBackground()
             } else {
-                ProgressView("Opening project…")
+                // R42 P089: project switches breathe the same mark.
+                V2LoadingMark(tint: Theme.accent)
                     .groundBackground()
                     .task { await load() }
             }
@@ -330,6 +328,13 @@ struct V2ProjectChatView: View {
     @MainActor
     private func load() async {
         errorText = nil
+        #if DEBUG
+        // R42 UI-test seed: hold the loader on screen so the mark (and the
+        // absence of the old spinner copy) is assertable, not a race.
+        if ProcessInfo.processInfo.arguments.contains("-v2SeedLoader") {
+            try? await Task.sleep(for: .seconds(6))
+        }
+        #endif
         let store = WorkspaceStore.shared
         await store.refresh()
         guard let found = store.project(id: projectID) else {
@@ -373,7 +378,8 @@ struct V2MissionChatView: View {
                 .padding(Theme.s4)
                 .groundBackground()
             } else {
-                ProgressView("Opening mission…")
+                // R42 P089: mission switches breathe the same mark.
+                V2LoadingMark(tint: Theme.accent)
                     .groundBackground()
                     .task { await load() }
             }
@@ -430,7 +436,8 @@ struct V2VisualTabView: View {
                 .padding(Theme.s4)
                 .groundBackground()
             } else {
-                ProgressView("Opening tab…")
+                // R42 P089: tab switches breathe the same mark.
+                V2LoadingMark(tint: Theme.accent)
                     .groundBackground()
                     .task { await load() }
             }

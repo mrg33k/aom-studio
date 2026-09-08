@@ -324,8 +324,11 @@ final class R19ShootScreens: XCTestCase {
         frames("thread", ["chat-title", "chat-subtitle", "v2-drawer-button",
                           "v2-status-dot", "v2-composer-field", "v2-composer-send",
                           "v2-record", "v2-commands", "visual-peek",
-                          "visual-peek-count", "v2-agent-label"])
-        // R28: the left gutter (content insets at 21pt; bubbles/cards never
+                          // R42 P092: dumped to anchor the design's type —
+                          // the agent line (12.5pt → ~15pt box at x=16) and
+                          // the 11pt stamps (~13pt box).
+                          "visual-peek-count", "v2-agent-label", "v2-event-time"])
+        // R28: the left gutter (content insets at 16pt; bubbles/cards never
         // reach x=10), not mid-thread — live message cards (option rows,
         // raised fill) collided with the old point and tested content, not
         // ground. Same fixed-zone reasoning as the drawer's (8,56) sample.
@@ -515,7 +518,7 @@ final class R19ShootScreens: XCTestCase {
                         "v2-composer-field", "v2-composer-send",
                         // Dumped to prove absence: home shows no nav title.
                         "chat-title"])
-        // The left gutter (cards live inside the 21pt content column, like
+        // The left gutter (cards live inside the 16pt content column, like
         // the thread) — always flat ground, never card fill.
         sample("home", "ground", CGPoint(x: 10, y: 400))
         NSLog("R19STATUS home ok")
