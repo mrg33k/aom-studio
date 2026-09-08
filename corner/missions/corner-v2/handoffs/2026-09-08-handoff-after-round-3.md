@@ -33,6 +33,9 @@ session): read `STATUS.md`, `PLAN-astra-finish.md`, and this file; nothing else 
 3. Rounds 6-15 as written in `PLAN-astra-finish.md` (view state → phone companion → TestFlight 21 → desktop
    R44 → desktop eye/multi-chat → production → G7 → punch-list → final acceptance).
 
+## Added 10:05 AM — documents did not render on desktop (Patrik's catch)
+Every md/html document opened as a wireframe on desktop until R55 (`src/v2/ArtifactStage.tsx` DocStage + `src/v2/markdown.ts`, deployed). Grading rule from now on: a pull-up counts as opened only when the content is visible on the stage — screenshot the stage, not the tab list. On the phone, documents go through QuickLook (HTML renders; markdown shows as plain text): fold a markdown renderer into the native R43/R56 rounds.
+
 ## Things to know before touching anything
 - **Codex (Astra) usage limit** was hit at 9:21 AM (753k tokens on R54); it resets ~1:25 PM. Rounds owned by
   Codex before then fall to Claude by hand. Run it with:
