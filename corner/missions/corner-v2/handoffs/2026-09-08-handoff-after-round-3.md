@@ -34,7 +34,7 @@ session): read `STATUS.md`, `PLAN-astra-finish.md`, and this file; nothing else 
    R44 → desktop eye/multi-chat → production → G7 → punch-list → final acceptance).
 
 ## Added 10:05 AM — documents did not render on desktop (Patrik's catch)
-Every md/html document opened as a wireframe on desktop until R55 (`src/v2/ArtifactStage.tsx` DocStage + `src/v2/markdown.ts`, deployed). Grading rule from now on: a pull-up counts as opened only when the content is visible on the stage — screenshot the stage, not the tab list. On the phone, documents go through QuickLook (HTML renders; markdown shows as plain text): fold a markdown renderer into the native rounds, matching the desktop's Dracula editor look (R56: `src/v2/markdown.ts` highlightMarkdownLines + `.v2-doc-pane--dark/--light` in `visual-window.css`; Alucard light toggle stored as `v2-doc-theme`).
+Every md/html document opened as a wireframe on desktop until R55 (`src/v2/ArtifactStage.tsx` DocStage + `src/v2/markdown.ts`, deployed). Grading rule from now on: a pull-up counts as opened only when the content is visible on the stage — screenshot the stage, not the tab list. On the phone, documents go through QuickLook (HTML renders; markdown shows as plain text): fold a markdown renderer into the native rounds, matching the desktop's Dracula reader (R57: rendered markdown via `src/v2/markdown.ts` renderMarkdown inside `.v2-doc-reader`, palettes `.v2-doc-pane--dark/--light` in `visual-window.css`, 21px sans, no line numbers; Alucard light toggle stored as `v2-doc-theme`).
 
 ## Things to know before touching anything
 - **Codex (Astra) usage limit** was hit at 9:21 AM (753k tokens on R54); it resets ~1:25 PM. Rounds owned by

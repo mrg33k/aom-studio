@@ -10,7 +10,7 @@ project (test A) + Visual Window companion (test B) + styled per design (test C)
 - R53 DONE 10:27 PM (`rounds/R53-chat-combined-asks-and-siblings.md`): combined asks, sibling subjects, aheadofmarket.com indexed, junk mission titles out. Aom re-proof 2/2.
 - Astra's plan landed (`PLAN-astra-finish.md`): Round 1 = walk 4 as Patrik, NO fixes mid-walk (misses → Round 2, Codex repair) → Round 3 re-proof → Round 4 clear + clean re-run → R43 native (Muse) → TestFlight 20 → view state (Codex) → native companion → TestFlight 21 → desktop R44 + eye/multi-chat → production → G7 → punch-list closeout → final acceptance.
 - Rounds 1-3 DONE: walk 4 (7 / 7.5 / 6.5 / 6 / 6) → R54 repairs → re-proof **8 / 8 / 7 / 8 / 7.5**, all ≥ 7. Handoff: `handoffs/2026-09-08-handoff-after-round-3.md`.
-- R55/R56 (10:05-10:35 AM): desktop documents render for real, in a Dracula editor look with an Alucard light toggle (Patrik's pick); production deployed. Phone: documents go through QuickLook (md = plain text) — the native round should match this look.
+- R55/R56 (10:05-10:35 AM): desktop documents render for real, as a clean big-text reader in the Dracula palette with an Alucard light toggle (Patrik's pick, R57); production deployed. Phone: documents go through QuickLook (md = plain text) — the native round should match this look.
 - NEXT FIRING = Round 4: `clearThread` on the five project threads, re-ask the four questions from empty, record `rounds/GOAL-clean-rerun.md` (test A closes when green). Then Round 5 = R43 native builder.
 - Codex note: usage limit resets 1:25 PM; rounds owned by Codex before then fall to Claude by hand.
 - Wolfpack week 5 DID go out Fri Sep 4 (Resend, Ross only); week 6 draft auto-sends Fri Sep 12 (fix the "this morning" intro before then).
