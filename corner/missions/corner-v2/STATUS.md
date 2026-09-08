@@ -3,11 +3,12 @@
 **Plan:** `~/.claude/plans/fuzzy-cuddling-hopcroft.md` (approved 2026-09-07 6:12 PM). **Done =** chat knows every
 project (test A) + Visual Window companion (test B) + styled per design (test C). **Order:** chat → native → desktop.
 
-## Now (9:15 PM, loop tick 8)
+## Now (9:41 PM, loop tick 9)
 - Round 3b DONE 9:05 PM: R52 chat referents + instant pull-up live (`r52-1`, AOM-EA `dbedc4a45`); design-thread proof 3.7 s.
 - Round 5 — native composer round: `R42b` in its pre-ship full gate (3rd design-gate pass, 3h). Then commit → TestFlight 19.
 - G6 DONE 9:15 PM by hand: attribution (C019), OPEN asks resolved by ledger deeds, titled ticks, verified posts. C020 video preview still open.
-- Next: walk 3 as Patrik (Wolfpack, Ambition, Kraken, Aom, AZ Tech) → clear + clean re-run; TestFlight 19 when R42b commits.
+- Walk 3 in progress: Wolfpack 8/8, Ambition 7.5/8 (`rounds/GOAL-walk-3.md`); three fixes shipped mid-walk. Next: Kraken, Aom, AZ Tech → clear + clean re-run (test A).
+- R42b: gate 4 finished 9:35 PM, worker reading results → commit → TestFlight 19.
 
 ## Next
 3 walk 3 as Patrik → 4 clear + clean re-run (test A) → 6 home-first + eye (R43,
