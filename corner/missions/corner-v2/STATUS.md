@@ -1,14 +1,15 @@
 # STATUS — Corner v2 (the compass; updated every round)
 
-**Plan:** `~/.claude/plans/fuzzy-cuddling-hopcroft.md` (approved 2026-09-07 6:12 PM). **Done =** chat knows every
+**Plan:** `PLAN-astra-finish.md` (Astra/Codex, 2026-09-08 2:41 AM, 15 rounds; supersedes `~/.claude/plans/fuzzy-cuddling-hopcroft.md`). **Done =** chat knows every
 project (test A) + Visual Window companion (test B) + styled per design (test C). **Order:** chat → native → desktop.
 
-## Now (10:28 PM, loop tick 12)
+## Now (2:45 AM Sep 8, loop tick 13)
 - Round 3b DONE 9:05 PM: R52 chat referents + instant pull-up live (`r52-1`, AOM-EA `dbedc4a45`); design-thread proof 3.7 s.
 - Round 5 — native composer round: `R42b` in its pre-ship full gate (3rd design-gate pass, 3h). Then commit → TestFlight 19.
 - G6 DONE 9:15 PM by hand: attribution (C019), OPEN asks resolved by ledger deeds, titled ticks, verified posts. C020 video preview still open.
 - R53 DONE 10:27 PM (`rounds/R53-chat-combined-asks-and-siblings.md`): combined asks, sibling subjects, aheadofmarket.com indexed, junk mission titles out. Aom re-proof 2/2.
-- Next: walk 4 as Patrik (all five, four questions) → if ≥ 7/8 everywhere: clear + clean re-run (test A). Native R43 builder (home-first, distinct cards, eye modes) launches in parallel → TestFlight 20.
+- Astra's plan landed (`PLAN-astra-finish.md`): Round 1 = walk 4 as Patrik, NO fixes mid-walk (misses → Round 2, Codex repair) → Round 3 re-proof → Round 4 clear + clean re-run → R43 native (Muse) → TestFlight 20 → view state (Codex) → native companion → TestFlight 21 → desktop R44 + eye/multi-chat → production → G7 → punch-list closeout → final acceptance.
+- Next firing: Round 1 (walk 4). Wolfpack week 5 update was missed (last sent Aug 28); week 6 due Fri Sep 12 — Patrik's call to draft.
 - **TestFlight build 19 shipped 9:56 PM** (R42: CV6 composer, command card, thread rows, loader, glow) — attached to Corner testers, beta review WAITING_FOR_REVIEW.
 - Next native: R43 (home-first P097, distinct cards P096, eye icon modes P094/P095) with targeted gates → TestFlight 20.
 
