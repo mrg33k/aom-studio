@@ -303,6 +303,8 @@ struct ChatView: View {
     /// match the export and the hamburger opens the drawer. Swipe-back still
     /// pops to the home tree; the drawer is the forward path.
     @State private var v2ShowingDrawer = false
+    /// The per-room agent connections panel (Patrik 2026-09-08).
+    @State private var v2ShowingConnections = false
 
     /// The chat column itself; the host lays the Visual Window beside it on
     /// iPad and over it as a sheet on iPhone. Same store, same selection.
@@ -404,6 +406,10 @@ struct ChatView: View {
             ImageGeneratorSheet(model: model)
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
+        }
+        // Connections (Patrik 2026-09-08): this room's agent toolkit + on/off.
+        .sheet(isPresented: $v2ShowingConnections) {
+            V2ConnectionsSheet(scopeTitle: v2?.project.name ?? v2model.displayTitle)
         }
         // R28: `/` opens the commands as a sheet (same rows, new host).
         .sheet(isPresented: $v2ShowingSlash) {
@@ -584,6 +590,9 @@ struct ChatView: View {
                 } else {
                     Color.clear.frame(width: 44, height: 44)
                 }
+                // Connections (Patrik 2026-09-08): left of the eye on every
+                // room — what this room's agent can reach, and the on/off.
+                V2ConnectionsButton(identifier: "v2-connections-room") { v2ShowingConnections = true }
                 // R43 P094: the eye sits top-right on every chat and cycles
                 // the Visual Window — facetime → full → hidden.
                 Button { eye.cycle() } label: {

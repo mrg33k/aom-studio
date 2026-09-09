@@ -14,6 +14,7 @@
 		043F08A3A762DCB7BC7BB361 /* hero.png in Resources */ = {isa = PBXBuildFile; fileRef = 7837D93D8D7A760469A95B1A /* hero.png */; };
 		0488714B0ACA56A6F88863C2 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC4E330537A94F6BCADAAAD4 /* SignInView.swift */; };
 		056233E6E6CFFA52DA7C0AB0 /* R43HomeFirstAndEyeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B8DF988DC8B26EB5CA25F17 /* R43HomeFirstAndEyeUITests.swift */; };
+		434935905FD14F0EA9163FDF /* R61ConnectionsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13EB328F5134984AA852698 /* R61ConnectionsUITests.swift */; };
 		068C15BB396647F8FD1E742E /* ConvexService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CCA195DB3CAFCF12889A9BB /* ConvexService.swift */; };
 		0716BE3F5CD216DF3D99A9C1 /* V2ReconnectMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D36EFAFE6A999D326192D855 /* V2ReconnectMonitor.swift */; };
 		0817CFCB386EA2C1AAB79A3F /* R32NativeWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A795F9A678A532963AF32210 /* R32NativeWiringTests.swift */; };
@@ -89,6 +90,7 @@
 		6F9C32B58252C90AD5D3FB12 /* OrganizeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DBDCCA9EDDA20D17DD9F490 /* OrganizeTests.swift */; };
 		6FC0392BBA570C347E45317C /* ReadStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3BE3F5BD4EDB230E204F21 /* ReadStateStore.swift */; };
 		71D7518E69E3760403AAA355 /* IntegrationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CF99DF9192383E26F1255FB /* IntegrationsView.swift */; };
+		A98C293C8EF043EC839FA523 /* V2ConnectionsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233AF9948B064CFCB80E7CBD /* V2ConnectionsSheet.swift */; };
 		73C41B3E199DA428EE6CF1C2 /* V2CV6Polish.swift in Sources */ = {isa = PBXBuildFile; fileRef = 900019FC2CD15E277E6DC802 /* V2CV6Polish.swift */; };
 		74493D719E1C7DFEEB61A489 /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3984DE7AC39AFF032327719 /* AppRouter.swift */; };
 		7530BD568F038D6380193456 /* R32WiringUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2957F965A86EA2FD3FE9EC58 /* R32WiringUITests.swift */; };
@@ -284,6 +286,7 @@
 		55F548CEB02110A9FE944608 /* WorkspaceStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceStoreTests.swift; sourceTree = "<group>"; };
 		5A37CB7AFC65227A32353A1D /* ReviewStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewStore.swift; sourceTree = "<group>"; };
 		5B8DF988DC8B26EB5CA25F17 /* R43HomeFirstAndEyeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = R43HomeFirstAndEyeUITests.swift; sourceTree = "<group>"; };
+		C13EB328F5134984AA852698 /* R61ConnectionsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = R61ConnectionsUITests.swift; sourceTree = "<group>"; };
 		5BEF58B5D5099622D79E7158 /* VisualWindowContextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualWindowContextView.swift; sourceTree = "<group>"; };
 		602A96887BE24D9CBBF02832 /* RenderGalleryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderGalleryTests.swift; sourceTree = "<group>"; };
 		6134D9D2811446521EAE2DBC /* CornerV2DTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerV2DTO.swift; sourceTree = "<group>"; };
@@ -305,6 +308,7 @@
 		7923DCCE3EEEB6F49D5A3D03 /* LedgerStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedgerStore.swift; sourceTree = "<group>"; };
 		7CCA195DB3CAFCF12889A9BB /* ConvexService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConvexService.swift; sourceTree = "<group>"; };
 		7CF99DF9192383E26F1255FB /* IntegrationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrationsView.swift; sourceTree = "<group>"; };
+		233AF9948B064CFCB80E7CBD /* V2ConnectionsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V2ConnectionsSheet.swift; sourceTree = "<group>"; };
 		80716889B1EAF64D5F4D475E /* AttachmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentTests.swift; sourceTree = "<group>"; };
 		81D8FE03F68E468709423ABF /* RoomStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomStore.swift; sourceTree = "<group>"; };
 		85FF71AEBE8D9EF46363DE28 /* V2IntakeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V2IntakeSheet.swift; sourceTree = "<group>"; };
@@ -418,6 +422,7 @@
 				903AFF4D43CCE9D4B8913D59 /* FilePreviewView.swift */,
 				11760F0F11D5F27C6574C07D /* HomeComposerView.swift */,
 				7CF99DF9192383E26F1255FB /* IntegrationsView.swift */,
+				233AF9948B064CFCB80E7CBD /* V2ConnectionsSheet.swift */,
 				B626754E643274B97C66D704 /* LedgerActivityView.swift */,
 				07EAECF062E7FAA88D07CFCA /* MessageBubbleView.swift */,
 				4F453FA5B1DE0CAE3D48719C /* NewRoomSheet.swift */,
@@ -660,6 +665,7 @@
 				930AFD7B58E77E983EDC1DEB /* R41HomeWelcomeUITests.swift */,
 				24F6C3830C717973DA6A91A5 /* R42NativeCV6UITests.swift */,
 				5B8DF988DC8B26EB5CA25F17 /* R43HomeFirstAndEyeUITests.swift */,
+				C13EB328F5134984AA852698 /* R61ConnectionsUITests.swift */,
 				EA510B1165F905606A8507B4 /* R56ViewStateUITests.swift */,
 				75ACE47EA6B1C041A0B19583 /* ScreenshotCapture.swift */,
 				AC02F83227E2626103FE0917 /* ScreenTour.swift */,
@@ -920,6 +926,7 @@
 				B9CF324EC9A06B4133A26D98 /* R41HomeWelcomeUITests.swift in Sources */,
 				50E953E2E8554611FE5ABC47 /* R42NativeCV6UITests.swift in Sources */,
 				056233E6E6CFFA52DA7C0AB0 /* R43HomeFirstAndEyeUITests.swift in Sources */,
+				434935905FD14F0EA9163FDF /* R61ConnectionsUITests.swift in Sources */,
 				006F50F4BB41CDE0E1C52DC4 /* R56ViewStateUITests.swift in Sources */,
 				C644233F2D4E81244C9C53FA /* ScreenTour.swift in Sources */,
 				76BD23C3F1067385C26F7DA5 /* ScreenshotCapture.swift in Sources */,
@@ -965,6 +972,7 @@
 				EC1499CF15C0D29AEF56EA2B /* FileStore.swift in Sources */,
 				B7F9AD93ABD4175DC6DC664F /* HomeComposerView.swift in Sources */,
 				71D7518E69E3760403AAA355 /* IntegrationsView.swift in Sources */,
+				A98C293C8EF043EC839FA523 /* V2ConnectionsSheet.swift in Sources */,
 				C94D434781585E076EC0AFFB /* JSONValue.swift in Sources */,
 				6408EF6832E2E89953597199 /* LedgerActivityView.swift in Sources */,
 				3D63CB92C27974C8A4125728 /* LedgerStore.swift in Sources */,

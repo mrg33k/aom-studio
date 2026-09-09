@@ -26,3 +26,21 @@ Test A (chat knows every project) is CLOSED from clean threads.** Evidence: `rou
 - **C022 (→ chat round):** the "latest" answer reads only the chat's own subject ledger; extend the R53 sibling merge from facts to deeds so a quiet chat (Aom) surfaces recent sibling work (aheadofmarket-com) as its latest.
 
 **Status:** done (Round 4 green; two non-blocking follow-ups logged as L042 + C022)
+
+### R61 — Agent connections panel (native) + video-index/pull-up close (2026-09-08, Claude by hand)
+
+Two threads landed this round.
+
+**Video index + pull-up (the "pull up the latest video" failure).** Root cause was a 60-item index cap letting 48 documents crowd every video out (Ambition indexed 0 videos). Fix: `MEDIA_QUOTA=15` reserved for media in the gateway `refresh_files_index` cut, plus a kind-boost in the bridge pull-up scorer (`_pullup_rows` search branch + `rank_pullup`, gated on `sc/s > 0` so a score-0 item is never lifted). Verified live in the Ambition room: "pull up the latest video we finished" went from "I don't see a latest video" → "Opening Elephante captions video…" → **"Opened Elephante captions video in the Visual Window"** with the video card rendered. One honest follow-up: on desktop **web** the stage is still a black frame at 00:00/00:00 — the browser player isn't handed a playable URL yet (native renders it). Tracked as the next gateway-open/web-playback fix.
+
+**Agent connections panel (Patrik 2026-09-08).** New `V2ConnectionsSheet.swift` — a compact "what's in this agent's toolkit, and is it on?" panel with two entry points, one panel:
+- Global: the drawer footer, beside the person mark (`V2DrawerView.footer`).
+- Per-room: the chat nav, left of the eye (`ChatView.v2NavBar`), scoped to the room's agent.
+
+Each row carries two distinct signals Patrik asked for: a **status dot** (the truth — connected / available / needs-attention) and a **toggle** (the control — allow this agent to use it; persisted to UserDefaults). Seeded honestly from what the AOM crew actually reaches for: Browser (robot Chrome), Email (per-mailbox), GitHub, Computers (this Studio Mac live; Personal Mac not-yet), Image gen (KIE), DaVinci Resolve (shown needs-attention — the Resolve MCP is genuinely down this session). Enforcement wiring (toggle → bridge/agent gate) is the next round; this pass is placement + concept for Patrik to judge on the sim.
+
+Verified on the 17 Pro sim (build succeeded, both entry points driven by hand): the per-room icon (left of the eye) and the global icon (drawer footer, beside the person mark) both raise the panel; the scope copy switches ("What General's agent can use" vs "What every agent can use"); the honest dots render (Personal Mac grey "Available", Resolve amber "Needs attention"); a toggle flips and the "7 of 8 on" count updates and persists across a full reinstall. Regression guard added: `CornerUITests/R61ConnectionsUITests.swift` (both entry points open the panel) with distinct identifiers `v2-connections-room` / `v2-connections-global`.
+
+Not yet wired (next round): the toggle is intent-only — it persists but does not yet gate the bridge/agent; and this is native-only, the desktop-web mirror is a follow-up.
+
+**Status:** done (native panel shipped + verified on sim; enforcement + desktop mirror are follow-ups).

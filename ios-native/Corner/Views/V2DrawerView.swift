@@ -104,6 +104,8 @@ struct V2DrawerView: View {
     @State private var busy = false
     /// R23 P070: the tree's search, in the design's rows.
     @State private var searchQuery = ""
+    /// The global agent connections panel (Patrik 2026-09-08).
+    @State private var showingConnections = false
 
     private var searchText: String {
         searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -207,6 +209,9 @@ struct V2DrawerView: View {
         .overlay {
             Color.clear.frame(width: 1, height: 1)
                 .accessibilityIdentifier("v2-drawer")
+        }
+        .sheet(isPresented: $showingConnections) {
+            V2ConnectionsSheet()
         }
         .onAppear {
             // The open thread's project starts expanded; the rest collapsed.
@@ -594,6 +599,10 @@ struct V2DrawerView: View {
                 .foregroundStyle(Theme.ink)
                 .lineLimit(1)
                 .padding(.leading, 10)
+            // Connections (Patrik 2026-09-08): next to the person mark — every
+            // agent's global toolkit and the on/off.
+            V2ConnectionsButton(size: 36, glyphSize: 16, identifier: "v2-connections-global") { showingConnections = true }
+                .padding(.leading, 2)
             Spacer(minLength: 0)
             Button {
                 isPresented = false
