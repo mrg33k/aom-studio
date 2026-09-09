@@ -42,9 +42,9 @@ committed or deployed until you say ship.
 3. **The iterate loop (no push/pull).** user message → agent edits the draft files
    in the scratch dir → the bridge emits a `draft-updated` event for that artifact
    → the eye hot-reloads → user redirects in chat ("more yellow", "bigger hero").
-   No git, no deploy, no refresh button. The agent generates images (KIE / the
-   higgsfield CLI — ties to item 3) straight into the draft's asset folder; the
-   next reload shows them.
+   No git, no deploy, no refresh button. The agent generates images/video via
+   KIE (kie.ai — the user-facing gen pool; ties to item 3) straight into the
+   draft's asset folder; the next reload shows them.
 
 4. **"Ready" is the only commit.** Only when the user says ship does the draft
    graduate: the agent publishes it to a real artifact / repo / deploy target and
