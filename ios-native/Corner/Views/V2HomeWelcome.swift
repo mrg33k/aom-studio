@@ -178,7 +178,11 @@ enum HomeSuggestions {
         return HomeSuggestion(
             id: "ledger-\(subject)", subject: subject,
             projectTitle: project.title,
-            subline: oneLine(item.what),
+            // R60 (Patrik phone review 2026-09-08): a proactive OFFER, not a
+            // changelog line. The raw deed ("Confirmed R15…", "Added GMB
+            // photos…") read like a GitHub update; the card now invites the
+            // next step, and the tap pre-fills "Pick up where we left off".
+            subline: "Pick up where you left off",
             projectID: project.isProject ? project.id : (node.parentProjectId ?? node.projectId),
             projectThreadID: project.threadId,
             tintHex: project.tint,
@@ -274,13 +278,21 @@ struct V2HomeWelcomeView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 12)
                 .accessibilityIdentifier("v2-home-welcome")
+            // R60 (Patrik phone review 2026-09-08): the suggestions sit JUST
+            // above the composer, not mid-screen. The welcome fills the scroll
+            // viewport and this spacer pushes the cards to the bottom.
+            Spacer(minLength: 24)
             VStack(spacing: 12) {
                 ForEach(Array(home.suggestions.enumerated()), id: \.element.id) { index, suggestion in
                     homeCard(suggestion, index: index)
                 }
             }
-            .padding(.top, 20)
+            // R60 (Patrik phone review 2026-09-08): clear the composer so the
+            // bottom suggestion is never cut off, while still sitting just
+            // above it.
+            .padding(.bottom, 20)
         }
+        .containerRelativeFrame(.vertical, alignment: .top)
         .onAppear {
             Task {
                 await home.load(

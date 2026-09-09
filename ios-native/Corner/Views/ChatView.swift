@@ -551,30 +551,61 @@ struct ChatView: View {
     /// centred title block (P022's 12.5px project line over the 16px title),
     /// and the 10px status dot in a 44pt target. Identifiers stay on leaves.
     private var v2NavBar: some View {
-        HStack(spacing: 0) {
-            Button { v2ShowingDrawer = true } label: {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(Theme.ink)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
+        // R60 (Patrik phone review 2026-09-08): the title is centred on the
+        // SCREEN, not between the controls. The right arm (status dot 44 + eye
+        // 44) is heavier than the left (hamburger 44 + 12), so the old
+        // Spacer-flanked title read left-of-centre. A ZStack centres the title
+        // absolutely; the controls ride over it at the edges, and the title's
+        // horizontal padding clears both arms so it never collides.
+        ZStack {
+            HStack(spacing: 0) {
+                Button { v2ShowingDrawer = true } label: {
+                    Image(systemName: "line.3.horizontal")
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundStyle(Theme.ink)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("v2-drawer-button")
+                .accessibilityLabel("Open menu")
+                .padding(.leading, 12)
+                Spacer(minLength: 0)
+                // P030: status as a 10px dot — mission status, or the
+                // project's needs-you signal. A project with nothing to say
+                // shows no dot. R32 P081: an open run paints Working.
+                if let dot = v2StatusDot {
+                    Circle()
+                        .fill(dot)
+                        .frame(width: 10, height: 10)
+                        .frame(width: 44, height: 44)
+                        .accessibilityIdentifier("v2-status-dot")
+                        .accessibilityLabel(v2StatusLabel)
+                } else {
+                    Color.clear.frame(width: 44, height: 44)
+                }
+                // R43 P094: the eye sits top-right on every chat and cycles
+                // the Visual Window — facetime → full → hidden.
+                Button { eye.cycle() } label: {
+                    Image(systemName: eye.iconName)
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundStyle(Theme.ink)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("v2-eye")
+                .accessibilityLabel(eye.accessibilityLabel)
+                .padding(.trailing, 12)
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("v2-drawer-button")
-            .accessibilityLabel("Open menu")
-            .padding(.leading, 12)
-            Spacer(minLength: 0)
-            // P022: a mission shows the PROJECT name as the 12.5px line
-            // above the title; a project shows the title only. The screen
-            // marker stays a 1pt overlay leaf — never on the VStack (R14: a
-            // container identifier overwrites its children, and the title
-            // must keep its own).
-            // R41 home: the nav keeps this layout and simply shows no title
-            // — the welcome carries the logo + greeting instead.
+
+            // The centred title block (P022's 12.5px project line over the
+            // 16px title). Padded past both arms so a long title truncates
+            // rather than sliding under the eye. Home shows no title.
             VStack(spacing: 1) {
                 if !v2ShowingHome {
-                    if let mission = v2?.mission {
-                        Text(v2?.project.name ?? mission.title)
+                    if v2?.mission != nil {
+                        Text(v2?.project.name ?? v2?.mission?.title ?? "")
                             .font(.hanken(12.5).weight(.medium))
                             .foregroundStyle(Theme.inkSoft)
                             .lineLimit(1)
@@ -587,40 +618,13 @@ struct ChatView: View {
                         .accessibilityIdentifier("chat-title")
                 }
             }
+            .padding(.horizontal, 100)
             .overlay(alignment: .top) {
                 Color.clear.frame(width: 1, height: 1)
                     .accessibilityIdentifier("chat-screen")
             }
-            Spacer(minLength: 0)
-            // P030: status as a 10px dot — mission status, or the project's
-            // needs-you signal. A project with nothing to say shows no dot.
-            // R32 P081: an open run (or a send awaiting its first agent
-            // block) paints Working over all of that.
-            if let dot = v2StatusDot {
-                Circle()
-                    .fill(dot)
-                    .frame(width: 10, height: 10)
-                    .frame(width: 44, height: 44)
-                    .accessibilityIdentifier("v2-status-dot")
-                    .accessibilityLabel(v2StatusLabel)
-            } else {
-                Color.clear.frame(width: 44, height: 44)
-            }
-            // R43 P094: the eye sits top-right on every chat and cycles the
-            // Visual Window — facetime → full → hidden. Rightmost, 44pt,
-            // always present (even hidden — the icon stays).
-            Button { eye.cycle() } label: {
-                Image(systemName: eye.iconName)
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(Theme.ink)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("v2-eye")
-            .accessibilityLabel(eye.accessibilityLabel)
+            .allowsHitTesting(false)
         }
-        .padding(.trailing, 12)
         .frame(height: 52)
     }
 
@@ -1236,18 +1240,18 @@ struct ChatView: View {
             if !window.tabs.isEmpty {
                 v2PeekBar
             }
-            // R59 (Patrik phone review 2026-09-08): the full control row is
-            // back, ABOVE the pill (the R27 tray rule keeps the pill metrics
-            // locked). Plan/Work, Model, and Attach are visible buttons, not
-            // buried in the sparkle menu — the composer he had in the earlier
-            // builds. The sparkle command chip, mic, and send stay in the pill.
-            v2ComposerControlsRow
             // P039: pill + round send sit directly on the ground — the
             // frosted outer card is gone.
             HStack(alignment: .bottom, spacing: V2ComposerMetrics.sendSpacing) {
                 // P023: 50px pill with the Record chip inside. The pill fill
                 // is surface; the focused ring is the only chrome.
                 HStack(spacing: V2ComposerMetrics.interSpacing) {
+                    // R60 (Patrik phone review 2026-09-08): the command menu is
+                    // a purple round button INSIDE the input (leading), bigger
+                    // than the old sparkle chip, smaller than send. Model and
+                    // Plan/Work fold into ITS menu — they are no longer visible
+                    // buttons in the row.
+                    v2CommandCircle
                     // P038: `Tell Aster what to make next`, not `Message…`.
                     // R24 P076: the multiline axis is UITextView-backed with
                     // a ~5pt/side text inset (measured: placeholder starts
@@ -1282,14 +1286,8 @@ struct ChatView: View {
                         .accessibilityIdentifier("v2-composer-field")
                         .accessibilityLabel("Message")
                         .accessibilitySortPriority(5)
-                    // R59: the attachment control moved OUT of the pill up to
-                    // the always-visible controls row above (Patrik's #1), so
-                    // it no longer hides while the field is empty.
-                    // R19: the commands chip lives inside the pill, left of
-                    // Record — the design's pill with one more chip. R24
-                    // P076: icon-only while the field is empty so the full
-                    // placeholder fits at 390; the label returns with typing.
-                    v2CommandsChip(collapsed: v2model.draft.isEmpty)
+                    // R60: the command affordance is the leading purple circle
+                    // now; attachment + eye moved to the row UNDER the pill.
                     // R28: the live level meter rides beside Record while
                     // dictating — the CV6 live-meter twin, in the pill.
                     if speech.isListening {
@@ -1354,31 +1352,26 @@ struct ChatView: View {
                     .disabled(!v2CanSend)
                 }
             }
+            // R60 (Patrik phone review 2026-09-08): the options live UNDER the
+            // input now — attach + the context eye. Model and Plan/Work fold
+            // into the command menu (the purple circle), not visible buttons.
+            v2ComposerOptionsRow
         }
-        // R42 P093: the project-tinted glow sits behind the WHOLE composer
-        // (trays + pill) — strictly the pill's footprint, so the pill/send
-        // gap stays flat ground (P039) and the trays stay legible. A pill
-        // background would paint OVER the trays (later sibling) and eat
-        // their taps; the composer's own background stays behind them all.
-        // Hit testing is off: the band's reach over the thread's tail must
-        // never swallow a row's taps.
+        // R60 P093 (Patrik phone review 2026-09-08): the project-tinted glow
+        // is a soft CENTRED bloom behind the pill — full width, centred, so it
+        // reads as a glow and never an off-centre box. R60: the bloom sat too
+        // high; a shorter band keeps it low behind the pill. Hit testing off.
         .background(alignment: .bottom) {
-            GeometryReader { geo in
-                V2ComposerGlow(
-                    tint: v2GlowTint,
-                    boost: v2GlowBoost && !v2ReduceMotion
-                )
-                .frame(
-                    width: max(0, geo.size.width - 2 * V2ComposerMetrics.outerPadding
-                        - V2ComposerMetrics.sendSpacing - V2ComposerMetrics.sendSize),
-                    height: 140
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                .offset(x: V2ComposerMetrics.outerPadding)
-                .allowsHitTesting(false)
-            }
+            V2ComposerGlow(
+                tint: v2GlowTint,
+                boost: v2GlowBoost && !v2ReduceMotion
+            )
+            .frame(height: 78)
+            .frame(maxWidth: .infinity, alignment: .bottom)
+            .allowsHitTesting(false)
         }
-        .padding(.horizontal, 21)
+        // R60: the input is slightly wider — the outer margin drops 21 → 14.
+        .padding(.horizontal, 14)
         .padding(.bottom, Theme.s2)
         .photosPicker(
             isPresented: $v2ShowingPhotoPicker, selection: $v2PickedPhotos,
@@ -3255,71 +3248,33 @@ struct ChatView: View {
         return v2model.chatMode == "plan" ? "\(primary) · Plan" : primary
     }
 
-    /// R59 (Patrik phone review 2026-09-08): the composer's visible control
-    /// row — Plan/Work, Model, Attach — restored above the pill. Drives the
-    /// same per-thread state as the sparkle command card (the `v2CommandsState`
-    /// adapter: `setMode`, `selectModel`), so the two never drift; the chip's
-    /// label stays live too. Reuses the photo/file/camera pickers the in-pill
-    /// paperclip used before it moved here.
-    private var v2ComposerControlsRow: some View {
-        let cmd = v2CommandsState
-        let plan = v2model.chatMode == "plan"
-        return HStack(spacing: 8) {
-            // Plan / Work toggle — accent when Plan is armed.
-            Button {
-                cmd.setMode(plan ? "work" : "plan")
-            } label: {
-                Text(plan ? "Plan" : "Work")
-                    .font(.hanken(12.5).weight(.bold))
-                    .foregroundStyle(plan ? Theme.accent : Theme.inkSoft)
-                    .padding(.horizontal, 12)
-                    .frame(height: 32)
-                    .background(
-                        plan ? Theme.accentWeak : Theme.raised2,
-                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .strokeBorder(plan ? Theme.accent.opacity(0.6) : Theme.hairline, lineWidth: 1)
-                    )
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("v2-mode-toggle")
-            .accessibilityLabel(plan ? "Plan mode. Switch to Work." : "Work mode. Switch to Plan.")
+    /// R60 (Patrik phone review 2026-09-08): the command menu is a purple
+    /// round button INSIDE the input (leading), bigger than the old sparkle
+    /// chip, smaller than the send. Tapping it opens the CV6 command card,
+    /// which now carries Model + Plan/Work (folded in — no longer visible
+    /// buttons). Keeps the anchor preference so the card floats above it.
+    private var v2CommandCircle: some View {
+        Button {
+            v2ShowingCommands.toggle()
+        } label: {
+            Image(systemName: "sparkles")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.white)
+                .frame(width: 38, height: 38)
+                .background(Color(cv6: 0x8B5CF6), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .anchorPreference(key: V2CommandsAnchorKey.self, value: .bounds) { [$0] }
+        .accessibilityIdentifier("v2-commands")
+        .accessibilityLabel("Commands — mode, model, files, image generation")
+        .accessibilitySortPriority(4)
+    }
 
-            // Model button — the same options and checkmark as the menu.
-            Menu {
-                ForEach(ChatView.modelOptions, id: \.id) { option in
-                    Button {
-                        Task { await cmd.selectModel(option.id) }
-                    } label: {
-                        if option.id == v2model.modelChoice {
-                            Label(option.label, systemImage: "checkmark")
-                        } else {
-                            Text(option.label)
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "cpu")
-                        .font(.system(size: 13, weight: .medium))
-                    Text(ChatView.shortModelLabel(v2model.modelChoice))
-                        .font(.hanken(12.5).weight(.semibold))
-                }
-                .foregroundStyle(Theme.inkSoft)
-                .padding(.horizontal, 12)
-                .frame(height: 32)
-                .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Theme.hairline, lineWidth: 1)
-                )
-            }
-            .accessibilityIdentifier("v2-model-button")
-            .accessibilityLabel("Model — \(ChatView.shortModelLabel(v2model.modelChoice))")
-
-            // Attach — photo / file / camera, always visible now.
+    /// R60: the options live UNDER the input — attach + the context eye. Model
+    /// and Plan/Work moved INTO the command menu (the purple circle), so this
+    /// row stays light. Reuses the photo/file/camera pickers.
+    private var v2ComposerOptionsRow: some View {
+        HStack(spacing: 10) {
             Menu {
                 Button { v2ShowingPhotoPicker = true } label: {
                     Label("Photo Library", systemImage: "photo.on.rectangle")
@@ -3331,22 +3286,37 @@ struct ChatView: View {
                     Label("Camera", systemImage: "camera")
                 }
             } label: {
-                Image(systemName: "paperclip")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(Theme.inkSoft)
-                    .frame(width: 34, height: 32)
-                    .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .strokeBorder(Theme.hairline, lineWidth: 1)
-                    )
+                v2OptionChip(icon: "paperclip", label: "Attach")
             }
             .accessibilityIdentifier("v2-attach")
             .accessibilityLabel("Attach and upload files")
 
+            Button { eye.cycle() } label: {
+                v2OptionChip(icon: eye.iconName, label: "Context")
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("v2-composer-eye")
+            .accessibilityLabel(eye.accessibilityLabel)
+
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 2)
+        .padding(.horizontal, 4)
+        .padding(.top, 2)
+    }
+
+    private func v2OptionChip(icon: String, label: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon).font(.system(size: 14, weight: .medium))
+            Text(label).font(.hanken(12.5).weight(.semibold))
+        }
+        .foregroundStyle(Theme.inkSoft)
+        .padding(.horizontal, 12)
+        .frame(height: 32)
+        .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(Theme.hairline, lineWidth: 1)
+        )
     }
 
     /// R19: the commands chip INSIDE the v2 pill, left of Record. Its look

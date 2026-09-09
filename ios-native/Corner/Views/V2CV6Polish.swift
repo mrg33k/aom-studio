@@ -114,41 +114,18 @@ struct V2ComposerGlow: View {
     var boost: Bool = false
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            LinearGradient(
-                stops: [
-                    .init(color: tint.opacity(boost ? 0.20 : 0.14), location: 0.35),
-                    .init(color: .clear, location: 1.0),
-                ],
-                startPoint: .bottom, endPoint: .top
-            )
-            V2AmbientGlow(tint: tint, boost: boost)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 140)
-        // R59 (Patrik phone review 2026-09-08): a soft radial bloom, not a
-        // box. The old mask kept the bottom edge SOLID (location 0.0 white),
-        // so the band read as a hard-edged blue rectangle tucked under the
-        // pill (his #2). A radial fade from the bottom-centre feathers every
-        // edge — top, bottom, and both sides — so nothing but a soft glow
-        // ever reaches the ground.
-        .mask {
-            GeometryReader { g in
-                RadialGradient(
-                    stops: [
-                        .init(color: .white, location: 0.0),
-                        .init(color: .white.opacity(0.7), location: 0.55),
-                        .init(color: .clear, location: 1.0),
-                    ],
-                    center: .bottom,
-                    startRadius: 0,
-                    endRadius: max(g.size.width, g.size.height) * 0.72
-                )
-            }
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("v2-composer-glow")
-        .accessibilityLabel("Conversation glow")
+        // R60 (Patrik phone review 2026-09-08, twice flagged): NO band, NO
+        // mask, NO box. Just the blurred ambient ellipses, which fade to
+        // nothing on their own — a soft centred glow behind the pill, tinted
+        // per project. The old gradient band + pill-footprint sizing read as
+        // an off-centre blue box tucked under the composer ("not faded or
+        // glowing"). The blur IS the fade; centred full-width, it has no edge.
+        V2AmbientGlow(tint: tint, boost: boost)
+            .frame(maxWidth: .infinity)
+            .allowsHitTesting(false)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("v2-composer-glow")
+            .accessibilityLabel("Conversation glow")
     }
 }
 

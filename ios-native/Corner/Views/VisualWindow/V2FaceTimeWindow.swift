@@ -20,10 +20,14 @@ enum V2FaceTimeMetrics {
     static let width: CGFloat = 134
     static let height: CGFloat = 224
     static let margin: CGFloat = 12
-    /// Below the 52pt nav bar with room to breathe (added to the
-    /// container's top safe-area inset).
-    static let topBelowNav: CGFloat = 64
+    /// R60 (Patrik phone review 2026-09-08): flush under the nav — remove the
+    /// gap above the box. The 52pt nav bar sits directly on the safe-area top;
+    /// the box top lands right under it (a 2pt hairline of breathing room).
+    static let topBelowNav: CGFloat = 54
     static let cornerRadius: CGFloat = 12
+    /// R60: the content renders smaller (laid out wider, then scaled down) so
+    /// a document reads legibly instead of one huge wrapped word per line.
+    static let contentScale: CGFloat = 0.8
 
     static func defaultTop(safeAreaTop: CGFloat) -> CGFloat {
         safeAreaTop + topBelowNav
@@ -140,8 +144,15 @@ struct V2FaceTimeWindow: View {
                 .padding(.horizontal, 8)
                 .frame(height: 22)
             Divider().background(Theme.hairline)
+            // R60: lay the content out wider, then scale down — everything
+            // renders ~20% smaller with more words per line, so a document
+            // reads legibly instead of one huge wrapped word per row.
+            let scale = V2FaceTimeMetrics.contentScale
+            let contentH = V2FaceTimeMetrics.height - 23  // title 22 + divider 1
             faceTimeStage(tab: tab)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(width: V2FaceTimeMetrics.width / scale, height: contentH / scale)
+                .scaleEffect(scale, anchor: .topLeading)
+                .frame(width: V2FaceTimeMetrics.width, height: contentH, alignment: .topLeading)
                 .clipped()
         }
         .frame(width: V2FaceTimeMetrics.width, height: V2FaceTimeMetrics.height)

@@ -361,20 +361,31 @@ struct V2ProjectChatView: View {
         }
         #endif
         let store = WorkspaceStore.shared
-        await store.refresh()
-        guard let found = store.project(id: projectID) else {
-            errorText = "This project is not in the workspace."
-            return
-        }
-        do {
-            if let loaded = try await store.threadForProject(projectID) {
-                project = found
-                thread = loaded
-            } else {
-                errorText = "This project has no conversation yet."
+        // R60 (Patrik phone review 2026-09-08): a cold launch's first reads can
+        // fail transiently before the network settles. Retry SILENTLY on the
+        // logo mark — never flash "something went wrong" during the intro. The
+        // error tree only appears after repeated definitive failures. This is
+        // the "skip to the animation, then the home page" fix.
+        for attempt in 0..<4 {
+            let last = attempt == 3
+            await store.refresh()
+            guard let found = store.project(id: projectID) else {
+                if last { errorText = "This project is not in the workspace."; return }
+                try? await Task.sleep(for: .milliseconds(600)); continue
             }
-        } catch {
-            errorText = "The conversation could not be loaded."
+            do {
+                if let loaded = try await store.threadForProject(projectID) {
+                    project = found
+                    thread = loaded
+                    return
+                } else if last {
+                    errorText = "This project has no conversation yet."
+                    return
+                }
+            } catch {
+                if last { errorText = "The conversation could not be loaded."; return }
+            }
+            try? await Task.sleep(for: .milliseconds(600))
         }
     }
 }

@@ -103,6 +103,34 @@ struct LeaveAReviewButton: View {
     }
 }
 
+/// R60 (Patrik phone review 2026-09-08): download / share for an open file in
+/// the context window. ShareLink hands the file (or its link) to the system
+/// share sheet — Save to Files, AirDrop, Mail. Hidden until the file resolves
+/// a URL. Sized to match the "Leave a review" button beside it.
+struct ShareFileButton: View {
+    let url: URL?
+
+    var body: some View {
+        Group {
+            if let url {
+                ShareLink(item: url) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(Theme.ink)
+                        .frame(width: 46, height: 46)
+                        .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(Theme.hairline, lineWidth: 1)
+                        )
+                }
+                .accessibilityIdentifier("share-file")
+                .accessibilityLabel("Download or share this file")
+            }
+        }
+    }
+}
+
 /// P024: the sheet header's Preview / Context tabs — 16/600, the active tab
 /// carrying the 2px fg underline. The file strip below keeps its own chips.
 private struct SheetViewTabs: View {
@@ -177,11 +205,17 @@ struct VisualWindowSheet: View {
     }
 
     /// P052: timed media carries the 160pt control chrome, static media 50.
+    /// R60 (Patrik phone review 2026-09-08): a document reads as a page — give
+    /// it the taller, natural shape, not a squat box locked to a proportion
+    /// (only desktop SITES take the 16:9 band). More room for the content; the
+    /// review affordance + summary come down to the bottom.
     private var stageHeight: CGFloat {
-        let timed = window.selectedTab.map { $0.kind == .video || $0.kind == .youtube } ?? false
         let full = detent == .v2Full
-        if timed { return full ? 560 : 400 }
-        return full ? 450 : 290
+        switch window.selectedTab?.kind {
+        case .video, .youtube: return full ? 560 : 400
+        case .document:        return full ? 560 : 380
+        default:               return full ? 450 : 290
+        }
     }
 
     var body: some View {
@@ -253,16 +287,22 @@ struct VisualWindowSheet: View {
                             .padding(.horizontal, 21)
                             .padding(.top, Theme.s3)
                         } else {
+                            // R59/R60: "Leave a review" lives under the file
+                            // (Patrik's arrow), paired with Share for the open
+                            // file. R60: the summary card comes DOWN below it —
+                            // the content keeps the top space, and the summary
+                            // only reserves room once you are actually
+                            // reviewing (a list being made takes space then).
+                            if tab.artifactID != nil {
+                                HStack(spacing: 10) {
+                                    LeaveAReviewButton { review.reviewing = true }
+                                    ShareFileButton(url: window.artifact(for: tab)?.sourceURL)
+                                }
+                                .padding(.horizontal, 21)
+                                .padding(.top, Theme.s3)
+                            }
                             if let status = statusText {
                                 SheetStatusCard(text: status)
-                                    .padding(.horizontal, 21)
-                                    .padding(.top, Theme.s3)
-                            }
-                            // R59: "Leave a review" lives HERE, under the file
-                            // (Patrik's arrow), not as a top tab. Tapping it
-                            // opens the review panel (pins + notes + Send).
-                            if tab.artifactID != nil {
-                                LeaveAReviewButton { review.reviewing = true }
                                     .padding(.horizontal, 21)
                                     .padding(.top, Theme.s3)
                             }
