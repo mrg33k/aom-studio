@@ -47,6 +47,28 @@ struct FilePreviewView: View {
         let isWaiting: Bool
     }
 
+    /// How a ready file renders. Pure so a unit test pins the routing without a
+    /// download or a view.
+    enum PreviewRoute: Equatable { case text, document, quickLook }
+
+    /// R62: pick the renderer from the file name. Known text extensions read as
+    /// text; a name with NO extension is a Corner document (markdown/HTML) and
+    /// goes to the reader (which sniffs HTML vs markdown), NOT QuickLook — that
+    /// was the "files don't load from the menu" bug. Everything with a real
+    /// binary extension (pdf, png, mp4, docx…) stays on QuickLook.
+    static func route(for name: String) -> PreviewRoute {
+        if TextFileReader.canRead(name: name) { return .text }
+        // Strip a query/fragment, then look for a real extension on the last
+        // path component. No dot (or a trailing dot) = extension-less = a
+        // document to read, not a binary for QuickLook.
+        let head = name.split(whereSeparator: { $0 == "?" || $0 == "#" }).first.map(String.init) ?? name
+        let base = head.split(separator: "/").last.map(String.init) ?? head
+        if let dot = base.lastIndex(of: "."), dot != base.index(before: base.endIndex) {
+            return .quickLook // has a real extension we don't read as text -> QuickLook
+        }
+        return .document // extension-less -> the reader
+    }
+
     var body: some View {
         NavigationStack {
             content
@@ -152,9 +174,18 @@ struct FilePreviewView: View {
             // most of them are prose or data — and QuickLook has no preview generator
             // for extensions it does not know, so a research note would open on "No
             // preview available". The web renders these files' text; so does this.
-            if TextFileReader.canRead(name: attachment.name) {
+            // R62 (Patrik iPad review 2026-09-09, "files don't load from the menu"):
+            // Corner's documents are often EXTENSION-LESS (a synced CONTEXT.md, a
+            // weekly report), and an extension-less file has no readable extension
+            // AND no QuickLook generator, so it opened on "No preview available".
+            // Route those to the same reader the Visual Window uses (DocumentReaderView
+            // sniffs HTML vs markdown), so a menu-opened doc loads for real.
+            switch FilePreviewView.route(for: attachment.name) {
+            case .text:
                 TextFileReader(url: url, name: attachment.name)
-            } else {
+            case .document:
+                DocumentReaderView(url: url, title: attachment.name)
+            case .quickLook:
                 QuickLookView(url: url)
                     .ignoresSafeArea(edges: .bottom)
             }

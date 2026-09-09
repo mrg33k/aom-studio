@@ -263,4 +263,27 @@ final class AttachmentTests: XCTestCase {
         // Non-bracket prefix still fails as expected
         XCTAssertNil(Attachment.singleAnnouncement("I attached file: a.png"))
     }
+
+    /// R62 (Patrik iPad review 2026-09-09): "files don't load from the menu."
+    /// FilePreviewView routed by extension, so an EXTENSION-LESS Corner document
+    /// (a synced CONTEXT, a weekly report) fell to QuickLook, which has no
+    /// generator for it → "No preview available." Extension-less now routes to
+    /// the reader; known text to the text reader; real binaries to QuickLook.
+    func testFilePreviewRouting() {
+        // Known text extensions read as text.
+        XCTAssertEqual(FilePreviewView.route(for: "notes.md"), .text)
+        XCTAssertEqual(FilePreviewView.route(for: "data.jsonl"), .text)
+        XCTAssertEqual(FilePreviewView.route(for: "CONTEXT.MD"), .text)
+        // Extension-less Corner documents go to the reader, not QuickLook.
+        XCTAssertEqual(FilePreviewView.route(for: "Ambition: Week 1"), .document)
+        XCTAssertEqual(FilePreviewView.route(for: "Hero brief"), .document)
+        XCTAssertEqual(FilePreviewView.route(for: "t17crbatangfg0ydhf1bvt56p18e0snd"), .document)
+        // Real binary extensions stay on QuickLook.
+        XCTAssertEqual(FilePreviewView.route(for: "deck.pdf"), .quickLook)
+        XCTAssertEqual(FilePreviewView.route(for: "hero.png"), .quickLook)
+        XCTAssertEqual(FilePreviewView.route(for: "cut.mp4"), .quickLook)
+        XCTAssertEqual(FilePreviewView.route(for: "brief.docx"), .quickLook)
+        // A store URL with a query on a real extension still reads its extension.
+        XCTAssertEqual(FilePreviewView.route(for: "render.png?w=440"), .quickLook)
+    }
 }

@@ -59,3 +59,13 @@ Patrik marked up a TestFlight iPad screenshot with 6 changes; he then said the c
 Verified: build clean; iPhone 17 Pro sim shows the composer changes (peek gone, purple circle tucked, Attach-left / Context·Checklist-centred). Doc detection unit-tested. iPad column (1,3) build-verified + code mirrors the accepted iPhone pattern; the iPad sim was stuck in a rotated orientation (environment quirk) so on-device iPad confirmation is Patrik's TestFlight. Desktop-web (universal composer + context-box + HTML-doc rendering) is the next pass.
 
 **Status:** in progress — native shipped to a TestFlight build for Patrik's iPad; desktop-web universal pass next.
+
+### R63 — Files load from the menu (new-goal item 6, iOS-menu half) (2026-09-09, Claude by hand)
+
+Patrik (new goal, item 6): "Files don't load when you click them on the iOS menu or the command menu." Root cause for the **iOS-menu / Organize path**: `FilePreviewView` routed by file EXTENSION — known text → TextFileReader, everything else → QuickLook — but Corner's documents are frequently EXTENSION-LESS (a synced CONTEXT, a weekly report, an artifact id). QuickLook has no generator for an extension-less file, so it opened on "No preview available" = "files don't load." (Same class of bug `DocumentReaderView` fixed for the Visual Window in R59; the Organize path never got it.)
+
+Fix: `FilePreviewView.route(for:)` (pure, unit-tested) — known text extensions → text reader; a name with NO real extension → `DocumentReaderView` (which sniffs HTML vs markdown, incl. the R62 base64-font fix); real binary extensions (pdf/png/mp4/docx) → QuickLook. Unit test `testFilePreviewRouting` in AttachmentTests pins all three routes. Build clean.
+
+Remaining half (documented, not yet fixed): the **command-menu "Files"** does `window.isPresented = true`, which on iPhone renders an EMPTY sheet when no tab is selected (the sheet gates on `selectedTab != nil`). The fix is to let the Visual Window present its Context (file list) with no open tab, OR route command-menu Files to the Organize browser — a small but distinct change to verify on the sim with real files. Batching with the next new-goal build (not shipped as its own build).
+
+**Status:** iOS-menu half done + unit-tested (ships in the next build); command-menu half root-caused + queued.
