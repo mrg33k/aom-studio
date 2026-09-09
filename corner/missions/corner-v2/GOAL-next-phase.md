@@ -34,6 +34,9 @@ A **live localhost equivalent** while working on things, so we don't waste resou
 
 **The feel Patrik wants (2026-09-09):** "Let's make a yellow website about bikes" → the agent pulls up a yellow background + UI **nearly instantly** and says *"like this?"* → the person says *"no, I imagine actual bikes, more images, better fonts"* → again **instantly** the agent works **live** to generate images and build the vision **next to the user**, with **no friction of pushing / committing / pulling** until they are ready. So: a live render surface the agent edits in real time (hot-reload / in-canvas), image-gen inlined, and the git/deploy step deferred to a "ship when ready" moment — not part of the iteration loop.
 
+### FINDING (2026-09-09) — the hot-reload engine already exists
+The desktop app is **Vite** (`corner-v2-integration`, `"dev": "vite"`), which ships **HMR** — edit a file, the page updates instantly with no rebuild/push/pull. That is the "live localhost equivalent." The pieces to assemble for Patrik's flow: (1) a **scratch project** the agent writes HTML/CSS into (a per-conversation sandbox dir), (2) a Vite dev server over it, shown live in the Corner Visual Window (the eye) instead of a deployed URL — the harness already has a `preview_start` that opens a dev server in a pane, which is the same mechanism, (3) **inline image-gen** (KIE/Higgsfield) writing assets straight into the scratch dir so they appear on the next HMR tick, (4) a **"ship when ready"** action that does the git/deploy once — the only time the slow path runs. Build direction (needs Patrik's product call on where the sandbox lives in Corner): agent edits scratch → Vite HMR → user watches in the eye → one "publish" button at the end. No git in the loop.
+
 ## 5. Easy-to-add connections (Arcade)
 Connections need to be easy to add. **Arcade** may already give this ability — but it needs to be connected/wired.
 
