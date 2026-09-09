@@ -77,3 +77,22 @@ Remaining half (documented, not yet fixed): the **command-menu "Files"** does `w
 Patrik (new goal, item 2): the glow under the composer should be bigger, slowly animating bigger/smaller ("like the room has life"), and sit higher up. `V2ComposerGlow` now wraps `V2AmbientGlow` in a slow breathing scale (1.18 ⇄ 1.62, anchored bottom so it grows upward) + opacity pulse (0.80 ⇄ 1.0) over 5.5 s, autoreversing; Reduce Motion / screen-tour freeze at a static 1.35. The glow's footprint in ChatView grew 78 → 150 so the bigger bloom rises higher behind the composer. `V2AmbientGlow` (shared with the loading mark) is untouched. Verified on the 17 Pro sim: two frames 4 s apart show the bloom clearly bigger + higher than the old strip and pulsing between them.
 
 **Status:** done (verified on sim; ships in the next build).
+
+### R65–R67 — catch-up (2026-09-09, Claude by hand)
+
+Recorded here for the trail (built between R64 and R68, some in the AOM-EA repo):
+- **R65 ledger triage** — `scripts/ledger_triage.py` (AOM-EA): corroborates a ledger deed against `transcript-index.db` (key/distinctive terms → confirmed/hedged). Foundation for goal item 7.
+- **R66 tool-reachability** — `scripts/tool_intent.py` (AOM-EA, `--selftest` 18 cases) classifies email|video|image|web|files|none; `v2-team-bridge.py` emits a gated "TOOL NEEDED" pack line so the toolless chat brain names the tool instead of refusing. Native (aom-studio): command-menu Files → Organize fallback when no tabs; Copy in the reply menu; jump-to-latest overlay via a bottom sentinel.
+- **R67 Connect flow** — native Connections panel gains Gmail/Outlook/GitHub Connect buttons (`V2ConnectionsSheet`, `V2ArcadeConnectStore` → `arcade:initiateAuth`/`checkAuth`); `convex/arcade.ts` fixed (browser UA for Cloudflare-1010, `/v1/tools/authorize` → poll `/v1/auth/status` → `/v1/tools/execute`). Goal item 5. Live email/video execute waits on the corner-convex prod deploy (Patrik's).
+
+**Status:** done; live tool execution gated on the prod deploy.
+
+### R68 — Login/onboarding entrance animation (new-goal item 2) (2026-09-09, Claude by hand)
+
+Patrik (goal item 2): the login/onboarding screen should have "a slick animation" and never did — a hard cut to the full form read as unfinished. `SignInView` now runs a staggered entrance: logo → headline → sub → SSO rows → Continue → terms each rise 12px and fade in on a spring (`response 0.62, damping 0.85`, `0.07s` per-index delay via a private `StaggerReveal` modifier), while `V2AmbientGlow` (the app's own loading-mark motif, not a new language) breathes behind the headline. Reduce Motion returns every element at rest — no offset, no fade. The email field + Continue stay tappable throughout; the whole thing is ~1s, non-blocking.
+
+Verified on the iPhone 17 Pro sim from a launch recording: t≈1.6s shows logo+headline in while SSO rows/button/terms are still absent (mid-stagger); t≈2.0s shows all landed. Build clean before and after snapping the stagger offset 14→12 to the 4px grid. Signed decision record at `ios-native/Corner/Views/SignInView.decision.md` (`decision_record.py` PASS) — names the doubt: sim-only verify, glow-behind-headline placement not A/B'd, no Reduce-Motion capture.
+
+Not yet done: physical-device / iPad confirmation (Patrik's TestFlight); ship/redo is Patrik's call (entrance video sent 2026-09-09).
+
+**Status:** built + sim-verified + decision-signed; holding the TestFlight upload for Patrik's ship/redo on the motion.
