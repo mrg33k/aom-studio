@@ -280,9 +280,12 @@ final class R43NativeHomeFirstAndEyeTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(escaped.minY, 47 + 60)
     }
 
-    /// Website tabs: about a third of the screen tall (844 → 281).
+    /// Website tabs (R56 P094/P095 supersedes the R43 third-screen stage):
+    /// the brief's horizontal 16:9 video, full-bleed, capped at a third of
+    /// the screen — 390×844 → 390×219. The R43 screen/3 box (281) was not
+    /// a video shape (1.39:1); the bare 16:9 ratio wins over the "about".
     func testWebStageIsAThirdOfTheScreen() {
-        XCTAssertEqual(V2EyeWebMetrics.stageHeight(screenHeight: 844), 281, accuracy: 1)
-        XCTAssertEqual(V2EyeWebMetrics.stageHeight(screenHeight: 956), 319, accuracy: 1)
+        XCTAssertEqual(V2SiteBandMetrics.bandHeight(forWidth: 390, screenHeight: 844), 219, accuracy: 1)
+        XCTAssertEqual(V2SiteBandMetrics.bandHeight(forWidth: 440, screenHeight: 956), 248, accuracy: 1)
     }
 }

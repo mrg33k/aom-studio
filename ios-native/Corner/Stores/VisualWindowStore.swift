@@ -44,6 +44,16 @@ final class VisualWindowStore: ObservableObject {
     private var baselineEstablished = false
     /// Fired (main actor) when agent-opened tabs arrive. Nil by default.
     var onExternalTabs: (() -> Void)?
+    /// R56 P095 (agent window events): the thread's visual session, freshly
+    /// mirrored. Fired on every load that could fetch one (the agent's
+    /// `mode=hidden` minimize and its active tab arrive here). Nil by
+    /// default; failures never surface — the tab mirror is authoritative
+    /// and a missed session retries on the next tick.
+    var onSession: ((V2VisualSession) -> Void)?
+    /// R56 P094 (publish): the person's own position moves — a page turn or
+    /// a reader scroll the renderers report. The sync object owns the
+    /// debounce and the wire write; the store only forwards. Nil by default.
+    var onPosition: ((String, Int?, Double?) -> Void)?
 
     init(api: any CornerV2API, visualSessionID: String) {
         self.api = api
@@ -94,6 +104,15 @@ final class VisualWindowStore: ObservableObject {
         }
         if baselineEstablished, !arrivals.isEmpty {
             onExternalTabs?()
+        }
+        // R56: the session rides the same mirror (one sequential tick — no
+        // polling races: tabs first, session second, always in this order).
+        // Best-effort: a fixture without the rig, or a failed read, skips
+        // silently and the next tick retries.
+        if let threadID {
+            if let session = try? await api.visualSession(threadID: threadID) {
+                onSession?(session)
+            }
         }
     }
 
@@ -210,10 +229,21 @@ final class VisualWindowStore: ObservableObject {
     /// Renderer state write-back. Local only: v2Native has no update-state
     /// mutation, so this caches per tab id (survives `load`) and is sent on
     /// the next `open` of the same target.
+    /// R56: a `page` write is also the person's page turn — forwarded to the
+    /// view-state publish path (scroll arrives via `noteScroll` below).
     func updateState(tabID: String, key: String, value: String) {
         var cached = localState[tabID] ?? [:]
         cached[key] = value
         localState[tabID] = cached
+        if key == "page", let page = Int(value) {
+            onPosition?(tabID, page, nil)
+        }
+    }
+
+    /// R56: the site reader's scroll offset (points, contentOffset.y). The
+    /// web band reports it; the sync object throttles and publishes it.
+    func noteScroll(tabID: String, scroll: Double) {
+        onPosition?(tabID, nil, scroll)
     }
 
     // MARK: - selection persistence

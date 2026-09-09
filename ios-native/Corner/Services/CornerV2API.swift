@@ -73,6 +73,16 @@ protocol CornerV2API {
     func visualTabs(visualSessionID: String) async throws -> [VisualWindowTab]
     func openVisualTab(kind: VisualTabKind, threadID: String, artifactID: String?, title: String, state: [String: String]) async throws -> VisualWindowTab
     func closeVisualTab(id: String) async throws
+    /// R56 P094/C016: publish what the person is looking at
+    /// (`v2Visual:setViewState`, live — never edit the backend from here).
+    /// Every field is optional; unset fields are omitted from the args, so
+    /// a mode tap sends {mode}, a tab select {tabId}, a page turn {page},
+    /// a scroll {scroll}. `mode` is the eye raw value
+    /// (facetime|full|hidden); `tabID` is the raw Convex visualTabs id.
+    func setViewState(threadID: String, diff: V2ViewStateDiff) async throws
+    /// R56 P095/C016: the thread's visual session (`v2Visual:getSession`) —
+    /// the agent's `mode=hidden` minimize and its active tab arrive here.
+    func visualSession(threadID: String) async throws -> V2VisualSession
     func submitReview(artifactID: String, pins: [ReviewPin]) async throws -> SubmitReviewResult
     func ledger(workspaceID: String, after: String?) async throws -> [LedgerItem]
     /// R41 home: the flat projects + missions list (`v2Workspace:getNavigation`).
@@ -224,6 +234,26 @@ extension ConvexEndpoint {
 
     static func v2CloseVisualTab(id: String) -> ConvexEndpoint {
         v2("closeVisualTab", kind: .mutation, args: ["id": id])
+    }
+
+    /// R56 P094: `v2Visual:setViewState` — the person's live view state.
+    /// `threadId`/`tabId` ride as the raw Convex id strings (the same shape
+    /// every `v.id("threads")` / `v.id("visualTabs")` call site already
+    /// sends). Unset fields are omitted, never sent null: the validator's
+    /// fields are optional, and an explicit null is not the same as absent.
+    static func v2SetViewState(threadID: String, diff: V2ViewStateDiff) -> ConvexEndpoint {
+        var args: [String: Any] = ["threadId": threadID]
+        if let mode = diff.mode { args["mode"] = mode.rawValue }
+        if let tabID = diff.tabId { args["tabId"] = tabID }
+        if let page = diff.page { args["page"] = page }
+        if let scroll = diff.scroll { args["scroll"] = scroll }
+        return try! ConvexEndpoint(kind: .mutation, path: "v2Visual:setViewState", args: args)
+    }
+
+    /// R56 P095: `v2Visual:getSession` — mode + the active tab, polled with
+    /// the tab mirror (the native transport has no socket).
+    static func v2VisualSession(threadID: String) -> ConvexEndpoint {
+        try! ConvexEndpoint(kind: .query, path: "v2Visual:getSession", args: ["threadId": threadID])
     }
 
     static func v2Artifacts(threadID: String) -> ConvexEndpoint {
@@ -423,6 +453,18 @@ final class DefaultCornerV2API: CornerV2API {
 
     func closeVisualTab(id: String) async throws {
         let _: ConvexVoid = try await service.request(.v2CloseVisualTab(id: id), as: ConvexVoid.self)
+    }
+
+    func setViewState(threadID: String, diff: V2ViewStateDiff) async throws {
+        // A view-state write is awareness, never content: a dropped write
+        // (offline, rejected session) is silence, not an error surface —
+        // the next change re-sends the same snapshot. The caller owns that.
+        let _: V2VisualSession = try await service.request(
+            .v2SetViewState(threadID: threadID, diff: diff), as: V2VisualSession.self)
+    }
+
+    func visualSession(threadID: String) async throws -> V2VisualSession {
+        try await service.request(.v2VisualSession(threadID: threadID), as: V2VisualSession.self)
     }
 
     func submitReview(artifactID: String, pins: [ReviewPin]) async throws -> SubmitReviewResult {

@@ -1408,6 +1408,39 @@ final class PreviewV2API: CornerV2API {
         persistVisualTabs()
     }
 
+    // MARK: - R56 view state (fixture)
+
+    /// The last `setViewState` write this launch, for the view-state UI
+    /// tests (the test process cannot reach the fake — the app process owns
+    /// it — so publish proof runs at the unit level; the fixture only needs
+    /// to accept the write like the server does).
+    private(set) var lastViewStateWrite: (threadID: String, diff: V2ViewStateDiff)?
+
+    func setViewState(threadID: String, diff: V2ViewStateDiff) async throws {
+        lastViewStateWrite = (threadID: threadID, diff: diff)
+    }
+
+    /// `-v2AgentSession=<mode>`: the fixture answers `getSession` with the
+    /// agent's window event — `hidden` (the move-on minimize) or `full` /
+    /// `facetime`. `-v2AgentTab=<artifactID>` (with `-v2SeedVisual`) names
+    /// the agent's active tab, resolved against the seeded tabs. Without the
+    /// mode flag the fixture has no session to report and throws, so every
+    /// existing fixture run keeps its deterministic behaviour — the consume
+    /// path stays inert unless a test explicitly rigs it.
+    private var agentSessionMode: String = PreviewV2API.launchStringFlag("-v2AgentSession")
+    private var agentSessionTabArtifact: String = PreviewV2API.launchStringFlag("-v2AgentTab")
+
+    func visualSession(threadID: String) async throws -> V2VisualSession {
+        guard !agentSessionMode.isEmpty else { throw CornerV2APIError.unconfiguredFakeOperation }
+        seedVisualIfNeeded()
+        var activeTabId: String?
+        if !agentSessionTabArtifact.isEmpty {
+            activeTabId = visualTabsByID.values
+                .first { $0.artifactID == agentSessionTabArtifact }?.id
+        }
+        return V2VisualSession(mode: agentSessionMode, activeTabId: activeTabId)
+    }
+
     func submitReview(artifactID: String, pins: [ReviewPin]) async throws -> SubmitReviewResult {
         SubmitReviewResult(
             checklistId: "checklist-preview-1",

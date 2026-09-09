@@ -186,15 +186,15 @@ struct VisualWindowSheet: View {
                     VisualWindowTabBar()
                         .padding(.top, Theme.s2)
                     if let tab = window.selectedTab {
-                        // R43 P094: website tabs render the desktop page like
-                        // a horizontal video on the vertical phone — about a
-                        // third of the screen tall, scrollable inside.
+                        // R56 P094/P095: website tabs render the desktop page
+                        // as the 16:9 site band (V2SiteBandMetrics) — the
+                        // spec's horizontal video, scrollable inside. The
+                        // band's frame reads off `visual-stage-web`.
                         if tab.kind == .web,
                            let artifact = window.artifact(for: tab),
                            let url = artifact.sourceURL {
-                            V2EyeWebView(url: url)
+                            V2SiteBand(tab: tab, url: url)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: V2EyeWebMetrics.stageHeight())
                                 .padding(.top, Theme.s2)
                         } else {
                             ArtifactRenderer.view(

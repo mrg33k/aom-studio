@@ -108,6 +108,11 @@ struct ChatView: View {
     /// persisted per thread. Owned here so the nav bar, the PiP overlay,
     /// and the sheet wiring share one instance.
     @StateObject private var eye: V2EyeModeStore
+    /// R56 P094/P095/C016: the view-state sync — publishes what the person
+    /// is looking at (`v2Visual:setViewState`, debounced) and applies the
+    /// agent's window events (`getSession`: active tab raise + focus, the
+    /// move-on `mode=hidden` minimize). Attached per thread on appear.
+    @StateObject private var viewSync: V2ViewStateSync
     /// Dictation for the v2 Record chip (P023): streams into the draft.
     @StateObject private var speech = SpeechService()
     @State private var dictationBase = ""
@@ -226,6 +231,7 @@ struct ChatView: View {
         _window = StateObject(wrappedValue: VisualWindowStore(api: WorkspaceStore.shared.v2api, visualSessionID: "legacy"))
         _v2review = StateObject(wrappedValue: V2ReviewStore(api: WorkspaceStore.shared.v2api))
         _eye = StateObject(wrappedValue: V2EyeModeStore(threadID: room.roomID))
+        _viewSync = StateObject(wrappedValue: V2ViewStateSync(api: WorkspaceStore.shared.v2api))
         v2 = nil
     }
 
@@ -241,6 +247,7 @@ struct ChatView: View {
         _window = StateObject(wrappedValue: VisualWindowStore(api: WorkspaceStore.shared.v2api, visualSessionID: thread.visualSessionID))
         _v2review = StateObject(wrappedValue: V2ReviewStore(api: WorkspaceStore.shared.v2api))
         _eye = StateObject(wrappedValue: V2EyeModeStore(threadID: thread.id))
+        _viewSync = StateObject(wrappedValue: V2ViewStateSync(api: WorkspaceStore.shared.v2api))
         v2 = context
     }
 
@@ -507,12 +514,23 @@ struct ChatView: View {
                 window.onExternalTabs = { [eye] in
                     if eye.mode == .hidden { eye.set(.facetime) }
                 }
+                // R56 P094/P095/C016: the view-state sync — publish what the
+                // person looks at, apply the agent's session events (active
+                // tab raise + focus, the move-on minimize). The session
+                // rides the store's own mirror tick, so there is exactly one
+                // poll and it never publishes by itself.
+                viewSync.attach(threadID: context.thread.id, eye: eye, window: window)
+                window.onSession = { [viewSync] session in
+                    viewSync.applyRemote(session)
+                }
             }
         }
         .onDisappear {
             v2model.stop()
             window.stop()
             window.onExternalTabs = nil
+            window.onSession = nil
+            viewSync.detach()
             // R28: leaving the thread silences Talk aloud and parks image
             // runs as cancelled (their tabs, if opened, stay open).
             talkAloud?.stop()

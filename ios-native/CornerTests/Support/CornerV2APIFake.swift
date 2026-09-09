@@ -81,6 +81,13 @@ final class CornerV2APIFake: CornerV2API {
     var visualTabsHandler: ((String) async throws -> [VisualWindowTab])?
     var openTabHandler: ((VisualTabKind, String, String?, String, [String: String]) async throws -> VisualWindowTab)?
     var closeTabHandler: ((String) async throws -> Void)?
+    /// R56: every `setViewState` (thread id, diff), in order — the publish
+    /// tests assert the wire shapes here.
+    private(set) var viewStateWrites: [(threadID: String, diff: V2ViewStateDiff)] = []
+    var setViewStateHandler: ((String, V2ViewStateDiff) async throws -> Void)?
+    /// R56: the canned `getSession` answer, per thread. Unset (or throwing)
+    /// means "no session" — the store skips the consume path.
+    var visualSessionHandler: ((String) async throws -> V2VisualSession)?
     var submitReviewHandler: ((String, [ReviewPin]) async throws -> SubmitReviewResult)?
     var ledgerHandler: ((String, String?) async throws -> [LedgerItem])?
     var navigationHandler: (() async throws -> [V2NavNode])?
@@ -217,6 +224,15 @@ final class CornerV2APIFake: CornerV2API {
 
     func closeVisualTab(id: String) async throws {
         try await require(closeTabHandler, op: "closeVisualTab")(id)
+    }
+
+    func setViewState(threadID: String, diff: V2ViewStateDiff) async throws {
+        viewStateWrites.append((threadID: threadID, diff: diff))
+        try await require(setViewStateHandler, op: "setViewState")(threadID, diff)
+    }
+
+    func visualSession(threadID: String) async throws -> V2VisualSession {
+        try await require(visualSessionHandler, op: "visualSession")(threadID)
     }
 
     func submitReview(artifactID: String, pins: [ReviewPin]) async throws -> SubmitReviewResult {

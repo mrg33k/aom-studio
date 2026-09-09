@@ -228,7 +228,13 @@ const ANCHORS = {
   // hidden proves both absent with the icon staying.
   "eye-full": {
     required: ["v2-eye", "visual-sheet", "visual-stage-web"],
-    frames: [{ id: "v2-eye", x: 334, w: 44, h: 44, tol: 1.5 }],
+    frames: [
+      { id: "v2-eye", x: 334, w: 44, h: 44, tol: 1.5 },
+      // R56 P094/P095: the website-as-video band — the sheet content
+      // width at 16:9 (374 → 374×210 measured), the desktop page
+      // scrollable inside.
+      { id: "visual-stage-web", w: 374, h: 210, tol: 2 },
+    ],
     pixels: [{ label: "sheet-bg", rgb: [22, 27, 35], tol: 8 }],
   },
   "eye-facetime": {

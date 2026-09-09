@@ -172,7 +172,28 @@ final class R43HomeFirstAndEyeUITests: XCTestCase {
         dismissSheet(app)
         XCTAssertEqual(eyeLabel(app), "Visual window: hidden", "closing the full window hides it")
 
-        // Tap 1 → FaceTime: the floating box, no sheet.
+        // Tap 1 → FaceTime with the SITE selected: R56 docks the site tab
+        // as the full-width 16:9 band under the nav — never the portrait
+        // box (a desktop page squeezed into 110pt reads as nothing).
+        eye(app).tap()
+        let siteBand = app.descendants(matching: .any).matching(identifier: "v2-facetime-site").firstMatch
+        XCTAssertTrue(siteBand.waitForExistence(timeout: 10), "tap 1 raised no FaceTime site band")
+        XCTAssertEqual(eyeLabel(app), "Visual window: FaceTime")
+        XCTAssertFalse(sheet.exists, "FaceTime mode raised the sheet")
+        XCTAssertFalse(
+            app.descendants(matching: .any).matching(identifier: "v2-facetime").firstMatch.exists,
+            "the site tab must not use the portrait box")
+        // Tap 2 → full: the sheet returns (the band, like the box, also
+        // pulls up on tap — the eye is the deterministic test path).
+        eye(app).tap()
+        XCTAssertTrue(sheet.waitForExistence(timeout: 10), "tap 2 raised no full window")
+        XCTAssertEqual(eyeLabel(app), "Visual window: full")
+        dismissSheet(app)
+
+        // The portrait box is for document tabs: open the pdf, close it,
+        // tap 1 → FaceTime is the floating box, no sheet.
+        openCard(app, artifactID: "artifact-pdf-1")
+        dismissSheet(app)
         eye(app).tap()
         let pip = app.descendants(matching: .any).matching(identifier: "v2-facetime").firstMatch
         XCTAssertTrue(pip.waitForExistence(timeout: 10), "tap 1 raised no FaceTime window")
