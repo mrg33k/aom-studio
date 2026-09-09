@@ -16,6 +16,7 @@
 //     but also know that the agent had access to these things."
 
 import SwiftUI
+import UIKit
 
 // MARK: - Model
 
@@ -50,6 +51,9 @@ struct V2Tool: Identifiable {
     let icon: String
     let tint: Color
     var status: V2ToolStatus
+    /// R67: when set, this tool connects via Arcade OAuth (the Connect button).
+    /// The value is the Arcade service key ("gmail", "outlook", "github", …).
+    var arcadeService: String? = nil
 }
 
 struct V2ToolGroup: Identifiable {
@@ -107,18 +111,21 @@ final class V2ToolkitStore: ObservableObject {
                        icon: "safari", tint: Theme.teal, status: .connected)
             ]),
             V2ToolGroup(id: "email", title: "Email", tools: [
-                V2Tool(id: "mail-aom", name: "hello@aom-inhouse.com",
-                       detail: "Sends + reads",
-                       icon: "envelope", tint: Theme.accent, status: .connected),
-                V2Tool(id: "mail-outreach", name: "Cold outreach mailbox",
-                       detail: "40/day drip",
-                       icon: "envelope", tint: Theme.accent, status: .connected)
+                V2Tool(id: "gmail", name: "Gmail",
+                       detail: "Connect to read + send",
+                       icon: "envelope", tint: Theme.accent, status: .available,
+                       arcadeService: "gmail"),
+                V2Tool(id: "outlook", name: "Outlook",
+                       detail: "Connect to read + send",
+                       icon: "envelope", tint: Theme.accent, status: .available,
+                       arcadeService: "outlook")
             ]),
             V2ToolGroup(id: "code", title: "Code", tools: [
                 V2Tool(id: "github", name: "GitHub",
-                       detail: "AOM-EA · aom-studio",
+                       detail: "Connect your repos",
                        icon: "chevron.left.forwardslash.chevron.right",
-                       tint: Theme.violet, status: .connected)
+                       tint: Theme.violet, status: .available,
+                       arcadeService: "github")
             ]),
             V2ToolGroup(id: "computers", title: "Computers", tools: [
                 V2Tool(id: "mac-studio", name: "Studio Mac",
@@ -140,11 +147,70 @@ final class V2ToolkitStore: ObservableObject {
     }
 }
 
+// MARK: - Arcade connect flow
+
+/// R67: the OAuth connect flow for Arcade-backed tools (Gmail, Outlook, GitHub,
+/// …). Tap Connect → the corner-convex `arcade:initiateAuth` action returns a
+/// provider OAuth URL → open it in Safari → poll `arcade:checkAuth` until the
+/// user finishes approving. Verified live: the action returns a real Google
+/// sign-in. Needs ARCADE_API_KEY set on the backend + a deploy (Patrik).
+@MainActor
+final class V2ArcadeConnectStore: ObservableObject {
+    static let shared = V2ArcadeConnectStore()
+
+    enum ConnectState: Equatable { case idle, connecting, connected, failed(String) }
+
+    @Published private(set) var byService: [String: ConnectState] = [:]
+    private var polls: [String: Task<Void, Never>] = [:]
+
+    func state(for service: String) -> ConnectState { byService[service] ?? .idle }
+
+    private struct AuthResp: Decodable { let authUrl: String; let authId: String; let status: String? }
+    private struct StatusResp: Decodable { let status: String }
+
+    func connect(service: String) {
+        let userId = CornerAPI.shared.userEmail ?? ""
+        guard !userId.isEmpty else { byService[service] = .failed("Sign in first"); return }
+        byService[service] = .connecting
+        Task { @MainActor in
+            do {
+                let resp: AuthResp = try await ConvexService.shared.actionWithResult(
+                    "arcade:initiateAuth", args: ["userId": userId, "service": service])
+                if !resp.authUrl.isEmpty, let url = URL(string: resp.authUrl) {
+                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                }
+                poll(service: service, authId: resp.authId)
+            } catch {
+                byService[service] = .failed("Couldn't start")
+            }
+        }
+    }
+
+    private func poll(service: String, authId: String) {
+        polls[service]?.cancel()
+        guard !authId.isEmpty else { return }
+        polls[service] = Task { @MainActor in
+            for _ in 0..<40 { // ~2 minutes at 3s
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                if Task.isCancelled { return }
+                do {
+                    let s: StatusResp = try await ConvexService.shared.actionWithResult(
+                        "arcade:checkAuth", args: ["authId": authId])
+                    if s.status == "completed" { byService[service] = .connected; return }
+                    if s.status == "failed" { byService[service] = .failed("Authorization failed"); return }
+                } catch { /* transient — keep polling */ }
+            }
+            if state(for: service) == .connecting { byService[service] = .idle }
+        }
+    }
+}
+
 // MARK: - Sheet
 
 struct V2ConnectionsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var store = V2ToolkitStore.shared
+    @ObservedObject private var connect = V2ArcadeConnectStore.shared
 
     /// nil = global (opened from the menu); a room name scopes the copy to that
     /// room's agent (opened from the chat nav).
@@ -252,15 +318,59 @@ struct V2ConnectionsSheet: View {
                     .lineLimit(1)
                 HStack(spacing: 5) {
                     Circle()
-                        .fill(tool.status.dot)
+                        .fill(rowStatus(tool).dot)
                         .frame(width: 6, height: 6)
-                    Text("\(tool.status.label) · \(tool.detail)")
+                    Text("\(rowStatus(tool).label) · \(tool.detail)")
                         .font(.hanken(12))
                         .foregroundStyle(Theme.inkFaint)
                         .lineLimit(1)
                 }
             }
             Spacer(minLength: 8)
+            trailingControl(tool)
+        }
+        .padding(.horizontal, 12)
+        .frame(minHeight: 56)
+    }
+
+    /// The live status: an Arcade tool reflects its connect state; everything
+    /// else keeps its seeded status.
+    private func rowStatus(_ tool: V2Tool) -> V2ToolStatus {
+        guard let svc = tool.arcadeService else { return tool.status }
+        switch connect.state(for: svc) {
+        case .connected: return .connected
+        case .failed: return .attention
+        default: return tool.status // .available until connected
+        }
+    }
+
+    /// Arcade tools show a Connect button until connected (then the allow
+    /// toggle, like everything else). Non-Arcade tools keep the toggle.
+    @ViewBuilder
+    private func trailingControl(_ tool: V2Tool) -> some View {
+        if let svc = tool.arcadeService, connect.state(for: svc) != .connected {
+            switch connect.state(for: svc) {
+            case .connecting:
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.small)
+                    Text("Connecting…").font(.hanken(12.5)).foregroundStyle(Theme.inkFaint)
+                }
+            default:
+                Button {
+                    connect.connect(service: svc)
+                } label: {
+                    Text(isFailed(svc) ? "Retry" : "Connect")
+                        .font(.hanken(13).weight(.semibold))
+                        .foregroundStyle(Color.white)
+                        .padding(.horizontal, 14)
+                        .frame(height: 30)
+                        .background(Theme.accent, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("v2-connections-connect-\(svc)")
+                .accessibilityLabel("Connect \(tool.name)")
+            }
+        } else {
             Toggle("", isOn: Binding(
                 get: { store.isOn(tool.id) },
                 set: { store.setOn(tool.id, $0) }
@@ -270,8 +380,11 @@ struct V2ConnectionsSheet: View {
             .accessibilityIdentifier("v2-connections-toggle-\(tool.id)")
             .accessibilityLabel("\(tool.name), \(store.isOn(tool.id) ? "on" : "off")")
         }
-        .padding(.horizontal, 12)
-        .frame(minHeight: 56)
+    }
+
+    private func isFailed(_ svc: String) -> Bool {
+        if case .failed = connect.state(for: svc) { return true }
+        return false
     }
 
     private var footnote: some View {

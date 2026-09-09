@@ -307,6 +307,29 @@ final class ConvexService {
         return try ConvexService.decodeQueryResponse(data)
     }
 
+    // MARK: - Action with return value
+
+    /// Call a Convex ACTION (server-side, may make external HTTP — e.g. the
+    /// Arcade connect flow). Same envelope as a mutation but the `api/action`
+    /// endpoint. R67: added for `arcade:initiateAuth` / `arcade:checkAuth`.
+    func actionWithResult<T: Decodable>(_ functionName: String, args: [String: Any] = [:]) async throws -> T {
+        var request = URLRequest(url: baseURL.appendingPathComponent("api/action"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if let token = await legacyBearerToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        request.timeoutInterval = 30
+        let body: [String: Any] = ["path": functionName, "args": Self.sanitizedArgs(args), "format": "json"]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let (data, response) = try await transport.data(for: request)
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            let msg = String(data: data.prefix(500), encoding: .utf8) ?? "HTTP \(http.statusCode)"
+            throw ConvexError.badResponse(status: http.statusCode, message: msg)
+        }
+        return try ConvexService.decodeQueryResponse(data)
+    }
+
     // MARK: - Polling helper
 
     /// Poll a query every `interval` seconds, calling `onUpdate` with each result.
