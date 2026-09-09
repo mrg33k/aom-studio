@@ -124,6 +124,16 @@ struct RootView: View {
                     if !legacy.hasLoadedOnce { await legacy.load() }
                     if V2SetupStore.needsSetup { showSetup = true }
                 }
+                // R43 P097: a return from a long background lands on home.
+                // A queued deep link / notification wins — an arrival from
+                // outside the app is never clobbered by the home return.
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .background {
+                        router.noteBackgrounded()
+                    } else if phase == .active {
+                        maybeReturnHome()
+                    }
+                }
                 // The subscription can deliver a workspace after the refresh
                 // above resolved nothing (or after setup creates the first
                 // project): resolve into the entry, never over navigation.
@@ -144,10 +154,6 @@ struct RootView: View {
                 api.installFixtureSession()
             }
             #endif
-        }
-        .task(id: api.session?.user.id) {
-            guard api.session != nil else { return }
-            router.restoreLastRoom(for: api.world)
         }
         .onChange(of: api.session?.user.id) { _, newValue in
             if newValue == nil {
@@ -230,20 +236,39 @@ struct RootView: View {
         }
     }
 
-    /// R23 P070: resolve the entry thread once per workspace arrival. A set
+    /// R43 P097: resolve the home entry once per workspace arrival. A set
     /// entry is navigation and is never clobbered by a tree refresh.
     private func resolveEntry() {
         guard router.entryRoute == nil, let workspace = v2home.workspace else { return }
         router.entryRoute = router.resolveEntryRoute(in: workspace)
     }
+
+    /// R43 P097: a return from a long background lands on the home screen.
+    /// Skipped until the workspace is in (the general id comes from it),
+    /// while an outside arrival is queued, and while already home.
+    private func maybeReturnHome() {
+        guard let workspace = v2home.workspace,
+              let general = workspace.projects.first(where: { $0.kind == .general }) else { return }
+        guard router.pendingTarget == nil, router.unresolvedLink == nil else { return }
+        #if DEBUG
+        let debugForce = ProcessInfo.processInfo.arguments.contains("-v2HomeOnForeground")
+        #else
+        let debugForce = false
+        #endif
+        guard AppRouter.shouldReturnHome(
+            backgroundedAt: router.lastBackgroundedAt, now: Date(), debugForce: debugForce
+        ) else { return }
+        guard router.entryRoute != .project(projectID: general.id) || !router.path.isEmpty else { return }
+        router.goHome(generalProjectID: general.id)
+    }
 }
 
 // MARK: - Corner v2 entry (R23 P070)
 
-// The stack root: the last open thread, or General's. While the workspace is
-// still loading the root is plain ground — no intermediate page, never the
-// retired tree, never an error. Stale or foreign stored threads already fell
-// back to General inside resolveEntryRoute.
+// The stack root: home — General's thread (the R41 welcome). While the
+// workspace is still loading the root is plain ground — no intermediate
+// page, never the retired tree, never an error. R43 P097 retired R23's
+// last-thread entry: resolveEntryRoute always answers General.
 struct V2EntryRoot: View {
     @EnvironmentObject private var router: AppRouter
     @ObservedObject private var v2 = WorkspaceStore.shared

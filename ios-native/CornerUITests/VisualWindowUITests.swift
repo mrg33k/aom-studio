@@ -154,7 +154,10 @@ final class VisualWindowUITests: XCTestCase {
         app.terminate()
 
         let back = XCUIApplication()
-        back.launchArguments += ["-v2FixtureUITest", "-v2SeedVisual"]
+        // R43: -v2ResetEntry clears the eye (the terminated launch left it
+        // full, which would auto-raise the sheet over the card tap below)
+        // but NOT the tabs — the session restore is what this proves.
+        back.launchArguments += ["-v2FixtureUITest", "-v2SeedVisual", "-v2ResetEntry"]
         back.launch()
         XCTAssertTrue(back.wait(for: .runningForeground, timeout: 30), "app did not relaunch")
         openGeneralChat(back)

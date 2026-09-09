@@ -322,7 +322,7 @@ final class R19ShootScreens: XCTestCase {
         settle(2)
         shot("thread")
         frames("thread", ["chat-title", "chat-subtitle", "v2-drawer-button",
-                          "v2-status-dot", "v2-composer-field", "v2-composer-send",
+                          "v2-status-dot", "v2-eye", "v2-composer-field", "v2-composer-send",
                           "v2-record", "v2-commands", "visual-peek",
                           // R42 P092: dumped to anchor the design's type —
                           // the agent line (12.5pt → ~15pt box at x=16) and
@@ -522,5 +522,91 @@ final class R19ShootScreens: XCTestCase {
         // the thread) — always flat ground, never card fill.
         sample("home", "ground", CGPoint(x: 10, y: 400))
         NSLog("R19STATUS home ok")
+    }
+
+    // MARK: - R43 eye screens (fixture mode: deterministic tabs, no backend)
+
+    /// The eye cycle shoots against the fixture: the seeded pdf/site/video/
+    /// photo/code cards ride General's thread, so every mode is one tap
+    /// away with no network and no account.
+    // -v2ResetEntry also clears the per-thread eye modes (like the disk
+    // drafts), so the cycle starts hidden deterministically.
+    private static let eyeHarness = ["-v2FixtureUITest", "-screenTour", "-v2SuppressHaptics",
+                                     "-v2ResetEntry", "-v2SeedVisual", "-v2ResetVisual",
+                                     "-v2SkipSetup"]
+
+    /// The seeded thread is up (the shared visual event keeps General
+    /// non-empty, so this is a thread, never home).
+    private func openEyeThread() -> Bool {
+        threadUp()
+    }
+
+    /// Tap a seeded file card: the window opens straight into full mode
+    /// (every sheet raise lands in full). False when the card never shows.
+    @discardableResult
+    private func openEyeCard(_ artifactID: String) -> Bool {
+        let card = app.buttons.matching(identifier: "visual-open-\(artifactID)").firstMatch
+        guard card.waitForExistence(timeout: 25) else { return false }
+        card.tap()
+        settle(1.5)
+        return any("visual-sheet", timeout: 15).exists
+    }
+
+    /// Full mode, on the site tab: the website-as-video stage (the desktop
+    /// page, ~a third of the screen tall, scrollable inside).
+    func testShoot12EyeFull() throws {
+        launch(Self.eyeHarness, realBackend: false)
+        // The site card opens the website-as-video stage: the desktop
+        // page, ~a third of the screen tall, scrollable inside.
+        guard openEyeThread(), openEyeCard("artifact-site-1") else {
+            NSLog("R19STATUS eye-full missing no-sheet"); return
+        }
+        settle(2)
+        shot("eye-full")
+        frames("eye-full", ["v2-eye", "visual-sheet", "visual-stage-web"])
+        sample("eye-full", "sheet-bg", CGPoint(x: 200, y: 232))
+        NSLog("R19STATUS eye-full ok")
+    }
+
+    /// FaceTime mode: the sheet close (the ring's full→hidden step is the
+    /// person's close; the agent's open returns here) leaves the floating
+    /// ~110×160 box top-right with the sheet gone.
+    func testShoot13EyeFaceTime() throws {
+        launch(Self.eyeHarness, realBackend: false)
+        guard openEyeThread(), openEyeCard("artifact-pdf-1") else {
+            NSLog("R19STATUS eye-facetime missing no-sheet"); return
+        }
+        // Back to hidden first (the person's close), then tap 1 → FaceTime.
+        let close = app.buttons.matching(identifier: "visual-sheet-close").firstMatch
+        guard close.waitForExistence(timeout: 8) else {
+            NSLog("R19STATUS eye-facetime missing no-close"); return
+        }
+        close.tap()
+        settle(1)
+        let eye = app.buttons.matching(identifier: "v2-eye").firstMatch
+        guard eye.waitForExistence(timeout: 8) else {
+            NSLog("R19STATUS eye-facetime missing no-eye"); return
+        }
+        eye.tap()
+        settle(2)
+        shot("eye-facetime")
+        // visual-sheet is dumped to prove absence (the MISSING line is the
+        // gate's forbidden anchor).
+        frames("eye-facetime", ["v2-eye", "v2-facetime", "visual-sheet"])
+        NSLog("R19STATUS eye-facetime ok")
+    }
+
+    /// Hidden mode, fresh (-v2ResetEntry clears the eye): the eye sits
+    /// top-right with neither sheet nor floating box on screen.
+    func testShoot14EyeHidden() throws {
+        launch(Self.eyeHarness, realBackend: false)
+        guard openEyeThread() else {
+            NSLog("R19STATUS eye-hidden missing no-thread"); return
+        }
+        settle(2)
+        shot("eye-hidden")
+        // Both ids are dumped to prove absence (see eye-facetime).
+        frames("eye-hidden", ["v2-eye", "v2-facetime", "visual-sheet"])
+        NSLog("R19STATUS eye-hidden ok")
     }
 }

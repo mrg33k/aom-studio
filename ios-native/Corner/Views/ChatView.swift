@@ -104,6 +104,10 @@ struct ChatView: View {
     /// Corner v2 review checklist (native Task 8): pins per artifact, capped
     /// at four, submitted once per Send. Inert on the legacy path.
     @StateObject private var v2review: V2ReviewStore
+    /// R43 P094/P095: the eye icon's mode — facetime / full / hidden,
+    /// persisted per thread. Owned here so the nav bar, the PiP overlay,
+    /// and the sheet wiring share one instance.
+    @StateObject private var eye: V2EyeModeStore
     /// Dictation for the v2 Record chip (P023): streams into the draft.
     @StateObject private var speech = SpeechService()
     @State private var dictationBase = ""
@@ -221,6 +225,7 @@ struct ChatView: View {
         _v2home = StateObject(wrappedValue: V2HomeModel())
         _window = StateObject(wrappedValue: VisualWindowStore(api: WorkspaceStore.shared.v2api, visualSessionID: "legacy"))
         _v2review = StateObject(wrappedValue: V2ReviewStore(api: WorkspaceStore.shared.v2api))
+        _eye = StateObject(wrappedValue: V2EyeModeStore(threadID: room.roomID))
         v2 = nil
     }
 
@@ -235,6 +240,7 @@ struct ChatView: View {
         _v2home = StateObject(wrappedValue: V2HomeModel())
         _window = StateObject(wrappedValue: VisualWindowStore(api: WorkspaceStore.shared.v2api, visualSessionID: thread.visualSessionID))
         _v2review = StateObject(wrappedValue: V2ReviewStore(api: WorkspaceStore.shared.v2api))
+        _eye = StateObject(wrappedValue: V2EyeModeStore(threadID: thread.id))
         v2 = context
     }
 
@@ -329,6 +335,9 @@ struct ChatView: View {
         // the send button both read back as the container's id). The screen
         // marker lives on the nav title, a leaf in a separate subtree.
         .toolbar(.hidden, for: .navigationBar)
+        // R43 P094/P095: the eye's contract with the sheet (PiP overlay +
+        // mode sync) — before the drawer overlay, which stays the top layer.
+        .modifier(V2EyeOverlay(eye: eye, review: v2review))
         .overlay {
             if v2ShowingDrawer {
                 V2DrawerView(isPresented: $v2ShowingDrawer, currentThreadID: v2?.thread.id)
@@ -459,10 +468,10 @@ struct ChatView: View {
         }
         .onAppear {
             if let context = v2 {
+                // R43 P097: the last thread stays one tap away through
+                // Recent (plus the home cards) — not through the entry,
+                // which is always home now.
                 V2RecentStore.shared.record(project: context.project, mission: context.mission)
-                // R23 P070: every thread arrival persists the entry — the
-                // next cold start opens this thread (or General's).
-                router.rememberV2(projectID: context.project.id, missionID: context.mission?.id)
                 // R28: Talk aloud is per-thread, like every other thread pref.
                 if talkAloud == nil { talkAloud = V2TalkAloud(threadID: context.thread.id) }
                 // Setup step 6 stages the first goal here — reviewed, never sent.
@@ -493,11 +502,17 @@ struct ChatView: View {
                 }
                 Task { await v2model.start(thread: context.thread, project: context.project, mission: context.mission) }
                 Task { await window.start(threadID: context.thread.id) }
+                // R43 P095 agent-driven open: tabs the agent adds while the
+                // eye is hidden bring the window back in FaceTime mode.
+                window.onExternalTabs = { [eye] in
+                    if eye.mode == .hidden { eye.set(.facetime) }
+                }
             }
         }
         .onDisappear {
             v2model.stop()
             window.stop()
+            window.onExternalTabs = nil
             // R28: leaving the thread silences Talk aloud and parks image
             // runs as cancelled (their tabs, if opened, stay open).
             talkAloud?.stop()
@@ -573,6 +588,19 @@ struct ChatView: View {
             } else {
                 Color.clear.frame(width: 44, height: 44)
             }
+            // R43 P094: the eye sits top-right on every chat and cycles the
+            // Visual Window — facetime → full → hidden. Rightmost, 44pt,
+            // always present (even hidden — the icon stays).
+            Button { eye.cycle() } label: {
+                Image(systemName: eye.iconName)
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(Theme.ink)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("v2-eye")
+            .accessibilityLabel(eye.accessibilityLabel)
         }
         .padding(.trailing, 12)
         .frame(height: 52)

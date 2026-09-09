@@ -84,7 +84,7 @@ function usage() {
   console.log(`usage: node tools/native-design-vs-sim.mjs [options]
   --sim-390 UDID  --sim-402 UDID  --sim-440 UDID
   --design DIR  --out DIR  --modules DIR
-  --screens login,setup-1,setup-6,thread,drawer,settings,sheet-half,sheet-context,sheet-review,sheet-full,empty,home
+  --screens login,setup-1,setup-6,thread,drawer,settings,sheet-half,sheet-context,sheet-review,sheet-full,empty,home,eye-full,eye-facetime,eye-hidden
   --skip-shoot (reuse last shots)  --keep-handoff`);
 }
 
@@ -105,6 +105,12 @@ const SCREENS = {
   // screen is the reference, not a frame) — anchors only, like the empty
   // screen's unreachable case but with required elements.
   "home":          { test: "testShoot11Home",    design: null,                                h: 844 },
+  // R43 eye: fixture-mode shoots (deterministic tabs, no backend), anchors
+  // only — the eye icon position (top-right, 44pt) and the FaceTime box
+  // (~110×160, top-right under the nav).
+  "eye-full":      { test: "testShoot12EyeFull", design: null,                               h: 844 },
+  "eye-facetime":  { test: "testShoot13EyeFaceTime", design: null,                           h: 844 },
+  "eye-hidden":    { test: "testShoot14EyeHidden", design: null,                             h: 844 },
 };
 
 const DEVICES = [
@@ -149,13 +155,16 @@ const ANCHORS = {
     pixels: [],
   },
   "thread": {
-    required: ["chat-title", "v2-drawer-button", "v2-composer-field",
+    required: ["chat-title", "v2-drawer-button", "v2-eye", "v2-composer-field",
                "v2-composer-send", "v2-record", "v2-commands",
                "v2-agent-label"],
     frames: [
       { id: "v2-composer-send", w: 50, h: 50, tol: 1.5 },
       { id: "v2-commands", h: 32, tol: 1.5 },
       { id: "v2-record", w: 36, h: 36, tol: 1.5 },
+      // R43 P094: the eye sits top-right on every chat — rightmost 44pt
+      // target (x=334 on 390), in the 52pt nav row (y=51).
+      { id: "v2-eye", x: 334, w: 44, h: 44, tol: 1.5 },
       // R42 P092: the design's thread type at 390 — 16pt gutter, the
       // 12.5pt agent line (17pt box), the 11pt stamps (14pt box), all
       // measured live on the 390 sim across two tour runs.
@@ -212,6 +221,31 @@ const ANCHORS = {
     scans: [{ kind: "sheet-handle-full", tol: 3 }],
   },
   "empty": { required: [], frames: [], pixels: [] }, // unreachable on a populated account
+  // R43 eye: the three Visual Window modes, fixture-shot. The eye rides
+  // every screen (top-right 44pt, same anchor as the thread screen); full
+  // proves the sheet + the website-as-video stage, facetime proves the
+  // floating box (110×160 top-right under the nav) with the sheet absent,
+  // hidden proves both absent with the icon staying.
+  "eye-full": {
+    required: ["v2-eye", "visual-sheet", "visual-stage-web"],
+    frames: [{ id: "v2-eye", x: 334, w: 44, h: 44, tol: 1.5 }],
+    pixels: [{ label: "sheet-bg", rgb: [22, 27, 35], tol: 8 }],
+  },
+  "eye-facetime": {
+    required: ["v2-eye", "v2-facetime"],
+    forbidden: ["visual-sheet"],
+    frames: [
+      { id: "v2-eye", x: 334, w: 44, h: 44, tol: 1.5 },
+      { id: "v2-facetime", x: 268, y: 158, w: 110, h: 160, tol: 2 },
+    ],
+    pixels: [],
+  },
+  "eye-hidden": {
+    required: ["v2-eye"],
+    forbidden: ["v2-facetime", "visual-sheet"],
+    frames: [{ id: "v2-eye", x: 334, w: 44, h: 44, tol: 1.5 }],
+    pixels: [],
+  },
   // R41 home: the centred content-column logo (never the nav — the nav
   // shows no title here, hence the forbidden chat-title), the welcome
   // line, and the three cards. The composer pair rides along as dumped
@@ -437,6 +471,7 @@ function checkAnchors(screen, tour, sim390) {
     if (!got) { fail(`${f.id} geometry`, "present", "MISSING", "—", "UI"); continue; }
     const dims = [];
     if (f.x !== undefined) dims.push([`x${f.x}`, got.x]);
+    if (f.y !== undefined) dims.push([`y${f.y}`, got.y]);
     if (f.w !== undefined) dims.push([`w${f.w}`, got.w]);
     if (f.h !== undefined) dims.push([`h${f.h}`, got.h]);
     for (const [name, value] of dims) {

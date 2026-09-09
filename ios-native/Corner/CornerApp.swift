@@ -79,17 +79,15 @@ struct CornerApp: App {
             UserDefaults.standard.removeObject(forKey: "corner.v2.setup-done")
             UserDefaults.standard.removeObject(forKey: "navigation.lastRoomID")
         }
-        // R23 P070: forget the last thread so the entry resolves
-        // deterministically (General) no matter what an earlier run left
-        // behind. Debug builds only.
+        // R43 P097: the entry is always home (General), so -v2ResetEntry no
+        // longer clears a stored thread — there is none. It still drops
+        // per-thread disk drafts, so one UI test's typing never leaks into
+        // the next launch's composer — and the per-thread eye modes, so a
+        // sheet the last suite left open never auto-raises in the next one
+        // (every fixture suite launches with this flag). Debug builds only.
         if ProcessInfo.processInfo.arguments.contains("-v2ResetEntry") {
-            UserDefaults.standard.removeObject(forKey: AppRouter.lastV2KindKey)
-            UserDefaults.standard.removeObject(forKey: AppRouter.lastV2IDKey)
-            // R28: a reset entry is a fresh thread — drop per-thread disk
-            // drafts with it, so one UI test's typing never leaks into the
-            // next launch's composer.
             for key in UserDefaults.standard.dictionaryRepresentation().keys
-            where key.hasPrefix("v2ComposerDraft.") {
+            where key.hasPrefix("v2ComposerDraft.") || key.hasPrefix("corner.v2.eye-mode.") {
                 UserDefaults.standard.removeObject(forKey: key)
             }
         }
@@ -99,6 +97,7 @@ struct CornerApp: App {
         if ProcessInfo.processInfo.arguments.contains("-v2ClearRecents") {
             V2RecentStore.shared.clear()
         }
+
         // Auto sign-in for simulator testing. Reads email/password from launch
         // environment so `xcrun simctl launch --env` can authenticate without
         // touching the password field. Debug builds only, never shipped.

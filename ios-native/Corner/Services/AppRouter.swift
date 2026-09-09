@@ -203,10 +203,6 @@ final class AppRouter: ObservableObject {
     private static let lastRoomIDKey = "navigation.lastRoomID"
     private static let lastRoomTitleKey = "navigation.lastRoomTitle"
     private static let lastRoomSubtitleKey = "navigation.lastRoomSubtitle"
-    /// R23 P070: the last v2 thread the person had open. The stack root IS a
-    /// thread now (the home tree is retired), so this is the entry identity.
-    static let lastV2KindKey = "navigation.lastV2Kind" // "project" | "mission"
-    static let lastV2IDKey = "navigation.lastV2ID"
     private let defaults: UserDefaults
 
     /// The navigation stack. One element deep in practice, but a path rather than a
@@ -238,28 +234,6 @@ final class AppRouter: ObservableObject {
         self.defaults = defaults
     }
 
-    /// Restore the conversation the signed-in user was last looking at. RootView calls
-    /// this only after auth/world resolution, so a room from another tenant can never
-    /// flash on screen during account switching.
-    /// Fixture launches never restore: a real lastRoomID left by a backend run would
-    /// otherwise hijack the hermetic tree (R17: three flow reds, one shared cause).
-    func restoreLastRoom(for world: String?) {
-        #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-v2FixtureUITest") { return }
-        #endif
-        guard path.isEmpty,
-              let world,
-              let roomID = defaults.string(forKey: Self.lastRoomIDKey),
-              let room = Room.parse(
-                roomID: roomID,
-                title: defaults.string(forKey: Self.lastRoomTitleKey),
-                subtitle: defaults.string(forKey: Self.lastRoomSubtitleKey) ?? ""
-              ),
-              room.world == world
-        else { return }
-        path = [.room(room)]
-    }
-
     /// Persist enough display truth to restore the room without first waiting for the
     /// rail request. The canonical room id remains the navigation identity.
     func remember(_ room: Room) {
@@ -268,37 +242,12 @@ final class AppRouter: ObservableObject {
         defaults.set(room.subtitle, forKey: Self.lastRoomSubtitleKey)
     }
 
-    /// R23 P070: persist the open v2 thread. ChatView calls this once per
-    /// thread appearance, so every arrival — entry, drawer, deep link,
-    /// intake confirmation — is the next cold start's entry.
-    func rememberV2(projectID: String, missionID: String?) {
-        if let missionID {
-            defaults.set("mission", forKey: Self.lastV2KindKey)
-            defaults.set(missionID, forKey: Self.lastV2IDKey)
-        } else {
-            defaults.set("project", forKey: Self.lastV2KindKey)
-            defaults.set(projectID, forKey: Self.lastV2IDKey)
-        }
-    }
-
-    /// R23 P070: the entry thread for a fresh workspace. The last open thread
-    /// when it still exists; General's thread when there is no stored thread,
-    /// it went stale, or it belongs to another account's tree. Never nil when
-    /// the workspace holds projects — the entry is a thread, never an error.
+    /// R43 P097: the entry is ALWAYS home — General's thread (the R41
+    /// welcome). The last thread stays one tap away (drawer Recent + the
+    /// home cards) but is never the entry. This replaces R23's "entry is
+    /// the thread" rule. Deep links / notifications still open their thread
+    /// through `open(_:)`, which replaces the entry outright.
     func resolveEntryRoute(in workspace: WorkspaceSummary) -> Route? {
-        if let kind = defaults.string(forKey: Self.lastV2KindKey),
-           let id = defaults.string(forKey: Self.lastV2IDKey), !id.isEmpty {
-            if kind == "mission" {
-                for project in workspace.projects {
-                    if project.missions.contains(where: { $0.id == id }) {
-                        return .mission(missionID: id)
-                    }
-                }
-            } else if kind == "project",
-                      workspace.projects.contains(where: { $0.id == id }) {
-                return .project(projectID: id)
-            }
-        }
         if let general = workspace.projects.first(where: { $0.kind == .general }) {
             return .project(projectID: general.id)
         }
@@ -306,6 +255,39 @@ final class AppRouter: ObservableObject {
             return .project(projectID: first.id)
         }
         return nil
+    }
+
+    /// R43 P097: a return from a long background lands on home. RootView
+    /// records the backgrounding and asks on the next activation; the
+    /// decision itself is pure so the rule is unit-pinned.
+    static var longBackgroundThreshold: TimeInterval = 300
+
+    /// When the app last backgrounded (nil = never recorded this launch).
+    private(set) var lastBackgroundedAt: Date?
+
+    func noteBackgrounded(at date: Date = Date()) {
+        lastBackgroundedAt = date
+    }
+
+    /// True when the away stretch counts as "long" — or when the DEBUG rig
+    /// forces it (`-v2HomeOnForeground`), so a UI test can prove the return
+    /// without waiting out the threshold.
+    static func shouldReturnHome(
+        backgroundedAt: Date?, now: Date, debugForce: Bool = false
+    ) -> Bool {
+        if debugForce { return true }
+        guard let backgroundedAt else { return false }
+        return now.timeIntervalSince(backgroundedAt) >= longBackgroundThreshold
+    }
+
+    /// Pop everything and show the home entry. Callers skip this while a
+    /// deep link or notification target is still queued — an arrival from
+    /// outside the app wins over the home return.
+    func goHome(generalProjectID: String) {
+        path = []
+        pendingEntry = nil
+        deferredPush = nil
+        entryRoute = .project(projectID: generalProjectID)
     }
 
     /// R23 P070: sign-out closes the entry too. The stored last thread

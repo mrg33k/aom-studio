@@ -110,11 +110,13 @@ enum HomeSuggestions {
         ]
     }
 
-    /// Drop noise, group by subject, take the three freshest subjects that
-    /// resolve to navigation, fill the rest with onboarding rows in order.
-    /// A mission subject resolves to its parent project (that project's
-    /// thread is what the tap opens); a subject with no navigation node is
-    /// skipped — its title must come from navigation.
+    /// Drop noise, group by subject, take the three freshest DISTINCT
+    /// projects that resolve to navigation, fill the rest with onboarding
+    /// rows in order. A mission subject resolves to its parent project
+    /// (that project's thread is what the tap opens); a subject with no
+    /// navigation node is skipped — its title must come from navigation.
+    /// R43 P096: subjects that resolve to the same destination project
+    /// collapse to their freshest — never the same project twice.
     static func build(
         items: [WorldLedgerItem], nodes: [V2NavNode], max: Int = HomeSuggestions.cardCount
     ) -> [HomeSuggestion] {
@@ -138,9 +140,14 @@ enum HomeSuggestions {
             return $0.key < $1.key
         }
         var out: [HomeSuggestion] = []
+        // The tap destination, not the subject: two subjects in one project
+        // open the same thread, so the second never takes a card.
+        var usedDestinations: Set<String> = []
         for (subject, item) in ordered {
             guard out.count < max else { break }
             guard let card = card(subject: subject, item: item, nodes: nodes) else { continue }
+            let destination = card.projectID.isEmpty ? card.id : card.projectID
+            guard usedDestinations.insert(destination).inserted else { continue }
             out.append(card)
         }
         // Fill with the desktop's onboarding rows, in order.

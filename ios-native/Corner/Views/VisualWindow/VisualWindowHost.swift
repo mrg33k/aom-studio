@@ -186,16 +186,28 @@ struct VisualWindowSheet: View {
                     VisualWindowTabBar()
                         .padding(.top, Theme.s2)
                     if let tab = window.selectedTab {
-                        ArtifactRenderer.view(
-                            tab: tab,
-                            artifact: window.artifact(for: tab),
-                            state: window.effectiveState(for: tab),
-                            updateState: { key, value in window.updateState(tabID: tab.id, key: key, value: value) },
-                            review: review
-                        )
-                        .frame(maxWidth: .infinity)
-                        .frame(height: stageHeight)
-                        .padding(.top, Theme.s2)
+                        // R43 P094: website tabs render the desktop page like
+                        // a horizontal video on the vertical phone — about a
+                        // third of the screen tall, scrollable inside.
+                        if tab.kind == .web,
+                           let artifact = window.artifact(for: tab),
+                           let url = artifact.sourceURL {
+                            V2EyeWebView(url: url)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: V2EyeWebMetrics.stageHeight())
+                                .padding(.top, Theme.s2)
+                        } else {
+                            ArtifactRenderer.view(
+                                tab: tab,
+                                artifact: window.artifact(for: tab),
+                                state: window.effectiveState(for: tab),
+                                updateState: { key, value in window.updateState(tabID: tab.id, key: key, value: value) },
+                                review: review
+                            )
+                            .frame(maxWidth: .infinity)
+                            .frame(height: stageHeight)
+                            .padding(.top, Theme.s2)
+                        }
                         if review.reviewing, let artifactID = tab.artifactID {
                             if let status = statusText, review.pins.isEmpty {
                                 // P054: the green-dot status card above Send.

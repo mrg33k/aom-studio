@@ -288,9 +288,10 @@ final class RouteTests: XCTestCase {
         )
     }
 
-    /// No stored thread: the entry is General's thread, never an error.
+    /// R43 P097: the entry is ALWAYS home — General's thread, never an
+    /// error, never the last thread (R23's rule is replaced).
     @MainActor
-    func testEntryFallsBackToGeneralWithNoStoredThread() {
+    func testEntryIsAlwaysGeneral() {
         let (router, _) = entryRouter()
         XCTAssertEqual(
             router.resolveEntryRoute(in: entryWorkspace()),
@@ -314,40 +315,21 @@ final class RouteTests: XCTestCase {
         )
     }
 
-    /// A stored thread that still exists restores — project and mission.
+    /// No General in the tree: the first project is the entry — never an
+    /// error, never a blank root.
     @MainActor
-    func testEntryRestoresStoredThread() {
+    func testEntryWithoutGeneralFallsBackToFirstProject() {
         let (router, _) = entryRouter()
-        router.rememberV2(projectID: "proj-aster-1", missionID: nil)
+        let workspace = entryWorkspace()
+        let nongeneral = WorkspaceSummary(
+            id: workspace.id, name: workspace.name,
+            generalProjectID: workspace.generalProjectID,
+            projects: workspace.projects.filter { $0.kind != .general }
+        )
         XCTAssertEqual(
-            router.resolveEntryRoute(in: entryWorkspace()),
+            router.resolveEntryRoute(in: nongeneral),
             .project(projectID: "proj-aster-1")
         )
-        router.rememberV2(projectID: "proj-aster-1", missionID: "mission-ship-1")
-        XCTAssertEqual(
-            router.resolveEntryRoute(in: entryWorkspace()),
-            .mission(missionID: "mission-ship-1")
-        )
-    }
-
-    /// Stale, foreign, and unknown-kind ids all fall back to General — never
-    /// to an error, never to a blank root.
-    @MainActor
-    func testEntryFallsBackToGeneralOnStaleOrForeignIDs() {
-        let general = Route.project(projectID: "proj-general-1")
-        let (stale, _) = entryRouter()
-        stale.rememberV2(projectID: "proj-gone", missionID: nil)
-        XCTAssertEqual(stale.resolveEntryRoute(in: entryWorkspace()), general)
-
-        let (foreign, _) = entryRouter()
-        foreign.rememberV2(projectID: "proj-aster-1", missionID: "mission-foreign-9")
-        XCTAssertEqual(foreign.resolveEntryRoute(in: entryWorkspace()), general)
-
-        let weirdDefaults = UserDefaults(suiteName: "r23-entry-\(UUID().uuidString)")!
-        weirdDefaults.set("room", forKey: AppRouter.lastV2KindKey)
-        weirdDefaults.set("proj-aster-1", forKey: AppRouter.lastV2IDKey)
-        XCTAssertEqual(
-            AppRouter(defaults: weirdDefaults).resolveEntryRoute(in: entryWorkspace()), general)
     }
 
     /// Thread destinations replace the entry root instead of stacking; opening
@@ -387,20 +369,46 @@ final class RouteTests: XCTestCase {
         XCTAssertFalse(router.isShowing(.route(.project(projectID: "proj-aster-1"))))
     }
 
-    /// Sign-out forgets the rendered entry but keeps the stored last thread
-    /// for the next sign-in to re-resolve.
+    /// R43 P097: sign-out forgets the rendered entry; the next sign-in
+    /// re-resolves home — never the last thread.
     @MainActor
-    func testForgetEntryKeepsStoredThread() {
+    func testForgetEntryResolvesHomeAgain() {
         let (router, _) = entryRouter()
-        router.rememberV2(projectID: "proj-aster-1", missionID: "mission-ship-1")
         router.entryRoute = .mission(missionID: "mission-ship-1")
         router.closeAll()
         router.forgetEntry()
         XCTAssertNil(router.entryRoute)
         XCTAssertEqual(
             router.resolveEntryRoute(in: entryWorkspace()),
-            .mission(missionID: "mission-ship-1")
+            .project(projectID: "proj-general-1")
         )
+    }
+
+    /// R43 P097: a deep link still opens its thread over the home entry —
+    /// the entry rule never swallows an outside arrival. The replace lands
+    /// a beat after the open (the drawer-dismissal swallow), so this test
+    /// waits it out.
+    @MainActor
+    func testDeepLinkOpensThreadOverHomeEntry() async throws {
+        let (router, _) = entryRouter()
+        router.entryRoute = .project(projectID: "proj-general-1")
+        router.open(.mission(missionID: "mission-ship-1"))
+        try await Task.sleep(nanoseconds: 200_000_000)
+        XCTAssertEqual(router.entryRoute, .mission(missionID: "mission-ship-1"))
+        XCTAssertTrue(router.path.isEmpty, "a thread replace must not stack")
+    }
+
+    /// R43 P097: goHome pops everything and shows the home entry — the
+    /// long-background return. A pushed screen does not survive it.
+    @MainActor
+    func testGoHomePopsToTheHomeEntry() {
+        let (router, _) = entryRouter()
+        router.entryRoute = .mission(missionID: "mission-ship-1")
+        router.open(.organize)
+        XCTAssertEqual(router.path, [.organize])
+        router.goHome(generalProjectID: "proj-general-1")
+        XCTAssertTrue(router.path.isEmpty)
+        XCTAssertEqual(router.entryRoute, .project(projectID: "proj-general-1"))
     }
 
     /// R23 P071: the displayed title is the mission name only — the project

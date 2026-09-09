@@ -34,6 +34,16 @@ final class VisualWindowStore: ObservableObject {
     /// Renderer state cached locally per tab id (see header: no mutation).
     private var localState: [String: [String: String]] = [:]
     private var poll: Task<Void, Never>?
+    /// R43 P095 (agent-driven open): every tab id the mirror has ever held,
+    /// and the ids the person opened themselves. A fresh id that was never
+    /// adopted locally is the agent talking about a file — the eye's hidden
+    /// mode returns to facetime for it. `start` baselines silently (the
+    /// first mirror is history, not an arrival); only later loads report.
+    private var seenTabIDs: Set<String> = []
+    private var adoptedTabIDs: Set<String> = []
+    private var baselineEstablished = false
+    /// Fired (main actor) when agent-opened tabs arrive. Nil by default.
+    var onExternalTabs: (() -> Void)?
 
     init(api: any CornerV2API, visualSessionID: String) {
         self.api = api
@@ -65,9 +75,15 @@ final class VisualWindowStore: ObservableObject {
     /// Mirror the server session; restore the persisted selection while its
     /// tab is still open, else keep a surviving selection, else take the
     /// first tab. Never invents tabs, never clears local renderer state.
+    /// R43 P095: ids never seen before that the person never adopted are
+    /// agent arrivals — reported through `onExternalTabs` once the start
+    /// baseline is established.
     func load() async throws {
         let fresh = try await api.visualTabs(visualSessionID: visualSessionID)
         tabs = fresh
+        let freshIDs = Set(fresh.map(\.id))
+        let arrivals = freshIDs.subtracting(seenTabIDs).subtracting(adoptedTabIDs)
+        seenTabIDs.formUnion(freshIDs)
         if let saved = Self.persistedSelection(sessionID: visualSessionID),
            fresh.contains(where: { $0.id == saved }) {
             selectedTabID = saved
@@ -75,6 +91,9 @@ final class VisualWindowStore: ObservableObject {
             selectedTabID = current
         } else {
             selectedTabID = fresh.first?.id
+        }
+        if baselineEstablished, !arrivals.isEmpty {
+            onExternalTabs?()
         }
     }
 
@@ -84,9 +103,13 @@ final class VisualWindowStore: ObservableObject {
 
     /// Load once, then poll the session like `threadEvents` (the brief's
     /// subscribe contract) so agent-opened tabs arrive without a relaunch.
+    /// R43 P095: the first load baselines the arrival detector silently —
+    /// history is not an arrival.
     func start(threadID: String) async {
         self.threadID = threadID
+        baselineEstablished = false
         try? await load()
+        baselineEstablished = true
         await loadArtifacts(threadID: threadID)
         poll?.cancel()
         poll = Task { [weak self] in
@@ -144,6 +167,10 @@ final class VisualWindowStore: ObservableObject {
     }
 
     private func adopt(_ tab: VisualWindowTab, state: [String: String]) async {
+        // R43 P095: the person's own opens are never agent arrivals —
+        // adopted before the next mirror can mistake them for one.
+        adoptedTabIDs.insert(tab.id)
+        seenTabIDs.insert(tab.id)
         if !state.isEmpty {
             var cached = localState[tab.id] ?? [:]
             for (key, value) in state { cached[key] = value }

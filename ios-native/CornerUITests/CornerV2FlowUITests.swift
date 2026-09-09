@@ -1,12 +1,13 @@
 import XCTest
 
 /// Native plan Task 4, Step 1: Workspace → Project → Mission navigation,
-/// R23-rebased on the thread entry.
+/// R43-rebased on the home entry.
 ///
-/// R23 P070 retired the home tree: the app opens INTO the last thread (or
-/// General's) and every navigation happens through the drawer. These tests
-/// drive the app like a person — entry thread, drawer rows, intake sheet —
-/// and never touch the tree identifiers.
+/// R23 P070 retired the home tree; R43 P097 replaced the last-thread entry
+/// with home (General's welcome): the app opens on home and every
+/// navigation happens through the drawer. These tests drive the app like a
+/// person — home, drawer rows, intake sheet — and never touch the tree
+/// identifiers.
 ///
 /// Backend: the rehearsal deployment (CONVEX_BASE_URL in the test
 /// environment, forwarded to the app — never hardcoded here). Credentials:
@@ -186,12 +187,13 @@ final class CornerV2FlowUITests: XCTestCase {
         send.tap()
     }
 
-    // MARK: - R23 P070 entry tests
+    // MARK: - R43 P097 entry tests (R23's last-thread rule is replaced)
 
-    /// Launching lands straight on the last thread — never on a tree. From a
-    /// clean slate that is General's thread; after visiting the seeded Ship
-    /// mission, a relaunch restores the mission (R23 P071: mission name only).
-    func testLaunchOpensLastThreadNotATree() throws {
+    /// Launching lands straight on home — never on a tree, never on the
+    /// last thread. From a clean slate that is General's thread (the R41
+    /// welcome); after visiting the seeded Ship mission, a relaunch still
+    /// lands on home (the mission stays one tap away in the drawer).
+    func testLaunchOpensHomeNotATree() throws {
         app.launchArguments += ["-v2FixtureUITest", "-v2RouteMode=confirm"]
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
@@ -222,14 +224,20 @@ final class CornerV2FlowUITests: XCTestCase {
         evidence("R23-entry-mission")
         app.terminate()
 
-        // Relaunch with no taps: the mission thread is the entry, not a tree.
+        // Relaunch with no taps: home again — never the mission thread,
+        // never a tree.
         let back = XCUIApplication()
         back.launchArguments += ["-v2FixtureUITest", "-v2RouteMode=confirm"]
         back.launch()
         XCTAssertTrue(back.wait(for: .runningForeground, timeout: 30), "app did not relaunch")
         openEntryThread(back)
-        XCTAssertEqual(back.staticTexts.matching(identifier: "chat-title").firstMatch.label, "Ship home page",
-                       "relaunch did not restore the last thread")
+        XCTAssertFalse(
+            back.staticTexts.matching(identifier: "chat-title").firstMatch.exists,
+            "relaunch restored the last thread instead of home")
+        XCTAssertTrue(
+            back.descendants(matching: .any).matching(identifier: "v2-home-welcome").firstMatch
+                .waitForExistence(timeout: 15),
+            "relaunch did not land on home")
         assertNoTree(back)
     }
 
@@ -237,7 +245,10 @@ final class CornerV2FlowUITests: XCTestCase {
     /// Project +, projects with missions, per-project `+`,
     /// Files rows, and identity + bell + gear.
     func testDrawerCarriesEveryHomeAction() throws {
-        app.launchArguments += ["-v2FixtureUITest", "-v2SeedVisual"]
+        // R43: -v2ResetVisual — persisted tabs from an earlier suite must
+        // not ride into this launch (a restored selection + a persisted
+        // full eye mode would auto-raise the sheet over the drawer).
+        app.launchArguments += ["-v2FixtureUITest", "-v2SeedVisual", "-v2ResetVisual"]
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 30), "app did not reach the foreground")
         openEntryThread(app)
