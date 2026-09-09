@@ -60,6 +60,30 @@ project's work PLUS an always-available org-wide "all activity" view.
 - R-ledger-2: bridge project + org feed read (additive).
 - R-ledger-3 (Patrik): consolidate/delete the extra Convex deployments; pin the dashboard env.
 
-## Still to verify with Patrik
-Which exact room(s) he asked when it "didn't understand" — a client room asked about Corner-app work is
-working-as-scoped, not a bug. The org feed (this design) removes that confusion.
+## Live-room proof (2026-09-08 ~22:15, drove Patrik's Chrome on the dashboard)
+Asked the live Ambition room "what's the latest we did on Ambition in the last few hours?" → Mom answered
+correctly from the ledger: "Today an agent added Captions data… you added the Élephante Part 1 9:16 reframe
+with captions and end card… started planning captions and an end card for Élephante pt 2." So the LEDGER
+READ WORKS end-to-end (not an agent's claim — observed live). The thing that actually failed for Patrik in
+that same room at 9:51 was a different query: "pull up the latest video we finished" → "I don't see a latest
+video." That is the files index, not the ledger.
+
+## CONFIRMED separate bug — media not in the files index (the "pull up the video" failure)
+Queried `projectFiles:list {world:aom, subject:ambition-mechanical}`: 60 files, kinds = notes 2, audio 4,
+document 48, url 1, sheet 5 — **ZERO video**. The deliverable videos exist on disk
+(`corner/users/aom/projects/ambition-mechanical/deliverables/edit-sessions/elephante-captions/ELEPHANTE
+SERVICE REPAIR - CAPTIONS.mp4` etc.), are NOT `seg_*` workfiles, and are NOT excluded by `is_skipped`
+(`gateway_common.py:122` — no edit-sessions/media rule). Yet none reach the index. So the drop is in the
+gateway's per-subject files-index `entries` builder (feeding `sync_subject`, `corner-gateway.py:655`) — a
+kind filter there is excluding `video` (and likely `image`). FIX: include video/image deliverables in
+`entries` (mirror the `.mp4/.mov` handling that `title_for_rel` already does for ledger deeds), then rebuild
+the Ambition index and re-verify "pull up the latest video" opens the file. This is C018/G5 territory.
+
+## Remaining rounds (tracked)
+- R-ledger-1 folder→project tagging: DONE + verified (`AOM-EA a0d779a8f`).
+- Video-in-index fix (above): the gateway `entries` builder includes video/image; rebuild + verify the
+  pull-up. NEXT.
+- R-ledger-2 org feed (Patrik's chosen model): the bridge reads a recent org-wide slice alongside the
+  project slice, surfaced as "across your projects", so any room answers org-wide.
+- R-ledger-3 (Patrik-owned): consolidate to one Convex backend; delete neat-pony-216 / lovable-weasel-178 /
+  happy-otter-123; pin the dashboard `VITE_CONVEX_URL`.
