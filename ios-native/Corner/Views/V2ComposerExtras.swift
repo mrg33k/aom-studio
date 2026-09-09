@@ -122,6 +122,20 @@ struct V2ReplyQuote: Equatable {
         }
         return nil
     }
+
+    /// R66b (Slack-gap): the FULL copyable text of a message — every text
+    /// block joined, not the reply snippet's truncated first line. Empty when
+    /// the row is steps-only / artifacts-only (nothing to copy).
+    static func fullText(blocks: [ThreadBlock]) -> String {
+        var parts: [String] = []
+        for block in blocks {
+            if case .text(let value) = block {
+                let t = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !t.isEmpty { parts.append(t) }
+            }
+        }
+        return parts.joined(separator: "\n\n")
+    }
 }
 
 // MARK: - @mention chips

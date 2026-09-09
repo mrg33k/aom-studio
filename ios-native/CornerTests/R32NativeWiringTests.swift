@@ -76,6 +76,20 @@ final class R32NativeWiringTests: XCTestCase {
         )
     }
 
+    // MARK: - R66b copy-a-message (Slack-gap)
+
+    func testReplyQuoteFullTextJoinsTextBlocksForCopy() {
+        // Copy takes the FULL message (every text block), not the reply
+        // snippet's truncated first line.
+        let long = String(repeating: "line one is quite long. ", count: 12)
+        let blocks: [ThreadBlock] = [.text(long), .text("a second paragraph")]
+        let full = V2ReplyQuote.fullText(blocks: blocks)
+        XCTAssertTrue(full.contains("a second paragraph"), full)
+        XCTAssertTrue(full.count > 140, "full copy must not be truncated like the snippet")
+        // steps-only / artifact-only rows have nothing to copy.
+        XCTAssertEqual(V2ReplyQuote.fullText(blocks: []), "")
+    }
+
     // MARK: - run state helpers (P081)
 
     func testDriverNamePrefersNewestAgentVoice() {

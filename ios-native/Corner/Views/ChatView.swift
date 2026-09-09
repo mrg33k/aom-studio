@@ -3681,7 +3681,7 @@ struct V2EventRow: View {
                     .foregroundStyle(Theme.inkSoft)
                     .accessibilityIdentifier("v2-event-time")
             }
-            .v2ReplyMenu(quote: replyQuote, onReply: onReply)
+            .v2ReplyMenu(quote: replyQuote, copyText: V2ReplyQuote.fullText(blocks: event.blocks), onReply: onReply)
         } else {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .bottom, spacing: 8) {
@@ -3711,7 +3711,7 @@ struct V2EventRow: View {
                     Spacer(minLength: 48)
                 }
             }
-            .v2ReplyMenu(quote: replyQuote, onReply: onReply)
+            .v2ReplyMenu(quote: replyQuote, copyText: V2ReplyQuote.fullText(blocks: event.blocks), onReply: onReply)
         }
     }
 }
@@ -3769,7 +3769,8 @@ private struct V2PulseModifier: ViewModifier {
 /// quotable text (steps-only, artifacts-only) offers no Reply — a menu that
 /// cannot quote would be a dead end.
 private extension View {
-    func v2ReplyMenu(quote: V2ReplyQuote?, onReply: @escaping (V2ReplyQuote) -> Void) -> some View {
+    func v2ReplyMenu(quote: V2ReplyQuote?, copyText: String = "",
+                     onReply: @escaping (V2ReplyQuote) -> Void) -> some View {
         contextMenu {
             if let quote {
                 Button {
@@ -3779,6 +3780,17 @@ private extension View {
                 }
                 .accessibilityIdentifier("v2-reply-action")
                 .accessibilityLabel("Reply to this message")
+            }
+            // R66b (Slack-gap): Copy any message's full text. The v2 menu had
+            // Reply only; copying a message is table stakes.
+            if !copyText.isEmpty {
+                Button {
+                    UIPasteboard.general.string = copyText
+                } label: {
+                    Label("Copy", systemImage: "doc.on.doc")
+                }
+                .accessibilityIdentifier("v2-copy-action")
+                .accessibilityLabel("Copy this message")
             }
         }
     }

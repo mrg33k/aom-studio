@@ -29,6 +29,18 @@ R66 wired the classifier into the bridge pack. Drove the live Ambition room: "Ca
 - The glow under the composer should be **bigger and slowly animating** (breathing bigger/smaller, slow) so the room feels alive; it should sit **higher up**.
 - Find the UI gaps that make someone say **"this doesn't work as well as Slack"** and fix them.
 
+### AUDIT (2026-09-09) — concrete chat gaps vs Slack (ranked; a few are objective, not taste)
+Audited the native chat's message affordances against Slack. Objective, non-taste gaps found:
+1. **Copy a message** — the v2 message menu had Reply ONLY (no Copy). FIXED autonomously (R66b): Copy added to the v2 long-press menu; copying a message is table stakes, not a taste call.
+2. **Jump-to-latest / scroll-to-bottom button** — none. When you scroll up in history there's no one-tap return to the newest message (Slack's floating "↓ N new"). Real friction; medium build.
+3. **Emoji reactions** — none. Core Slack affordance for lightweight acknowledgement; bigger build (needs a backend reaction store + UI).
+4. **Unread / "new messages" divider** — none. No marker for where you left off in a busy room.
+5. **Message edit / "edited" label** — none (Reply + Copy exist; edit doesn't).
+6. **Link previews / rich unfurls** — plain links, no unfurl card.
+
+Taste call for Patrik: which of 2–6 matter most? My ranked bet for "feels like Slack": (2) jump-to-latest and (3) reactions are the two that most close the gap; (4) unread divider third. Name your 2–3 and I'll build them; I won't build 2–6 blind since they're the design surface you gate.
+
+
 ## 3. Video via hyperframes
 Agents can use **hyperframes** to make videos, know the viral tricks, and ask Patrik the *right questions* to make smooth output.
 
