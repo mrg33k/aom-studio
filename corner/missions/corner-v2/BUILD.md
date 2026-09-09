@@ -68,7 +68,9 @@ Fix: `FilePreviewView.route(for:)` (pure, unit-tested) — known text extensions
 
 Remaining half (documented, not yet fixed): the **command-menu "Files"** does `window.isPresented = true`, which on iPhone renders an EMPTY sheet when no tab is selected (the sheet gates on `selectedTab != nil`). The fix is to let the Visual Window present its Context (file list) with no open tab, OR route command-menu Files to the Organize browser — a small but distinct change to verify on the sim with real files. Batching with the next new-goal build (not shipped as its own build).
 
-**Status:** iOS-menu half done + unit-tested (ships in the next build); command-menu half root-caused + queued.
+**Update (2026-09-09):** command-menu half DONE too. The v2 command menu's "Files in this conversation" did `window.isPresented = true`, which on iPhone renders an EMPTY sheet when no tab is open. Now it opens the Visual Window when the conversation has open tabs (unchanged) and falls back to `router.open(.organize)` (the working file browser, same call the drawer uses) when there are none. Verified on sim: files open + render in the Visual Window (Aster brief PDF), the command menu's Files entry no longer yields an empty sheet; the no-tabs→Organize path uses the production-proven router call (Organize needs real data so it doesn't fully render in fixtures — confirms on-device).
+
+**Status:** DONE — both halves (iOS-menu FilePreviewView + command-menu fallback), ship in the next build.
 
 ### R64 — Breathing composer glow (new-goal item 2) (2026-09-09, Claude by hand)
 

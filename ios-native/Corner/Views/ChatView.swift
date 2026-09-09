@@ -3246,7 +3246,16 @@ struct ChatView: View {
     private var v2CommandsState: V2CommandsState {
         V2CommandsState(
             model: v2model,
-            onOpenFiles: { window.isPresented = true },
+            // R63 (Patrik iPad review 2026-09-09, item 6): "files don't load
+            // from the command menu." With open tabs, show them in the Visual
+            // Window (current). With NO tab, `isPresented = true` rendered an
+            // EMPTY sheet on iPhone (the sheet gates on selectedTab) — so fall
+            // back to the Organize browser, where files actually load (and
+            // extension-less docs now open via the R63 FilePreviewView fix).
+            onOpenFiles: {
+                if window.tabs.isEmpty { router.open(.organize) }
+                else { window.isPresented = true }
+            },
             onOpenImageGenerator: { v2GenerateImage(prompt: v2model.draft) }
         )
     }
