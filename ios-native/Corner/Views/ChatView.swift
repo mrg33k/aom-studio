@@ -1162,13 +1162,14 @@ struct ChatView: View {
         /// pill/send grouping still reads as one control.
         static let sendSpacing: CGFloat = 7
         static let sendSize: CGFloat = 50
-        /// 11, not 17 (R24 P076): toward the placeholder budget. The text
-        /// origin moves 4pt with it — sub-perceptual against the design.
-        static let pillLeading: CGFloat = 11
+        /// R62 (Patrik iPad review 2026-09-09): the purple command circle
+        /// scoots left into the pocket — 7, so it tucks against the pill edge.
+        static let pillLeading: CGFloat = 7
         /// 3, not 4 (R24 P076): toward the placeholder budget.
         static let pillTrailing: CGFloat = 3
-        /// 3, not 4 (R24 P076): toward the placeholder budget.
-        static let interSpacing: CGFloat = 3
+        /// R62: more room on the left for the typing itself — 9, so the text
+        /// origin clears the circle instead of butting against it.
+        static let interSpacing: CGFloat = 9
         static let micWidth: CGFloat = 36
         /// The multiline backing's ~5pt/side text inset, measured on-device
         /// (placeholder starts +4pt in). It is chrome, not text room.
@@ -1243,12 +1244,10 @@ struct ChatView: View {
                 .padding(.vertical, 6)
                 .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
-            // P023 artifact peek: 60px above the composer while the thread
-            // has tabs — the active tab's thumbnail + change count. Tapping
-            // opens the sheet/column on the selected tab.
-            if !window.tabs.isEmpty {
-                v2PeekBar
-            }
+            // R62 (Patrik iPad review 2026-09-09): the artifact peek box above
+            // the composer ("Ambition: Week 1 / No changes yet") is REMOVED on
+            // all platforms — he X'd it out. The eye and the file cards still
+            // reopen the Visual Window; nothing sits above the input now.
             // P039: pill + round send sit directly on the ground — the
             // frosted outer card is gone.
             HStack(alignment: .bottom, spacing: V2ComposerMetrics.sendSpacing) {
@@ -1361,9 +1360,12 @@ struct ChatView: View {
                     .disabled(!v2CanSend)
                 }
             }
-            // R60 (Patrik phone review 2026-09-08): the options live UNDER the
-            // input now — attach + the context eye. Model and Plan/Work fold
-            // into the command menu (the purple circle), not visible buttons.
+            // R62 (Patrik iPad review 2026-09-09): padding ABOVE the input —
+            // the pill had none and read cramped against the messages.
+            .padding(.top, 10)
+            // R60/R62: the options live UNDER the input — Attach pinned left,
+            // Context + Checklist centred (Model and Plan/Work fold into the
+            // command circle, not visible buttons).
             v2ComposerOptionsRow
         }
         // R60 P093 (Patrik phone review 2026-09-08): the project-tinted glow
@@ -3283,48 +3285,63 @@ struct ChatView: View {
     /// and Plan/Work moved INTO the command menu (the purple circle), so this
     /// row stays light. Reuses the photo/file/camera pickers.
     private var v2ComposerOptionsRow: some View {
-        HStack(spacing: 10) {
-            Menu {
-                Button { v2ShowingPhotoPicker = true } label: {
-                    Label("Photo Library", systemImage: "photo.on.rectangle")
+        // R62 (Patrik iPad review 2026-09-09): Attach stays pinned LEFT; the
+        // Context eye moves to the CENTRE alongside the (previously missing)
+        // Checklist button. A ZStack centres the pair while Attach hugs left.
+        ZStack {
+            HStack(spacing: 0) {
+                Menu {
+                    Button { v2ShowingPhotoPicker = true } label: {
+                        Label("Photo Library", systemImage: "photo.on.rectangle")
+                    }
+                    Button { v2ShowingFilePicker = true } label: {
+                        Label("Choose Files", systemImage: "folder")
+                    }
+                    Button { v2CameraTapped() } label: {
+                        Label("Camera", systemImage: "camera")
+                    }
+                } label: {
+                    v2OptionChip(icon: "paperclip", label: "Attach")
                 }
-                Button { v2ShowingFilePicker = true } label: {
-                    Label("Choose Files", systemImage: "folder")
-                }
-                Button { v2CameraTapped() } label: {
-                    Label("Camera", systemImage: "camera")
-                }
-            } label: {
-                v2OptionChip(icon: "paperclip", label: "Attach")
+                .accessibilityIdentifier("v2-attach")
+                .accessibilityLabel("Attach and upload files")
+                Spacer(minLength: 0)
             }
-            .accessibilityIdentifier("v2-attach")
-            .accessibilityLabel("Attach and upload files")
 
-            Button { eye.cycle() } label: {
-                v2OptionChip(icon: eye.iconName, label: "Context")
+            HStack(spacing: 10) {
+                Button { eye.cycle() } label: {
+                    v2OptionChip(icon: eye.iconName, label: "Context")
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("v2-composer-eye")
+                .accessibilityLabel(eye.accessibilityLabel)
+
+                Button { checklistOpen.toggle() } label: {
+                    v2OptionChip(icon: "checklist", label: "Checklist",
+                                 active: checklistOpen)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("v2-composer-checklist")
+                .accessibilityLabel(checklistOpen ? "Close room checklists" : "Open room checklists")
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("v2-composer-eye")
-            .accessibilityLabel(eye.accessibilityLabel)
-
-            Spacer(minLength: 0)
         }
         .padding(.horizontal, 4)
         .padding(.top, 2)
     }
 
-    private func v2OptionChip(icon: String, label: String) -> some View {
+    private func v2OptionChip(icon: String, label: String, active: Bool = false) -> some View {
         HStack(spacing: 5) {
             Image(systemName: icon).font(.system(size: 14, weight: .medium))
             Text(label).font(.hanken(12.5).weight(.semibold))
         }
-        .foregroundStyle(Theme.inkSoft)
+        .foregroundStyle(active ? Theme.accent : Theme.inkSoft)
         .padding(.horizontal, 12)
         .frame(height: 32)
-        .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(active ? Theme.accentWeak : Theme.raised2,
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(Theme.hairline, lineWidth: 1)
+                .strokeBorder(active ? Theme.accent : Theme.hairline, lineWidth: 1)
         )
     }
 

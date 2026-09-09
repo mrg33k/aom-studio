@@ -193,4 +193,21 @@ final class DocumentReaderParsingTests: XCTestCase {
         XCTAssertTrue(DocumentText.looksLikeHTML("<!DOCTYPE html><html><body>Hi</body></html>"))
         XCTAssertTrue(DocumentText.looksLikeHTML("<div class=\"page\"><section>content</section></div>"))
     }
+
+    /// R62 (Patrik iPad review 2026-09-09): the weekly-report HTML opens on
+    /// <title> then a giant base64 @font-face inside <style>, so <body>/<div>
+    /// land far past any prefix scan. It was rendering as raw source ("Ambition:
+    /// Week 1 shows raw HTML"). The opener check must catch it.
+    func testHTMLWithLeadingBase64FontIsDetected() {
+        let font = String(repeating: "T1RUTwALAIAAAAwAwQ0ZGIE", count: 400) // ~9KB of base64
+        let html = "<title>Ambition: Week 1</title> <style> @font-face{ font-family:'Druk Cond'; src:url(data:font/otf;base64,\(font)); } </style> <body><div class=\"page\">Report</div></body>"
+        XCTAssertTrue(DocumentText.looksLikeHTML(html),
+                      "an HTML page opening on <title>/<style> before a huge inline font must still read as HTML")
+    }
+
+    /// Leading whitespace / BOM must not hide the opening tag.
+    func testHTMLWithLeadingWhitespaceIsDetected() {
+        XCTAssertTrue(DocumentText.looksLikeHTML("\n\n   <!doctype html><html><body>x</body></html>"))
+        XCTAssertTrue(DocumentText.looksLikeHTML("\u{FEFF}<html><head><title>x</title></head></html>"))
+    }
 }

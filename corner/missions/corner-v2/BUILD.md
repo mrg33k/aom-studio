@@ -44,3 +44,18 @@ Verified on the 17 Pro sim (build succeeded, both entry points driven by hand): 
 Not yet wired (next round): the toggle is intent-only — it persists but does not yet gate the bridge/agent; and this is native-only, the desktop-web mirror is a follow-up.
 
 **Status:** done (native panel shipped + verified on sim; enforcement + desktop mirror are follow-ups).
+
+### R62 — Patrik iPad punch list, universal (2026-09-09, Claude by hand)
+
+Patrik marked up a TestFlight iPad screenshot with 6 changes; he then said the composer changes, the context-box removal, and the files-not-loading are UNIVERSAL (iPhone, iPad, desktop web). Native pass (this round):
+
+1. **Review moved down (iPad).** `VisualWindowColumn` header is now title + close only; "Review" comes down next to the file as `LeaveAReviewButton` + `ShareFileButton` (the iPhone R59 treatment, now on iPad too). `ReviewToggleButton` retired from the column.
+2. **Documents render (universal native fix).** Root cause: a weekly-report HTML page opens on `<title>` then a giant base64 `@font-face` inside `<style>`, pushing `<body>`/`<div>` past the 2000-char scan, so `DocumentText.looksLikeHTML` returned false and the raw HTML dumped as "markdown" ("Ambition: Week 1 shows raw HTML"). Fix: skip leading whitespace/BOM, scan 4000 chars, and treat a leading head/document tag (`<title`, `<style`, `<meta`, `<head`, `<link`, `<!doctype`, `<html`, `<!--`) as HTML. Unit tests added (base64-font page + leading-whitespace/BOM). The **Elephante video** half is a gateway serving issue (unplayable URL → black at 00:00, same family as the desktop black frame), not the client player — flagged for the gateway, not faked here.
+3. **Viewer doubled (iPad).** The Visual Window column cap 440→880, fraction 0.45→0.6; chat keeps ~40%.
+4. **Context box removed (universal).** The artifact peek box above the composer (`v2PeekBar`, "Ambition: Week 1 / No changes yet") is no longer rendered — Patrik X'd it out.
+5. **Composer padding + purple circle (universal).** Padding added above the input; the purple command circle tucks left (pillLeading 11→7) with more room before the typing (interSpacing 3→9).
+6. **Context to centre + checklist (universal).** The options row is now Attach pinned left, Context + the (previously missing) Checklist button centred; the Checklist chip lights accent when open.
+
+Verified: build clean; iPhone 17 Pro sim shows the composer changes (peek gone, purple circle tucked, Attach-left / Context·Checklist-centred). Doc detection unit-tested. iPad column (1,3) build-verified + code mirrors the accepted iPhone pattern; the iPad sim was stuck in a rotated orientation (environment quirk) so on-device iPad confirmation is Patrik's TestFlight. Desktop-web (universal composer + context-box + HTML-doc rendering) is the next pass.
+
+**Status:** in progress — native shipped to a TestFlight build for Patrik's iPad; desktop-web universal pass next.

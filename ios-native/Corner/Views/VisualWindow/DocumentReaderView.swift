@@ -209,11 +209,20 @@ struct DocumentReaderView: View {
 /// decision without a view or a network round trip.
 enum DocumentText {
     static func looksLikeHTML(_ raw: String) -> Bool {
-        let head = raw.prefix(2000).lowercased()
-        if head.contains("<!doctype html") || head.contains("<html") { return true }
-        // A markdown file can carry the odd inline tag; require real page
-        // structure, not a stray `<br>`.
-        let markers = ["<body", "<head", "<div", "<section", "<main", "<article"]
+        // Skip leading whitespace / BOM so the opener check sees the first tag.
+        let trimmed = raw.drop(while: { $0.isWhitespace || $0 == "\u{FEFF}" })
+        let head = trimmed.prefix(4000).lowercased()
+        // A page whose FIRST tag is a document/head tag is HTML even when a
+        // giant inline <style> (a base64 @font-face, as our weekly reports
+        // carry) pushes <body>/<div> far past any prefix we scan. This was the
+        // "Ambition: Week 1 shows raw HTML" bug (Patrik iPad review 2026-09-09).
+        let openers = ["<!doctype html", "<html", "<head", "<title", "<meta",
+                       "<style", "<link", "<!--"]
+        if openers.contains(where: { head.hasPrefix($0) }) { return true }
+        // Otherwise require real page structure near the top, not a stray
+        // inline `<br>` in a markdown file.
+        let markers = ["<!doctype html", "<html", "<body", "<head", "<div",
+                       "<section", "<main", "<article", "<title", "<style"]
         return markers.contains { head.contains($0) }
     }
 }

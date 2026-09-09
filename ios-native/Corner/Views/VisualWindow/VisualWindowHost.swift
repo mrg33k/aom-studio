@@ -28,8 +28,11 @@ struct VisualWindowHost<Main: View>: View {
                 HStack(spacing: 0) {
                     main().frame(maxWidth: .infinity)
                     if window.isPresented && window.selectedTab != nil {
+                        // R62 (Patrik iPad review 2026-09-09): the viewer opens
+                        // roughly double its old size — cap 880 (was 440), 0.6
+                        // of the width (was 0.45); the chat keeps ~40%.
                         VisualWindowColumn(onCarryOn: onCarryOn)
-                            .frame(width: min(440, proxy.size.width * 0.45))
+                            .frame(width: min(880, proxy.size.width * 0.6))
                     }
                 }
             } else {
@@ -375,13 +378,16 @@ struct VisualWindowColumn: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
+                // R62 (Patrik iPad review 2026-09-09): the header is title + close
+                // ONLY. "Review" moved DOWN to sit with the file (beside the
+                // reader's colour chooser), matching the iPhone sheet — no longer
+                // a top-right button.
                 HStack {
                     Text(window.selectedTab?.title ?? "Preview")
                         .font(.hanken(15).weight(.semibold))
                         .foregroundStyle(Theme.ink)
                         .lineLimit(1)
                     Spacer(minLength: 0)
-                    ReviewToggleButton()
                     Button {
                         window.isPresented = false
                     } label: {
@@ -409,6 +415,15 @@ struct VisualWindowColumn: View {
                         ReviewPanelView(artifactID: artifactID) {
                             onCarryOn("Looks right. Carry on.")
                             window.isPresented = false
+                        }
+                        .padding(.horizontal, Theme.s3)
+                        .padding(.top, Theme.s3)
+                    } else if tab.artifactID != nil {
+                        // Review comes down next to the file, paired with Share
+                        // (the iPhone treatment, now on iPad too).
+                        HStack(spacing: 10) {
+                            LeaveAReviewButton { review.reviewing = true }
+                            ShareFileButton(url: window.artifact(for: tab)?.sourceURL)
                         }
                         .padding(.horizontal, Theme.s3)
                         .padding(.top, Theme.s3)
