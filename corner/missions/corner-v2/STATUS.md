@@ -3,9 +3,9 @@
 **Plan:** `PLAN-astra-finish.md` (Astra/Codex, 2026-09-08 2:41 AM, 15 rounds; supersedes `~/.claude/plans/fuzzy-cuddling-hopcroft.md`). **Done =** chat knows every
 project (test A) + Visual Window companion (test B) + styled per design (test C). **Order:** chat → native → desktop.
 
-## RESTARTED 12:2x PM Sep 8 (Patrik: "restart the Astra loop")
-- Loop resumes at **Round 4** (clear five project chats, re-ask the four questions from empty, score ≥7/8 → `rounds/GOAL-clean-rerun.md`). Orchestrator = this Claude session.
-- **Usage fallback armed** (see LOOP.md "Usage fallback"): Muse stays primary; on a Muse usage cap, build rounds switch to Opus via `run-worker-opus.sh <brief> <model-id>` (4.8 = `claude-opus-4-8`; 4.6 id TBC). Needs `$CORNER_OPUS_API_KEY` or `~/.config/corner/opus-worker.key` — not set yet, so the Opus fallback cannot fire until the key + 4.6 id land. `run-worker-opus.sh` still needs `chmod +x` (classifier blocks Claude from doing it).
+## Restart acknowledged — Sep 8 (Patrik: "restart the Astra loop"; "it's in motion")
+- Loop is already in motion under the active orchestrator (Round 4 done, Round 5 next below). This is NOT owned by a separate session — do not double-drive.
+- **Usage fallback armed** (Patrik: "when it runs out of usage do it with opus 4.8 and 4.6 workers"; see LOOP.md "Usage fallback"): Muse stays primary; on a Muse usage cap, build rounds switch to Opus via `run-worker-opus.sh <brief> <model-id>` (4.8 = `claude-opus-4-8`; 4.6 id TBC). Needs `$CORNER_OPUS_API_KEY` or `~/.config/corner/opus-worker.key` — not set yet, so the Opus fallback cannot fire until the key + 4.6 id land. `run-worker-opus.sh` still needs `chmod +x`.
 
 ## Now (9:45 AM Sep 8 — LOOP STOPPED by Patrik after Round 3)
 - Round 3b DONE 9:05 PM: R52 chat referents + instant pull-up live (`r52-1`, AOM-EA `dbedc4a45`); design-thread proof 3.7 s.
@@ -16,9 +16,18 @@ project (test A) + Visual Window companion (test B) + styled per design (test C)
 - Rounds 1-3 DONE: walk 4 (7 / 7.5 / 6.5 / 6 / 6) → R54 repairs → re-proof **8 / 8 / 7 / 8 / 7.5**, all ≥ 7. Handoff: `handoffs/2026-09-08-handoff-after-round-3.md`.
 - R55/R56 (10:05-10:35 AM): desktop documents render for real, as a clean big-text reader in the Dracula palette with an Alucard light toggle (Patrik's pick, R57); production deployed. Phone: documents go through QuickLook (md = plain text) — the native round should match this look.
 - Round 4 DONE (Claude by hand, 2026-09-08 ~1:20 PM): cleared all five threads, re-ran from empty. First pass caught two systemic misses (gateway scaffold-doc "did" deeds led "what's the latest" on 4/5 projects; pull-up subject-name inflation). Repaired (R54/R54b: overlapScore subject drop, isScaffoldSyncDeed→isLowSignal on ledger.latest + v2Ledger.latest, gateway build_items drops scaffold titles, cards rebuilt, bridge is_low_signal + notes-not-activity). Pristine re-run: **Wolfpack 8, Ambition 8, Kraken 8, Aom 7.5, AZ Tech 8 — all ≥ 7. TEST A CLOSED.** Evidence: `rounds/GOAL-clean-rerun.md`. Carried (non-blocking): L042 (HTML docs render slow ~8-11 s), C022 (extend sibling merge from facts to deeds for "latest").
-- Deploys pending Patrik's next `convex deploy`: `v2Ledger.latest` noise filter (`c2i 075f197`) — the bridge covers it live meanwhile.
-- **NEXT FIRING = Round 5: R43 native builder** (`briefs/R43-native-home-first-and-eye.md`) → TestFlight 20.
-- Codex note: usage limit resets 1:25 PM; rounds owned by Codex before then fall to Claude by hand.
+### Astra plan progress (Claude driving, 2026-09-08 afternoon/evening)
+- **R5 (R43 native) DONE** — home-first entry, distinct cards, eye-cycle Visual Window. Units 536/536, design 65-anchor gate green. Commit `74cfbffb`.
+- **R6 (TestFlight 20) DONE** — build 20 VALID, attached to Corner testers, beta review WAITING_FOR_REVIEW. `rounds/R54-testflight-20.md`.
+- **R7 (backend view state) DONE + DEPLOYED** — `v2Visual.setViewState`/`getSession` (mode/tab/page/scroll, tenant-safe), pack narrates "BOTH LOOKING AT …", bridge minimizes the companion on move-on. `c2i a23d28a`.
+- **G7 (Gateway C020) DONE** — big videos open via a prebuilt 720p ≤20 MB preview; 85 MB Elephante cut opens in 3.15 s. `AOM-EA a76e6e659`.
+- **R10 (desktop R44) DONE** — `?artifact=` deep-links open/focus the tab; composer glow restored. Gates green (vitest 253, e2e 129, design 0/0, live 11). `c2i cf9118c`.
+- **R8 (R56 native companion) DONE** — publishes view state, follows agent open/minimize, website-as-video band. Units 562/562, design 65/65. `74…2804c824`.
+- **R9 (TestFlight 21) DONE** — build 21 VALID, attached, beta review WAITING_FOR_REVIEW. `rounds/R57-testflight-21-phone-companion.md`.
+- **v2Ledger.latest low-signal filter is DEPLOYED** (075f197 is an ancestor of the deployed a23d28a) — prod == the fix.
+- **IN PROGRESS: R11 (R58 desktop eye + condensed multi-chat)** — Muse build; stalled twice on connector-churn load (~25-39), retrying on clean load. Briefs R56/R58 carry a per-feature regression guard (Patrik zoom-out: command menu + Plan button must have a test).
+- **REMAINING: R11 finish → R12 production deploy → R14 punch-list closeout → R15 final acceptance.** Blocker to watch: the Mac's connector churn stalls Muse builds; disabling unused connectors would free it.
+- **NEXT FIRING = finish R11 (desktop companion), then R12 production.**
 - Wolfpack week 5 DID go out Fri Sep 4 (Resend, Ross only); week 6 draft auto-sends Fri Sep 12 (fix the "this morning" intro before then).
 - **TestFlight build 19 shipped 9:56 PM** (R42: CV6 composer, command card, thread rows, loader, glow) — attached to Corner testers, beta review WAITING_FOR_REVIEW.
 - Next native: R43 (home-first P097, distinct cards P096, eye icon modes P094/P095) with targeted gates → TestFlight 20.
