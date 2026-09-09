@@ -95,4 +95,4 @@ Verified on the iPhone 17 Pro sim from a launch recording: t≈1.6s shows logo+h
 
 Not yet done: physical-device / iPad confirmation (Patrik's TestFlight); ship/redo is Patrik's call (entrance video sent 2026-09-09).
 
-**Status:** built + sim-verified + decision-signed; holding the TestFlight upload for Patrik's ship/redo on the motion.
+**Status:** built + sim-verified + decision-signed. Shipped as **TestFlight build 28** (CURRENT_PROJECT_VERSION=28) 2026-09-09 — archive/export/altool all SUCCEEDED (Delivery UUID 8e7a5ed4), bundling R61–R68 (connections panel, jump-to-latest, copy, composer glow, files-load, login entrance). Uploaded to App Store Connect and processing. The attach-to-testers + beta-review-submit step (`tools/testflight-attach.py 28`) is auto-mode-classifier-gated → Patrik runs it once the build is VALID. Ship/redo on the motion remains Patrik's call; a redo would be build 29.
