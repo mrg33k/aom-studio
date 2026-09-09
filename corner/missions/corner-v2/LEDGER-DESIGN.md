@@ -83,7 +83,13 @@ the Ambition index and re-verify "pull up the latest video" opens the file. This
 - R-ledger-1 folder→project tagging: DONE + verified (`AOM-EA a0d779a8f`).
 - Video-in-index fix (above): the gateway `entries` builder includes video/image; rebuild + verify the
   pull-up. NEXT.
-- R-ledger-2 org feed (Patrik's chosen model): the bridge reads a recent org-wide slice alongside the
-  project slice, surfaced as "across your projects", so any room answers org-wide.
+- R-ledger-2 org feed (Patrik's chosen model): DONE + verified live (`AOM-EA eaf6ed1bc`). The bridge reads
+  a recent org-wide slice (empty `subjects` = all subjects, proven live against `brilliant-scorpion-163`)
+  alongside the project slice, surfaced as an "ACROSS YOUR PROJECTS" pack section that names each row's
+  project. Proof: the Ambition room, asked "across ALL my projects, what have we gotten done in the last day
+  or two?", answered "On Ahead of Market you updated the AOM globe... On Corner you shipped the agent
+  connections panel... On Native iOS you updated the V2 connections sheet." (2026-09-08 11:28, drove Patrik's
+  Chrome). The org slice is context-only: it does not feed a room's own "latest" fact and does not inflate
+  ledgerReads. Unit: `test_r48_context_pack_reads_org_ledger_first` now pins both reads.
 - R-ledger-3 (Patrik-owned): consolidate to one Convex backend; delete neat-pony-216 / lovable-weasel-178 /
   happy-otter-123; pin the dashboard `VITE_CONVEX_URL`.
