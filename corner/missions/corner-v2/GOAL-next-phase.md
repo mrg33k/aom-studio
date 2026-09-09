@@ -26,6 +26,9 @@ Consequences, directly answering Patrik's questions:
 ## 3. Video via hyperframes
 Agents can use **hyperframes** to make videos, know the viral tricks, and ask Patrik the *right questions* to make smooth output.
 
+### FINDING (2026-09-09, inspected the skill + config) — "hyperframes" = Higgsfield, already authed
+The video tool is **Higgsfield** (`.agents/skills/higgsfield-generate/SKILL.md`, CLI + MCP; credentials present at `~/.config/higgsfield/credentials.json`, so the CLI is authed). "Hyperframes" maps to its video workflows: `image-to-video`, `reframe` ("reframe this video"), `draw_to_video`, plus Marketing Studio (branded ads, UGC, hooks, avatars, product-from-URL) and — the "viral tricks" part — a **Virality Predictor (`brain_activity`, "analyze video virality")**. So the capability exists and is keyed. Two gaps for item 3: (a) the CHAT brain is toolless (item-1 problem) so it can't call Higgsfield today — the terminal/companion can; it needs the tool layer; (b) "the right questions to ask me" = a short viral-video INTAKE playbook the agent runs before generating (hook, format, length, reference, CTA), plus running the Virality Predictor on a draft and asking one targeted question at a time (the skill already says "don't batch-ask"). Build: expose Higgsfield through the same tool layer as item 1/5, and add the intake playbook to the agent's brief.
+
 ## 4. Live designing with an agent
 A **live localhost equivalent** while working on things, so we don't waste resources pushing/pulling to figure out visuals — see changes live, save time.
 
@@ -41,7 +44,12 @@ Connections need to be easy to add. **Arcade** may already give this ability —
 Files don't load when you click them from the **iOS menu (drawer Files)** or the **command menu**. (Distinct from the R62 HTML-render fix — this is the open/navigation path from those two entry points.)
 
 ## 7. Computer activity log → ledger truth-triage
-There is a **computer activity log the agents can read all the time** (impressive — ground truth of what actually happened on the machine). The **companion app should ask permission to read it**, and this becomes part of **truth-triaging the ledger**: use the real activity log to confirm/correct agent-claimed deeds instead of trusting them blindly. Ties directly to 1's "knowing the user" (4a) and the companion-app build. Open question to answer while building: exactly which log, how the companion requests access, and how a deed gets marked confirmed-by-activity vs claimed-only.
+There is a **computer activity log the agents can read all the time** (impressive — ground truth of what actually happened on the machine). The **companion app should ask permission to read it**, and this becomes part of **truth-triaging the ledger**: use the real activity log to confirm/correct agent-claimed deeds instead of trusting them blindly. Ties directly to 1's "knowing the user" (4a) and the companion-app build.
+
+### FINDING (2026-09-09, inspected + proved the mechanism) — the log is the transcript index
+The "computer activity log the agents read all the time" is `corner/state/transcript-index.db` (SQLite + FTS5), updated live on each prompt and read by the round-table hook. Table `exchanges`: session_id, timestamp, timestamp_epoch, user_text, assistant_summary, file_path (3,910 exchanges across 15,547 indexed session files). It's a searchable, timestamped record of what agents actually did in terminals.
+
+**Truth-triage proven, not theorized:** matched tonight's ledger deeds against it — "connections panel" → 1 corroborating exchange, "org feed" → 3. So a ledger deed can be marked **confirmed-by-activity** when the index has a matching exchange in a time window, vs **claimed-only** when it does not. Refinement the proof surfaced: naive EXACT-phrase match is too strict — "breathing glow" and "Elephante captions" returned 0 even though that work happened, because the log recorded different words ("bloom", etc.). So the triage must use **fuzzy key-term match + a time window**, not exact phrases. Build: a `ledger_triage` step that, per deed, searches the index around the deed's timestamp and stamps `confirmed_by_activity: true/false`; surface claimed-only deeds for review instead of trusting them. The companion asks permission to read this DB (and, longer-term, OS-level activity) so the same triage runs on a walk-in user's machine.
 
 ---
 Source: Patrik chat 2026-09-09, after the R62 iPad punch list. See [[project_corner_v2_astra_finish_plan]], [[project_corner_agent_connections_panel]], [[project_visual_window_companion_spec]].
