@@ -53,6 +53,16 @@ Apple-review wait is resolved. Both remaining acceptance steps are now Patrik's 
    handoff wrongly named `corner-v2-integration` as the target — deploying there would NOT update the
    canonical dashboard.
 
+## Why the deploy cannot be done from local artifacts (concrete, not caution)
+A local `npm run build` here produces a bundle with NO `VITE_CONVEX_URL` baked in (verified: the local
+`dist/assets/index-*.js` contains no `*.convex.cloud`; the live canonical bundle carries
+`brilliant-scorpion-163`). Deploying local `dist/` to corner-convex would break the dashboard's backend
+connection. The correct deploy MUST build on Vercel with corner-convex's configured production env — which
+`npx vercel --prod` (targeting corner-convex) does and which no local/static path reproduces. This is a hard
+technical reason the deploy is Patrik's, on top of the classifier gate. Every autonomous avenue is
+concretely blocked: the phone install is physical, the preview walk would require typing credentials into a
+login form (prohibited), and the local artifacts carry the wrong (empty) backend env.
+
 ## Verdict
 Everything inside agent control for acceptance is green: Test A closed, native Test C current, the punch
 list reconciled, R11 verified, build 22 shipped. The mission is NOT done — two Test-B gates are red because
