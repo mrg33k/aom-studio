@@ -10,6 +10,15 @@ A serious end-to-end test of chat. First things to test:
 - **3a. Email reach.** Agents actually reach for email when asked "what's the latest on a client project."
 - **4a. Knowing the user (more JSON?).** The ledger exists, but what *seals* actually knowing the user is likely more JSON — **where does it live, and how do we ingest it from other LLMs on day one with minimal friction** ("paste this and give me the input")?
 
+### FINDING (2026-09-09, traced the bridge) — why agents refuse tools, and what the companion is for
+The Corner chat brain runs **completely toolless**. In `scripts/v2-team-bridge.py`, `ClaudeCliBrain` shells out to `claude -p --setting-sources user --model opus <prompt> --output-format json` — no `--allowedTools`, no `--mcp-config`, from a neutral cwd (`/tmp/corner-bridge-cwd`), with project settings deliberately excluded. `MuseCliBrain` is the same shape (`muse exec`). It was made toolless ON PURPOSE for latency (R49 note: loading this repo's hooks/plugins made `claude -p` hang 159 s vs 8 s). So the chat agent is a **pure text responder over the context pack** — it has no email, no browser, no web, no file access.
+
+Consequences, directly answering Patrik's questions:
+- **"Agents refuse / 'I don't think I can do that'"** is not a prompt problem — the agent genuinely has no tool to reach. Fixing 1a means giving the brain real tool access (scoped MCP servers, a tool-runner, or delegation to the companion), then telling it in the pack which connections are live so it acts instead of hedging.
+- **"What connections are unique to me vs a walk-in user?"** Today: **none are wired into the chat brain** — Patrik's brain and a walk-in's brain are identical and both toolless. The real connections (mail-send.py, robot Chrome via chrome.py, the gateway, GitHub, the computer activity log) live on **Patrik's machine / terminal**, not exposed to the cloud chat.
+- **"How do we close the gap with the companion app?"** This is the architecture: the **companion app on the user's machine is the tool-execution layer**. The cloud chat brain is toolless; when a turn needs email/browser/files/activity-log, it **delegates to the companion**, which holds the user's connections and runs the tool locally, then returns the result. That is also how item 5 (Arcade) plugs in — Arcade = the connection/tool layer the brain reaches through — and item 7 (activity log) — the companion reads it and feeds the ledger. So "make sure the companion app is built" = build this tool layer, not just the Visual Window.
+- **Latency tension to design around:** tools were stripped for speed. The fix must keep the fast toolless path for plain replies and only pay the tool cost when a turn actually needs a tool (intent-gated tool use), so the room stays snappy.
+
 ## 2. Composer glow + the "worse than Slack" gaps
 - The glow under the composer should be **bigger and slowly animating** (breathing bigger/smaller, slow) so the room feels alive; it should sit **higher up**.
 - Find the UI gaps that make someone say **"this doesn't work as well as Slack"** and fix them.
