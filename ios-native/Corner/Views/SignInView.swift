@@ -345,7 +345,7 @@ private struct StaggerReveal: ViewModifier {
         } else {
             content
                 .opacity(shown ? 1 : 0)
-                .offset(y: shown ? 0 : 14)
+                .offset(y: shown ? 0 : 12)
                 .animation(
                     .spring(response: 0.62, dampingFraction: 0.85)
                         .delay(Double(index) * Self.step),
