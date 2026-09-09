@@ -55,6 +55,18 @@ You are a headless worker, BUILDER for the native iOS app (SwiftUI). Nobody will
   gate/suite coverage missed the composer row, the agent bubble, and the document-renders-content check. The
   regression anchors this round MUST assert these exact states so a green gate can never again hide them.
 
+## Code pointers (diagnosed by the orchestrator)
+- **#7 agent bubble:** the v2 thread renders each message through `V2EventRow` (`Corner/Views/ChatView.swift:3512`),
+  NOT through `MessageBubbleView` — which already has the correct agent bubble (avatar + name in agent color +
+  frosted `agentBubble` surface + hairline border + left accent bar, `MessageBubbleView.swift:91-108,145-192`).
+  Restore that bubble treatment in `V2EventRow`'s agent branch (mirror MessageBubbleView; do not just call it —
+  it's the legacy row). User rows already read as styled bubbles.
+- **#1 composer** lives in ChatView's v2 composer (search the composer/GlobalInput area); the earlier CV6
+  composer row (command + Plan/Work + model + attachment + send) is the target — check `V2CV6Polish.swift` and
+  `R42-native-cv6-composer` for the ratified shape.
+- **#3 document render / #4 FaceTime:** the native Visual Window / document reader (VisualWindow + the reader
+  view) shows the artifact id instead of the file; the FaceTime PiP is `V2FaceTimeWindow.swift`.
+
 ## How to work
 - Get Patrik's annotated screenshots (the red marks / arrow) before guessing #4 and #5 geometry — ask via
   the handoff channel or match the described intent; do not invent a placement.
