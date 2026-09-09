@@ -57,7 +57,9 @@ final class VisualWindowStoreTests: XCTestCase {
         XCTAssertEqual(ArtifactRenderer.viewType(for: .photo), .photo)
         XCTAssertEqual(ArtifactRenderer.viewType(for: .code), .code)
         XCTAssertEqual(ArtifactRenderer.viewType(for: .deck), .quickLook)
-        XCTAssertEqual(ArtifactRenderer.viewType(for: .document), .quickLook)
+        // R59 (Patrik phone review): documents route to the native reader,
+        // not QuickLook (QuickLook showed the id over "data").
+        XCTAssertEqual(ArtifactRenderer.viewType(for: .document), .document)
         XCTAssertEqual(ArtifactRenderer.viewType(for: .genericFile), .quickLook)
         XCTAssertEqual(ArtifactRenderer.viewType(for: .youtube), .youtube)
     }
@@ -130,5 +132,65 @@ final class VisualWindowStoreTests: XCTestCase {
         try await store.open(.pdf, threadID: "mission-thread-1", artifactID: "artifact-1", title: "Brief", state: [:])
         XCTAssertEqual(store.tabs.map(\.id), ["tab-pdf"])
         XCTAssertEqual(store.selectedTabID, "tab-pdf")
+    }
+}
+
+/// R59 (Patrik phone review 2026-09-08): the native document reader parses
+/// markdown and sniffs HTML — pure, so these pin the rendering decision
+/// without a view. The gate that shipped the "artifact id over data" break
+/// had no such check; this is the standing anchor for "documents render."
+final class DocumentReaderParsingTests: XCTestCase {
+
+    func testHeadingsBulletsAndParagraphs() {
+        let md = """
+        # Title
+
+        A paragraph of prose that wraps
+        across two source lines.
+
+        ## Section
+        - first
+        - second
+
+        1. one
+        2. two
+        """
+        let blocks = DocumentMarkdown.blocks(from: md)
+        XCTAssertEqual(blocks.first, .heading(level: 1, text: "Title"))
+        XCTAssertTrue(blocks.contains(.paragraph("A paragraph of prose that wraps across two source lines.")))
+        XCTAssertTrue(blocks.contains(.heading(level: 2, text: "Section")))
+        XCTAssertTrue(blocks.contains(.bullet("first")))
+        XCTAssertTrue(blocks.contains(.bullet("second")))
+        XCTAssertTrue(blocks.contains(.numbered(1, "one")))
+        XCTAssertTrue(blocks.contains(.numbered(2, "two")))
+    }
+
+    func testFencedCodeAndRule() {
+        let md = """
+        Intro
+
+        ```
+        let x = 1
+        let y = 2
+        ```
+
+        ---
+
+        > a quote
+        """
+        let blocks = DocumentMarkdown.blocks(from: md)
+        XCTAssertTrue(blocks.contains(.code("let x = 1\nlet y = 2")))
+        XCTAssertTrue(blocks.contains(.rule))
+        XCTAssertTrue(blocks.contains(.quote("a quote")))
+    }
+
+    func testMarkdownIsNotMistakenForHTML() {
+        let md = "# Brand Guidelines\n\nThe monogram is the logo. Use <br> sparingly."
+        XCTAssertFalse(DocumentText.looksLikeHTML(md), "a stray inline tag must not trip the HTML path")
+    }
+
+    func testRealHTMLTakesTheWebPath() {
+        XCTAssertTrue(DocumentText.looksLikeHTML("<!DOCTYPE html><html><body>Hi</body></html>"))
+        XCTAssertTrue(DocumentText.looksLikeHTML("<div class=\"page\"><section>content</section></div>"))
     }
 }

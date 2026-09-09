@@ -74,6 +74,35 @@ private struct ReviewToggleButton: View {
     }
 }
 
+/// R59 (Patrik phone review 2026-09-08): the review affordance as a button
+/// UNDER the file, not a top tab. Full-width, pencil + "Leave a review";
+/// tapping opens the review panel (pins + notes + Send) in place.
+struct LeaveAReviewButton: View {
+    var onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 8) {
+                Image(systemName: "square.and.pencil")
+                    .font(.system(size: 15, weight: .semibold))
+                Text("Leave a review")
+                    .font(.hanken(15).weight(.semibold))
+            }
+            .foregroundStyle(Theme.ink)
+            .frame(maxWidth: .infinity)
+            .frame(height: 46)
+            .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Theme.hairline, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("leave-a-review")
+        .accessibilityLabel("Leave a review of this file")
+    }
+}
+
 /// P024: the sheet header's Preview / Context tabs — 16/600, the active tab
 /// carrying the 2px fg underline. The file strip below keeps its own chips.
 private struct SheetViewTabs: View {
@@ -167,7 +196,9 @@ struct VisualWindowSheet: View {
                 HStack {
                     SheetViewTabs(view: $sheetView)
                     Spacer(minLength: 0)
-                    ReviewToggleButton()
+                    // R59 (Patrik phone review 2026-09-08): the top row is
+                    // ONLY Preview · Context · ✕. "Review" moved DOWN to the
+                    // content as a "Leave a review" button (his arrow + note).
                     // P047: the 36px close circle, not a text button.
                     Button { window.isPresented = false } label: {
                         Image(systemName: "xmark")
@@ -221,10 +252,20 @@ struct VisualWindowSheet: View {
                             }
                             .padding(.horizontal, 21)
                             .padding(.top, Theme.s3)
-                        } else if let status = statusText {
-                            SheetStatusCard(text: status)
-                                .padding(.horizontal, 21)
-                                .padding(.top, Theme.s3)
+                        } else {
+                            if let status = statusText {
+                                SheetStatusCard(text: status)
+                                    .padding(.horizontal, 21)
+                                    .padding(.top, Theme.s3)
+                            }
+                            // R59: "Leave a review" lives HERE, under the file
+                            // (Patrik's arrow), not as a top tab. Tapping it
+                            // opens the review panel (pins + notes + Send).
+                            if tab.artifactID != nil {
+                                LeaveAReviewButton { review.reviewing = true }
+                                    .padding(.horizontal, 21)
+                                    .padding(.top, Theme.s3)
+                            }
                         }
                     }
                 } else {

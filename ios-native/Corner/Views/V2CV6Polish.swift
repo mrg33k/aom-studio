@@ -126,19 +126,26 @@ struct V2ComposerGlow: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 140)
-        // The blobs fade to nothing before the clip: a blur cut by the
-        // frame edge would read as a hard card edge over the thread.
-        .mask(alignment: .bottom) {
-            LinearGradient(
-                stops: [
-                    .init(color: .white, location: 0.0),
-                    .init(color: .white, location: 0.55),
-                    .init(color: .clear, location: 1.0),
-                ],
-                startPoint: .bottom, endPoint: .top
-            )
+        // R59 (Patrik phone review 2026-09-08): a soft radial bloom, not a
+        // box. The old mask kept the bottom edge SOLID (location 0.0 white),
+        // so the band read as a hard-edged blue rectangle tucked under the
+        // pill (his #2). A radial fade from the bottom-centre feathers every
+        // edge — top, bottom, and both sides — so nothing but a soft glow
+        // ever reaches the ground.
+        .mask {
+            GeometryReader { g in
+                RadialGradient(
+                    stops: [
+                        .init(color: .white, location: 0.0),
+                        .init(color: .white.opacity(0.7), location: 0.55),
+                        .init(color: .clear, location: 1.0),
+                    ],
+                    center: .bottom,
+                    startRadius: 0,
+                    endRadius: max(g.size.width, g.size.height) * 0.72
+                )
+            }
         }
-        .clipped()
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("v2-composer-glow")
         .accessibilityLabel("Conversation glow")

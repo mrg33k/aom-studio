@@ -89,18 +89,16 @@ final class ComposerParityUITests: XCTestCase {
 
     // MARK: - paperclip
 
-    /// The paperclip joins the pill once composing begins, with Photos /
-    /// Files / Camera rows.
+    /// R59 (Patrik phone review): the paperclip is a permanent control in the
+    /// row above the pill (Plan/Work · Model · Attach), ALWAYS visible — not
+    /// hidden until composing. Patrik's #1: the full composer row is back.
+    /// Regression guard: this fails if attach disappears again.
     func testAttachMenu() throws {
         let app = launch(Self.base)
         openThread(app)
         let clip = app.descendants(matching: .any).matching(identifier: "v2-attach").firstMatch
-        XCTAssertFalse(clip.exists, "the clip shows before composing (P076 placeholder at risk)")
-        let f = field(app)
-        XCTAssertTrue(f.waitForExistence(timeout: 15), "no composer field")
-        f.tap()
-        f.typeText("x")
-        XCTAssertTrue(clip.waitForExistence(timeout: 10), "no paperclip while composing")
+        XCTAssertTrue(clip.waitForExistence(timeout: 15),
+                      "the attach control is missing from the composer row (it must always show)")
         XCTAssertEqual(clip.label, "Attach and upload files")
         clip.tap()
         XCTAssertTrue(app.buttons["Photo Library"].waitForExistence(timeout: 10), "no Photo Library row")
@@ -109,6 +107,27 @@ final class ComposerParityUITests: XCTestCase {
         evidence("attach-menu")
         // Dismiss the menu without picking (a pick would leave the app).
         clip.tap()
+    }
+
+    /// R59 regression guard (Patrik's zoom-out — "stop running in circles"):
+    /// the composer's visible control row is Plan/Work + Model + Attach, all
+    /// present without typing a character, plus the sparkle command chip and
+    /// send in the pill. These regressed into the sparkle menu before; this
+    /// test fails the moment any piece disappears again.
+    func testComposerControlRowPresent() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        for id in ["v2-mode-toggle", "v2-model-button", "v2-attach", "v2-commands", "v2-composer-send"] {
+            let el = app.descendants(matching: .any).matching(identifier: id).firstMatch
+            XCTAssertTrue(el.waitForExistence(timeout: 15), "composer control '\(id)' is missing from the row")
+        }
+        // The Plan/Work toggle flips between the two modes on tap.
+        let mode = app.buttons.matching(identifier: "v2-mode-toggle").firstMatch
+        let before = mode.label
+        mode.tap()
+        let flipped = expectation(for: NSPredicate(format: "label != %@", before), evaluatedWith: mode, handler: nil)
+        wait(for: [flipped], timeout: 10)
+        evidence("composer-control-row")
     }
 
     /// Seeded staged chips render above the pill and remove cleanly.

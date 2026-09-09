@@ -261,9 +261,11 @@ final class R43NativeHomeFirstAndEyeTests: XCTestCase {
     func testFaceTimeDefaultSeatIsTopRight() {
         let frame = V2FaceTimeWindow.settledFrame(
             container: CGSize(width: 390, height: 844), offset: .zero, safeAreaTop: 47)
-        XCTAssertEqual(frame.width, 110, accuracy: 0.001)
-        XCTAssertEqual(frame.height, 160, accuracy: 0.001)
-        XCTAssertEqual(frame.minX, 390 - 12 - 110, accuracy: 0.001)
+        // R59 (Patrik phone review): the box grew 110×160 → 134×224 so a
+        // document preview is legibly tall, not a black sliver.
+        XCTAssertEqual(frame.width, 134, accuracy: 0.001)
+        XCTAssertEqual(frame.height, 224, accuracy: 0.001)
+        XCTAssertEqual(frame.minX, 390 - 12 - 134, accuracy: 0.001)
         XCTAssertEqual(frame.minY, 47 + 64, accuracy: 0.001, "below the 52pt nav with room to breathe")
     }
 

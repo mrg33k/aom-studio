@@ -1341,10 +1341,42 @@ final class PreviewV2API: CornerV2API {
             author: .agent, agentLabel: "Corner",
             blocks: [.artifact(artifactIDs: [
                 "artifact-pdf-1", "artifact-site-1", "artifact-video-1",
-                "artifact-photo-1", "artifact-code-1", "artifact-broken-1",
+                "artifact-photo-1", "artifact-code-1", "artifact-doc-1",
+                "artifact-broken-1",
             ])],
             createdAt: stamp
         ))
+    }
+
+    /// R59 (Patrik phone review): a markdown document fixture, written to a
+    /// temp file so the reader has real bytes to render — the regression
+    /// anchor for "the document renders content, not the artifact id" (the
+    /// break the design gate missed). Kind `.document`, so it routes through
+    /// `DocumentReaderView`, never QuickLook.
+    private func seedDocumentArtifact(id: String, title: String) -> Artifact {
+        let markdown = """
+        # AOM — Brand Guidelines
+
+        The **AOM monogram** is the official logo. Syne is banned across the
+        entire site.
+
+        ## Voice
+        - One thought per line, positive framing.
+        - "In good hands" — confident, never cocky.
+
+        ## Homepage hero
+        The hero format is **locked** to the MasterClass direction. The format
+        choice is closed.
+
+        > Alongside those, the AOM monogram is the only logo.
+        """
+        let dir = FileManager.default.temporaryDirectory
+        let url = dir.appendingPathComponent("\(id).md")
+        try? markdown.data(using: .utf8)?.write(to: url)
+        return Artifact(
+            id: id, threadID: general.threadID, title: title, kind: .document,
+            version: 1, sourceURL: url, metadata: [:]
+        )
     }
 
     private func seedArtifact(
@@ -1544,6 +1576,7 @@ final class PreviewV2API: CornerV2API {
             seedArtifact(id: "artifact-video-1", title: "Teaser", kind: .video, file: "walkthrough", ext: "mp4"),
             seedArtifact(id: "artifact-photo-1", title: "Hero photo", kind: .photo, file: "hero", ext: "png"),
             seedArtifact(id: "artifact-code-1", title: "Hero code", kind: .code, file: "brief", ext: "tsx"),
+            seedDocumentArtifact(id: "artifact-doc-1", title: "AOM — Brand Guidelines"),
             seedArtifact(id: "artifact-broken-1", title: "Broken file", kind: .pdf, dead: true),
         ]
         return rows

@@ -172,7 +172,7 @@ final class CompMatchUITests: XCTestCase {
         let ids = [
             "chat-title", "chat-subtitle", "v2-drawer-button",
             "v2-composer-field", "v2-composer-send", "visual-peek", "visual-peek-count",
-            "review-toggle", "visual-sheet-close", "visual-tab",
+            "leave-a-review", "visual-sheet-close", "visual-tab",
             "sheet-tab-preview", "sheet-tab-context", "v2-agent-label",
         ]
         for id in ids {
@@ -477,18 +477,21 @@ final class CompMatchUITests: XCTestCase {
     }
 
     /// P046: the Review toggle is transparent + muted off (not accentWeak).
-    /// The 36pt height rides the evidence shot — XCUI reports the text
-    /// frame, so the pixel proves the restyle instead.
+    /// R59 (Patrik phone review): the review affordance is now "Leave a
+    /// review" in the CONTENT, not a header toggle. The top row is only
+    /// Preview · Context · ×. This asserts the new entry exists, the old
+    /// header toggle is gone, and tapping it opens the review panel.
     func testP046ReviewToggle() throws {
         let app = launch(Self.compVisual)
         openSheet(app)
-        let toggle = app.buttons.matching(identifier: "review-toggle").firstMatch
-        XCTAssertTrue(toggle.waitForExistence(timeout: 10), "no Review toggle")
-        XCTAssertEqual(toggle.label, "Review")
-        // Left of the text, inside the button's padding: any fill shows here.
-        let shot = XCUIScreen.main.screenshot()
-        expectPixel(shot, at: CGPoint(x: toggle.frame.minX - 8, y: toggle.frame.midY),
-                    window: windowFrame, (22, 27, 35), tolerance: 12, "toggle off is transparent")
+        let leave = app.buttons.matching(identifier: "leave-a-review").firstMatch
+        XCTAssertTrue(leave.waitForExistence(timeout: 10), "no 'Leave a review' button in content")
+        XCTAssertEqual(leave.label, "Leave a review of this file")
+        XCTAssertEqual(app.buttons.matching(identifier: "review-toggle").count, 0,
+                       "the header still carries a Review tab — it must be Preview · Context · × only")
+        leave.tap()
+        XCTAssertTrue(app.buttons.matching(identifier: "review-send").firstMatch.waitForExistence(timeout: 10),
+                      "tapping Leave a review did not open the review panel")
     }
 
     /// P047: close is the filled 36px circle, not a text button.
@@ -575,8 +578,9 @@ final class CompMatchUITests: XCTestCase {
     func testP053SendButton() throws {
         let app = launch(Self.compVisual)
         openSheet(app)
-        let toggle = app.buttons.matching(identifier: "review-toggle").firstMatch
-        XCTAssertTrue(toggle.waitForExistence(timeout: 10), "no Review toggle")
+        // R59: enter review via "Leave a review" in content.
+        let toggle = app.buttons.matching(identifier: "leave-a-review").firstMatch
+        XCTAssertTrue(toggle.waitForExistence(timeout: 10), "no 'Leave a review' entry")
         toggle.tap()
         let send = app.buttons.matching(identifier: "review-send").firstMatch
         XCTAssertTrue(send.waitForExistence(timeout: 10), "no review Send")

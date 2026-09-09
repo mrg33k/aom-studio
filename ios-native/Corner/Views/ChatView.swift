@@ -1236,6 +1236,12 @@ struct ChatView: View {
             if !window.tabs.isEmpty {
                 v2PeekBar
             }
+            // R59 (Patrik phone review 2026-09-08): the full control row is
+            // back, ABOVE the pill (the R27 tray rule keeps the pill metrics
+            // locked). Plan/Work, Model, and Attach are visible buttons, not
+            // buried in the sparkle menu — the composer he had in the earlier
+            // builds. The sparkle command chip, mic, and send stay in the pill.
+            v2ComposerControlsRow
             // P039: pill + round send sit directly on the ground — the
             // frosted outer card is gone.
             HStack(alignment: .bottom, spacing: V2ComposerMetrics.sendSpacing) {
@@ -1276,29 +1282,9 @@ struct ChatView: View {
                         .accessibilityIdentifier("v2-composer-field")
                         .accessibilityLabel("Message")
                         .accessibilitySortPriority(5)
-                    // R28: the paperclip joins the pill once composing begins
-                    // (see v2Composing for why it hides while empty).
-                    if v2Composing {
-                        Menu {
-                            Button { v2ShowingPhotoPicker = true } label: {
-                                Label("Photo Library", systemImage: "photo.on.rectangle")
-                            }
-                            Button { v2ShowingFilePicker = true } label: {
-                                Label("Choose Files", systemImage: "folder")
-                            }
-                            Button { v2CameraTapped() } label: {
-                                Label("Camera", systemImage: "camera")
-                            }
-                        } label: {
-                            Image(systemName: "paperclip")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundStyle(Theme.inkSoft)
-                                .frame(width: 30, height: 36)
-                        }
-                        .accessibilityIdentifier("v2-attach")
-                        .accessibilityLabel("Attach and upload files")
-                        .accessibilitySortPriority(4)
-                    }
+                    // R59: the attachment control moved OUT of the pill up to
+                    // the always-visible controls row above (Patrik's #1), so
+                    // it no longer hides while the field is empty.
                     // R19: the commands chip lives inside the pill, left of
                     // Record — the design's pill with one more chip. R24
                     // P076: icon-only while the field is empty so the full
@@ -3269,6 +3255,100 @@ struct ChatView: View {
         return v2model.chatMode == "plan" ? "\(primary) · Plan" : primary
     }
 
+    /// R59 (Patrik phone review 2026-09-08): the composer's visible control
+    /// row — Plan/Work, Model, Attach — restored above the pill. Drives the
+    /// same per-thread state as the sparkle command card (the `v2CommandsState`
+    /// adapter: `setMode`, `selectModel`), so the two never drift; the chip's
+    /// label stays live too. Reuses the photo/file/camera pickers the in-pill
+    /// paperclip used before it moved here.
+    private var v2ComposerControlsRow: some View {
+        let cmd = v2CommandsState
+        let plan = v2model.chatMode == "plan"
+        return HStack(spacing: 8) {
+            // Plan / Work toggle — accent when Plan is armed.
+            Button {
+                cmd.setMode(plan ? "work" : "plan")
+            } label: {
+                Text(plan ? "Plan" : "Work")
+                    .font(.hanken(12.5).weight(.bold))
+                    .foregroundStyle(plan ? Theme.accent : Theme.inkSoft)
+                    .padding(.horizontal, 12)
+                    .frame(height: 32)
+                    .background(
+                        plan ? Theme.accentWeak : Theme.raised2,
+                        in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .strokeBorder(plan ? Theme.accent.opacity(0.6) : Theme.hairline, lineWidth: 1)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("v2-mode-toggle")
+            .accessibilityLabel(plan ? "Plan mode. Switch to Work." : "Work mode. Switch to Plan.")
+
+            // Model button — the same options and checkmark as the menu.
+            Menu {
+                ForEach(ChatView.modelOptions, id: \.id) { option in
+                    Button {
+                        Task { await cmd.selectModel(option.id) }
+                    } label: {
+                        if option.id == v2model.modelChoice {
+                            Label(option.label, systemImage: "checkmark")
+                        } else {
+                            Text(option.label)
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "cpu")
+                        .font(.system(size: 13, weight: .medium))
+                    Text(ChatView.shortModelLabel(v2model.modelChoice))
+                        .font(.hanken(12.5).weight(.semibold))
+                }
+                .foregroundStyle(Theme.inkSoft)
+                .padding(.horizontal, 12)
+                .frame(height: 32)
+                .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Theme.hairline, lineWidth: 1)
+                )
+            }
+            .accessibilityIdentifier("v2-model-button")
+            .accessibilityLabel("Model — \(ChatView.shortModelLabel(v2model.modelChoice))")
+
+            // Attach — photo / file / camera, always visible now.
+            Menu {
+                Button { v2ShowingPhotoPicker = true } label: {
+                    Label("Photo Library", systemImage: "photo.on.rectangle")
+                }
+                Button { v2ShowingFilePicker = true } label: {
+                    Label("Choose Files", systemImage: "folder")
+                }
+                Button { v2CameraTapped() } label: {
+                    Label("Camera", systemImage: "camera")
+                }
+            } label: {
+                Image(systemName: "paperclip")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(Theme.inkSoft)
+                    .frame(width: 34, height: 32)
+                    .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .strokeBorder(Theme.hairline, lineWidth: 1)
+                    )
+            }
+            .accessibilityIdentifier("v2-attach")
+            .accessibilityLabel("Attach and upload files")
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 2)
+    }
+
     /// R19: the commands chip INSIDE the v2 pill, left of Record. Its look
     /// follows the design's Record chip (32pt height, 8pt radius, 12px label)
     /// so the pill still reads as the design with one more chip. R24 P076:
@@ -3740,13 +3820,47 @@ private struct V2BlockView: View {
                     )
                     .accessibilityIdentifier("v2-event-text")
             } else {
-                // R42 P092: agent body is unbubbled 15/22 ink, fixed (never
-                // Dynamic Type scaled).
-                Text(value)
-                    .font(.hankenFixed(15))
-                    .lineSpacing(V2ThreadType.bodyLineSpacing)
-                    .foregroundStyle(Theme.ink)
-                    .accessibilityIdentifier("v2-event-text")
+                // R59 (Patrik phone review 2026-09-08): agent body wears the
+                // CV6 bubble — a frosted card + hairline + left accent bar —
+                // NOT bare ink. Bare text read as "a mess with no box" on the
+                // phone; the user's blue bubble made the asymmetry look broken.
+                // Mirrors MessageBubbleView's agent treatment; 15/22 ink, fixed
+                // (never Dynamic Type scaled). Tail at the top-leading corner.
+                ZStack(alignment: .leading) {
+                    Rectangle()
+                        .fill(Theme.accent)
+                        .frame(width: 3)
+                    Text(value)
+                        .font(.hankenFixed(15))
+                        .lineSpacing(V2ThreadType.bodyLineSpacing)
+                        .foregroundStyle(Theme.ink)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .background(Theme.agentBubble)
+                        .overlay(
+                            UnevenRoundedRectangle(
+                                topLeadingRadius: V2ThreadType.bubbleTail,
+                                bottomLeadingRadius: V2ThreadType.bubbleRadius,
+                                bottomTrailingRadius: V2ThreadType.bubbleRadius,
+                                topTrailingRadius: V2ThreadType.bubbleRadius,
+                                style: .continuous
+                            )
+                            .strokeBorder(Theme.hairline, lineWidth: 1)
+                        )
+                        .padding(.leading, 3)
+                }
+                .clipShape(
+                    UnevenRoundedRectangle(
+                        topLeadingRadius: V2ThreadType.bubbleTail,
+                        bottomLeadingRadius: V2ThreadType.bubbleRadius,
+                        bottomTrailingRadius: V2ThreadType.bubbleRadius,
+                        topTrailingRadius: V2ThreadType.bubbleRadius,
+                        style: .continuous
+                    )
+                )
+                .accessibilityIdentifier("v2-event-text")
+                .accessibilityElement(children: .combine)
             }
         case .question(_, let text, let options):
             VStack(alignment: .leading, spacing: 6) {

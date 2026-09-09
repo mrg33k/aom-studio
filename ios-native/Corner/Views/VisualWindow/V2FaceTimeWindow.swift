@@ -12,10 +12,13 @@
 import SwiftUI
 import WebKit
 
-/// The PiP box metrics: the brief's ~110×160, top-right, under the nav.
+/// The PiP box metrics: top-right, under the nav.
+/// R59 (Patrik phone review 2026-09-08): the box read too short — a document
+/// preview showed almost nothing. Up from 110×160 to 134×224 (his red box),
+/// so the docked preview is legibly tall without becoming a full browser.
 enum V2FaceTimeMetrics {
-    static let width: CGFloat = 110
-    static let height: CGFloat = 160
+    static let width: CGFloat = 134
+    static let height: CGFloat = 224
     static let margin: CGFloat = 12
     /// Below the 52pt nav bar with room to breathe (added to the
     /// container's top safe-area inset).

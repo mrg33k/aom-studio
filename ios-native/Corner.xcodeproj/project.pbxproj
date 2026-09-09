@@ -150,6 +150,7 @@
 		DA5EDE403E83544994CC49AF /* RoomStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81D8FE03F68E468709423ABF /* RoomStore.swift */; };
 		DBBA9BA21F7B16EEDB5017BE /* CornerV2APITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39373C7AC45387272C900018 /* CornerV2APITests.swift */; };
 		DD594F0654E6186B53FFD738 /* ArtifactRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46ECB5E33EDC741B3FC23369 /* ArtifactRenderer.swift */; };
+		D5A118B75E633681923DE336 /* DocumentReaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C821195F98211DF586757847 /* DocumentReaderView.swift */; };
 		E088321A5DD334011E79ED97 /* Attachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADE9EA2C183A1DE148D6AC9D /* Attachment.swift */; };
 		E319A922A04684A9A1370317 /* V2ComposerExtras.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8F7FAB74C1ABCC07C31988E /* V2ComposerExtras.swift */; };
 		E369B5CBC52DAFC76638FAFF /* V2ViewState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8F666DC72182C86CE541956 /* V2ViewState.swift */; };
@@ -266,6 +267,7 @@
 		41EB3D2C357667840C871590 /* RoomAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomAvatarView.swift; sourceTree = "<group>"; };
 		4303556F95B9EE669B789C05 /* ThemeCompMatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeCompMatchTests.swift; sourceTree = "<group>"; };
 		46ECB5E33EDC741B3FC23369 /* ArtifactRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArtifactRenderer.swift; sourceTree = "<group>"; };
+		C821195F98211DF586757847 /* DocumentReaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentReaderView.swift; sourceTree = "<group>"; };
 		472C80894E72475D7BF66DE9 /* WorkProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkProjection.swift; sourceTree = "<group>"; };
 		481660ECBD0AB5618F2F8B56 /* DesignMatchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignMatchUITests.swift; sourceTree = "<group>"; };
 		482B63EA2B98F05A9B791A57 /* NotificationActionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationActionsTests.swift; sourceTree = "<group>"; };
@@ -501,6 +503,7 @@
 			isa = PBXGroup;
 			children = (
 				46ECB5E33EDC741B3FC23369 /* ArtifactRenderer.swift */,
+				C821195F98211DF586757847 /* DocumentReaderView.swift */,
 				3867FF9AA6510A7675B8404E /* PDFArtifactView.swift */,
 				9CFF7B4EBD1449C3E9B22A50 /* QuickLookArtifactView.swift */,
 				D131A547AABD2FCBE49FA758 /* ReviewPanelView.swift */,
@@ -936,6 +939,7 @@
 				97D0B387A6639C5A5AB59DE3 /* AirPodsVoiceView.swift in Sources */,
 				74493D719E1C7DFEEB61A489 /* AppRouter.swift in Sources */,
 				DD594F0654E6186B53FFD738 /* ArtifactRenderer.swift in Sources */,
+				D5A118B75E633681923DE336 /* DocumentReaderView.swift in Sources */,
 				3E19C3887D4D24B99A3923AD /* AssignSheet.swift in Sources */,
 				E088321A5DD334011E79ED97 /* Attachment.swift in Sources */,
 				37A297149FAE56CA5A8B49CD /* AvatarEditSheet.swift in Sources */,

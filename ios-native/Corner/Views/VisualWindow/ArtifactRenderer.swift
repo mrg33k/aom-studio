@@ -17,6 +17,7 @@ import SwiftUI
 enum ArtifactViewType: String, Equatable {
     case pdf
     case quickLook
+    case document
     case video
     case web
     case photo
@@ -43,7 +44,11 @@ struct ArtifactRenderer {
     static func viewType(for kind: VisualTabKind) -> ArtifactViewType {
         switch kind {
         case .pdf: .pdf
-        case .deck, .document, .genericFile: .quickLook
+        // R59 (Patrik phone review 2026-09-08): documents render in the
+        // native Dracula reader, not QuickLook — QuickLook showed the
+        // extension-less markdown file's id over "data" ("files don't load").
+        case .document: .document
+        case .deck, .genericFile: .quickLook
         case .video: .video
         case .web: .web
         case .photo: .photo
@@ -70,6 +75,8 @@ struct ArtifactRenderer {
             )
         case .quickLook:
             QuickLookArtifactView(url: url)
+        case .document:
+            DocumentReaderView(url: url, title: artifact.title)
         case .video:
             VideoArtifactView(url: url, review: review)
         case .web:

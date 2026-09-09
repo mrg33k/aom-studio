@@ -324,6 +324,11 @@ final class R19ShootScreens: XCTestCase {
         frames("thread", ["chat-title", "chat-subtitle", "v2-drawer-button",
                           "v2-status-dot", "v2-eye", "v2-composer-field", "v2-composer-send",
                           "v2-record", "v2-commands", "visual-peek",
+                          // R59 regression guard (Patrik's zoom-out): the
+                          // composer's visible control row — these MUST be
+                          // present or the gate fails. They vanished into the
+                          // sparkle menu before; the guard forbids that again.
+                          "v2-mode-toggle", "v2-model-button", "v2-attach",
                           // R42 P092: dumped to anchor the design's type —
                           // the agent line (12.5pt → ~15pt box at x=16) and
                           // the 11pt stamps (~13pt box).
@@ -393,7 +398,12 @@ final class R19ShootScreens: XCTestCase {
             NSLog("R19STATUS sheet-half missing no-sheet"); return
         }
         shot("sheet-half")
-        frames("sheet-half", ["visual-sheet-close", "review-toggle",
+        frames("sheet-half", ["visual-sheet-close",
+                              // R59: the top row is Preview · Context · ×
+                              // only; "review-toggle" is dumped to PROVE it is
+                              // gone from the header (MISSING is the pass),
+                              // and "leave-a-review" replaces it in content.
+                              "review-toggle", "leave-a-review",
                               "sheet-tab-preview", "sheet-tab-context",
                               "sheet-status-text",
                               // P082: dumped to prove absence — a resting
@@ -425,7 +435,11 @@ final class R19ShootScreens: XCTestCase {
         guard openDesignThread(), openSheet() else {
             NSLog("R19STATUS sheet-review missing no-sheet"); return
         }
-        let toggle = app.buttons.matching(identifier: "review-toggle").firstMatch
+        // R59: review entry is "leave-a-review" (phone, in content) or
+        // "review-toggle" (iPad column). Tap whichever this size shows.
+        let toggle = app.buttons.matching(
+            NSPredicate(format: "identifier == 'leave-a-review' OR identifier == 'review-toggle'")
+        ).firstMatch
         guard toggle.waitForExistence(timeout: 8) else {
             NSLog("R19STATUS sheet-review missing no-toggle"); return
         }
@@ -442,12 +456,17 @@ final class R19ShootScreens: XCTestCase {
         guard openDesignThread(), openSheet() else {
             NSLog("R19STATUS sheet-full missing no-sheet"); return
         }
-        let toggle = app.buttons.matching(identifier: "review-toggle").firstMatch
+        // R59: enter review via "leave-a-review" (phone) or "review-toggle"
+        // (iPad). Tapping either turns the checklist + Send on.
+        let toggle = app.buttons.matching(
+            NSPredicate(format: "identifier == 'leave-a-review' OR identifier == 'review-toggle'")
+        ).firstMatch
         guard toggle.waitForExistence(timeout: 8) else {
             NSLog("R19STATUS sheet-full missing no-toggle"); return
         }
-        if toggle.label == "Review" {
-            // Review off: turn it on so the checklist + Send show.
+        // The sheet opened fresh, so review is off: tapping the entry
+        // (phone "Leave a review" or iPad "Review") turns checklist + Send on.
+        if !toggle.label.hasPrefix("Review ·") {
             toggle.tap()
             Thread.sleep(forTimeInterval: 1)
         }
@@ -608,5 +627,26 @@ final class R19ShootScreens: XCTestCase {
         // Both ids are dumped to prove absence (see eye-facetime).
         frames("eye-hidden", ["v2-eye", "v2-facetime", "visual-sheet"])
         NSLog("R19STATUS eye-hidden ok")
+    }
+
+    /// R59 (Patrik phone review): the document reader renders the file's
+    /// CONTENT, never the artifact id over "data" (his #3, the top break).
+    /// Opens the seeded markdown document; the gate reads `visual-stage-document`
+    /// (present = the reader painted) and `leave-a-review` (review moved to
+    /// content). This is the standing anchor for "documents load."
+    func testShoot15Document() throws {
+        launch(Self.eyeHarness, realBackend: false)
+        guard openEyeThread(), openEyeCard("artifact-doc-1") else {
+            NSLog("R19STATUS document missing no-sheet"); return
+        }
+        settle(2)
+        shot("document")
+        frames("document", ["visual-sheet", "visual-stage-document",
+                            "sheet-tab-preview", "sheet-tab-context",
+                            "leave-a-review", "reader-theme-toggle",
+                            // Dumped to prove absence: the top row carries no
+                            // Review tab any more (MISSING is the pass).
+                            "review-toggle"])
+        NSLog("R19STATUS document ok")
     }
 }

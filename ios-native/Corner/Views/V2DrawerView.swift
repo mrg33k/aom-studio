@@ -225,11 +225,13 @@ struct V2DrawerView: View {
 
     private var header: some View {
         HStack(spacing: 0) {
+            // R59 (Patrik phone review 2026-09-08): the menu logo reads too
+            // small — up from 16 to 26 so the mark anchors the drawer.
             Image("CornerLogo")
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
-                .frame(height: 16)
+                .frame(height: 26)
                 .foregroundStyle(Theme.ink)
                 .accessibilityLabel("Corner")
                 .padding(.leading, 20)
@@ -283,16 +285,19 @@ struct V2DrawerView: View {
     }
 
     private var newRow: some View {
+        // R59 (Patrik phone review 2026-09-08): the New / Project buttons
+        // were oversized against the (now bigger) logo — down from 48 to 38
+        // tall, 14 to 13.5 text, so the logo leads and these read as actions.
         HStack(spacing: 8) {
             Button {
                 raiseIntake()
             } label: {
                 Text("New")
-                    .font(.hanken(14).weight(.semibold))
+                    .font(.hanken(13.5).weight(.semibold))
                     .foregroundStyle(Color.white)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(Theme.accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .frame(height: 38)
+                    .background(Theme.accent, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("v2-drawer-new")
@@ -301,11 +306,11 @@ struct V2DrawerView: View {
                 Task { await createProject() }
             } label: {
                 Text("Project +")
-                    .font(.hanken(14).weight(.semibold))
+                    .font(.hanken(13.5).weight(.semibold))
                     .foregroundStyle(Theme.ink)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .frame(height: 38)
+                    .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
             .buttonStyle(.plain)
             .disabled(busy)

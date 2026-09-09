@@ -287,8 +287,12 @@ final class VisualWindowUITests: XCTestCase {
         reviewSend(app).tap()
         // Send once: submit clears the pins and review mode stands down, so
         // the panel (and its Send) leaves — there is nothing to tap twice.
-        let toggle = app.buttons.matching(identifier: "review-toggle").firstMatch
-        let sent = expectation(for: NSPredicate(format: "label == 'Review'"), evaluatedWith: toggle, handler: nil)
+        // R59: on the phone, standing down brings the "Leave a review" entry
+        // back into the content (it replaced the header's review-toggle).
+        let entry = app.buttons.matching(
+            NSPredicate(format: "identifier == 'leave-a-review' OR identifier == 'review-toggle'")
+        ).firstMatch
+        let sent = expectation(for: NSPredicate(format: "exists == true"), evaluatedWith: entry, handler: nil)
         wait(for: [sent], timeout: 30)
         XCTAssertEqual(app.buttons.matching(identifier: "review-send").count, 0, "Send stayed live after submitting")
         // Let the cleared counts commit before the evidence frame.
@@ -378,8 +382,12 @@ final class VisualWindowUITests: XCTestCase {
         openGeneralChat(app)
         openCard(app, artifactID: "artifact-pdf-1")
         expectWindow(app, showing: "Aster brief")
-        let toggle = app.buttons.matching(identifier: "review-toggle").firstMatch
-        XCTAssertTrue(toggle.waitForExistence(timeout: 15), "no Review toggle on the sheet")
+        // R59: review entry is "Leave a review" in content (phone) or the
+        // iPad column's "review-toggle".
+        let toggle = app.buttons.matching(
+            NSPredicate(format: "identifier == 'leave-a-review' OR identifier == 'review-toggle'")
+        ).firstMatch
+        XCTAssertTrue(toggle.waitForExistence(timeout: 15), "no review entry on the sheet")
         toggle.tap()
         let carry = app.buttons.matching(identifier: "review-carry-on").firstMatch
         XCTAssertTrue(carry.waitForExistence(timeout: 15), "no carry-on control in review mode")
