@@ -30,13 +30,19 @@ for reasons outside agent control.**
 1. **Test B on the installed TestFlight build.** Build 22 is in Apple's beta-review queue
    (WAITING_FOR_REVIEW). The on-device proof of the eye/companion needs the approved build installed —
    an external wait, recorded not hidden (same as builds 20/21).
-2. **Test B on the canonical production dashboard + "serves the validated commit."** The desktop production
-   frontend is 3 days stale (missing R44 + R11). Promoting it (`vercel --prod`) is classifier-gated as the
-   one client-facing/irreversible step, and the canonical surface is `aheadofmarket.com/dashboard` — which
-   shares ground with the marketing site — so the target is Patrik's to confirm. R11 is fully verified and a
-   preview is live; the prod promote is one command (`corner-v2-integration && npx vercel --prod --yes`) or
-   the Vercel connector on Patrik's go. Until it lands, Test B's production half and the "serves the
-   validated commit" clause cannot be green.
+2. **Test B on the canonical production dashboard + "serves the validated commit."** RESOLVED the deploy
+   target (this matters): `aheadofmarket.com/dashboard` redirects to the **`corner-convex`** Vercel project
+   (`prj_hd0EHJumhEj7Jot0M9MLgOuMEBFf`), NOT `corner-v2-integration` (which the local `.vercel` links to).
+   corner-convex is a CLI-deployed vite SPA; its live prod (`corner-convex-pom6g63ne`, deployed by Patrik
+   11h ago, 2026-09-08 10:42 AM) carries `viewState` but not R11's eye/multi-chat, so the canonical
+   dashboard is missing R11. Deploying R11 there needs `vercel --prod` targeting corner-convex — classifier-
+   gated, over Patrik's own recent live deploy — so it is his to run (reversible: Vercel rolls back to
+   `corner-convex-pom6g63ne` in seconds if needed). Exact path:
+   `cd corner-v2-integration && npx vercel link --project corner-convex --yes && npx vercel --prod --yes`
+   (then re-link back to corner-v2-integration). R11 is verified and a preview is live. Until corner-convex
+   serves R11, Test B's production half and "serves the validated commit" cannot be green. NOTE: an earlier
+   handoff wrongly named `corner-v2-integration` as the target — deploying there would NOT update the
+   canonical dashboard.
 
 ## Verdict
 Everything inside agent control for acceptance is green: Test A closed, native Test C current, the punch
