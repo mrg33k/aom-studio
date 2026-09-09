@@ -22,6 +22,11 @@ struct SignInView: View {
     @State private var errorMessage: String?
     @State private var notice: String?
     @FocusState private var focus: Field?
+    /// R68 (Patrik 2026-09-09): the slick entrance. The logo + content settle in
+    /// with a soft staggered rise while the project-tint glow breathes behind —
+    /// the brand's own V2LoadingMark/glow language, not a generic slide.
+    @State private var entered = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private enum Field { case email, password }
 
@@ -38,56 +43,71 @@ struct SignInView: View {
     var body: some View {
         ZStack {
             Theme.ground.ignoresSafeArea()
+            // R68: a soft breathing glow high behind the logo — the room feels
+            // alive the moment you land, before you've done anything.
+            V2AmbientGlow(tint: Theme.accent, boost: entered)
+                .frame(height: 280)
+                .frame(maxWidth: .infinity, alignment: .top)
+                .opacity(reduceMotion ? 0.5 : (entered ? 0.7 : 0))
+                .offset(y: -160)
+                .allowsHitTesting(false)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.9), value: entered)
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     logoRow
                         .padding(.top, 114)
+                        .staggerReveal(entered, 0, reduce: reduceMotion)
                     Text("Make things with an agent that knows your work.")
                         .font(.hanken(25).weight(.bold))
                         .foregroundStyle(Theme.ink)
                         .padding(.top, 22)
                         .accessibilityIdentifier("login-headline")
+                        .staggerReveal(entered, 1, reduce: reduceMotion)
                     Text("Decks, sites, film, brand assets. One conversation, one review, one send.")
                         .font(.hanken(14.5))
                         .foregroundStyle(Theme.inkSoft)
                         .padding(.top, 8)
                         .accessibilityIdentifier("login-sub")
+                        .staggerReveal(entered, 2, reduce: reduceMotion)
                     if !showPassword {
-                        ssoRow(
-                            id: "login-sso-google",
-                            label: "Continue with Google",
-                            icon: AnyView(
-                                // R19: the design's multicolor G (LOGO set),
-                                // not a monochrome letter.
-                                Image("brand-google-g")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 19, height: 19)
-                                    .accessibilityHidden(true)
-                            )
-                        ) { ssoNotice("Google") }
-                        ssoRow(
-                            id: "login-sso-apple",
-                            label: "Continue with Apple",
-                            icon: AnyView(
-                                Image(systemName: "apple.logo")
-                                    .font(.system(size: 17, weight: .medium))
-                                    .foregroundStyle(Theme.ink)
-                            )
-                        ) { ssoNotice("Apple") }
-                        ssoRow(
-                            id: "login-sso-sso",
-                            label: "Continue with SSO",
-                            icon: AnyView(
-                                Image(systemName: "command")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundStyle(Theme.ink)
-                            )
-                        ) { ssoNotice("SSO") }
-                        orDivider
-                            .padding(.top, 8)
-                        emailField
-                            .padding(.top, 8)
+                        Group {
+                            ssoRow(
+                                id: "login-sso-google",
+                                label: "Continue with Google",
+                                icon: AnyView(
+                                    // R19: the design's multicolor G (LOGO set),
+                                    // not a monochrome letter.
+                                    Image("brand-google-g")
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 19, height: 19)
+                                        .accessibilityHidden(true)
+                                )
+                            ) { ssoNotice("Google") }
+                            ssoRow(
+                                id: "login-sso-apple",
+                                label: "Continue with Apple",
+                                icon: AnyView(
+                                    Image(systemName: "apple.logo")
+                                        .font(.system(size: 17, weight: .medium))
+                                        .foregroundStyle(Theme.ink)
+                                )
+                            ) { ssoNotice("Apple") }
+                            ssoRow(
+                                id: "login-sso-sso",
+                                label: "Continue with SSO",
+                                icon: AnyView(
+                                    Image(systemName: "command")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundStyle(Theme.ink)
+                                )
+                            ) { ssoNotice("SSO") }
+                            orDivider
+                                .padding(.top, 8)
+                            emailField
+                                .padding(.top, 8)
+                        }
+                        .staggerReveal(entered, 3, reduce: reduceMotion)
                     } else {
                         passwordStep
                             .padding(.top, 16)
@@ -126,16 +146,25 @@ struct SignInView: View {
                         .disabled(!canContinue)
                         .padding(.top, 8)
                         .accessibilityIdentifier("login-email-continue")
+                        .staggerReveal(entered, 4, reduce: reduceMotion)
                     }
                     Text("By continuing you agree to the terms. Corner reads only what you scope to a project.")
                         .font(.hanken(12))
                         .foregroundStyle(Theme.inkFaint)
                         .padding(.top, 22)
                         .accessibilityIdentifier("login-terms")
+                        .staggerReveal(entered, 5, reduce: reduceMotion)
                     Spacer(minLength: 40)
                 }
                 .padding(.horizontal, 21)
             }
+        }
+        .onAppear {
+            // Each row carries its own delayed spring (see StaggerReveal); we
+            // only trip the flag. Under Reduce Motion the modifier shows
+            // everything at rest, so the same flip is correct there too.
+            guard !entered else { return }
+            entered = true
         }
     }
 
@@ -295,5 +324,39 @@ struct SignInView: View {
                 errorMessage = "That email and password did not match an account."
             }
         }
+    }
+}
+
+// R68: the entrance. Each element rises a few points and fades in on a spring,
+// staggered by its position (index) so the screen assembles top-down instead
+// of popping in whole. Under Reduce Motion it renders instantly at rest — no
+// offset, no fade, no animation.
+private struct StaggerReveal: ViewModifier {
+    let shown: Bool
+    let index: Int
+    let reduce: Bool
+
+    /// Gap between each element's start — small enough to feel like one gesture.
+    private static let step: Double = 0.07
+
+    func body(content: Content) -> some View {
+        if reduce {
+            content
+        } else {
+            content
+                .opacity(shown ? 1 : 0)
+                .offset(y: shown ? 0 : 14)
+                .animation(
+                    .spring(response: 0.62, dampingFraction: 0.85)
+                        .delay(Double(index) * Self.step),
+                    value: shown
+                )
+        }
+    }
+}
+
+private extension View {
+    func staggerReveal(_ shown: Bool, _ index: Int, reduce: Bool) -> some View {
+        modifier(StaggerReveal(shown: shown, index: index, reduce: reduce))
     }
 }
