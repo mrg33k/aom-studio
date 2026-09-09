@@ -34,6 +34,9 @@ A **live localhost equivalent** while working on things, so we don't waste resou
 ## 5. Easy-to-add connections (Arcade)
 Connections need to be easy to add. **Arcade** may already give this ability — but it needs to be connected/wired.
 
+### FINDING (2026-09-09, probed Arcade) — the tool layer exists and is keyed
+`~/.config/arcade-api-key.env` holds a valid `ARCADE_API_KEY`. `GET https://api.arcade.dev/v1/health` = 200 and `/v1/tools` returns a large catalog (Airtable seen; Arcade's standard catalog covers Gmail, GitHub, Google Calendar/Drive, Slack, Notion, X, web scraping). So Arcade is the ready-made answer to the toolless-brain finding above: it's a hosted tool-calling layer with per-user OAuth. **It just isn't wired into the bridge brain yet** (that's item 5's "needs to be connected"). Rate limit note: the key 403s after a few quick calls — probe gently, cache the catalog. NEXT to build: (1) an Arcade client in the bridge that lists/authorizes the toolkits Patrik cares about (Gmail first, for 3a email), (2) intent-gated tool calls from the chat turn so latency stays low, (3) the R61 connections panel reflects real Arcade authorization state (connected dot = authorized). This wires items 1, 3a, and 5 together; the companion app can host the same Arcade auth for a walk-in user.
+
 ## 6. Files don't load from the menu
 Files don't load when you click them from the **iOS menu (drawer Files)** or the **command menu**. (Distinct from the R62 HTML-render fix — this is the open/navigation path from those two entry points.)
 
