@@ -69,3 +69,9 @@ Fix: `FilePreviewView.route(for:)` (pure, unit-tested) — known text extensions
 Remaining half (documented, not yet fixed): the **command-menu "Files"** does `window.isPresented = true`, which on iPhone renders an EMPTY sheet when no tab is selected (the sheet gates on `selectedTab != nil`). The fix is to let the Visual Window present its Context (file list) with no open tab, OR route command-menu Files to the Organize browser — a small but distinct change to verify on the sim with real files. Batching with the next new-goal build (not shipped as its own build).
 
 **Status:** iOS-menu half done + unit-tested (ships in the next build); command-menu half root-caused + queued.
+
+### R64 — Breathing composer glow (new-goal item 2) (2026-09-09, Claude by hand)
+
+Patrik (new goal, item 2): the glow under the composer should be bigger, slowly animating bigger/smaller ("like the room has life"), and sit higher up. `V2ComposerGlow` now wraps `V2AmbientGlow` in a slow breathing scale (1.18 ⇄ 1.62, anchored bottom so it grows upward) + opacity pulse (0.80 ⇄ 1.0) over 5.5 s, autoreversing; Reduce Motion / screen-tour freeze at a static 1.35. The glow's footprint in ChatView grew 78 → 150 so the bigger bloom rises higher behind the composer. `V2AmbientGlow` (shared with the loading mark) is untouched. Verified on the 17 Pro sim: two frames 4 s apart show the bloom clearly bigger + higher than the old strip and pulsing between them.
+
+**Status:** done (verified on sim; ships in the next build).

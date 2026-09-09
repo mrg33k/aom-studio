@@ -113,16 +113,33 @@ struct V2ComposerGlow: View {
     let tint: Color
     var boost: Bool = false
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var breathe = false
+
+    /// The breathing period — slow, so the room "has life" without ever
+    /// pulling the eye off the message being typed.
+    static let breatheSeconds: Double = 5.5
+
     var body: some View {
         // R60 (Patrik phone review 2026-09-08, twice flagged): NO band, NO
         // mask, NO box. Just the blurred ambient ellipses, which fade to
         // nothing on their own — a soft centred glow behind the pill, tinted
-        // per project. The old gradient band + pill-footprint sizing read as
-        // an off-centre blue box tucked under the composer ("not faded or
-        // glowing"). The blur IS the fade; centred full-width, it has no edge.
+        // per project. The blur IS the fade; centred full-width, it has no edge.
+        // R62 (Patrik iPad review 2026-09-09): make it BIGGER, sitting HIGHER
+        // behind the composer, and SLOWLY breathing bigger/smaller so the room
+        // reads as alive. Anchored to the bottom so the growth rises upward.
+        let frozen = reduceMotion || Config.screenTour
         V2AmbientGlow(tint: tint, boost: boost)
+            .scaleEffect(frozen ? 1.35 : (breathe ? 1.62 : 1.18), anchor: .bottom)
+            .opacity(frozen ? 1 : (breathe ? 1 : 0.80))
             .frame(maxWidth: .infinity)
             .allowsHitTesting(false)
+            .animation(
+                frozen ? nil
+                       : .easeInOut(duration: Self.breatheSeconds).repeatForever(autoreverses: true),
+                value: breathe
+            )
+            .onAppear { if !frozen { breathe = true } }
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier("v2-composer-glow")
             .accessibilityLabel("Conversation glow")

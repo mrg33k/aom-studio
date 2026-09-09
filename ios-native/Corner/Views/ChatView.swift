@@ -1373,11 +1373,13 @@ struct ChatView: View {
         // reads as a glow and never an off-centre box. R60: the bloom sat too
         // high; a shorter band keeps it low behind the pill. Hit testing off.
         .background(alignment: .bottom) {
+            // R62 (Patrik iPad review 2026-09-09): a taller footprint lets the
+            // bigger, breathing glow rise HIGHER behind the composer (was 78).
             V2ComposerGlow(
                 tint: v2GlowTint,
                 boost: v2GlowBoost && !v2ReduceMotion
             )
-            .frame(height: 78)
+            .frame(height: 150)
             .frame(maxWidth: .infinity, alignment: .bottom)
             .allowsHitTesting(false)
         }
