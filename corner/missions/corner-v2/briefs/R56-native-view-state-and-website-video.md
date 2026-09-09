@@ -35,6 +35,11 @@ You are a headless worker, BUILDER for the native iOS app (SwiftUI). Nobody will
 4. Unit + UI tests: view-state publish on each of the four changes; the agent open raises + focuses; the
    agent `mode=hidden` minimizes; the website-video band geometry (≈ 1/3 height, 16:9, scrolls inside). Gate
    anchors for the website-video band and the minimized/raised states.
+5. **Regression guard (Patrik's zoom-out, 2026-09-08 — "stop running in circles").** The front end has
+   silently lost features between rounds (the composer command menu + Plan button vanished twice). For every
+   composer/entry/eye feature this build relies on, add a standing UI-test or design anchor that asserts it
+   is still there — at minimum the composer **command menu** and **Plan button** must have a test that fails
+   if they disappear. A restored feature is not done until a guard makes it impossible to drop silently.
 
 Gates (targeted, per the 8:30 PM rule): units; ONLY the UI suites covering the screens you touched (the eye /
 Visual Window / website tab) + yours; `node tools/native-design-vs-sim.mjs` ONCE on the 390 test sim. No full

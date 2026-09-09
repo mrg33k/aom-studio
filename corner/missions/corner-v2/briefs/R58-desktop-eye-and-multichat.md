@@ -27,6 +27,11 @@ You are a headless worker, BUILDER for the desktop web app. Nobody will answer q
 3. e2e (offline stand-in): the eye cycles FaceTime → full and persists; publishing writes view state; an
    agent `mode=hidden` collapses the window; exactly one context window across ≤ 8 condensed chats; closing
    it restores the others.
+4. **Regression guard (Patrik's zoom-out, 2026-09-08 — "stop running in circles").** The desktop front end
+   has silently lost features between rounds (the composer command menu + Plan button vanished twice,
+   including in the design files). Add a standing e2e/vitest assertion for every composer feature this build
+   relies on — at minimum the composer **command menu** and **Plan button** must have a test that fails if
+   they disappear. A restored feature is not done until a guard makes it impossible to drop silently.
 
 Gates: lint 0 errors, tsc clean, vitest, focused offline e2e (`PW_PORT=5174`, `--output e2e/results-orch`,
 ONCE at the end), `npm run test:design` 0/0 on your preview (prebuilt deploy,
