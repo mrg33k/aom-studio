@@ -25,11 +25,20 @@ for reasons outside agent control.**
 - **TestFlight build 22 shipped:** VALID, attached to Corner testers, beta review WAITING_FOR_REVIEW.
   `rounds/R59-native-visual-fixes.md`; `aom-studio 74556635`.
 
-## Red — gated on an external or Patrik-owned step (NOT agent-fixable tonight)
+## Apple gate CLEARED (2026-09-08, late): build 22 beta review is APPROVED
 
-1. **Test B on the installed TestFlight build.** Build 22 is in Apple's beta-review queue
-   (WAITING_FOR_REVIEW). The on-device proof of the eye/companion needs the approved build installed —
-   an external wait, recorded not hidden (same as builds 20/21).
+Verified against the App Store Connect API: build 22 `processingState: VALID`,
+`betaAppReviewSubmission: APPROVED` — available to the Corner testers group now. The external
+Apple-review wait is resolved. Both remaining acceptance steps are now Patrik's two manual actions
+(install + deploy), not a third-party wait.
+
+## Red — gated on a Patrik-owned step (no third-party wait remains)
+
+1. **Test B on the installed TestFlight build — build APPROVED, needs installing.** Build 22 cleared
+   Apple's beta review and is installable from TestFlight now. The on-device proof of the eye/companion
+   is Patrik installing it on his phone (his device is his viewing surface) and confirming the eye modes,
+   the FaceTime PiP, the agent open/close, and a document rendering — the same states verified on the 17
+   Pro sim in R59. No external wait remains; this is Patrik's install.
 2. **Test B on the canonical production dashboard + "serves the validated commit."** RESOLVED the deploy
    target (this matters): `aheadofmarket.com/dashboard` redirects to the **`corner-convex`** Vercel project
    (`prj_hd0EHJumhEj7Jot0M9MLgOuMEBFf`), NOT `corner-v2-integration` (which the local `.vercel` links to).
