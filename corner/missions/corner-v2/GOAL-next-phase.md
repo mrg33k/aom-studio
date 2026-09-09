@@ -34,7 +34,7 @@ R66 wired the classifier into the bridge pack. Drove the live Ambition room: "Ca
 ### AUDIT (2026-09-09) — concrete chat gaps vs Slack (ranked; a few are objective, not taste)
 Audited the native chat's message affordances against Slack. Objective, non-taste gaps found:
 1. **Copy a message** — the v2 message menu had Reply ONLY (no Copy). FIXED autonomously (R66b): Copy added to the v2 long-press menu; copying a message is table stakes, not a taste call.
-2. **Jump-to-latest / scroll-to-bottom button** — none. When you scroll up in history there's no one-tap return to the newest message (Slack's floating "↓ N new"). Real friction; medium build.
+2. **Jump-to-latest / scroll-to-bottom button** — BUILT + verified (R66c). A floating chevron (id `v2-jump-to-latest`) shows whenever you're scrolled up (even with no new messages — the old pill only fired on arrivals) and returns you to the tail. While building this, found + worked around a PRE-EXISTING bug: `v2DistanceFromBottom` reads 0 (never updates on scroll), so the existing new-messages-pill scroll-up detection is also dead — flagged for a separate fix. The button uses a reliable bottom-sentinel instead. Verified on the 200-row seed: hidden at bottom → appears scrolled up → tap returns + hides. UI-test guard `R66JumpToLatestUITests`.
 3. **Emoji reactions** — none. Core Slack affordance for lightweight acknowledgement; bigger build (needs a backend reaction store + UI).
 4. **Unread / "new messages" divider** — none. No marker for where you left off in a busy room.
 5. **Message edit / "edited" label** — none (Reply + Copy exist; edit doesn't).

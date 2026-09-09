@@ -147,6 +147,10 @@ struct ChatView: View {
     @State private var v2Follow = V2FollowState()
     @State private var v2DistanceFromBottom: CGFloat = 0
     @State private var v2ViewportHeight: CGFloat = 0
+    /// R66c: is the newest row on screen? A bottom sentinel's appear/disappear
+    /// drives it (reliable, unlike the v2DistanceFromBottom metric which reads 0)
+    /// — gates the jump-to-latest button.
+    @State private var v2AtBottom = true
     /// R42 P090: the CV6 command card above the sparkle chip (a custom
     /// popover, never the system Menu).
     @State private var v2ShowingCommands = false
@@ -699,6 +703,10 @@ struct ChatView: View {
         return "Ready"
     }
 
+    /// R66c: the id of the invisible bottom sentinel — the scroll target for
+    /// "bottom" and the source of truth for v2AtBottom (the jump-to-latest gate).
+    private var V2BottomSentinelID: String { "v2-bottom-sentinel" }
+
     private var v2ThreadList: some View {
         // R32: the reader serves quote tap-to-jump (the quoted message may
         // be screens above). Event ids are already the row ids.
@@ -779,7 +787,14 @@ struct ChatView: View {
                                 .id(entry.id)
                         }
                     }
+                    // R66c: the bottom sentinel — while it's on screen the
+                    // newest row is visible (at the tail); scrolled up, it's
+                    // unrendered by the LazyVStack, so v2AtBottom flips false and
+                    // the jump-to-latest button appears.
                     Color.clear.frame(height: 1)
+                        .id(V2BottomSentinelID)
+                        .onAppear { v2AtBottom = true }
+                        .onDisappear { v2AtBottom = false }
                 }
                 .padding(.horizontal, V2ThreadType.gutter)
                 .padding(.top, Theme.s3)
@@ -845,6 +860,32 @@ struct ChatView: View {
                     .accessibilityLabel("New messages. Activate to jump to the latest message.")
                 }
             }
+            // R66c (Slack-gap): jump-to-latest whenever you're scrolled up —
+            // even with NO new messages (the pill above only fires on arrivals).
+            // Scrolling up to re-read then having no way back to the latest is
+            // the gap. Reuses the measured distance + v2ScrollToBottom; the
+            // new-messages pill takes precedence when it's showing.
+            .overlay(alignment: .bottomTrailing) {
+                if !v2AtBottom, !v2Follow.showsNewMessages {
+                    Button {
+                        v2ScrollToBottom(proxy: proxy, animated: true)
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Theme.ink)
+                            .frame(width: 40, height: 40)
+                            .background(Theme.raised2, in: Circle())
+                            .overlay(Circle().strokeBorder(Theme.hairline, lineWidth: 1))
+                            .shadow(color: .black.opacity(0.25), radius: 8, y: 3)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 14)
+                    .padding(.bottom, Theme.s3)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    .accessibilityIdentifier("v2-jump-to-latest")
+                    .accessibilityLabel("Jump to the latest message")
+                }
+            }
         }
     }
 
@@ -860,14 +901,15 @@ struct ChatView: View {
             break
         case .snapInstant:
             DispatchQueue.main.async {
-                if let id = v2model.events.last?.id {
-                    proxy.scrollTo(id, anchor: .bottom)
+                // R66c: to the sentinel, so v2AtBottom settles true at the tail.
+                if v2model.events.last != nil {
+                    proxy.scrollTo(V2BottomSentinelID, anchor: .bottom)
                 }
             }
         case .followSmooth:
             withAnimation(.easeOut(duration: 0.2)) {
-                if let id = events.last?.id {
-                    proxy.scrollTo(id, anchor: .bottom)
+                if events.last != nil {
+                    proxy.scrollTo(V2BottomSentinelID, anchor: .bottom)
                 }
             }
         }
@@ -882,14 +924,17 @@ struct ChatView: View {
     }
 
     private func v2ScrollToBottom(proxy: ScrollViewProxy, animated: Bool) {
-        guard let id = v2model.events.last?.id else { return }
+        guard v2model.events.last != nil else { return }
+        // R66c: scroll to the bottom SENTINEL (below the last row + padding), not
+        // the last row — so reaching bottom brings the sentinel on screen and
+        // v2AtBottom flips true, hiding the jump-to-latest button.
         if animated {
             withAnimation(.easeOut(duration: 0.2)) {
-                proxy.scrollTo(id, anchor: .bottom)
+                proxy.scrollTo(V2BottomSentinelID, anchor: .bottom)
             }
         } else {
             DispatchQueue.main.async {
-                proxy.scrollTo(id, anchor: .bottom)
+                proxy.scrollTo(V2BottomSentinelID, anchor: .bottom)
             }
         }
     }
