@@ -34,11 +34,14 @@ Apple-review wait is resolved. Both remaining acceptance steps are now Patrik's 
 
 ## Red — gated on a Patrik-owned step (no third-party wait remains)
 
-1. **Test B on the installed TestFlight build — build APPROVED, needs installing.** Build 22 cleared
-   Apple's beta review and is installable from TestFlight now. The on-device proof of the eye/companion
-   is Patrik installing it on his phone (his device is his viewing surface) and confirming the eye modes,
-   the FaceTime PiP, the agent open/close, and a document rendering — the same states verified on the 17
-   Pro sim in R59. No external wait remains; this is Patrik's install.
+1. **Test B on the installed TestFlight build — build APPROVED; companion SUBSTANCE verified on the
+   build-22 artifact code (sim), on-device confirmation pending Patrik's install.** Build 22 cleared Apple's
+   beta review. The native companion behavior was walked on the iPhone 17 Pro sim running the exact build-22
+   source and captured: the eye cycle hidden → full → FaceTime, and the document rendering on the full stage
+   AND inside the taller FaceTime PiP (not black) — `rounds/evidence/R59-testB-native-hidden.png`,
+   `R59-testB-native-full-document.png`, `R59-testB-native-facetime-pip.png`. What remains is the literal
+   "installed TestFlight build" clause: Patrik installing build 22 on his phone (his device is his viewing
+   surface). No third-party wait; the feature substance is proven, the on-device install is his.
 2. **Test B on the canonical production dashboard + "serves the validated commit."** RESOLVED the deploy
    target (this matters): `aheadofmarket.com/dashboard` redirects to the **`corner-convex`** Vercel project
    (`prj_hd0EHJumhEj7Jot0M9MLgOuMEBFf`), NOT `corner-v2-integration` (which the local `.vercel` links to).
