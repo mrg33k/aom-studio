@@ -105,7 +105,7 @@ Patrik: "Opening Wolfpack week 5" posted an "Opened ..." message with a huge lin
 
 Patrik: the composer's Checklist button is dead. Root cause (native): the v2 Checklist chip toggled `checklistOpen` state nothing rendered — the panel wiring lived only in the legacy composer. Fix: when open, `RoomChecklistPanelView` rides above the v2 pill (tray rule), building lists and Playing items to the agent via the v2 send path. Test `testChecklistChipOpensPanel` fails without the fix ("panel did not open"), passes with it; app build clean on the 17 Pro sim.
 
-**Status:** in progress — committing, pushing (ships in Patrik's next TestFlight build; attach is his).
+**Status:** shipped — committed and pushed to main (ships in Patrik's next TestFlight build; attach is his).
 
 ### R68 — Login/onboarding entrance animation (new-goal item 2) (2026-09-09, Claude by hand)
 
