@@ -95,6 +95,12 @@ Fix: every fatal wording-loop failure is now appended to `corner/state/v2-bridge
 
 **Status:** shipped — committed (AOM-EA + aom-studio), bridge restarted and healthy, pushed to master/main. No prod deploy or TestFlight needed (bridge fix rides the restart).
 
+### R70 — File opens land as Steps, never messages (iPhone item 4) (2026-09-10, Muse)
+
+Patrik: "Opening Wolfpack week 5" posted an "Opened ..." message with a huge link — should just be a Step, true for ALL file opens. Root cause in `AOM-EA/scripts/v2-team-bridge.py`: both open paths (live pull-up success, script looking path) emitted a message event with the open line. Now: artifact + "Opened \<title\>" step, no message, no link. A paired second ask still gets its answer as the turn's only message. Tests updated to the new contract (open-turn shapes now assert artifact+step; combined-ask asserts step + answer-only message); full suite green, 249 pass.
+
+**Status:** in progress — committing, restarting the bridge, verifying live.
+
 ### R68 — Login/onboarding entrance animation (new-goal item 2) (2026-09-09, Claude by hand)
 
 Patrik (goal item 2): the login/onboarding screen should have "a slick animation" and never did — a hard cut to the full form read as unfinished. `SignInView` now runs a staggered entrance: logo → headline → sub → SSO rows → Continue → terms each rise 12px and fade in on a spring (`response 0.62, damping 0.85`, `0.07s` per-index delay via a private `StaggerReveal` modifier), while `V2AmbientGlow` (the app's own loading-mark motif, not a new language) breathes behind the headline. Reduce Motion returns every element at rest — no offset, no fade. The email field + Continue stay tappable throughout; the whole thing is ~1s, non-blocking.
