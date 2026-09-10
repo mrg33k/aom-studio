@@ -419,6 +419,23 @@ final class ComposerParityUITests: XCTestCase {
         evidence("return-send")
     }
 
+    // MARK: - checklist panel (iPhone item 3)
+
+    /// The v2 Checklist chip opens the room checklist panel above the pill;
+    /// tapping Close removes it. (The chip used to toggle state nothing
+    /// rendered, so the button was dead.)
+    func testChecklistChipOpensPanel() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        let chip = app.buttons.matching(identifier: "v2-composer-checklist").firstMatch
+        XCTAssertTrue(chip.waitForExistence(timeout: 15), "no Checklist chip under the pill")
+        XCTAssertFalse(waitForText(app, "Room lists", timeout: 3), "panel visible before tap")
+        chip.tap()
+        XCTAssertTrue(waitForText(app, "Room lists"), "panel did not open")
+        app.buttons["Close checklists"].tap()
+        XCTAssertFalse(waitForText(app, "Room lists", timeout: 5), "panel did not close")
+    }
+
     /// Every pill control names itself for VoiceOver.
     func testAccessibilityLabels() throws {
         let app = launch(Self.base)

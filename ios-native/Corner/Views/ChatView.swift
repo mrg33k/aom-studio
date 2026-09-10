@@ -1295,6 +1295,23 @@ struct ChatView: View {
             // reopen the Visual Window; nothing sits above the input now.
             // P039: pill + round send sit directly on the ground — the
             // frosted outer card is gone.
+            // Item 3 (Patrik iPhone review 2026-09-09): the v2
+            // Checklist chip toggled state nothing rendered, so the button
+            // was dead. When open, the room checklist panel rides ABOVE the
+            // pill (the R28 tray rule — composer metrics never move) where
+            // the user builds lists and Plays them to the agent.
+            if checklistOpen {
+                RoomChecklistPanelView(
+                    room: model.room,
+                    onSend: { v2model.startSend($0) },
+                    onClose: {
+                        withAnimation(.spring(response: 0.24, dampingFraction: 0.8)) {
+                            checklistOpen = false
+                        }
+                    }
+                )
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
             HStack(alignment: .bottom, spacing: V2ComposerMetrics.sendSpacing) {
                 // P023: 50px pill with the Record chip inside. The pill fill
                 // is surface; the focused ring is the only chrome.

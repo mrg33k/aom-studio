@@ -101,6 +101,12 @@ Patrik: "Opening Wolfpack week 5" posted an "Opened ..." message with a huge lin
 
 **Status:** shipped — committed (AOM-EA + aom-studio), bridge restarted and healthy, pushed to master/main. No prod deploy or TestFlight needed (bridge fix rides the restart).
 
+### R71 — Checklist button opens the room panel (iPhone item 3) (2026-09-10, Muse)
+
+Patrik: the composer's Checklist button is dead. Root cause (native): the v2 Checklist chip toggled `checklistOpen` state nothing rendered — the panel wiring lived only in the legacy composer. Fix: when open, `RoomChecklistPanelView` rides above the v2 pill (tray rule), building lists and Playing items to the agent via the v2 send path. Test `testChecklistChipOpensPanel` fails without the fix ("panel did not open"), passes with it; app build clean on the 17 Pro sim.
+
+**Status:** in progress — committing, pushing (ships in Patrik's next TestFlight build; attach is his).
+
 ### R68 — Login/onboarding entrance animation (new-goal item 2) (2026-09-09, Claude by hand)
 
 Patrik (goal item 2): the login/onboarding screen should have "a slick animation" and never did — a hard cut to the full form read as unfinished. `SignInView` now runs a staggered entrance: logo → headline → sub → SSO rows → Continue → terms each rise 12px and fade in on a spring (`response 0.62, damping 0.85`, `0.07s` per-index delay via a private `StaggerReveal` modifier), while `V2AmbientGlow` (the app's own loading-mark motif, not a new language) breathes behind the headline. Reduce Motion returns every element at rest — no offset, no fade. The email field + Continue stay tappable throughout; the whole thing is ~1s, non-blocking.
