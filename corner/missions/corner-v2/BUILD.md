@@ -111,7 +111,7 @@ Patrik: the composer's Checklist button is dead. Root cause (native): the v2 Che
 
 Patrik: the command menu shows the model but never confirms a change took. Fix (native): every model pick path — legacy menu, v2 commands card, slash sheet — announces "Model is now \<label\>" above the pill for 4 seconds, but only when the pick actually stuck (legacy selectModel silently reverts on failed save, so the menu confirms post-state). Test `testModelPickAnnouncesChange` fails without the fix ("no model-change notice"), passes with it; app build clean on the 17 Pro sim.
 
-**Status:** in progress — committing, pushing (ships in Patrik's next TestFlight build; attach is his).
+**Status:** shipped — committed and pushed to main (ships in Patrik's next TestFlight build; attach is his).
 
 ### R68 — Login/onboarding entrance animation (new-goal item 2) (2026-09-09, Claude by hand)
 
