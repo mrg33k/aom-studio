@@ -113,6 +113,12 @@ Patrik: the command menu shows the model but never confirms a change took. Fix (
 
 **Status:** shipped — committed and pushed to main (ships in Patrik's next TestFlight build; attach is his).
 
+### R73 — TestFlight build 29 (2026-09-10, Muse)
+
+Bundles R71 (Checklist chip opens the room panel) + R72 (model pick announces itself). Archive, export, and App Store Connect upload all succeeded (delivery 443f910c). Awaiting Apple processing, then Patrik's attach step (`testflight-attach.py 29`) + beta review. On-device to check: Checklist chip opens Room lists above the pill and Plays to the agent; picking a model announces "Model is now …" above the pill.
+
+**Status:** uploaded — attach + beta review is Patrik's.
+
 ### R68 — Login/onboarding entrance animation (new-goal item 2) (2026-09-09, Claude by hand)
 
 Patrik (goal item 2): the login/onboarding screen should have "a slick animation" and never did — a hard cut to the full form read as unfinished. `SignInView` now runs a staggered entrance: logo → headline → sub → SSO rows → Continue → terms each rise 12px and fade in on a spring (`response 0.62, damping 0.85`, `0.07s` per-index delay via a private `StaggerReveal` modifier), while `V2AmbientGlow` (the app's own loading-mark motif, not a new language) breathes behind the headline. Reduce Motion returns every element at rest — no offset, no fade. The email field + Continue stay tappable throughout; the whole thing is ~1s, non-blocking.
