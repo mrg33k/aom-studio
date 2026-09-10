@@ -170,6 +170,8 @@ struct ChatView: View {
     @State private var v2PickedPhotos: [PhotosPickerItem] = []
     @State private var v2ShowingCamera = false
     @State private var v2AttachNotice: String?
+    @State private var v2ModelNotice: String?
+    @State private var v2ModelNoticeTask: Task<Void, Never>?
     @StateObject private var review = ReviewStore.shared
     @EnvironmentObject private var router: AppRouter
     @Environment(\.scenePhase) private var scenePhase
@@ -383,7 +385,10 @@ struct ChatView: View {
                                     specialistRoster: v2model.specialistRoster,
                                     specialistChoice: v2model.specialistChoice,
                                     onMode: { v2model.setMode($0) },
-                                    onModel: { v2model.selectModel($0) },
+                                    onModel: {
+                                        v2model.selectModel($0)
+                                        announceModelChange(id: v2model.modelChoice)
+                                    },
                                     onSpecialist: { v2model.selectSpecialist($0) },
                                     onFiles: { window.isPresented = true },
                                     onImage: { v2GenerateImage(prompt: v2model.draft) },
@@ -427,6 +432,7 @@ struct ChatView: View {
                 onPick: v2SlashPick,
                 onSelectModel: { id in
                     v2model.selectModel(id)
+                    announceModelChange(id: v2model.modelChoice)
                     v2ShowingSlash = false
                 },
                 onSelectSpecialist: { slug in
@@ -1269,6 +1275,15 @@ struct ChatView: View {
                     .font(.hanken(12))
                     .foregroundStyle(Theme.warning)
                     .accessibilityIdentifier("v2-attach-notice")
+            }
+            // Item 9b (Patrik iPhone review): the menu shows the model but
+            // never confirms a change took. A successful pick announces
+            // itself here for a few seconds.
+            if let notice = v2ModelNotice {
+                Text(notice)
+                    .font(.hanken(12).weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                    .accessibilityIdentifier("v2-model-notice")
             }
             // R32: a failed server clear changes nothing and offers a
             // retry (the web's `clearFailed` twin).
@@ -3213,7 +3228,13 @@ struct ChatView: View {
             Menu {
                 ForEach(ChatView.modelOptions, id: \.id) { option in
                     Button {
-                        Task { await state.selectModel(option.id) }
+                        Task {
+                            await state.selectModel(option.id)
+                            // Item 9b: confirm only a pick that stuck.
+                            if state.modelChoice == option.id {
+                                announceModelChange(id: option.id)
+                            }
+                        }
                     } label: {
                         if option.id == state.modelChoice {
                             Label(option.label, systemImage: "checkmark")
@@ -3357,6 +3378,24 @@ struct ChatView: View {
     /// R60: the options live UNDER the input — attach + the context eye. Model
     /// and Plan/Work moved INTO the command menu (the purple circle), so this
     /// row stays light. Reuses the photo/file/camera pickers.
+    /// Item 9b: announce a confirmed model pick above the pill, then clear
+    /// it. Call only after the pick actually stuck (legacy selectModel can
+    /// silently revert on a failed save).
+    private func announceModelChange(id: String) {
+        let label = ChatView.modelOptions.first(where: { $0.id == id })?.label ?? id
+        // Fire-and-forget onto the main actor: call sites include an async
+        // Task (legacy menu) and sync UI closures (v2 card, slash sheet).
+        Task { @MainActor in
+            v2ModelNotice = "Model is now \(label)"
+            v2ModelNoticeTask?.cancel()
+            v2ModelNoticeTask = Task { @MainActor in
+                try? await Task.sleep(for: .seconds(4))
+                guard !Task.isCancelled else { return }
+                v2ModelNotice = nil
+            }
+        }
+    }
+
     private var v2ComposerOptionsRow: some View {
         // R62 (Patrik iPad review 2026-09-09): Attach stays pinned LEFT; the
         // Context eye moves to the CENTRE alongside the (previously missing)

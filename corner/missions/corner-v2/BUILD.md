@@ -107,6 +107,12 @@ Patrik: the composer's Checklist button is dead. Root cause (native): the v2 Che
 
 **Status:** shipped — committed and pushed to main (ships in Patrik's next TestFlight build; attach is his).
 
+### R72 — Model pick announces itself (iPhone item 9b) (2026-09-10, Muse)
+
+Patrik: the command menu shows the model but never confirms a change took. Fix (native): every model pick path — legacy menu, v2 commands card, slash sheet — announces "Model is now \<label\>" above the pill for 4 seconds, but only when the pick actually stuck (legacy selectModel silently reverts on failed save, so the menu confirms post-state). Test `testModelPickAnnouncesChange` fails without the fix ("no model-change notice"), passes with it; app build clean on the 17 Pro sim.
+
+**Status:** in progress — committing, pushing (ships in Patrik's next TestFlight build; attach is his).
+
 ### R68 — Login/onboarding entrance animation (new-goal item 2) (2026-09-09, Claude by hand)
 
 Patrik (goal item 2): the login/onboarding screen should have "a slick animation" and never did — a hard cut to the full form read as unfinished. `SignInView` now runs a staggered entrance: logo → headline → sub → SSO rows → Continue → terms each rise 12px and fade in on a spring (`response 0.62, damping 0.85`, `0.07s` per-index delay via a private `StaggerReveal` modifier), while `V2AmbientGlow` (the app's own loading-mark motif, not a new language) breathes behind the headline. Reduce Motion returns every element at rest — no offset, no fade. The email field + Continue stay tappable throughout; the whole thing is ~1s, non-blocking.

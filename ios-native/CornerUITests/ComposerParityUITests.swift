@@ -436,6 +436,27 @@ final class ComposerParityUITests: XCTestCase {
         XCTAssertFalse(waitForText(app, "Room lists", timeout: 5), "panel did not close")
     }
 
+    // MARK: - model change indicator (iPhone item 9b)
+
+    /// Picking a model from the commands card announces the change above
+    /// the pill ("Model is now …").
+    func testModelPickAnnouncesChange() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        let chip = app.descendants(matching: .any).matching(identifier: "v2-commands").firstMatch
+        XCTAssertTrue(chip.waitForExistence(timeout: 15), "no commands chip in the pill")
+        chip.tap()
+        let modelRow = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Model —")).firstMatch
+        XCTAssertTrue(modelRow.waitForExistence(timeout: 10), "no Model row in the card")
+        modelRow.tap()
+        let sonnet = app.buttons["Claude Sonnet"]
+        XCTAssertTrue(sonnet.waitForExistence(timeout: 10), "no Sonnet option")
+        sonnet.tap()
+        let notice = app.descendants(matching: .any).matching(identifier: "v2-model-notice").firstMatch
+        XCTAssertTrue(notice.waitForExistence(timeout: 10), "no model-change notice")
+        XCTAssertTrue(notice.label.contains("Claude Sonnet"), "notice names the wrong model: \(notice.label)")
+    }
+
     /// Every pill control names itself for VoiceOver.
     func testAccessibilityLabels() throws {
         let app = launch(Self.base)
