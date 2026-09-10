@@ -93,7 +93,7 @@ Patrik (iPhone review item 7, P0): messaging General read the project notes then
 
 Fix: every fatal wording-loop failure is now appended to `corner/state/v2-bridge-failures.jsonl` (slot, brain, violations, raw excerpt, salvage flag — best-effort, never breaks the turn); and prose is salvaged when the failure is structural (broken envelope) only — a wrong answer still falls back, never ships. Tests in `scripts/test_v2_team_bridge.py` (4 new, all pass; 95 existing pass; one pre-existing timing flake `test_r35_pack_reads_run_in_parallel` fails identically on the untouched base).
 
-**Status:** in progress — committing, restarting the bridge, verifying live.
+**Status:** shipped — committed (AOM-EA + aom-studio), bridge restarted and healthy, pushed to master/main. No prod deploy or TestFlight needed (bridge fix rides the restart).
 
 ### R68 — Login/onboarding entrance animation (new-goal item 2) (2026-09-09, Claude by hand)
 
