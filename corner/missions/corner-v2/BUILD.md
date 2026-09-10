@@ -87,6 +87,14 @@ Recorded here for the trail (built between R64 and R68, some in the AOM-EA repo)
 
 **Status:** done; live tool execution gated on the prod deploy.
 
+### R69 — General failed-turn fix, bridge (2026-09-10, Muse)
+
+Patrik (iPhone review item 7, P0): messaging General read the project notes then died with "I couldn't finish that turn." Root cause in `AOM-EA/scripts/v2-team-bridge.py`: the model answered in prose but broke the strict JSON envelope twice, and the turn fell back even though a usable answer existed — and the cause lived only in memory, so it vanished with the session.
+
+Fix: every fatal wording-loop failure is now appended to `corner/state/v2-bridge-failures.jsonl` (slot, brain, violations, raw excerpt, salvage flag — best-effort, never breaks the turn); and prose is salvaged when the failure is structural (broken envelope) only — a wrong answer still falls back, never ships. Tests in `scripts/test_v2_team_bridge.py` (4 new, all pass; 95 existing pass; one pre-existing timing flake `test_r35_pack_reads_run_in_parallel` fails identically on the untouched base).
+
+**Status:** in progress — committing, restarting the bridge, verifying live.
+
 ### R68 — Login/onboarding entrance animation (new-goal item 2) (2026-09-09, Claude by hand)
 
 Patrik (goal item 2): the login/onboarding screen should have "a slick animation" and never did — a hard cut to the full form read as unfinished. `SignInView` now runs a staggered entrance: logo → headline → sub → SSO rows → Continue → terms each rise 12px and fade in on a spring (`response 0.62, damping 0.85`, `0.07s` per-index delay via a private `StaggerReveal` modifier), while `V2AmbientGlow` (the app's own loading-mark motif, not a new language) breathes behind the headline. Reduce Motion returns every element at rest — no offset, no fade. The email field + Continue stay tappable throughout; the whole thing is ~1s, non-blocking.
