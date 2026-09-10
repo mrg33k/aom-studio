@@ -99,7 +99,7 @@ Fix: every fatal wording-loop failure is now appended to `corner/state/v2-bridge
 
 Patrik: "Opening Wolfpack week 5" posted an "Opened ..." message with a huge link — should just be a Step, true for ALL file opens. Root cause in `AOM-EA/scripts/v2-team-bridge.py`: both open paths (live pull-up success, script looking path) emitted a message event with the open line. Now: artifact + "Opened \<title\>" step, no message, no link. A paired second ask still gets its answer as the turn's only message. Tests updated to the new contract (open-turn shapes now assert artifact+step; combined-ask asserts step + answer-only message); full suite green, 249 pass.
 
-**Status:** in progress — committing, restarting the bridge, verifying live.
+**Status:** shipped — committed (AOM-EA + aom-studio), bridge restarted and healthy, pushed to master/main. No prod deploy or TestFlight needed (bridge fix rides the restart).
 
 ### R68 — Login/onboarding entrance animation (new-goal item 2) (2026-09-09, Claude by hand)
 
