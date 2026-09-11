@@ -128,3 +128,15 @@ Verified on the iPhone 17 Pro sim from a launch recording: t≈1.6s shows logo+h
 Not yet done: physical-device / iPad confirmation (Patrik's TestFlight); ship/redo is Patrik's call (entrance video sent 2026-09-09).
 
 **Status:** built + sim-verified + decision-signed. Shipped as **TestFlight build 28** (CURRENT_PROJECT_VERSION=28) 2026-09-09 — archive/export/altool all SUCCEEDED (Delivery UUID 8e7a5ed4), bundling R61–R68 (connections panel, jump-to-latest, copy, composer glow, files-load, login entrance). Uploaded to App Store Connect and processing. The attach-to-testers + beta-review-submit step (`tools/testflight-attach.py 28`) is auto-mode-classifier-gated → Patrik runs it once the build is VALID. Ship/redo on the motion remains Patrik's call; a redo would be build 29.
+
+### R74 — Provider-neutral prompt-cache repair (2026-09-10, Codex)
+
+Move the shared live-answer contract ahead of the per-turn context so prefix-capable providers can reuse it, preserve the exact output behavior, and record provider cache-read/cache-write usage in bridge telemetry and health.
+
+Root cause: every prompt began with the changing agent name, role, slot, and context pack. The long shared rules came afterward, so providers saw a different prefix on nearly every turn. The live service is also configured entirely for Claude, while the bridge discarded Claude and OpenAI's cache counters, which made the claimed hit rate impossible to verify from current traffic.
+
+Fix: contract `r74-1` puts a byte-identical shared contract and slot-task reference first, then marks all changing material under `PER-TURN INPUT`. The shared prefix is 6,353 characters and 1,446 OpenAI tokens, clearing the 1,024-token automatic-cache floor. Claude cache reads/writes and OpenAI cached tokens are normalized into each live-call record, the turn log, `/r20/state`, and `/health`; providers that expose no counters remain explicitly unknown.
+
+Verified: 252 bridge tests pass, including cross-agent/cross-slot prefix identity, provider counter normalization, live-call recording, and health aggregation. Parent commit `22ea08854` is on `origin/master`; the bridge was restarted and live health returned `status=ok`, `contract=r74-1`, and the new cache object.
+
+**Status:** shipped and healthy. A real hit is not yet verified because `claude auth status` reports logged out and the warm/repeat probe returned `OAuth session expired`; restore the Claude login before reading the first live hit rate. No provider was switched because that would change model behavior and spend.
