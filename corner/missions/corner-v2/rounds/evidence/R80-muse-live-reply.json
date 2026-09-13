@@ -1,0 +1,83 @@
+{
+  "bridgeCommit": "da21796d8",
+  "defaultBackend": "muse",
+  "liveCall": [
+    {
+      "ts": "2026-09-13T15:14:30.695217+00:00",
+      "slot": "generic",
+      "brain": "mom",
+      "backend": "muse",
+      "seconds": 63.5,
+      "tokens_in": null,
+      "tokens_out": null,
+      "cache_read_tokens": null,
+      "cache_write_tokens": null,
+      "cache_total_input_tokens": null,
+      "cache_hit_rate": null,
+      "cost_usd": null,
+      "model": "muse-spark",
+      "attempts": 1,
+      "violations": [],
+      "ok": true,
+      "pass": 1,
+      "streamed": true,
+      "first_delta_s": 24.3,
+      "first_sentence_s": null
+    }
+  ],
+  "nativeProbe": [
+    {
+      "authorLabel": "Corner",
+      "authorType": "user",
+      "createdAt": 1789312467572.0,
+      "id": "v97dk4ypvnjvng4fcxs4n4z10s8eb1z9",
+      "kind": "text",
+      "payload": {
+        "clientEventId": "corner-r80-muse-recovery-20260913",
+        "model": "muse-spark",
+        "text": "Corner R80 connection check: reply in one sentence confirming this Smoke Test Project 6 message reached Muse. No tools or changes are needed."
+      },
+      "threadId": "vd7d9p75nfa1e4rb4tpq3fafxn8dxpc2"
+    },
+    {
+      "agentSlug": "mom",
+      "authorLabel": "Mom",
+      "authorType": "agent",
+      "createdAt": 1789312469121.0,
+      "id": "v972qgsr8ymz4xw6qnt370sae58ebs2d",
+      "kind": "steps",
+      "payload": {
+        "brain": "mom",
+        "label": "Reading the project notes...",
+        "runId": "v577gbf9c50kpm1bgrbjepys1h8eahg5"
+      },
+      "threadId": "vd7d9p75nfa1e4rb4tpq3fafxn8dxpc2"
+    },
+    {
+      "agentSlug": "mom",
+      "authorLabel": "Mom",
+      "authorType": "agent",
+      "createdAt": 1789312534438.0,
+      "id": "v971hmmwtxpp3qpb95zq66ssgd8eagy5",
+      "kind": "text",
+      "payload": {
+        "brain": "mom",
+        "runId": "v577gbf9c50kpm1bgrbjepys1h8eahg5",
+        "text": "Your Smoke Test Project 6 message reached Muse."
+      },
+      "threadId": "vd7d9p75nfa1e4rb4tpq3fafxn8dxpc2"
+    }
+  ],
+  "runtimeConfigCommit": "c49e197b4",
+  "verifiedHealth": {
+    "status": "ok",
+    "models": {
+      "defaultBackend": "muse",
+      "agentBackends": {
+        "steffen": "muse"
+      },
+      "supportsMessagePins": true
+    },
+    "failedTicks": 0
+  }
+}

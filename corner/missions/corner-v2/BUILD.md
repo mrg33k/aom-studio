@@ -184,12 +184,12 @@ Verification: 11 real-subprocess regression tests pass; the original code failed
 
 Patrik reports broken iOS chat after Claude subscription ended, missing pinned model visibility, and checklist spacing. Live service is stopped because its temporary bot credential file is missing; current runtime already selects Muse. Recover durable service credentials, make Muse the code default, honor explicit per-message model choices, and verify a real reply. Native repairs are coordinated in R81.
 
-**Status:** bridge shipped. Commit `da21796d8` is on origin/master, service restarted and healthy with 170 watched threads and Muse default. The same bot identity was recovered into a private durable credential file (0600); no new account was created. All 255 bridge checks pass. A real `v2Native:send` probe in existing Smoke Test Project 6 retained `model=muse-spark`, produced a Muse reply, and completed its run in 65.2 seconds. iOS release remains in R81.
+**Status:** bridge shipped. Commit `da21796d8` is on origin/master, service restarted and healthy with 170 watched threads and Muse default. The same bot identity was recovered into a private durable credential file (0600); no new account was created. Runtime configuration commit `c49e197b4` preserves Muse and the durable file path on origin/master. All 255 bridge checks pass. A real `v2Native:send` probe in existing Smoke Test Project 6 retained `model=muse-spark`, produced a Muse reply, and completed its run in 65.2 seconds. iOS release remains in R81.
 
 
 ### R81 — Native model visibility and checklist spacing (2026-09-13)
 
-**Status:** simulator verified; preparing TestFlight build 31.
+**Status:** build 31 archived, exported, uploaded, and attached to Corner testers (204); beta review submitted (201 `WAITING_FOR_REVIEW`). Apple build ID / delivery `a25cb1af-0098-48aa-8061-4a3eb7efb744`, uploaded 2026-09-13 08:24:29 Phoenix, processing state VALID. Native commit `cc8af3f2` is on origin/main. Await Apple review before tester availability; physical-device verification is still pending.
 
 Owns native iOS model selection/visibility and checklist spacing only. Parent R80 owns Muse routing and the live bridge. Existing approved UI is the reference. Verify persisted selection and real simulator interactions; no release or merge in this worker.
 

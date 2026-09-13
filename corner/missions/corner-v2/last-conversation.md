@@ -18,3 +18,5 @@ Patrik asked to prevent the premature timeouts. Removed the default 20-minute to
 
 
 2026-09-13 R81: Native model labels, explicit Muse default, preserved pins and queued model choices, safe transport errors, checklist spacing and visible new-list editing are verified on the 390pt simulator. Four UI flows pass; targeted unit tests pass. Evidence saved under rounds/evidence/R81-*.png. Preparing build31; not on the phone yet.
+
+2026-09-13 R81 release: Build31 archive/export/upload succeeded; app includes CornerWidgets. Apple VALID, attached to Corner testers (204), beta review submission 201 WAITING_FOR_REVIEW. ID a25cb1af-0098-48aa-8061-4a3eb7efb744; native commit cc8af3f2 on main. Backend config c49e197b4 on master; health remains ok with Muse default and no failed ticks. Chat repaired and live, app update awaiting Apple review; live Muse reply took65.2seconds, so latency remains a limit. Full old design-tour harness was unavailable because its temporary e2e credentials are missing; new interaction tests and inspected screenshots are the proof.

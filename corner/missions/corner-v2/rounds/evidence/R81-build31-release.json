@@ -1,0 +1,16 @@
+{
+  "build": 31,
+  "appVersion": "1.0",
+  "sourceCommit": "cc8af3f2",
+  "archiveSucceeded": true,
+  "exportSucceeded": true,
+  "uploadSucceeded": true,
+  "appleBuildId": "a25cb1af-0098-48aa-8061-4a3eb7efb744",
+  "processingState": "VALID",
+  "testerGroupAttachStatus": 204,
+  "betaReviewSubmissionStatus": 201,
+  "betaReviewState": "WAITING_FOR_REVIEW",
+  "unitTestsPassed": 52,
+  "targetedUIFlowsPassed": 4,
+  "physicalDeviceVerified": false
+}
