@@ -167,3 +167,14 @@ Verified: 252 bridge tests pass, including cross-agent/cross-slot prefix identit
 Patrik: review the whole app starting with the purple button, everything must work. Driving every commands-card row on sim with `testCommandsCardEveryRowActs`. First finding: the Files row set a window flag with no tab selected, which presents nothing — now opens the same RoomFilesView sheet as legacy. Audit continues row by row.
 
 **Status:** in progress — Files fix committing, TestFlight build 30 going up with it.
+
+
+### R79 — Telegram relay survives long work (2026-09-12, Codex)
+
+Patrik: stop the relay timing out during legitimate work. Build 30 uploaded successfully, then Muse slept four minutes before retrying attachment; the relay killed it at 150 silent seconds. The earlier app review independently hit the 20-minute total limit.
+
+The relay now tracks actual tool lifecycle events (the tool kind lives inside the nested event), gives a quiet running tool 30 minutes between updates, and gives an idle model 10 minutes. Active work has no default total time ceiling; a positive `MUSE_RELAY_TIMEOUT` still enables one. Progress repeats every five minutes and the service heartbeat continues during work. Both output pipes are drained without blocking, preventing buffered lifecycle events, partial JSON lines, or a full stderr pipe from stalling the watchdog. The prompt tells Muse to yield long commands and poll readiness in short intervals.
+
+Verification: 11 real-subprocess regression tests pass; the original code failed seven, including both reported cutoffs. Checks also cover completed/concurrent tools, a hung tool, idle model/reminder activity, explicit total limits, progress, heartbeat, stderr backpressure, and partial JSON. A separate real Muse probe ran `sleep 170` with the model idle limit deliberately kept at the old 150 seconds, then returned `quiet-wait-ok`; command exit 0, turn completed in 197.566 seconds (session `259fade8-fd2d-4a07-96bf-a18d5180c90c`). Probe delivery was dry-run only.
+
+**Status:** shipped. AOM-EA commit `389e104b1` is on `origin/master`. Confirmed an empty queue and no active relay child before restarting `com.aom-ea.muse-relay`; PID 71200 became 68550, heartbeat advanced, and startup reported `idle=600s tool_idle=1800s total=unlimited`. Existing Telegram conversation preserved. This round changes the relay only; it does not retry the earlier build attachment.
