@@ -120,7 +120,7 @@ Patrik: re-drive the shipped fixes on the simulator, checking full functionality
 1. R71's panel flow is genuinely complete (build list, add item, Play echoes in thread with confirmation — screenshot-verified). Added a `-v2SeedChecklists` hermetic seed (same precedent as `-v2SeedStaged`) plus `testChecklistFullFlow` driving the whole job on sim.
 2. R72 was half-built as suspected: the v2 command circle showed NO model anywhere (the label chip is dead code) — the notice alone wasn't enough. Added a live "Sonnet"-style caption under the circle plus a dynamic VoiceOver label. Extended the test: notice names the model, caption names it, notice clears, pick persists across relaunch.
 
-**Status:** in progress — committing, pushing.
+**Status:** shipped — committed and pushed to main.
 
 ### R73 — TestFlight build 29 (2026-09-10, Muse)
 
