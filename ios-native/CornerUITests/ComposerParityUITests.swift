@@ -505,6 +505,23 @@ final class ComposerParityUITests: XCTestCase {
         XCTAssertTrue(caption2.waitForExistence(timeout: 15), "pick did not persist")
     }
 
+    // MARK: - options row overlap (R77)
+
+    /// Attach, Context, and Checklist never overlap: the old ZStack build
+    /// let the centred pair slide over Attach on iPhone widths.
+    func testOptionsRowNeverOverlaps() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        let attach = app.descendants(matching: .any).matching(identifier: "v2-attach").firstMatch
+        let eye = app.descendants(matching: .any).matching(identifier: "v2-composer-eye").firstMatch
+        let check = app.descendants(matching: .any).matching(identifier: "v2-composer-checklist").firstMatch
+        XCTAssertTrue(attach.waitForExistence(timeout: 15), "no Attach chip")
+        XCTAssertTrue(eye.exists && check.exists, "options row incomplete")
+        XCTAssertFalse(attach.frame.intersects(eye.frame), "Attach overlaps Context: \(attach.frame) vs \(eye.frame)")
+        XCTAssertFalse(eye.frame.intersects(check.frame), "Context overlaps Checklist: \(eye.frame) vs \(check.frame)")
+        evidence("options-row")
+    }
+
     /// Every pill control names itself for VoiceOver.
     func testAccessibilityLabels() throws {
         let app = launch(Self.base)

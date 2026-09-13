@@ -3413,45 +3413,43 @@ struct ChatView: View {
     }
 
     private var v2ComposerOptionsRow: some View {
-        // R62 (Patrik iPad review 2026-09-09): Attach stays pinned LEFT; the
-        // Context eye moves to the CENTRE alongside the (previously missing)
-        // Checklist button. A ZStack centres the pair while Attach hugs left.
-        ZStack {
-            HStack(spacing: 0) {
-                Menu {
-                    Button { v2ShowingPhotoPicker = true } label: {
-                        Label("Photo Library", systemImage: "photo.on.rectangle")
-                    }
-                    Button { v2ShowingFilePicker = true } label: {
-                        Label("Choose Files", systemImage: "folder")
-                    }
-                    Button { v2CameraTapped() } label: {
-                        Label("Camera", systemImage: "camera")
-                    }
-                } label: {
-                    v2OptionChip(icon: "paperclip", label: "Attach")
+        // R62 (Patrik iPad review 2026-09-09): Attach stays pinned LEFT, the
+        // Context + Checklist pair centred. R77: the ZStack build let the
+        // centred pair slide OVER Attach on iPhone widths (two layers, no
+        // shared layout). One HStack with twin spacers instead: the pair
+        // stays centred in the space right of Attach and can never collide.
+        HStack(spacing: 10) {
+            Menu {
+                Button { v2ShowingPhotoPicker = true } label: {
+                    Label("Photo Library", systemImage: "photo.on.rectangle")
                 }
-                .accessibilityIdentifier("v2-attach")
-                .accessibilityLabel("Attach and upload files")
-                Spacer(minLength: 0)
+                Button { v2ShowingFilePicker = true } label: {
+                    Label("Choose Files", systemImage: "folder")
+                }
+                Button { v2CameraTapped() } label: {
+                    Label("Camera", systemImage: "camera")
+                }
+            } label: {
+                v2OptionChip(icon: "paperclip", label: "Attach")
             }
-
-            HStack(spacing: 10) {
-                Button { eye.cycle() } label: {
-                    v2OptionChip(icon: eye.iconName, label: "Context")
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("v2-composer-eye")
-                .accessibilityLabel(eye.accessibilityLabel)
-
-                Button { checklistOpen.toggle() } label: {
-                    v2OptionChip(icon: "checklist", label: "Checklist",
-                                 active: checklistOpen)
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("v2-composer-checklist")
-                .accessibilityLabel(checklistOpen ? "Close room checklists" : "Open room checklists")
+            .accessibilityIdentifier("v2-attach")
+            .accessibilityLabel("Attach and upload files")
+            Spacer(minLength: 4)
+            Button { eye.cycle() } label: {
+                v2OptionChip(icon: eye.iconName, label: "Context")
             }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("v2-composer-eye")
+            .accessibilityLabel(eye.accessibilityLabel)
+
+            Button { checklistOpen.toggle() } label: {
+                v2OptionChip(icon: "checklist", label: "Checklist",
+                             active: checklistOpen)
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("v2-composer-checklist")
+            .accessibilityLabel(checklistOpen ? "Close room checklists" : "Open room checklists")
+            Spacer(minLength: 4)
         }
         .padding(.horizontal, 4)
         .padding(.top, 2)

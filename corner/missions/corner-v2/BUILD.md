@@ -128,6 +128,12 @@ Patrik: the model caption clipped on the pill edge and buttons crowded. Root cau
 
 **Status:** shipped — committed and pushed to main.
 
+### R77 — Options row stops overlapping (2026-09-12, Muse)
+
+Patrik: Attach, Context, and Checklist overlap on iPhone. Root cause: the row was a ZStack of two HStacks — Attach pinned left in one layer, Context+Checklist centred in another, with no shared layout, so the pair slid over Attach at phone widths. Fix: one HStack with twin spacers; the pair stays centred right of Attach and can never collide. Test `testOptionsRowNeverOverlaps` asserts pairwise frames never intersect; screenshot-verified.
+
+**Status:** in progress — committing, pushing.
+
 ### R73 — TestFlight build 29 (2026-09-10, Muse)
 
 Bundles R71 (Checklist chip opens the room panel) + R72 (model pick announces itself). Archive, export, and App Store Connect upload all succeeded (delivery 443f910c). Awaiting Apple processing, then Patrik's attach step (`testflight-attach.py 29`) + beta review. On-device to check: Checklist chip opens Room lists above the pill and Plays to the agent; picking a model announces "Model is now …" above the pill.
