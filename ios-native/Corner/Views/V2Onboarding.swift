@@ -143,14 +143,14 @@ struct V2SetupView: View {
 
     private var logoRow: some View {
         HStack(spacing: 8) {
+            // NOTE: CornerLogo already bakes in the "Corner" wordmark —
+            // don't pair it with a second Text("Corner") (double-logo bug,
+            // Patrik 2026-09-13, build 31 sim walk).
             Image("CornerLogo")
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 24, height: 24)
-                .foregroundStyle(Theme.ink)
-            Text("Corner")
-                .font(.hanken(19).weight(.bold))
+                .frame(height: 24)
                 .foregroundStyle(Theme.ink)
             Spacer(minLength: 0)
         }
@@ -263,20 +263,29 @@ private struct V2SetupHead: View {
 // MARK: - step 1 · Connect
 
 /// The five §5 connections. States are real (arcade table, real backend);
-/// OAuth itself lives on the web, and the footnote says so.
+/// Connect runs the real Arcade OAuth flow (R67) — same store the
+/// Connections sheet uses — not a "go do this on the web" placeholder.
+/// Fixed 2026-09-13 (Patrik, build-31 sim walk): this row used to just flip
+/// a local flag and print a static "can't do OAuth yet" note; it never
+/// called Arcade at all. `convex/arcade.ts` had its own bugs blocking every
+/// caller (missing `auth_requirement`, wrong status-poll URL, an invalid
+/// "all" scope) — fixed and deployed the same round.
 private struct V2SetupConnect: View {
     @EnvironmentObject private var api: CornerAPI
     @StateObject private var connections = V2ConnectionsStore()
-    @State private var noticeShown = false
+    @ObservedObject private var connect = V2ArcadeConnectStore.shared
 
     /// Brand marks straight from the design export's LOGO set (R19) — the
-    /// design shows full-colour marks, not monochrome glyphs.
-    private let services: [(name: String, brand: String)] = [
-        ("Gmail", "brand-gmail"),
-        ("Drive", "brand-drive"),
-        ("Figma", "brand-figma"),
-        ("Slack", "brand-slack"),
-        ("GitHub", "brand-github"),
+    /// design shows full-colour marks, not monochrome glyphs. `arcade` is
+    /// the provider key `convex/arcade.ts` expects; Figma/Slack aren't in
+    /// its confirmed provider map yet, so they still fall back to the web
+    /// note below rather than guess at an Arcade provider id.
+    private let services: [(name: String, brand: String, arcade: String?)] = [
+        ("Gmail", "brand-gmail", "gmail"),
+        ("Drive", "brand-drive", "drive"),
+        ("Figma", "brand-figma", nil),
+        ("Slack", "brand-slack", nil),
+        ("GitHub", "brand-github", "github"),
     ]
 
     var body: some View {
@@ -286,11 +295,11 @@ private struct V2SetupConnect: View {
                 sub: "Email, files, design. Corner reads only what you scope to a project."
             )
             ForEach(services, id: \.name) { service in
-                connectRow(service.name, brand: service.brand)
+                connectRow(service.name, brand: service.brand, arcadeService: service.arcade)
             }
             .padding(.top, 12)
-            if noticeShown {
-                Text("To connect, open Corner on the web — the app can't do OAuth yet.")
+            if services.contains(where: { $0.arcade == nil }) {
+                Text("Figma and Slack connect on the web for now — Gmail, Drive, and GitHub connect right here.")
                     .font(.hanken(13))
                     .foregroundStyle(Theme.warning)
                     .padding(.top, 8)
@@ -308,10 +317,13 @@ private struct V2SetupConnect: View {
         }
     }
 
-    private func connectRow(_ service: String, brand: String) -> some View {
+    private func connectRow(_ service: String, brand: String, arcadeService: String?) -> some View {
         let row = integration(for: service)
-        let connected = (row?.status ?? "").lowercased().contains("connect")
+        let backendConnected = (row?.status ?? "").lowercased().contains("connect")
             || (row?.status ?? "").lowercased() == "active"
+        let arcadeState = arcadeService.map(connect.state(for:))
+        let connected = backendConnected || arcadeState == .connected
+        let isFailed: Bool = { if case .failed = arcadeState { return true }; return false }()
         return HStack(spacing: 12) {
             Image(brand)
                 .resizable()
@@ -337,9 +349,16 @@ private struct V2SetupConnect: View {
                         .font(.hanken(13.5))
                         .foregroundStyle(Theme.ink)
                 }
-            } else {
-                Button { noticeShown = true } label: {
-                    Text("Connect")
+            } else if arcadeState == .connecting {
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.small)
+                    Text("Connecting…")
+                        .font(.hanken(12.5))
+                        .foregroundStyle(Theme.inkFaint)
+                }
+            } else if let svc = arcadeService {
+                Button { connect.connect(service: svc) } label: {
+                    Text(isFailed ? "Retry" : "Connect")
                         .font(.hanken(13.5).weight(.semibold))
                         .foregroundStyle(Theme.accent)
                         .frame(width: 83.6, height: 36)
@@ -349,6 +368,18 @@ private struct V2SetupConnect: View {
                         )
                 }
                 .buttonStyle(.plain)
+            } else {
+                // Figma/Slack: no confirmed Arcade provider id yet (see the
+                // note below the list) — inert rather than pretending to work.
+                Text("Connect")
+                    .font(.hanken(13.5).weight(.semibold))
+                    .foregroundStyle(Theme.inkFaint)
+                    .frame(width: 83.6, height: 36)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .strokeBorder(Theme.hairline, lineWidth: 1)
+                    )
+                    .opacity(0.5)
             }
         }
         .frame(minHeight: 68)
@@ -750,14 +781,14 @@ struct V2EmptyHomeView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
+                // NOTE: CornerLogo already bakes in the "Corner" wordmark —
+                // don't pair it with a second Text("Corner") (double-logo bug,
+                // Patrik 2026-09-13, build 31 sim walk).
                 Image("CornerLogo")
                     .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 24, height: 24)
-                    .foregroundStyle(Theme.ink)
-                Text("Corner")
-                    .font(.hanken(19).weight(.bold))
+                    .frame(height: 24)
                     .foregroundStyle(Theme.ink)
                 Spacer(minLength: 0)
                 Button { router.showingSettings = true } label: {
