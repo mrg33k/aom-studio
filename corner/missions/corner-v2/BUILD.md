@@ -132,7 +132,7 @@ Patrik: the model caption clipped on the pill edge and buttons crowded. Root cau
 
 Patrik: Attach, Context, and Checklist overlap on iPhone. Root cause: the row was a ZStack of two HStacks — Attach pinned left in one layer, Context+Checklist centred in another, with no shared layout, so the pair slid over Attach at phone widths. Fix: one HStack with twin spacers; the pair stays centred right of Attach and can never collide. Test `testOptionsRowNeverOverlaps` asserts pairwise frames never intersect; screenshot-verified.
 
-**Status:** in progress — committing, pushing.
+**Status:** shipped — committed and pushed to main.
 
 ### R73 — TestFlight build 29 (2026-09-10, Muse)
 
