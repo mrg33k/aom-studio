@@ -436,6 +436,40 @@ final class ComposerParityUITests: XCTestCase {
         XCTAssertFalse(waitForText(app, "Room lists", timeout: 5), "panel did not close")
     }
 
+    /// The whole checklist job, seeded: build a list, add an item, Play it
+    /// to the agent and see it land in the thread.
+    func testChecklistFullFlow() throws {
+        let app = launch(Self.base + ["-v2SeedChecklists"])
+        openThread(app)
+        app.buttons.matching(identifier: "v2-composer-checklist").firstMatch.tap()
+        sleep(2)
+        evidence("checklist-seed-state")
+        // List titles render as editable text fields, not static text.
+        let seedTitle = app.textFields["Seed list"].firstMatch
+        XCTAssertTrue(seedTitle.waitForExistence(timeout: 15), "seeded list never rendered")
+        // Build: new list.
+        app.buttons["Create a new list"].tap()
+        let titleField = app.textFields["List title…"]
+        XCTAssertTrue(titleField.waitForExistence(timeout: 10), "no list title field")
+        titleField.tap()
+        titleField.typeText("Driver list")
+        app.buttons["Create"].tap()
+        let driverTitle = app.textFields["Driver list"].firstMatch
+        XCTAssertTrue(driverTitle.waitForExistence(timeout: 15), "new list never rendered")
+        // Add: an item on the new list, then Play it to the agent.
+        let itemField = app.textFields["Add a note or next step…"].firstMatch
+        XCTAssertTrue(itemField.waitForExistence(timeout: 10), "no add-item field")
+        itemField.tap()
+        itemField.typeText("Driver step")
+        app.keyboards.buttons["return"].tap()
+        XCTAssertTrue(waitForText(app, "Driver step"), "new item never rendered")
+        evidence("checklist-built")
+        app.buttons["Send Driver step to agent"].tap()
+        XCTAssertTrue(waitForText(app, "Sent to the agent."), "no Play confirmation")
+        XCTAssertTrue(waitForText(app, "Driver step"), "played text never echoed in the thread")
+        evidence("checklist-played")
+    }
+
     // MARK: - model change indicator (iPhone item 9b)
 
     /// Picking a model from the commands card announces the change above
@@ -455,6 +489,20 @@ final class ComposerParityUITests: XCTestCase {
         let notice = app.descendants(matching: .any).matching(identifier: "v2-model-notice").firstMatch
         XCTAssertTrue(notice.waitForExistence(timeout: 10), "no model-change notice")
         XCTAssertTrue(notice.label.contains("Claude Sonnet"), "notice names the wrong model: \(notice.label)")
+        evidence("model-notice")
+        // The caption under the command circle now names the model (exact
+        // text match — the transient notice also contains the word).
+        let caption = app.staticTexts.matching(NSPredicate(format: "label == %@", "Sonnet")).firstMatch
+        XCTAssertTrue(caption.waitForExistence(timeout: 10), "no Sonnet caption under the circle")
+        // …and the notice clears itself.
+        sleep(6)
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "v2-model-notice").firstMatch.exists, "notice never cleared")
+        // The pick survives a relaunch.
+        app.terminate()
+        let app2 = launch(Self.base)
+        openThread(app2)
+        let caption2 = app2.staticTexts.matching(NSPredicate(format: "label == %@", "Sonnet")).firstMatch
+        XCTAssertTrue(caption2.waitForExistence(timeout: 15), "pick did not persist")
     }
 
     /// Every pill control names itself for VoiceOver.

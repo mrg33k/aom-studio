@@ -113,6 +113,15 @@ Patrik: the command menu shows the model but never confirms a change took. Fix (
 
 **Status:** shipped — committed and pushed to main (ships in Patrik's next TestFlight build; attach is his).
 
+### R75 — Sim-drive follow-ups on R71/R72 (2026-09-12, Muse)
+
+Patrik: re-drive the shipped fixes on the simulator, checking full functionality not just existence. Found and fixed two real gaps:
+
+1. R71's panel flow is genuinely complete (build list, add item, Play echoes in thread with confirmation — screenshot-verified). Added a `-v2SeedChecklists` hermetic seed (same precedent as `-v2SeedStaged`) plus `testChecklistFullFlow` driving the whole job on sim.
+2. R72 was half-built as suspected: the v2 command circle showed NO model anywhere (the label chip is dead code) — the notice alone wasn't enough. Added a live "Sonnet"-style caption under the circle plus a dynamic VoiceOver label. Extended the test: notice names the model, caption names it, notice clears, pick persists across relaunch.
+
+**Status:** in progress — committing, pushing.
+
 ### R73 — TestFlight build 29 (2026-09-10, Muse)
 
 Bundles R71 (Checklist chip opens the room panel) + R72 (model pick announces itself). Archive, export, and App Store Connect upload all succeeded (delivery 443f910c). Awaiting Apple processing, then Patrik's attach step (`testflight-attach.py 29`) + beta review. On-device to check: Checklist chip opens Room lists above the pill and Plays to the agent; picking a model announces "Model is now …" above the pill.

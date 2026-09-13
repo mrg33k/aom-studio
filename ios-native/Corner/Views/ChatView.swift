@@ -3359,19 +3359,30 @@ struct ChatView: View {
     /// which now carries Model + Plan/Work (folded in — no longer visible
     /// buttons). Keeps the anchor preference so the card floats above it.
     private var v2CommandCircle: some View {
-        Button {
-            v2ShowingCommands.toggle()
-        } label: {
-            Image(systemName: "sparkles")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Color.white)
-                .frame(width: 38, height: 38)
-                .background(Color(cv6: 0x8B5CF6), in: Circle())
+        // Item 9b (Patrik iPhone review): the circle alone never shows the
+        // current model — the label chip (v2CommandsChip) is dead code, and
+        // the model only appeared inside the opened card. A tiny caption
+        // under the circle names it live; tapping either opens the card.
+        VStack(spacing: 1) {
+            Button {
+                v2ShowingCommands.toggle()
+            } label: {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.white)
+                    .frame(width: 34, height: 34)
+                    .background(Color(cv6: 0x8B5CF6), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Commands — \(ChatView.shortModelLabel(v2model.modelChoice)), mode, files, image generation")
+            Text(ChatView.shortModelLabel(v2model.modelChoice))
+                .font(.hanken(9).weight(.semibold))
+                .foregroundStyle(Theme.inkFaint)
+                .lineLimit(1)
+                .accessibilityIdentifier("v2-model-caption")
         }
-        .buttonStyle(.plain)
         .anchorPreference(key: V2CommandsAnchorKey.self, value: .bounds) { [$0] }
         .accessibilityIdentifier("v2-commands")
-        .accessibilityLabel("Commands — mode, model, files, image generation")
         .accessibilitySortPriority(4)
     }
 
