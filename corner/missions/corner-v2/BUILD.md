@@ -126,7 +126,7 @@ Patrik: re-drive the shipped fixes on the simulator, checking full functionality
 
 Patrik: the model caption clipped on the pill edge and buttons crowded. Root cause: the caption stacked inside the pill's fixed-height row. Fix: the caption is now its own status line under the pill, aligned with the input text column, circle restored to full size, pill padding untouched. Screenshot-verified on sim, model test green.
 
-**Status:** in progress — committing, pushing.
+**Status:** shipped — committed and pushed to main.
 
 ### R73 — TestFlight build 29 (2026-09-10, Muse)
 
