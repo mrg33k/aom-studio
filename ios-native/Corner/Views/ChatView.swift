@@ -1440,6 +1440,18 @@ struct ChatView: View {
             // R62 (Patrik iPad review 2026-09-09): padding ABOVE the input —
             // the pill had none and read cramped against the messages.
             .padding(.top, 10)
+            // Item 9b caption: the live model name under the pill, aligned
+            // with the input text column (same HStack geometry as the pill
+            // above, circle column as spacer) so nothing clips or overlaps.
+            HStack(spacing: V2ComposerMetrics.sendSpacing) {
+                Color.clear.frame(width: 38, height: 0)
+                Text(ChatView.shortModelLabel(v2model.modelChoice))
+                    .font(.hanken(10).weight(.semibold))
+                    .foregroundStyle(Theme.inkFaint)
+                    .lineLimit(1)
+                    .accessibilityIdentifier("v2-model-caption")
+                Spacer(minLength: 0)
+            }
             // R60/R62: the options live UNDER the input — Attach pinned left,
             // Context + Checklist centred (Model and Plan/Work fold into the
             // command circle, not visible buttons).
@@ -3361,26 +3373,19 @@ struct ChatView: View {
     private var v2CommandCircle: some View {
         // Item 9b (Patrik iPhone review): the circle alone never shows the
         // current model — the label chip (v2CommandsChip) is dead code, and
-        // the model only appeared inside the opened card. A tiny caption
-        // under the circle names it live; tapping either opens the card.
-        VStack(spacing: 1) {
-            Button {
-                v2ShowingCommands.toggle()
-            } label: {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.white)
-                    .frame(width: 34, height: 34)
-                    .background(Color(cv6: 0x8B5CF6), in: Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Commands — \(ChatView.shortModelLabel(v2model.modelChoice)), mode, files, image generation")
-            Text(ChatView.shortModelLabel(v2model.modelChoice))
-                .font(.hanken(9).weight(.semibold))
-                .foregroundStyle(Theme.inkFaint)
-                .lineLimit(1)
-                .accessibilityIdentifier("v2-model-caption")
+        // the model only appeared inside the opened card. The live caption
+        // sits below the pill (an in-pill caption clipped on the pill edge).
+        Button {
+            v2ShowingCommands.toggle()
+        } label: {
+            Image(systemName: "sparkles")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.white)
+                .frame(width: 38, height: 38)
+                .background(Color(cv6: 0x8B5CF6), in: Circle())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Commands — \(ChatView.shortModelLabel(v2model.modelChoice)), mode, files, image generation")
         .anchorPreference(key: V2CommandsAnchorKey.self, value: .bounds) { [$0] }
         .accessibilityIdentifier("v2-commands")
         .accessibilitySortPriority(4)

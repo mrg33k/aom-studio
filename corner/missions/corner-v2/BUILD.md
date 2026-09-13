@@ -122,6 +122,12 @@ Patrik: re-drive the shipped fixes on the simulator, checking full functionality
 
 **Status:** shipped — committed and pushed to main.
 
+### R76 — Model caption overlap fix (2026-09-12, Muse)
+
+Patrik: the model caption clipped on the pill edge and buttons crowded. Root cause: the caption stacked inside the pill's fixed-height row. Fix: the caption is now its own status line under the pill, aligned with the input text column, circle restored to full size, pill padding untouched. Screenshot-verified on sim, model test green.
+
+**Status:** in progress — committing, pushing.
+
 ### R73 — TestFlight build 29 (2026-09-10, Muse)
 
 Bundles R71 (Checklist chip opens the room panel) + R72 (model pick announces itself). Archive, export, and App Store Connect upload all succeeded (delivery 443f910c). Awaiting Apple processing, then Patrik's attach step (`testflight-attach.py 29`) + beta review. On-device to check: Checklist chip opens Room lists above the pill and Plays to the agent; picking a model announces "Model is now …" above the pill.
