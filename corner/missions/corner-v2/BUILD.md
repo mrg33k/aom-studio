@@ -117,7 +117,7 @@ Patrik: the command menu shows the model but never confirms a change took. Fix (
 
 Bundles R71 (Checklist chip opens the room panel) + R72 (model pick announces itself). Archive, export, and App Store Connect upload all succeeded (delivery 443f910c). Awaiting Apple processing, then Patrik's attach step (`testflight-attach.py 29`) + beta review. On-device to check: Checklist chip opens Room lists above the pill and Plays to the agent; picking a model announces "Model is now …" above the pill.
 
-**Status:** uploaded — attach + beta review is Patrik's.
+**Status:** shipped — attach 204, beta review APPROVED. Build 29 is with testers.
 
 ### R68 — Login/onboarding entrance animation (new-goal item 2) (2026-09-09, Claude by hand)
 
