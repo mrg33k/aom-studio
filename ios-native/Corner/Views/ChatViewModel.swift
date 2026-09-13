@@ -1798,6 +1798,8 @@ struct V2OutboxEntry: Codable, Equatable, Identifiable {
     /// (the text itself carries no quote line anymore); old installs decode
     /// this as nil, i.e. "no quote".
     var replyTo: V2ReplyTo? = nil
+    /// The model chosen when queued. Old entries resolve the current thread preference.
+    var model: String? = nil
     /// The last send attempt's outcome. Nil while an attempt is in flight;
     /// old installs decode this as nil (the default), i.e. "no failure yet".
     var lastFailure: V2SendFailure? = nil
@@ -1886,12 +1888,12 @@ final class V2OutboxStore {
     @discardableResult
     func enqueue(
         threadID: String, text: String, mentioning: [String],
-        preferredProjectID: String?, replyTo: V2ReplyTo? = nil
+        preferredProjectID: String?, replyTo: V2ReplyTo? = nil, model: String? = nil
     ) -> V2OutboxEntry {
         let entry = V2OutboxEntry(
             clientEventID: UUID().uuidString.lowercased(), threadID: threadID,
             text: text, mentioning: mentioning, preferredProjectID: preferredProjectID,
-            createdAt: Date(), replyTo: replyTo
+            createdAt: Date(), replyTo: replyTo, model: model
         )
         entries[threadID, default: []].append(entry)
         persist()
@@ -1991,11 +1993,8 @@ final class V2ChatModel: ObservableObject {
     @Published private(set) var queued: [V2OutboxEntry] = []
     @Published private(set) var loadState: LoadState = .loading
     @Published var draft = ""
-    /// R19 commands chip: Work/Plan, model, and specialist, persisted per
-    /// thread like the legacy room path (`chatMode.<roomID>`). Mode rides the
-    /// send when the backend accepts it (see DefaultCornerV2API.send);
-    /// model/specialist persist and label the chip today, and ride a send
-    /// field the moment one exists — the clone cannot take one yet.
+    /// Work/Plan and model persist per thread. Every send carries the resolved
+    /// model explicitly, so the visible choice and provider route agree.
     @Published var chatMode = "work"
     @Published var modelChoice = "default"
     @Published var specialistChoice = "default"
@@ -2093,15 +2092,24 @@ final class V2ChatModel: ObservableObject {
         self.imagePollInterval = imagePollInterval
     }
 
+    var resolvedModel: String { modelChoice == "default" ? "muse-spark" : modelChoice }
+
+    var modelCaption: String {
+        if modelChoice == "default" { return "Muse · Default" }
+        let name = ChatView.modelOptions.first(where: { $0.id == modelChoice })?.label ?? modelChoice
+        let available = ChatView.v2ModelOptions.contains { $0.id == modelChoice }
+        return "Pinned: \(name)" + (available ? "" : " · Unavailable")
+    }
+
     private var threadPrefsKey: String { "v2ThreadPrefs.\(thread?.id ?? "none")" }
 
-    /// Restore this thread's commands state. Defaults are Work, Auto model,
-    /// thread-default specialist — the same defaults the legacy path uses.
+    /// An old or unsupported pin stays visible until the user chooses again.
+    /// Never silently switch a saved model to another provider.
     private func restoreThreadPrefs() {
         let saved = UserDefaults.standard.dictionary(forKey: threadPrefsKey) as? [String: String] ?? [:]
         chatMode = saved["mode"] == "plan" ? "plan" : "work"
         let model = saved["model"] ?? "default"
-        modelChoice = ChatViewModelV2Models.isKnown(model) ? model : "default"
+        modelChoice = model.isEmpty ? "default" : model
         specialistChoice = saved["specialist"] ?? "default"
     }
 
@@ -2119,8 +2127,7 @@ final class V2ChatModel: ObservableObject {
         persistThreadPrefs()
     }
 
-    /// Model pick for this thread. Persists per thread and labels the chip;
-    /// no v2 send field exists for it yet, so it rides no wire today.
+    /// Pin the next sends in this thread; Default explicitly resolves to Muse.
     func selectModel(_ id: String) {
         modelChoice = ChatViewModelV2Models.isKnown(id) ? id : "default"
         persistThreadPrefs()
@@ -2301,7 +2308,7 @@ final class V2ChatModel: ObservableObject {
         let entry = outbox.enqueue(
             threadID: thread.id, text: final,
             mentioning: mentioning, preferredProjectID: nil,
-            replyTo: quote?.wire
+            replyTo: quote?.wire, model: resolvedModel
         )
         refreshQueued()
         var echo = ThreadEvent(
@@ -2325,16 +2332,12 @@ final class V2ChatModel: ObservableObject {
         Task { await refreshRuns() }
         defer { isSending = false }
         do {
-            // The thread's Work/Plan intent and non-Auto model ride the
-            // send; the transport drops Work/Auto (the server defaults) and
-            // falls back field-less when the backend does not know the
-            // fields yet. `threadId` pins the send to this thread (R24
-            // P080): no routing, no `Routed to` receipt, and an open
-            // question is answered here — never globally.
+            // Model selection must survive both first send and retry. A rejected
+            // provider cannot fall back silently to a different subscription.
             let decision = try await api.send(
                 text: final, mentioning: mentioning, preferredProjectID: nil,
                 mode: chatMode == "plan" ? "plan" : nil, threadId: thread.id,
-                model: modelChoice == "default" ? nil : modelChoice,
+                model: entry.model ?? resolvedModel,
                 clientEventId: entry.clientEventID,
                 imageTool: nil, replyTo: quote?.wire
             )
@@ -2645,7 +2648,7 @@ final class V2ChatModel: ObservableObject {
                     preferredProjectID: entry.preferredProjectID,
                     mode: chatMode == "plan" ? "plan" : nil,
                     threadId: thread.id,
-                    model: modelChoice == "default" ? nil : modelChoice,
+                    model: entry.model ?? resolvedModel,
                     clientEventId: entry.clientEventID,
                     imageTool: nil, replyTo: entry.replyTo
                 )

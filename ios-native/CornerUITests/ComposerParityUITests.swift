@@ -457,11 +457,11 @@ final class ComposerParityUITests: XCTestCase {
         let driverTitle = app.textFields["Driver list"].firstMatch
         XCTAssertTrue(driverTitle.waitForExistence(timeout: 15), "new list never rendered")
         // Add: an item on the new list, then Play it to the agent.
-        let itemField = app.textFields["Add a note or next step…"].firstMatch
+        let itemField = app.textFields["Add item to Driver list"].firstMatch
         XCTAssertTrue(itemField.waitForExistence(timeout: 10), "no add-item field")
         itemField.tap()
         itemField.typeText("Driver step")
-        app.keyboards.buttons["return"].tap()
+        app.buttons["Add item to Driver list"].tap()
         XCTAssertTrue(waitForText(app, "Driver step"), "new item never rendered")
         evidence("checklist-built")
         app.buttons["Send Driver step to agent"].tap()
@@ -492,7 +492,7 @@ final class ComposerParityUITests: XCTestCase {
         evidence("model-notice")
         // The caption under the command circle now names the model (exact
         // text match — the transient notice also contains the word).
-        let caption = app.staticTexts.matching(NSPredicate(format: "label == %@", "Sonnet")).firstMatch
+        let caption = app.staticTexts.matching(NSPredicate(format: "label == %@", "Pinned: Claude Sonnet")).firstMatch
         XCTAssertTrue(caption.waitForExistence(timeout: 10), "no Sonnet caption under the circle")
         // …and the notice clears itself.
         sleep(6)
@@ -501,8 +501,42 @@ final class ComposerParityUITests: XCTestCase {
         app.terminate()
         let app2 = launch(Self.base)
         openThread(app2)
-        let caption2 = app2.staticTexts.matching(NSPredicate(format: "label == %@", "Sonnet")).firstMatch
+        let caption2 = app2.staticTexts.matching(NSPredicate(format: "label == %@", "Pinned: Claude Sonnet")).firstMatch
         XCTAssertTrue(caption2.waitForExistence(timeout: 15), "pick did not persist")
+    }
+
+    func testMuseDefaultPersistsAndChecklistControlsHaveRoom() throws {
+        let app = launch(Self.base + ["-v2SeedChecklists"])
+        openThread(app)
+        app.descendants(matching: .any).matching(identifier: "v2-commands").firstMatch.tap()
+        app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Model —")).firstMatch.tap()
+        app.buttons["Muse (default)"].tap()
+        let caption = app.staticTexts.matching(identifier: "v2-model-caption").firstMatch
+        XCTAssertTrue(caption.waitForExistence(timeout: 10))
+        XCTAssertEqual(caption.label, "Muse · Default")
+        app.terminate()
+        let restored = launch(Self.base + ["-v2SeedChecklists"])
+        openThread(restored)
+        XCTAssertEqual(restored.staticTexts.matching(identifier: "v2-model-caption").firstMatch.label, "Muse · Default")
+        restored.buttons.matching(identifier: "v2-composer-checklist").firstMatch.tap()
+        let complete = restored.buttons["Complete Seeded first step"]
+        XCTAssertTrue(complete.waitForExistence(timeout: 15))
+        let send = restored.buttons["Send Seeded first step to agent"]
+        let delete = restored.buttons["Delete Seeded first step"]
+        for button in [complete, send, delete, restored.buttons["Create a new list"], restored.buttons["Close checklists"]] {
+            XCTAssertGreaterThanOrEqual(button.frame.width, 44, button.label)
+            XCTAssertGreaterThanOrEqual(button.frame.height, 44, button.label)
+        }
+        XCTAssertFalse(send.frame.intersects(delete.frame))
+        complete.tap()
+        XCTAssertTrue(restored.buttons["Reopen Seeded first step"].waitForExistence(timeout: 10))
+        evidence("r81-muse-checklist-complete")
+        restored.buttons["Reopen Seeded first step"].tap()
+        send.tap()
+        XCTAssertTrue(waitForText(restored, "Sent to the agent."))
+        restored.buttons["Close checklists"].tap()
+        XCTAssertTrue(waitForText(restored, "Seeded first step"), "Played checklist item did not reach the thread")
+        evidence("r81-muse-checklist-sent")
     }
 
     // MARK: - options row overlap (R77)

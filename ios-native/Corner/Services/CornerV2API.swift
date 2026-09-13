@@ -338,6 +338,16 @@ final class DefaultCornerV2API: CornerV2API {
         model: String?, clientEventId: String?,
         imageTool: String?, replyTo: V2ReplyTo?
     ) async throws -> RouteDecision {
+        // An explicit model is a routing promise. Surface errors instead of
+        // retrying without it and silently changing providers (or duplicating).
+        if let model, !model.isEmpty {
+            return try await service.request(.v2Send(
+                text: text, mentioning: mentioning, preferredProjectID: preferredProjectID,
+                mode: mode == "plan" ? "plan" : nil, threadId: threadId,
+                model: model, clientEventId: clientEventId,
+                imageTool: imageTool, replyTo: replyTo
+            ), as: RouteDecision.self)
+        }
         // Extended fields ride only when set: Work/Auto are the server
         // defaults, so default sends never carry them (and never pay the
         // fallback). A backend without the fields rejects the full send at

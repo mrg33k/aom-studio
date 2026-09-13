@@ -12,3 +12,9 @@ The remaining blocker is provider authentication: Claude's local OAuth session i
 ### 2026-09-12 — R79 Telegram relay timeout repair (Codex)
 
 Patrik asked to prevent the premature timeouts. Removed the default 20-minute total cap, distinguished running tools from idle model requests, kept bounded stall checks (10 minutes idle model, 30 minutes quiet tool), and added periodic progress/heartbeat plus nonblocking pipe draining. Code is `389e104b1` on AOM-EA origin/master. All 11 regression tests and a real 170-second quiet Muse command passed; relay restarted and verified healthy at PID 68550. Earlier TestFlight build 30 uploaded, but its attachment was not retried by this relay-only fix.
+
+
+2026-09-13 R80: Restored stopped chat service by recovering the existing bot into ~/.config/corner/bridge-bot.env (0600) and changing runtime config to that durable path. Default Muse, explicit per-message provider routing, per-instance Claude models, and unsupported-pin response are live on master da21796d8. 255 checks pass. Native endpoint live probe returned “Your Smoke Test Project 6 message reached Muse.” at run v577gbf9c50kpm1bgrbjepys1h8eahg5, taking 65.2s. UI work R81 continues in aom-studio/.Codex/worktrees/corner-v2-ios-muse; build31 reserved.
+
+
+2026-09-13 R81: Native model labels, explicit Muse default, preserved pins and queued model choices, safe transport errors, checklist spacing and visible new-list editing are verified on the 390pt simulator. Four UI flows pass; targeted unit tests pass. Evidence saved under rounds/evidence/R81-*.png. Preparing build31; not on the phone yet.

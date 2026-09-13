@@ -27,6 +27,7 @@ struct RoomChecklistPanelView: View {
     @State private var newListTitle = ""
     @State private var notice = ""
     @State private var noticeTask: Task<Void, Never>?
+    @State private var scrollToListID: String?
 
     var body: some View {
         VStack(spacing: 12) {
@@ -43,6 +44,8 @@ struct RoomChecklistPanelView: View {
                     .animation(.easeOut(duration: 0.2), value: msg)
             }
         }
+        .padding(12)
+        .background(Theme.raised, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .task { await store.load(room: room) }
     }
 
@@ -133,51 +136,60 @@ struct RoomChecklistPanelView: View {
         newListTitle = ""
         creatingList = false
         Task {
-            await store.mutate(room: room, action: "create-list", fields: ["title": title])
+            let existing = Set(store.lists.map(\.id))
+            if await store.mutate(room: room, action: "create-list", fields: ["title": title]) {
+                scrollToListID = store.lists.first { !existing.contains($0.id) }?.id
+            }
         }
     }
 
     // MARK: - Scrollable list area
 
     private var checklistScrollArea: some View {
-        ScrollView {
-            LazyVStack(spacing: 10) {
-                if store.status == .loading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 24)
-                } else if store.lists.isEmpty {
-                    emptyState
-                } else {
-                    ForEach(store.lists) { list in
-                        ChecklistCard(
-                            list: list,
-                            disabled: store.status == .saving,
-                            onMutate: { action, fields in
-                                Task {
-                                    let ok = await store.mutate(room: room, action: action, fields: fields)
-                                    if !ok { showNotice("Couldn't save that change.") }
+        ScrollViewReader { scroll in
+            ScrollView {
+                VStack(spacing: 10) {
+                    if store.status == .loading {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 24)
+                    } else if store.lists.isEmpty {
+                        emptyState
+                    } else {
+                        ForEach(store.lists) { list in
+                            ChecklistCard(
+                                list: list,
+                                disabled: store.status == .saving,
+                                onMutate: { action, fields in
+                                    Task {
+                                        let ok = await store.mutate(room: room, action: action, fields: fields)
+                                        if !ok { showNotice("Couldn't save that change.") }
+                                    }
+                                },
+                                onPlay: { text in
+                                    onSend(text)
+                                    showNotice("Sent to the agent.")
+                                },
+                                onPlayList: { list in
+                                    let openTexts = list.items.filter { !$0.done }.map(\.text)
+                                    guard !openTexts.isEmpty else { return }
+                                    let combined = openTexts.map { "- \($0)" }.joined(separator: "\n")
+                                    onSend("\(list.title):\n\(combined)")
+                                    showNotice("Sent \"\(list.title)\" to the agent.")
                                 }
-                            },
-                            onPlay: { text in
-                                onSend(text)
-                                showNotice("Sent to the agent.")
-                            },
-                            onPlayList: { list in
-                                let openTexts = list.items.filter { !$0.done }.map(\.text)
-                                guard !openTexts.isEmpty else { return }
-                                let combined = openTexts.map { "- \($0)" }.joined(separator: "\n")
-                                onSend("\(list.title):\n\(combined)")
-                                showNotice("Sent \"\(list.title)\" to the agent.")
-                            }
-                        )
+                            )
+                            .id(list.id)
+                        }
                     }
                 }
+                .padding(.horizontal, 2)
+                .padding(.vertical, 2)
             }
-            .padding(.horizontal, 2)
-            .padding(.vertical, 2)
+            .frame(minHeight: 160, maxHeight: min(UIScreen.main.bounds.height * 0.44, 440))
+            .onChange(of: scrollToListID) { _, id in
+                if let id { withAnimation { scroll.scrollTo(id, anchor: .bottom) } }
+            }
         }
-        .frame(maxHeight: min(UIScreen.main.bounds.height * 0.44, 440))
     }
 
     private var emptyState: some View {
@@ -271,7 +283,7 @@ fileprivate struct ChecklistCard: View {
     // MARK: Card header
 
     private var cardHeader: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 4) {
             // Collapse chevron
             Button {
                 withAnimation(.spring(response: 0.22, dampingFraction: 0.8)) {
@@ -283,7 +295,7 @@ fileprivate struct ChecklistCard: View {
                     .foregroundStyle(Theme.inkSoft)
                     .rotationEffect(list.collapsed ? .zero : .degrees(90))
                     .animation(.spring(response: 0.22, dampingFraction: 0.8), value: list.collapsed)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(list.collapsed ? "Expand \(list.title)" : "Collapse \(list.title)")
@@ -292,6 +304,7 @@ fileprivate struct ChecklistCard: View {
             TextField("List title", text: $editingTitle)
                 .font(.hanken(14).weight(.bold))
                 .foregroundStyle(Theme.ink)
+                .frame(minWidth: 50)
                 .onSubmit { commitTitle() }
                 .onDisappear { commitTitle() }
 
@@ -299,6 +312,7 @@ fileprivate struct ChecklistCard: View {
             Text("\(list.doneCount)/\(list.items.count)")
                 .font(.system(size: 10.5, weight: .semibold, design: .monospaced))
                 .foregroundStyle(list.doneCount == list.items.count && !list.items.isEmpty ? Theme.success : Theme.inkFaint)
+                .fixedSize()
 
             // Play list
             if list.openCount > 0 {
@@ -329,7 +343,7 @@ fileprivate struct ChecklistCard: View {
             .accessibilityLabel(deleteArmed ? "Confirm delete \(list.title)" : "Delete \(list.title)")
         }
         .frame(minHeight: 54)
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 8)
     }
 
     private func commitTitle() {
@@ -388,6 +402,7 @@ fileprivate struct ChecklistCard: View {
                     RoundedRectangle(cornerRadius: 11, style: .continuous)
                         .strokeBorder(Theme.hairline, lineWidth: 1)
                 )
+                .accessibilityLabel("Add item to \(list.title)")
                 .onSubmit { submitItem() }
 
             composerCircleButton(
@@ -432,6 +447,8 @@ fileprivate struct ChecklistItemRow: View {
                             .foregroundStyle(Theme.accent)
                     }
                 }
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(disabled)
@@ -449,7 +466,8 @@ fileprivate struct ChecklistItemRow: View {
                 Image(systemName: "play.fill")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(Theme.accent)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(disabled)
@@ -460,7 +478,8 @@ fileprivate struct ChecklistItemRow: View {
                 Image(systemName: "trash")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(Theme.inkSoft)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .disabled(disabled)
@@ -494,6 +513,8 @@ fileprivate func composerCircleButton(
             .overlay(
                 Circle().strokeBorder(active ? Theme.accent : Theme.hairline, lineWidth: 1)
             )
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
 }

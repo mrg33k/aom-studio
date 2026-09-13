@@ -347,7 +347,7 @@ struct V2CommandsCard: View {
     }
 
     private func shortModel(_ id: String) -> String {
-        ChatView.shortModelLabel(id)
+        id == "default" ? "Muse" : ChatView.shortModelLabel(id)
     }
 
     private func rowShell<Content: View>(@ViewBuilder content: () -> Content) -> some View {

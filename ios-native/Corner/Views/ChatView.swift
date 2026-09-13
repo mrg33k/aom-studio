@@ -384,7 +384,7 @@ struct ChatView: View {
                                 Spacer(minLength: 0).frame(width: minX)
                                 V2CommandsCard(
                                     data: v2CommandsCardData,
-                                    modelOptions: ChatView.modelOptions,
+                                    modelOptions: ChatView.v2ModelOptions,
                                     specialistRoster: v2model.specialistRoster,
                                     specialistChoice: v2model.specialistChoice,
                                     onMode: { v2model.setMode($0) },
@@ -1456,9 +1456,9 @@ struct ChatView: View {
             // above, circle column as spacer) so nothing clips or overlaps.
             HStack(spacing: V2ComposerMetrics.sendSpacing) {
                 Color.clear.frame(width: 38, height: 0)
-                Text(ChatView.shortModelLabel(v2model.modelChoice))
-                    .font(.hanken(10).weight(.semibold))
-                    .foregroundStyle(Theme.inkFaint)
+                Text(v2model.modelCaption)
+                    .font(.hanken(12).weight(.semibold))
+                    .foregroundStyle(Theme.inkSoft)
                     .lineLimit(1)
                     .accessibilityIdentifier("v2-model-caption")
                 Spacer(minLength: 0)
@@ -3396,7 +3396,7 @@ struct ChatView: View {
                 .background(Color(cv6: 0x8B5CF6), in: Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Commands — \(ChatView.shortModelLabel(v2model.modelChoice)), mode, files, image generation")
+        .accessibilityLabel("Commands — \(v2model.modelCaption), mode, files, image generation")
         .anchorPreference(key: V2CommandsAnchorKey.self, value: .bounds) { [$0] }
         .accessibilityIdentifier("v2-commands")
         .accessibilitySortPriority(4)
@@ -3409,7 +3409,8 @@ struct ChatView: View {
     /// it. Call only after the pick actually stuck (legacy selectModel can
     /// silently revert on a failed save).
     private func announceModelChange(id: String) {
-        let label = ChatView.modelOptions.first(where: { $0.id == id })?.label ?? id
+        let options = v2 == nil ? ChatView.modelOptions : ChatView.v2ModelOptions
+        let label = options.first(where: { $0.id == id })?.label ?? id
         // Fire-and-forget onto the main actor: call sites include an async
         // Task (legacy menu) and sync UI closures (v2 card, slash sheet).
         Task { @MainActor in
@@ -3536,8 +3537,7 @@ struct ChatView: View {
         return V2CommandsCardData(
             chatMode: state.chatMode,
             modelChoice: state.modelChoice,
-            modelSub: ChatView.modelOptions.first(where: { $0.id == state.modelChoice })?.label
-                ?? state.modelChoice,
+            modelSub: v2model.modelCaption,
             hasSpecialist: state.hasSpecialist,
             specialistTitle: state.specialistTitle,
             specialistCount: state.specialistRoster.count,
@@ -3680,6 +3680,11 @@ struct ChatView: View {
         ("openai-gpt-5.6", "OpenAI GPT-5.6"),
         ("codex-local", "Codex on this computer"),
     ]
+
+    /// V2 explicitly sends Muse for Default; Codex has no bridge adapter yet.
+    static let v2ModelOptions: [(id: String, label: String)] = [
+        ("default", "Muse (default)")
+    ] + modelOptions.filter { $0.id != "default" && $0.id != "codex-local" }
 
     static func shortModelLabel(_ id: String) -> String {
         switch id {
@@ -4869,7 +4874,7 @@ struct V2SlashSheet: View {
         NavigationStack {
             Group {
                 if picking == .model {
-                    List(ChatView.modelOptions, id: \.id) { option in
+                    List(ChatView.v2ModelOptions, id: \.id) { option in
                         Button {
                             onSelectModel(option.id)
                             picking = nil

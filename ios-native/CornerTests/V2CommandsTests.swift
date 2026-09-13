@@ -91,6 +91,76 @@ final class V2CommandsTests: XCTestCase {
         XCTAssertEqual(model.modelChoice, "default")
     }
 
+    func testDefaultAndPinnedModelsTravelOnSend() async throws {
+        let api = CornerV2APIFake()
+        api.threadEventsHandler = { _ in [] }
+        let (thread, project, mission) = try context(threadID: "r81-model-wire")
+        api.sendHandler = { _, _, _, _ in self.routeDecision(project: project) }
+        let model = V2ChatModel(api: api, outbox: .memory)
+        await model.start(thread: thread, project: project, mission: mission)
+        XCTAssertEqual(model.modelCaption, "Muse · Default")
+        await model.send("Use default")
+        XCTAssertEqual(api.sentModels.last!, "muse-spark")
+        model.selectModel("sonnet")
+        XCTAssertEqual(model.modelCaption, "Pinned: Claude Sonnet")
+        await model.send("Use my pin")
+        XCTAssertEqual(api.sentModels.last!, "sonnet")
+    }
+
+    func testRetiredPinStaysVisibleAcrossRestore() async throws {
+        let api = CornerV2APIFake()
+        api.threadEventsHandler = { _ in [] }
+        let (thread, project, mission) = try context(threadID: "r81-retired-pin")
+        UserDefaults.standard.set(["model": "codex-local"], forKey: "v2ThreadPrefs.\(thread.id)")
+        let model = V2ChatModel(api: api, outbox: .memory)
+        await model.start(thread: thread, project: project, mission: mission)
+        XCTAssertEqual(model.modelChoice, "codex-local")
+        XCTAssertTrue(model.modelCaption.contains("Unavailable"))
+        XCTAssertFalse(ChatView.v2ModelOptions.contains { $0.id == "codex-local" })
+        UserDefaults.standard.set(["model": "retired-model"], forKey: "v2ThreadPrefs.\(thread.id)")
+        await model.start(thread: thread, project: project, mission: mission)
+        XCTAssertEqual(model.modelChoice, "retired-model")
+        XCTAssertEqual(model.modelCaption, "Pinned: retired-model · Unavailable")
+    }
+
+    func testQueuedSendKeepsItsModelAfterPinChanges() async throws {
+        let api = CornerV2APIFake()
+        api.threadEventsHandler = { _ in [] }
+        let (thread, project, mission) = try context(threadID: "r81-queued-model")
+        api.sendHandler = { _, _, _, _ in throw URLError(.notConnectedToInternet) }
+        let outbox = V2OutboxStore.memory
+        let model = V2ChatModel(api: api, outbox: outbox)
+        await model.start(thread: thread, project: project, mission: mission)
+        model.selectModel("sonnet")
+        await model.send("Keep this pin")
+        XCTAssertEqual(outbox.pending(threadID: thread.id).first?.model, "sonnet")
+        model.selectModel("default")
+        api.sendHandler = { _, _, _, _ in self.routeDecision(project: project) }
+        await model.replayOutbox()
+        XCTAssertEqual(api.sentModels, ["sonnet", "sonnet"])
+        XCTAssertTrue(outbox.pending(threadID: thread.id).isEmpty)
+    }
+
+    func testModelFailureNeverRetriesWithoutChosenProvider() async throws {
+        var bodies: [[String: Any]] = []
+        let transport = FakeConvexTransport { request in
+            let json = try! JSONSerialization.jsonObject(with: request.httpBody!) as! [String: Any]
+            bodies.append(json["args"] as! [String: Any])
+            let data = try! JSONSerialization.data(withJSONObject: ["status": "error", "errorMessage": "Model unavailable"])
+            return (data, HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!)
+        }
+        let api = DefaultCornerV2API(service: ConvexService(session: .valid, transport: transport))
+        do {
+            _ = try await api.send(text: "Stay on Muse", mentioning: [], preferredProjectID: nil,
+                                   mode: nil, threadId: "r81", model: "muse-spark",
+                                   clientEventId: "r81-send", imageTool: nil, replyTo: nil)
+            XCTFail("Expected the unavailable provider to surface its failure")
+        } catch {
+            XCTAssertEqual(bodies.count, 1, "Must not send again without the chosen model")
+            XCTAssertEqual(bodies.first?["model"] as? String, "muse-spark")
+        }
+    }
+
     func testSpecialistRosterDerivesFromAgentLabels() async throws {
         let api = CornerV2APIFake()
         let (thread, project, _) = try context()

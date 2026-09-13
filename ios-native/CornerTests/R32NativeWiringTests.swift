@@ -311,7 +311,7 @@ final class R32NativeWiringTests: XCTestCase {
         let eventID = try XCTUnwrap(api.sentClientEventIDs.first ?? nil)
         XCTAssertFalse(eventID.isEmpty, "the outbox id rides clientEventId")
         XCTAssertEqual(api.sentModes, [nil], "Work rides no field")
-        XCTAssertEqual(api.sentModels, [nil], "Auto rides no field")
+        XCTAssertEqual(api.sentModels, ["muse-spark"], "Default explicitly routes to Muse")
     }
 
     func testNonDefaultModelRides() async throws {

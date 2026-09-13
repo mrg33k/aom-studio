@@ -178,3 +178,21 @@ The relay now tracks actual tool lifecycle events (the tool kind lives inside th
 Verification: 11 real-subprocess regression tests pass; the original code failed seven, including both reported cutoffs. Checks also cover completed/concurrent tools, a hung tool, idle model/reminder activity, explicit total limits, progress, heartbeat, stderr backpressure, and partial JSON. A separate real Muse probe ran `sleep 170` with the model idle limit deliberately kept at the old 150 seconds, then returned `quiet-wait-ok`; command exit 0, turn completed in 197.566 seconds (session `259fade8-fd2d-4a07-96bf-a18d5180c90c`). Probe delivery was dry-run only.
 
 **Status:** shipped. AOM-EA commit `389e104b1` is on `origin/master`. Confirmed an empty queue and no active relay child before restarting `com.aom-ea.muse-relay`; PID 71200 became 68550, heartbeat advanced, and startup reported `idle=600s tool_idle=1800s total=unlimited`. Existing Telegram conversation preserved. This round changes the relay only; it does not retry the earlier build attachment.
+
+
+### R80 — Muse chat recovery and truthful model routing (2026-09-13, Codex)
+
+Patrik reports broken iOS chat after Claude subscription ended, missing pinned model visibility, and checklist spacing. Live service is stopped because its temporary bot credential file is missing; current runtime already selects Muse. Recover durable service credentials, make Muse the code default, honor explicit per-message model choices, and verify a real reply. Native repairs are coordinated in R81.
+
+**Status:** bridge shipped. Commit `da21796d8` is on origin/master, service restarted and healthy with 170 watched threads and Muse default. The same bot identity was recovered into a private durable credential file (0600); no new account was created. All 255 bridge checks pass. A real `v2Native:send` probe in existing Smoke Test Project 6 retained `model=muse-spark`, produced a Muse reply, and completed its run in 65.2 seconds. iOS release remains in R81.
+
+
+### R81 — Native model visibility and checklist spacing (2026-09-13)
+
+**Status:** simulator verified; preparing TestFlight build 31.
+
+Owns native iOS model selection/visibility and checklist spacing only. Parent R80 owns Muse routing and the live bridge. Existing approved UI is the reference. Verify persisted selection and real simulator interactions; no release or merge in this worker.
+
+The persistent composer caption names Muse default or the full pinned model. Every send explicitly carries its model; queued messages retain the choice at enqueue time. Removed the model-dropping error retry and hid unsupported Codex choices while keeping existing unsupported pins visible. Checklist controls have separate 44pt tap areas, the panel has inset spacing, and new lists scroll into view. Fixed a real short-panel clipping issue that prevented typing into newly created lists: fully measured list content, minimum usable height, and bottom-aligned new-list scrolling.
+
+Verification: 52 model/transport unit tests and four actual iPhone 16e (390pt) UI flows pass across focused runs: default/pin persistence, non-overlapping options, checklist creation/add/send, completion/reopen/send with 44pt controls. Inspected screenshots in rounds/evidence/R81-*.png. The older native-design-vs-sim utility could not run because its temporary e2e credential file is missing; current simulator interactions and screenshots are the visual proof. Physical iPhone verification remains after TestFlight installation.
