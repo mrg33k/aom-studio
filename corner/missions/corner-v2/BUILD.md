@@ -161,3 +161,9 @@ Fix: contract `r74-1` puts a byte-identical shared contract and slot-task refere
 Verified: 252 bridge tests pass, including cross-agent/cross-slot prefix identity, provider counter normalization, live-call recording, and health aggregation. Parent commit `22ea08854` is on `origin/master`; the bridge was restarted and live health returned `status=ok`, `contract=r74-1`, and the new cache object.
 
 **Status:** shipped and healthy. A real hit is not yet verified because `claude auth status` reports logged out and the warm/repeat probe returned `OAuth session expired`; restore the Claude login before reading the first live hit rate. No provider was switched because that would change model behavior and spend.
+
+### R78 — Purple-circle card audit (2026-09-12, Muse)
+
+Patrik: review the whole app starting with the purple button, everything must work. Driving every commands-card row on sim with `testCommandsCardEveryRowActs`. First finding: the Files row set a window flag with no tab selected, which presents nothing — now opens the same RoomFilesView sheet as legacy. Audit continues row by row.
+
+**Status:** in progress — Files fix committing, TestFlight build 30 going up with it.

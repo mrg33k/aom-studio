@@ -522,6 +522,62 @@ final class ComposerParityUITests: XCTestCase {
         evidence("options-row")
     }
 
+    // MARK: - purple circle card audit
+
+    /// Every row of the commands card does its job: mode toggles stick,
+    /// Files opens the files view, Image opens the prompt sheet, Talk
+    /// toggles, Read-checklist (no pins) dismisses silently.
+    func testCommandsCardEveryRowActs() throws {
+        let app = launch(Self.base)
+        openThread(app)
+        func openCard() {
+            // Re-resolve every tap: sheet presentations rebuild the
+            // hierarchy and stale references tap thin air.
+            func chip() -> XCUIElement {
+                app.descendants(matching: .any).matching(identifier: "v2-commands").firstMatch
+            }
+            XCTAssertTrue(chip().waitForExistence(timeout: 15), "no commands circle")
+            chip().tap()
+            if !app.buttons["Generate an image"].waitForExistence(timeout: 4) {
+                chip().tap()
+            }
+            XCTAssertTrue(app.buttons["Generate an image"].waitForExistence(timeout: 10), "card never opened")
+        }
+        // Plan, then back to Work.
+        openCard()
+        app.buttons["Plan"].tap()
+        openCard()
+        XCTAssertTrue(waitForText(app, "Corner will propose a plan first"), "Plan mode never applied")
+        app.buttons["Work"].tap()
+        openCard()
+        XCTAssertTrue(waitForText(app, "Corner gets to work directly"), "Work mode never restored")
+        // Files.
+        app.buttons["Files in this conversation"].tap()
+        sleep(2)
+        evidence("commands-files-state")
+        XCTAssertTrue(waitForText(app, "Files"), "Files view never opened")
+        XCTAssertTrue(app.buttons["Done"].exists, "no Done on Files sheet")
+        app.buttons["Done"].tap()
+        XCTAssertFalse(app.buttons["Done"].waitForExistence(timeout: 5), "Files sheet never dismissed")
+        // Image (empty draft asks for a prompt).
+        openCard()
+        app.buttons["Generate an image"].tap()
+        sleep(2)
+        evidence("commands-image-state")
+        XCTAssertTrue(app.buttons["Cancel"].exists, "no Cancel on image prompt")
+        app.buttons["Cancel"].tap()
+        // Talk toggles on and back off.
+        openCard()
+        app.buttons["Talk aloud"].tap()
+        openCard()
+        app.buttons["Talk aloud"].tap()
+        // Read checklist with no pins: silent dismiss, no crash.
+        openCard()
+        app.buttons["Read checklist aloud"].tap()
+        XCTAssertFalse(waitForText(app, "Corner gets to work directly", timeout: 3), "card never dismissed")
+        evidence("commands-card-audit")
+    }
+
     /// Every pill control names itself for VoiceOver.
     func testAccessibilityLabels() throws {
         let app = launch(Self.base)

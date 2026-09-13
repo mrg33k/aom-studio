@@ -131,6 +131,9 @@ struct ChatView: View {
     @State private var v2ClearFailed = false
     /// `/` hints inline and submits to the commands sheet (same rows).
     @State private var v2ShowingSlash = false
+    /// Audit fix: the card's Files row opens the room files sheet (same
+    /// RoomFilesView as the legacy path).
+    @State private var v2ShowingFiles = false
     /// Model/specialist pickers inside the slash sheet.
     @State private var v2SlashPicking: V2SlashCommand.ID?
     /// `/clear` (and the sheet's Clear row) confirm before anything clears.
@@ -390,7 +393,11 @@ struct ChatView: View {
                                         announceModelChange(id: v2model.modelChoice)
                                     },
                                     onSpecialist: { v2model.selectSpecialist($0) },
-                                    onFiles: { window.isPresented = true },
+                                    // Audit fix: window.isPresented with no
+                                    // selected tab presents nothing, so the
+                                    // row was dead. Same RoomFilesView sheet
+                                    // as the legacy path below.
+                                    onFiles: { v2ShowingFiles = true },
                                     onImage: { v2GenerateImage(prompt: v2model.draft) },
                                     onTalkToggle: {
                                         talkAloud?.setEnabled(!(talkAloud?.enabled ?? false))
@@ -419,6 +426,10 @@ struct ChatView: View {
         // Connections (Patrik 2026-09-08): this room's agent toolkit + on/off.
         .sheet(isPresented: $v2ShowingConnections) {
             V2ConnectionsSheet(scopeTitle: v2?.project.name ?? v2model.displayTitle)
+        }
+        // Audit fix: the card's Files row lands here (same sheet as legacy).
+        .sheet(isPresented: $v2ShowingFiles) {
+            RoomFilesView(room: model.room)
         }
         // R28: `/` opens the commands as a sheet (same rows, new host).
         .sheet(isPresented: $v2ShowingSlash) {
