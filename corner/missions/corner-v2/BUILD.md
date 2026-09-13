@@ -166,7 +166,7 @@ Verified: 252 bridge tests pass, including cross-agent/cross-slot prefix identit
 
 Patrik: review the whole app starting with the purple button, everything must work. Driving every commands-card row on sim with `testCommandsCardEveryRowActs`. First finding: the Files row set a window flag with no tab selected, which presents nothing — now opens the same RoomFilesView sheet as legacy. Audit continues row by row.
 
-**Status:** in progress — Files fix committing, TestFlight build 30 going up with it.
+**Status:** shipped — build 30 archived, uploaded, attached (204), beta review submitted, awaiting Apple.
 
 
 ### R79 — Telegram relay survives long work (2026-09-12, Codex)
