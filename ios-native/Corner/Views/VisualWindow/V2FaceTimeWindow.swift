@@ -31,12 +31,16 @@ enum V2FaceTimeMetrics {
     /// a document reads legibly instead of one huge wrapped word per line.
     static let contentScale: CGFloat = 0.8
 
+    /// Measured 2026-09-14 on the 17 Pro sim: the overlay's geometry already
+    /// starts under the status bar AND still reports the safe-area inset, so
+    /// adding it seated the box ~60pt too low (Patrik: "too much space").
+    /// The nav is the only thing above the box.
     static func defaultTop(safeAreaTop: CGFloat) -> CGFloat {
-        safeAreaTop + topBelowNav
+        topBelowNav
     }
 
     static func minTop(safeAreaTop: CGFloat) -> CGFloat {
-        safeAreaTop + topBelowNav - 4
+        topBelowNav - 4
     }
 }
 
