@@ -312,7 +312,13 @@ final class ConvexService {
     /// Call a Convex ACTION (server-side, may make external HTTP — e.g. the
     /// Arcade connect flow). Same envelope as a mutation but the `api/action`
     /// endpoint. R67: added for `arcade:initiateAuth` / `arcade:checkAuth`.
-    func actionWithResult<T: Decodable>(_ functionName: String, args: [String: Any] = [:]) async throws -> T {
+    /// `preserveClientIdentity`: keep a client `userId` in the args. Only for
+    /// actions whose signature *requires* one and that never derive identity
+    /// from it (Arcade OAuth uses the email as the Arcade user key — the 2026-09-13
+    /// phone review found Connect failing instantly because the sanitizer had
+    /// silently dropped the required arg).
+    func actionWithResult<T: Decodable>(_ functionName: String, args: [String: Any] = [:],
+                                        preserveClientIdentity: Bool = false) async throws -> T {
         var request = URLRequest(url: baseURL.appendingPathComponent("api/action"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -320,7 +326,8 @@ final class ConvexService {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         request.timeoutInterval = 30
-        let body: [String: Any] = ["path": functionName, "args": Self.sanitizedArgs(args), "format": "json"]
+        let sentArgs = preserveClientIdentity ? args : Self.sanitizedArgs(args)
+        let body: [String: Any] = ["path": functionName, "args": sentArgs, "format": "json"]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await transport.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {

@@ -175,7 +175,8 @@ final class V2ArcadeConnectStore: ObservableObject {
         Task { @MainActor in
             do {
                 let resp: AuthResp = try await ConvexService.shared.actionWithResult(
-                    "arcade:initiateAuth", args: ["userId": userId, "service": service])
+                    "arcade:initiateAuth", args: ["userId": userId, "service": service],
+                    preserveClientIdentity: true)
                 if !resp.authUrl.isEmpty, let url = URL(string: resp.authUrl) {
                     UIApplication.shared.open(url, options: [:], completionHandler: nil)
                 }
