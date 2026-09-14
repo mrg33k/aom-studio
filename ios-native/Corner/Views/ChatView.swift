@@ -343,6 +343,13 @@ struct ChatView: View {
         // P077: the thread ground is the flat `--ground`, never the glass
         // wallpaper's gradient glow (the design thread is flat #0f1319).
         .flatGroundBackground()
+        .task(id: v2?.project.id) {
+            // 2026-09-13: the next-step strip needs the home reads on the
+            // Assistant thread too (the welcome only loads them when shown).
+            guard v2?.project.kind == .general else { return }
+            await v2home.load(world: CornerAPI.shared.world ?? "aom",
+                              accountName: CornerAPI.shared.userDisplayName)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .v2DidReconnect)) { _ in
             // R24 P075: the network came back while foregrounded — flush.
             Task { await v2model.foreground() }
@@ -1282,8 +1289,52 @@ struct ChatView: View {
         }
     }
 
+    /// 2026-09-13 (goal paper: "has ideas on what to do next based on the
+    /// user's life"): the assistant's next-step offers ride ABOVE the
+    /// composer on the Assistant thread — the home cards only showed on an
+    /// empty thread, so a real user never saw them. A tap opens that
+    /// project with "Yes, go ahead: …" staged, never sent.
+    @ViewBuilder
+    private var v2NextStepsStrip: some View {
+        let offers = v2home.suggestions.filter(\.isNextStep)
+        if v2?.project.kind == .general, !v2ShowingHome, !offers.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(offers) { offer in
+                        Button { v2HomeOpen(offer) } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(offer.projectTitle)
+                                    .font(.hanken(11).weight(.semibold))
+                                    .foregroundStyle(Theme.accent)
+                                Text(offer.subline)
+                                    .font(.hanken(12.5))
+                                    .foregroundStyle(Theme.ink)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .frame(width: 240, alignment: .leading)
+                            .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .strokeBorder(Theme.hairline, lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("v2-next-step-\(offer.subject)")
+                        .accessibilityLabel("\(offer.projectTitle): \(offer.subline)")
+                    }
+                }
+                .padding(.horizontal, 2)
+            }
+            .accessibilityIdentifier("v2-next-steps")
+        }
+    }
+
     private var v2Composer: some View {
         VStack(spacing: 8) {
+            v2NextStepsStrip
             // R28 trays — every row renders ABOVE the pill, never inside it,
             // so the gated composer metrics never move (R27 web's tray rule).
             if !mentionSuggestions.isEmpty {

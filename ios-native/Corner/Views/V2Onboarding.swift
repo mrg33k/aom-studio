@@ -102,6 +102,9 @@ struct V2SetupView: View {
     @ObservedObject private var v2 = WorkspaceStore.shared
     @State private var step: Int
     @State private var skipped = false
+    /// 2026-09-13: the Import step's paste, hoisted so Continue can hand it
+    /// to the Assistant (it used to go nowhere — "Corner counts the words").
+    @State private var importedContext = ""
     var onDone: () -> Void = {}
 
     init(initialStep: Int = 0, onDone: @escaping () -> Void = {}) {
@@ -208,7 +211,7 @@ struct V2SetupView: View {
     private var stepContent: some View {
         switch step {
         case 0: V2SetupConnect()
-        case 1: V2SetupImport()
+        case 1: V2SetupImport(pasted: $importedContext)
         case 2: V2SetupInvite()
         case 3: V2SetupPermissions()
         case 4: V2SetupLook()
@@ -220,7 +223,10 @@ struct V2SetupView: View {
     private var bottomCTA: some View {
         // Step 6 owns its CTA (it needs the project name to create it).
         if step < 5 {
-            Button("Continue") { step += 1 }
+            Button("Continue") {
+                if step == 1 { handOffImportedContext() }
+                step += 1
+            }
                 .font(.hanken(15).weight(.semibold))
                 .foregroundStyle(Color.white)
                 .frame(maxWidth: .infinity)
@@ -237,6 +243,19 @@ struct V2SetupView: View {
     private func finish(skipped: Bool) {
         V2SetupStore.shared.isDone = true
         onDone()
+    }
+
+    /// The pasted context becomes the Assistant thread's staged draft: one
+    /// message that asks the assistant to fold it into what it knows. The
+    /// user reviews and taps send (never a surprise send). Idempotent per
+    /// paste — Continue twice does not double-stage.
+    private func handOffImportedContext() {
+        let text = importedContext.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, let general = v2.generalProject else { return }
+        V2DraftStore.stash(
+            "Here's my context from my old assistant. Fold it into what you know about me and my projects, and tell me what you learned:\n\n\(text)",
+            threadID: general.threadID
+        )
     }
 }
 
@@ -396,7 +415,7 @@ private struct V2SetupConnect: View {
 
 /// Copy-prompt + paste + word-count summary (the desktop heuristic, local).
 private struct V2SetupImport: View {
-    @State private var pasted = ""
+    @Binding var pasted: String
     @State private var copied = false
 
     /// The prompt the desktop Import step copies — static helper copy.
@@ -437,7 +456,7 @@ private struct V2SetupImport: View {
                 .accessibilityIdentifier("v2-setup-import-paste")
                 .accessibilityLabel("Paste prior context")
             if !pasted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Text("\(wordCount) words — Corner will fold this into your first project.")
+                Text("\(wordCount) words. Continue, and the Assistant gets this as your first message.")
                     .font(.hanken(13))
                     .foregroundStyle(Theme.inkSoft)
                     .padding(.top, 8)

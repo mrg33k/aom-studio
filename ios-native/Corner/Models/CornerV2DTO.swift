@@ -649,6 +649,11 @@ struct WorldLedgerItem: Codable, Equatable {
     let atMs: Double?
     let at: Date?
 
+    /// 2026-09-13: the bridge's smart next step for a project (an offer the
+    /// assistant wrote), marked by its surface. The home card shows it.
+    static let nextStepSurface = "assistant:next-step"
+    var isNextStep: Bool { surface == Self.nextStepSurface }
+
     /// Seconds since epoch — `atMs` first, `at` second, never nil (an
     /// undated row sorts oldest instead of failing the decode).
     var freshness: TimeInterval {

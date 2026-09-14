@@ -32,6 +32,9 @@ struct HomeSuggestion: Equatable, Identifiable {
     var prefillText: String
     /// SF Symbol for onboarding tiles; nil on ledger cards (initial tile).
     var iconName: String?
+    /// 2026-09-13: true when the subline is the assistant's own next-step
+    /// offer (bridge surface assistant:next-step), not a generic "pick up".
+    var isNextStep: Bool = false
 }
 
 // MARK: - Builder (pure; unit-pinned)
@@ -121,6 +124,12 @@ enum HomeSuggestions {
         items: [WorldLedgerItem], nodes: [V2NavNode], max: Int = HomeSuggestions.cardCount
     ) -> [HomeSuggestion] {
         var newestBySubject: [String: WorldLedgerItem] = [:]
+        // 2026-09-13: a `next` row (the bridge's smart next step, an offer
+        // written by the assistant) beats any deed for the same project,
+        // however fresh the deed. Among `next` rows, newest wins.
+        func rank(_ item: WorldLedgerItem) -> (Int, Double) {
+            (item.isNextStep ? 1 : 0, item.freshness)
+        }
         for item in items {
             let what = oneLine(item.what)
             guard !what.isEmpty, !isNoise(what), !item.subjects.isEmpty else { continue }
@@ -128,15 +137,16 @@ enum HomeSuggestions {
                 let key = subject.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
                 guard !key.isEmpty else { continue }
                 if let known = newestBySubject[key] {
-                    if item.freshness > known.freshness { newestBySubject[key] = item }
+                    if rank(item) > rank(known) { newestBySubject[key] = item }
                 } else {
                     newestBySubject[key] = item
                 }
             }
         }
-        // Freshest first; the subject breaks ties so the order is stable.
+        // Smart next steps first, then freshest; the subject breaks ties so
+        // the order is stable.
         let ordered = newestBySubject.sorted {
-            if $0.value.freshness != $1.value.freshness { return $0.value.freshness > $1.value.freshness }
+            if rank($0.value) != rank($1.value) { return rank($0.value) > rank($1.value) }
             return $0.key < $1.key
         }
         var out: [HomeSuggestion] = []
@@ -175,6 +185,11 @@ enum HomeSuggestions {
             // thread, rather than dropping a fresh subject.
             project = node
         }
+        // 2026-09-13: a `next` row IS the offer the assistant wrote ("Ross
+        // never confirmed the shoot dates. Want me to send the follow-up?");
+        // the tap pre-fills a yes. A plain deed keeps R60's generic offer.
+        let isNext = item.isNextStep
+        let offer = oneLine(item.what)
         return HomeSuggestion(
             id: "ledger-\(subject)", subject: subject,
             projectTitle: project.title,
@@ -182,13 +197,14 @@ enum HomeSuggestions {
             // changelog line. The raw deed ("Confirmed R15…", "Added GMB
             // photos…") read like a GitHub update; the card now invites the
             // next step, and the tap pre-fills "Pick up where we left off".
-            subline: "Pick up where you left off",
+            subline: isNext ? offer : "Pick up where you left off",
             projectID: project.isProject ? project.id : (node.parentProjectId ?? node.projectId),
             projectThreadID: project.threadId,
             tintHex: project.tint,
             isOnboarding: false,
-            prefillText: "Pick up where we left off on \(project.title).",
-            iconName: nil
+            prefillText: isNext ? "Yes, go ahead: \(offer)" : "Pick up where we left off on \(project.title).",
+            iconName: nil,
+            isNextStep: isNext
         )
     }
 }
