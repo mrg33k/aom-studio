@@ -711,10 +711,8 @@ struct V2DrawerView: View {
     }
 
     private var footer: some View {
-        VStack(spacing: 0) {
-            toolsRows
-            footerAccountRow
-        }
+        // Patrik 2026-09-14: the Tracker / Email / Review chips came out again.
+        footerAccountRow
     }
 
     private var footerAccountRow: some View {
