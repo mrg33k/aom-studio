@@ -169,19 +169,45 @@ final class V2ArcadeConnectStore: ObservableObject {
     private struct StatusResp: Decodable { let status: String }
 
     func connect(service: String) {
-        let userId = CornerAPI.shared.userEmail ?? ""
-        guard !userId.isEmpty else { byService[service] = .failed("Sign in first"); return }
+        // 2026-09-13: CornerAPI's session can lag the Keychain session at
+        // launch, so fall back to the stored viewer — a signed-in phone must
+        // never see "Sign in first" here.
+        let userId = CornerAPI.shared.userEmail
+            ?? ConvexAuth.shared.load()?.user.email
+            ?? ""
+        guard !userId.isEmpty else {
+            NSLog("[arcade] connect(%@): no signed-in email available", service)
+            byService[service] = .failed("Sign in first"); return
+        }
         byService[service] = .connecting
         Task { @MainActor in
             do {
                 let resp: AuthResp = try await ConvexService.shared.actionWithResult(
                     "arcade:initiateAuth", args: ["userId": userId, "service": service],
                     preserveClientIdentity: true)
-                if !resp.authUrl.isEmpty, let url = URL(string: resp.authUrl) {
-                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                // Already authorized with Arcade: no link comes back, the
+                // status is simply "completed". That is a success, not a fault.
+                if resp.status == "completed" {
+                    byService[service] = .connected
+                    return
+                }
+                guard !resp.authUrl.isEmpty, let url = URL(string: resp.authUrl) else {
+                    byService[service] = .failed("No sign-in link came back")
+                    return
+                }
+                // 2026-09-13: never spin on "Connecting…" with nothing on
+                // screen — if the browser refuses the URL, say so and stop.
+                UIApplication.shared.open(url, options: [:]) { [weak self] ok in
+                    NSLog("[arcade] open(%@) -> %d", service, ok ? 1 : 0)
+                    guard let self, !ok else { return }
+                    Task { @MainActor in
+                        self.polls[service]?.cancel()
+                        self.byService[service] = .failed("Couldn't open the browser")
+                    }
                 }
                 poll(service: service, authId: resp.authId)
             } catch {
+                NSLog("[arcade] initiateAuth(%@) failed: %@", service, String(describing: error))
                 byService[service] = .failed("Couldn't start")
             }
         }
@@ -321,7 +347,7 @@ struct V2ConnectionsSheet: View {
                     Circle()
                         .fill(rowStatus(tool).dot)
                         .frame(width: 6, height: 6)
-                    Text("\(rowStatus(tool).label) · \(tool.detail)")
+                    Text("\(rowStatus(tool).label) · \(rowDetail(tool))")
                         .font(.hanken(12))
                         .foregroundStyle(Theme.inkFaint)
                         .lineLimit(1)
@@ -332,6 +358,15 @@ struct V2ConnectionsSheet: View {
         }
         .padding(.horizontal, 12)
         .frame(minHeight: 56)
+    }
+
+    /// A failed connect says *why* in the row instead of the generic detail
+    /// (2026-09-13: "Needs attention" alone told Patrik nothing).
+    private func rowDetail(_ tool: V2Tool) -> String {
+        if let svc = tool.arcadeService, case .failed(let why) = connect.state(for: svc) {
+            return why
+        }
+        return tool.detail
     }
 
     /// The live status: an Arcade tool reflects its connect state; everything
