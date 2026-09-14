@@ -1360,6 +1360,18 @@ struct ChatView: View {
                 }
                 .padding(.horizontal, 2)
             }
+            // Patrik 2026-09-14: the strip sat hard against the last message
+            // and read as a glitch. Room above it, and a soft fade so the
+            // thread scrolls out under it instead of being sliced.
+            .padding(.top, 14)
+            .padding(.bottom, 2)
+            .background(alignment: .top) {
+                LinearGradient(colors: [Theme.ground.opacity(0), Theme.ground],
+                               startPoint: .top, endPoint: .bottom)
+                    .frame(height: 28)
+                    .offset(y: -28)
+                    .allowsHitTesting(false)
+            }
             .accessibilityIdentifier("v2-next-steps")
         }
     }
