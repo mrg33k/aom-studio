@@ -21,7 +21,7 @@ import crypto from 'crypto'
 import { convexMutation } from '../_lib/reportsStore.js'
 import { DEAL_BANK_KIND } from './completed.js'
 
-const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://brilliant-scorpion-163.convex.cloud'
 const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || ''
 const ADMIN_KEY = process.env.DEAL_BANK_ADMIN_KEY || ''
 

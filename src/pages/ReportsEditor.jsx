@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { authFetch } from '../dashboard/lib/authFetch.js'
 
-const CONVEX_URL = 'https://neat-pony-216.convex.cloud'
+const CONVEX_URL = 'https://brilliant-scorpion-163.convex.cloud'
 const CLIENTS = ['wolfpack', 'ambition', 'kohrs', 'ella']
 const STATUS_DEFAULT_LABEL = { done: 'Done', wip: 'This week', next: 'Next week' }
 

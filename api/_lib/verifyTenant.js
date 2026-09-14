@@ -33,7 +33,7 @@
 //
 // Underscore-prefixed dir keeps this file out of Vercel's serverless routing.
 
-const CONVEX_URL = process.env.CORNER_CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud';
+const CONVEX_URL = process.env.CORNER_CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://brilliant-scorpion-163.convex.cloud';
 // Optional script key for gated mutations (TASKS_KEY on the deployment).
 const CONVEX_KEY = process.env.CORNER_CONVEX_KEY || process.env.TASKS_KEY || '';
 

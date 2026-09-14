@@ -38,7 +38,7 @@ import missionsRegistry from '../../src/dashboard/data/missions-registry.json' w
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud';
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://brilliant-scorpion-163.convex.cloud';
 const RAG_URL = process.env.RAG_SERVER_URL || 'http://aom-home:8787';
 
 async function convexQuery(path, args) {

@@ -2,7 +2,7 @@
 // corner-convex deployment (convex/reports.ts there). Same plain-fetch contract
 // the dashboard uses in src/dashboard/cv6next/data/convexClient.js.
 
-const CONVEX_URL = process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud';
+const CONVEX_URL = process.env.REPORTS_CONVEX_URL || 'https://brilliant-scorpion-163.convex.cloud';
 
 export const REPORT_CLIENTS = ['wolfpack', 'ambition', 'kohrs', 'ella'];
 

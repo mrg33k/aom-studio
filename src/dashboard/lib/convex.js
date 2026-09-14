@@ -19,7 +19,7 @@ import { ConvexReactClient } from 'convex/react';
 import { makeFunctionReference } from 'convex/server';
 
 export const CONVEX_URL = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_CONVEX_URL)
-  || 'https://neat-pony-216.convex.cloud';
+  || 'https://brilliant-scorpion-163.convex.cloud';
 
 // The placeholder tenant a page renders with when nobody is signed in (public
 // demo routes, Playwright fixtures). Lives here so tenantContext can import it

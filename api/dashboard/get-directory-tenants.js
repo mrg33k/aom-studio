@@ -14,7 +14,7 @@
 // value:{tenants:[{slug,name,brand_color,vertical,logo_url,description}]}}.
 // An empty list means nobody has written that row yet.
 
-const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud';
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://brilliant-scorpion-163.convex.cloud';
 
 async function convexQuery(path, args) {
   const r = await fetch(`${CONVEX_URL}/api/query`, {

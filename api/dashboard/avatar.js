@@ -13,7 +13,7 @@ import { callerIdentity, extractJwt } from '../_lib/verifyTenant.js'
 import { applyCors } from '../_lib/originAllowlist.js'
 import { convexQuery, convexMutation } from '../_lib/reportsStore.js'
 
-const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://brilliant-scorpion-163.convex.cloud'
 
 export const config = { api: { bodyParser: { sizeLimit: '2mb' } } }
 

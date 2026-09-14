@@ -112,7 +112,7 @@
 import { verifyTenant, TenantAuthError, callerIdentity } from '../_lib/verifyTenant.js'
 import { makeProjectScopeAuthorizer, deriveRowWorld, deriveRoomId } from '../_lib/write-message.js'
 
-const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://brilliant-scorpion-163.convex.cloud'
 const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || ''
 
 async function convexMutation(path, args) {

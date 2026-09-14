@@ -18,7 +18,7 @@
 import { getProvider, getProviderCreds, buildRedirectUri } from '../../_lib/oauthProviders.js'
 import { verifyState, encryptJson } from '../../_lib/oauthCrypto.js'
 
-const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://brilliant-scorpion-163.convex.cloud'
 const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || ''
 const APP_ORIGIN = process.env.APP_ORIGIN || 'https://aheadofmarket.com'
 

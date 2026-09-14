@@ -23,7 +23,7 @@ import { getProvider, getProviderCreds, buildRedirectUri } from '../../_lib/oaut
 import { signState } from '../../_lib/oauthCrypto.js'
 import { randomBytes } from 'crypto'
 
-const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://brilliant-scorpion-163.convex.cloud'
 
 async function convex(kind, path, args, token) {
   const headers = { 'Content-Type': 'application/json' }

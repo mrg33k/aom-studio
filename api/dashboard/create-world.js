@@ -17,7 +17,7 @@
 // deployment checks it in users:verifyToken. This block is repeated in each
 // route on purpose until a shared helper lands in api/_lib.
 // ---------------------------------------------------------------------------
-const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://neat-pony-216.convex.cloud'
+const CONVEX_URL = process.env.CONVEX_URL || process.env.REPORTS_CONVEX_URL || 'https://brilliant-scorpion-163.convex.cloud'
 const CONVEX_KEY = process.env.CONVEX_TASKS_KEY || process.env.TASKS_KEY || undefined
 const AUTH_SEED_KEY = process.env.AUTH_SEED_KEY || undefined
 
