@@ -65,6 +65,13 @@ are all archived HTML under `archives/room-cleanup-2026-08-14/` and `tmp/`, unto
 - The eye / Visual Window still renders nothing on iPhone. I toggled it four times and saw
   no window; I did not find the cause.
 
+Round 2 same night (Patrik's annotated screenshots): magic button moved OUT of the pill to the
+left at send's size (both 44pt), + attach inside the pill, Context chip above the box, Room
+checklist moved into the command menu, bottom chip row deleted. Verified on the sim: layout
+renders, menu shows "Room checklist", tapping it opens the panel.
+Doubt added: `ComposerParityUITests` still looks for `v2-composer-checklist` as a composer
+button; it now lives on a menu row, so that test needs updating. Not run tonight.
+
 ## would_change
 
 Probe Arcade status when the connections sheet opens; ask Patrik for the bubble source (project

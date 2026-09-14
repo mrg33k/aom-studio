@@ -398,6 +398,11 @@ struct ChatView: View {
                                     // row was dead. Same RoomFilesView sheet
                                     // as the legacy path below.
                                     onFiles: { v2ShowingFiles = true },
+                                    onChecklist: {
+                                        withAnimation(.spring(response: 0.24, dampingFraction: 0.8)) {
+                                            checklistOpen.toggle()
+                                        }
+                                    },
                                     onImage: { v2GenerateImage(prompt: v2model.draft) },
                                     onTalkToggle: {
                                         talkAloud?.setEnabled(!(talkAloud?.enabled ?? false))
@@ -1230,7 +1235,10 @@ struct ChatView: View {
         /// 7, not 10 (R24 P076): toward the placeholder budget; the
         /// pill/send grouping still reads as one control.
         static let sendSpacing: CGFloat = 7
-        static let sendSize: CGFloat = 50
+        /// Patrik 2026-09-13: the magic (commands) button sits OUTSIDE the
+        /// pill on the left, the same size as send; both smaller than the
+        /// old 50 so the row reads as one line: circle · pill · circle.
+        static let sendSize: CGFloat = 44
         /// R62 (Patrik iPad review 2026-09-09): the purple command circle
         /// scoots left into the pocket — 7, so it tucks against the pill edge.
         static let pillLeading: CGFloat = 7
@@ -1345,16 +1353,19 @@ struct ChatView: View {
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+            // Patrik 2026-09-13: Context sits ABOVE the text box, left-aligned
+            // with the input column. Attach became the + inside the pill and
+            // Checklist moved into the command menu, so the chip row under the
+            // composer is gone.
+            v2ContextChipRow
             HStack(alignment: .bottom, spacing: V2ComposerMetrics.sendSpacing) {
-                // P023: 50px pill with the Record chip inside. The pill fill
-                // is surface; the focused ring is the only chrome.
+                // Patrik 2026-09-13: the magic button is OUT of the box, on
+                // the left, the same size as send.
+                v2CommandCircle
+                // P023: the pill with + (attach) and Record inside. The pill
+                // fill is surface; the focused ring is the only chrome.
                 HStack(spacing: V2ComposerMetrics.interSpacing) {
-                    // R60 (Patrik phone review 2026-09-08): the command menu is
-                    // a purple round button INSIDE the input (leading), bigger
-                    // than the old sparkle chip, smaller than send. Model and
-                    // Plan/Work fold into ITS menu — they are no longer visible
-                    // buttons in the row.
-                    v2CommandCircle
+                    v2AttachPlus
                     // P038: `Tell Aster what to make next`, not `Message…`.
                     // R24 P076: the multiline axis is UITextView-backed with
                     // a ~5pt/side text inset (measured: placeholder starts
@@ -1415,7 +1426,7 @@ struct ChatView: View {
                 }
                 .padding(.leading, V2ComposerMetrics.pillLeading)
                 .padding(.trailing, V2ComposerMetrics.pillTrailing)
-                .frame(minHeight: 50)
+                .frame(minHeight: V2ComposerMetrics.sendSize)
                 .background(Theme.raised, in: Capsule())
                 .overlay(
                     // R42 P091: the design's pill wears its hairline always;
@@ -1433,7 +1444,7 @@ struct ChatView: View {
                         Image(systemName: "stop.fill")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(Color.white)
-                            .frame(width: 50, height: 50)
+                            .frame(width: V2ComposerMetrics.sendSize, height: V2ComposerMetrics.sendSize)
                             .background(Theme.warning, in: Circle())
                     }
                     .accessibilityIdentifier("v2-composer-stop")
@@ -1446,7 +1457,7 @@ struct ChatView: View {
                         Image(systemName: "arrow.up")
                             .font(.system(size: 18, weight: .semibold))
                             .foregroundStyle(Color.white)
-                            .frame(width: 50, height: 50)
+                            .frame(width: V2ComposerMetrics.sendSize, height: V2ComposerMetrics.sendSize)
                             .background(Theme.accent, in: Circle())
                     }
                     .accessibilityIdentifier("v2-composer-send")
@@ -1462,18 +1473,15 @@ struct ChatView: View {
             // with the input text column (same HStack geometry as the pill
             // above, circle column as spacer) so nothing clips or overlaps.
             HStack(spacing: V2ComposerMetrics.sendSpacing) {
-                Color.clear.frame(width: 38, height: 0)
+                Color.clear.frame(width: V2ComposerMetrics.sendSize, height: 0)
                 Text(v2model.modelCaption)
                     .font(.hanken(12).weight(.semibold))
                     .foregroundStyle(Theme.inkSoft)
                     .lineLimit(1)
+                    .padding(.leading, V2ComposerMetrics.pillLeading)
                     .accessibilityIdentifier("v2-model-caption")
                 Spacer(minLength: 0)
             }
-            // R60/R62: the options live UNDER the input — Attach pinned left,
-            // Context + Checklist centred (Model and Plan/Work fold into the
-            // command circle, not visible buttons).
-            v2ComposerOptionsRow
         }
         // R60 P093 (Patrik phone review 2026-09-08): the project-tinted glow
         // is a soft CENTRED bloom behind the pill — full width, centred, so it
@@ -3397,13 +3405,13 @@ struct ChatView: View {
             v2ShowingCommands.toggle()
         } label: {
             Image(systemName: "sparkles")
-                .font(.system(size: 16, weight: .semibold))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(Color.white)
-                .frame(width: 38, height: 38)
+                .frame(width: V2ComposerMetrics.sendSize, height: V2ComposerMetrics.sendSize)
                 .background(Color(cv6: 0x8B5CF6), in: Circle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Commands — \(v2model.modelCaption), mode, files, image generation")
+        .accessibilityLabel("Commands — \(v2model.modelCaption), mode, files, checklist, image generation")
         .anchorPreference(key: V2CommandsAnchorKey.self, value: .bounds) { [$0] }
         .accessibilityIdentifier("v2-commands")
         .accessibilitySortPriority(4)
@@ -3431,64 +3439,54 @@ struct ChatView: View {
         }
     }
 
-    private var v2ComposerOptionsRow: some View {
-        // R62 (Patrik iPad review 2026-09-09): Attach stays pinned LEFT, the
-        // Context + Checklist pair centred. R77: the ZStack build let the
-        // centred pair slide OVER Attach on iPhone widths (two layers, no
-        // shared layout). One HStack with twin spacers instead: the pair
-        // stays centred in the space right of Attach and can never collide.
-        // Patrik 2026-09-13: three equal-width, equally spaced buttons. No
-        // spacers, no centred pair — each chip takes a third of the row.
-        HStack(spacing: 8) {
-            Menu {
-                Button { v2ShowingPhotoPicker = true } label: {
-                    Label("Photo Library", systemImage: "photo.on.rectangle")
-                }
-                Button { v2ShowingFilePicker = true } label: {
-                    Label("Choose Files", systemImage: "folder")
-                }
-                Button { v2CameraTapped() } label: {
-                    Label("Camera", systemImage: "camera")
-                }
-            } label: {
-                v2OptionChip(icon: "paperclip", label: "Attach")
+    /// Patrik 2026-09-13: the + inside the pill — photo, files, camera.
+    private var v2AttachPlus: some View {
+        Menu {
+            Button { v2ShowingPhotoPicker = true } label: {
+                Label("Photo Library", systemImage: "photo.on.rectangle")
             }
-            .accessibilityIdentifier("v2-attach")
-            .accessibilityLabel("Attach and upload files")
+            Button { v2ShowingFilePicker = true } label: {
+                Label("Choose Files", systemImage: "folder")
+            }
+            Button { v2CameraTapped() } label: {
+                Label("Camera", systemImage: "camera")
+            }
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(Theme.inkSoft)
+                .frame(width: 32, height: 32)
+                .contentShape(Circle())
+        }
+        .accessibilityIdentifier("v2-attach")
+        .accessibilityLabel("Attach and upload files")
+        .accessibilitySortPriority(4.5)
+    }
+
+    /// Patrik 2026-09-13: Context (the Visual Window eye) sits above the
+    /// text box, aligned with the input column.
+    private var v2ContextChipRow: some View {
+        HStack(spacing: V2ComposerMetrics.sendSpacing) {
+            Color.clear.frame(width: V2ComposerMetrics.sendSize, height: 0)
             Button { eye.cycle() } label: {
-                v2OptionChip(icon: eye.iconName, label: "Context")
+                HStack(spacing: 5) {
+                    Image(systemName: eye.iconName).font(.system(size: 13, weight: .medium))
+                    Text("Context").font(.hanken(12).weight(.semibold))
+                }
+                .foregroundStyle(eye.mode == .hidden ? Theme.inkSoft : Theme.accent)
+                .padding(.horizontal, 10)
+                .frame(height: 28)
+                .background(eye.mode == .hidden ? Theme.raised2 : Theme.accentWeak,
+                            in: Capsule())
+                .overlay(
+                    Capsule().strokeBorder(eye.mode == .hidden ? Theme.hairline : Theme.accent, lineWidth: 1)
+                )
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("v2-composer-eye")
             .accessibilityLabel(eye.accessibilityLabel)
-
-            Button { checklistOpen.toggle() } label: {
-                v2OptionChip(icon: "checklist", label: "Checklist",
-                             active: checklistOpen)
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("v2-composer-checklist")
-            .accessibilityLabel(checklistOpen ? "Close room checklists" : "Open room checklists")
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 4)
-        .padding(.top, 2)
-    }
-
-    private func v2OptionChip(icon: String, label: String, active: Bool = false) -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: icon).font(.system(size: 14, weight: .medium))
-            Text(label).font(.hanken(12.5).weight(.semibold))
-        }
-        .foregroundStyle(active ? Theme.accent : Theme.inkSoft)
-        .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity)
-        .frame(height: 32)
-        .background(active ? Theme.accentWeak : Theme.raised2,
-                    in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .strokeBorder(active ? Theme.accent : Theme.hairline, lineWidth: 1)
-        )
     }
 
     /// R19: the commands chip INSIDE the v2 pill, left of Record. Its look

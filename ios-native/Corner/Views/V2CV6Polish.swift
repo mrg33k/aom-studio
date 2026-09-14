@@ -214,7 +214,7 @@ struct V2CommandsCardData: Equatable {
 }
 
 enum V2CommandsCardRow: Equatable {
-    case work, plan, model, specialist, files, image, talk, readChecklist
+    case work, plan, model, specialist, files, checklist, image, talk, readChecklist
 }
 
 enum V2CommandsCardSections {
@@ -225,7 +225,9 @@ enum V2CommandsCardSections {
         var second: [V2CommandsCardRow] = [.model]
         if data.hasSpecialist { second.append(.specialist) }
         out.append(second)
-        out.append([.files, .image])
+        // Patrik 2026-09-13: the room checklist lives in the menu now — the
+        // row of chips under the composer is gone.
+        out.append([.files, .checklist, .image])
         out.append([.talk, .readChecklist])
         return out
     }
@@ -253,6 +255,7 @@ struct V2CommandsCard: View {
     let onModel: (String) -> Void
     let onSpecialist: (String) -> Void
     let onFiles: () -> Void
+    let onChecklist: () -> Void
     let onImage: () -> Void
     let onTalkToggle: () -> Void
     let onReadChecklist: () -> Void
@@ -330,6 +333,11 @@ struct V2CommandsCard: View {
             plainRow(title: "Files in this conversation", icon: "folder") {
                 onFiles(); onActed()
             }
+        case .checklist:
+            plainRow(title: "Room checklist", icon: "checklist") {
+                onChecklist(); onActed()
+            }
+            .accessibilityIdentifier("v2-composer-checklist")
         case .image:
             plainRow(title: "Generate an image", icon: "photo.badge.plus") {
                 onImage(); onActed()
