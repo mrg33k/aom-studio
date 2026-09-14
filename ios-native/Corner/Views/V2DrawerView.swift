@@ -104,6 +104,12 @@ struct V2DrawerView: View {
     @State private var busy = false
     /// R23 P070: the tree's search, in the design's rows.
     @State private var searchQuery = ""
+    /// 2026-09-13 (feature map: search across the workspace): file hits from
+    /// every project, fetched debounced from `projectFiles:search`. A tap
+    /// opens that project with "Open <title>" staged, and the pull-up path
+    /// puts the file on the stage.
+    @State private var fileHits: [V2SearchFileHit] = []
+    @State private var fileSearchTask: Task<Void, Never>?
     /// The global agent connections panel (Patrik 2026-09-08).
     @State private var showingConnections = false
 
@@ -178,8 +184,14 @@ struct V2DrawerView: View {
                                     newMissionRow(project: project)
                                 }
                             }
-                            if isSearching, visibleProjects.isEmpty {
-                                drawerLabel("No projects or missions match")
+                            if isSearching, visibleProjects.isEmpty, fileHits.isEmpty {
+                                drawerLabel("No projects, missions, or files match")
+                            }
+                            if isSearching, !fileHits.isEmpty {
+                                drawerLabel("FILES")
+                                ForEach(fileHits) { hit in
+                                    fileHitRow(hit)
+                                }
                             }
                             if let error = errorText {
                                 Text(error)
@@ -265,13 +277,14 @@ struct V2DrawerView: View {
                 .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(Theme.inkFaint)
                 .frame(width: 24)
-            TextField("Search projects & missions", text: $searchQuery)
+            TextField("Search projects, missions & files", text: $searchQuery)
                 .font(.hanken(14.5))
                 .foregroundStyle(Theme.ink)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
                 .accessibilityIdentifier("v2-drawer-search")
-                .accessibilityLabel("Search projects and missions")
+                .accessibilityLabel("Search projects, missions, and files")
+                .onChange(of: searchQuery) { _, next in runFileSearch(next) }
             if !searchQuery.isEmpty {
                 Button { searchQuery = "" } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -425,6 +438,74 @@ struct V2DrawerView: View {
         )
         .accessibilityIdentifier("v2-drawer-recent-row")
         .accessibilityLabel(recent.title)
+    }
+
+    private func fileHitRow(_ hit: V2SearchFileHit) -> some View {
+        Button {
+            V2DraftStore.stash("Open \(hit.title)", threadID: hit.project.threadID)
+            isPresented = false
+            router.open(.project(projectID: hit.project.id))
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: hit.glyph)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(Theme.inkSoft)
+                    .frame(width: 24)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(hit.title)
+                        .font(.hanken(14))
+                        .foregroundStyle(Theme.ink)
+                        .lineLimit(1)
+                    Text(hit.project.name)
+                        .font(.hanken(11.5))
+                        .foregroundStyle(Theme.inkFaint)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }
+            .frame(height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("v2-drawer-file-\(hit.id)")
+        .accessibilityLabel("Open \(hit.title) in \(hit.project.name)")
+    }
+
+    /// Debounced (350 ms), 3+ characters, every project in parallel, top 8
+    /// by score. Errors are silent: the tree rows still filter.
+    private func runFileSearch(_ query: String) {
+        fileSearchTask?.cancel()
+        let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard q.count >= 3, let projects = v2.workspace?.projects, !projects.isEmpty else {
+            fileHits = []
+            return
+        }
+        let world = api.world ?? "aom"
+        fileSearchTask = Task {
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            if Task.isCancelled { return }
+            let hits = await withTaskGroup(of: [V2SearchFileHit].self) { group in
+                for project in projects where project.kind != .general {
+                    group.addTask {
+                        let subject = V2SearchFileHit.slug(project.name)
+                        let endpoint = try? ConvexEndpoint(
+                            kind: .query, path: "projectFiles:search",
+                            args: ["world": world, "subject": subject, "q": q])
+                        guard let endpoint,
+                              let res = try? await ConvexService.shared.request(endpoint, as: V2SearchFileHit.Envelope.self)
+                        else { return [] }
+                        return res.results.prefix(4).map { V2SearchFileHit(row: $0, project: project) }
+                    }
+                }
+                var all: [V2SearchFileHit] = []
+                for await part in group { all.append(contentsOf: part) }
+                return all
+            }
+            if Task.isCancelled { return }
+            fileHits = Array(hits.filter { $0.score >= 0.34 }
+                .sorted { $0.score != $1.score ? $0.score > $1.score : $0.title < $1.title }
+                .prefix(8))
+        }
     }
 
     private func projectRow(_ project: ProjectSummary) -> some View {
@@ -640,5 +721,61 @@ struct V2DrawerView: View {
         .padding(.horizontal, 12)
         .padding(.bottom, 8)
         .frame(height: 62)
+    }
+}
+
+
+// MARK: - 2026-09-13 workspace file search
+
+/// One `projectFiles:search` hit, tied to the project it lives under.
+struct V2SearchFileHit: Identifiable {
+    struct Row: Decodable {
+        let fileId: String
+        let title: String?
+        let name: String?
+        let kind: String?
+        let score: Double?
+    }
+    struct Envelope: Decodable { let results: [Row] }
+
+    let id: String
+    let title: String
+    let kind: String
+    let score: Double
+    let project: ProjectSummary
+
+    init(row: Row, project: ProjectSummary) {
+        id = "\(project.id)|\(row.fileId)"
+        title = (row.title?.isEmpty == false ? row.title : row.name) ?? "File"
+        kind = row.kind ?? ""
+        score = row.score ?? 0
+        self.project = project
+    }
+
+    var glyph: String {
+        switch kind {
+        case "image", "photo": return "photo"
+        case "video": return "film"
+        case "url", "web": return "globe"
+        case "notes": return "note.text"
+        case "pdf": return "doc.richtext"
+        default: return "doc"
+        }
+    }
+
+    /// The backend's slug: lowercase, every non-alphanumeric run one dash.
+    static func slug(_ title: String) -> String {
+        let lowered = title.lowercased()
+        var out = ""
+        var dash = false
+        for ch in lowered {
+            if ch.isLetter || ch.isNumber {
+                out.append(ch); dash = false
+            } else if !dash, !out.isEmpty {
+                out.append("-"); dash = true
+            }
+        }
+        while out.hasSuffix("-") { out.removeLast() }
+        return out
     }
 }
