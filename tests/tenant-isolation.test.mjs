@@ -36,37 +36,43 @@ const projectsBySlug = {
 }
 
 const originalFetch = globalThis.fetch
+// 2026-09-13: auth is Convex now (corner:retire-supabase). The mock answers
+// the Convex HTTP API the way verifyTenant.js calls it: POST /api/query with
+// { path, args } and an optional Bearer token. Anything else stays empty.
+const worldsByUser = {
+  'karen-uid': [{ worldId: 'w-karen', slug: 'karens-world', name: 'Karens World', role: 'member' }],
+  'super-admin-uid': [{ worldId: 'w-aom', slug: 'aom', name: 'AOM', role: 'owner' }],
+}
 globalThis.fetch = async (url, options = {}) => {
   const href = String(url)
   const headers = options.headers || {}
+  const token = String(headers.Authorization || headers.authorization || '').replace(/^Bearer\s+/i, '')
+  let body = {}
+  try { body = JSON.parse(options.body || '{}') } catch { body = {} }
+  const ok = (value) => Response.json({ status: 'success', value })
+  const fail = (msg) => Response.json({ status: 'error', errorMessage: msg })
 
-  // Auth: resolve the bearer token to a user.
-  if (href.endsWith('/auth/v1/user')) {
-    const token = String(headers.Authorization || headers.authorization || '').replace(/^Bearer\s+/i, '')
-    const user = usersByToken[token]
-    return user
-      ? Response.json(user)
-      : Response.json({ error: 'invalid token' }, { status: 401 })
+  if (href.endsWith('/api/query') || href.endsWith('/api/mutation') || href.endsWith('/api/action')) {
+    const path = String(body.path || '')
+    const args = body.args || {}
+    if (path === 'users:verifyToken') {
+      const user = usersByToken[token]
+      if (!user) return ok(null)
+      return ok({ userId: user.id, email: user.email, name: user.email.split('@')[0],
+                  worldSlug: user.user_metadata.world, isAdmin: user.id === 'super-admin-uid' })
+    }
+    if (path === 'users:worldsFor') return ok(worldsByUser[String(args.userId)] || [])
+    if (path === 'projects:lookupBySlug') {
+      const row = projectsBySlug[String(args.slug || '')]
+      return ok(row ? { projectId: row.id, ownerWorld: row.client_id, ownerWorldId: 'w-' + row.client_id } : null)
+    }
+    if (path === 'projects:access') return ok([])          // Karen holds no grants
+    if (path === 'worlds:membership') return ok(null)       // no extra membership rows
+    if (path === 'rooms:listRooms') return ok([])           // no participation evidence
+    return fail(`unmocked ${path}`)
   }
 
-  // Project lookup by slug (verifyProjectAccess -> lookupProjectBySlug).
-  const projMatch = href.match(/\/rest\/v1\/projects\?slug=eq\.([^&]+)/)
-  if (projMatch) {
-    const slug = decodeURIComponent(projMatch[1])
-    const row = projectsBySlug[slug]
-    return Response.json(row ? [{ id: row.id, client_id: row.client_id }] : [])
-  }
-
-  // project_access grants — none in these tests (Karen holds no grants).
-  if (href.includes('/rest/v1/project_access')) return Response.json([])
-
-  // World-admin RPC — always false (Karen is not an admin of any other world).
-  if (href.includes('/rest/v1/rpc/is_world_admin_for_tenant')) return Response.json(false)
-
-  // Participation-floor message probes — no evidence.
-  if (href.includes('/rest/v1/messages')) return Response.json([])
-
-  // cm_state / anything else — empty.
+  // Anything Supabase-shaped is gone; answer empty so a stray call never admits.
   return Response.json([])
 }
 
