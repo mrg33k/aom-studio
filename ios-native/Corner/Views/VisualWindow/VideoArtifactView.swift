@@ -63,7 +63,16 @@ struct VideoArtifactView: View {
                 return
             }
         }
-        player = AVPlayer(url: url)
+        // 2026-09-13 (feature map: "Big video preview opens fast"): start
+        // playing as soon as ~2 s is buffered instead of waiting for the
+        // system's stall-avoidance heuristic, and cap remote bitrate so the
+        // first frame lands on cellular too.
+        let item = AVPlayerItem(url: url)
+        item.preferredForwardBufferDuration = 2
+        if !url.isFileURL { item.preferredPeakBitRate = 4_000_000 }
+        let p = AVPlayer(playerItem: item)
+        p.automaticallyWaitsToMinimizeStalling = false
+        player = p
     }
 }
 
