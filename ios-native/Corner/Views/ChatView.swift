@@ -986,9 +986,9 @@ struct ChatView: View {
             // Patrik 2026-09-14: "the chat never loads scrolled all the way
             // down". Rows finish laying out after the first snap (images,
             // wrapped text), so snap again once the layout has settled.
-            for delay in [0.25, 0.7] {
+            for delay in [0.25, 0.8] {
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    if v2model.events.last != nil, v2DistanceFromBottom > 8 {
+                    if v2model.events.last != nil, v2DistanceFromBottom < 600 {
                         proxy.scrollTo(V2BottomSentinelID, anchor: .bottom)
                     }
                 }
