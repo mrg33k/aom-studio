@@ -632,8 +632,15 @@ struct ChatView: View {
             // The centred title block (P022's 12.5px project line over the
             // 16px title). Padded past both arms so a long title truncates
             // rather than sliding under the eye. Home shows no title.
-            VStack(spacing: 1) {
+            VStack(spacing: 3) {
                 if !v2ShowingHome {
+                    // Patrik 2026-09-13: every chat carries its bubble,
+                    // centred above the name, iMessage-style.
+                    if let context = v2 {
+                        RoomAvatarView(room: context.compatRoom, size: 32,
+                                       isActive: v2Working)
+                            .accessibilityIdentifier("chat-avatar")
+                    }
                     if v2?.mission != nil {
                         Text(v2?.project.name ?? v2?.mission?.title ?? "")
                             .font(.hanken(12.5).weight(.medium))
@@ -655,7 +662,7 @@ struct ChatView: View {
             }
             .allowsHitTesting(false)
         }
-        .frame(height: 52)
+        .frame(height: v2ShowingHome ? 52 : 84)
     }
 
     /// R41 home: the General thread with no messages (and nothing queued)
@@ -3430,7 +3437,9 @@ struct ChatView: View {
         // centred pair slide OVER Attach on iPhone widths (two layers, no
         // shared layout). One HStack with twin spacers instead: the pair
         // stays centred in the space right of Attach and can never collide.
-        HStack(spacing: 10) {
+        // Patrik 2026-09-13: three equal-width, equally spaced buttons. No
+        // spacers, no centred pair — each chip takes a third of the row.
+        HStack(spacing: 8) {
             Menu {
                 Button { v2ShowingPhotoPicker = true } label: {
                     Label("Photo Library", systemImage: "photo.on.rectangle")
@@ -3446,7 +3455,6 @@ struct ChatView: View {
             }
             .accessibilityIdentifier("v2-attach")
             .accessibilityLabel("Attach and upload files")
-            Spacer(minLength: 4)
             Button { eye.cycle() } label: {
                 v2OptionChip(icon: eye.iconName, label: "Context")
             }
@@ -3461,7 +3469,6 @@ struct ChatView: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("v2-composer-checklist")
             .accessibilityLabel(checklistOpen ? "Close room checklists" : "Open room checklists")
-            Spacer(minLength: 4)
         }
         .padding(.horizontal, 4)
         .padding(.top, 2)
@@ -3474,6 +3481,7 @@ struct ChatView: View {
         }
         .foregroundStyle(active ? Theme.accent : Theme.inkSoft)
         .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity)
         .frame(height: 32)
         .background(active ? Theme.accentWeak : Theme.raised2,
                     in: RoundedRectangle(cornerRadius: 8, style: .continuous))

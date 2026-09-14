@@ -77,6 +77,30 @@ struct ProjectSummary: Codable, Identifiable, Equatable {
     let missions: [MissionSummary]
 }
 
+extension ProjectSummary {
+    /// Patrik 2026-09-13: the workspace's general thread reads "Assistant"
+    /// everywhere on the phone ("General" never worked with my brain"). The
+    /// backend row keeps its name; only the decoded display name changes, so
+    /// every title, drawer row, and placeholder picks it up at once.
+    static let generalDisplayName = "Assistant"
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let kind = try c.decode(ProjectKind.self, forKey: .kind)
+        let rawName = try c.decode(String.self, forKey: .name)
+        self.init(
+            id: try c.decode(String.self, forKey: .id),
+            workspaceID: try c.decode(String.self, forKey: .workspaceID),
+            name: kind == .general ? Self.generalDisplayName : rawName,
+            kind: kind,
+            tintHex: try c.decode(String.self, forKey: .tintHex),
+            needsAttention: try c.decode(Bool.self, forKey: .needsAttention),
+            threadID: try c.decode(String.self, forKey: .threadID),
+            missions: try c.decode([MissionSummary].self, forKey: .missions)
+        )
+    }
+}
+
 struct MissionSummary: Codable, Identifiable, Equatable {
     let id: String
     let projectID: String
