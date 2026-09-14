@@ -72,6 +72,13 @@ renders, menu shows "Room checklist", tapping it opens the panel.
 Doubt added: `ComposerParityUITests` still looks for `v2-composer-checklist` as a composer
 button; it now lives on a menu row, so that test needs updating. Not run tonight.
 
+Round 3 (the /goal run): eye empty states, Files → Context list, smart next-step strip,
+import paste → Assistant, drawer file search, Tracker/Email/Review chips. Each verified by
+tapping on the sim against the real backend. New doubt: the next-step strip has no dismiss;
+if an offer is stale it sits there until the bridge's next 6h run. The three drawer chips
+open screens the Vercel checkpoint currently blocks for the phone; they will read as broken
+until Patrik adds the firewall bypass.
+
 ## would_change
 
 Probe Arcade status when the connections sheet opens; ask Patrik for the bubble source (project
