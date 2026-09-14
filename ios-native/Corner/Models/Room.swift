@@ -376,6 +376,9 @@ enum AgentRoster {
     /// from one of them must not render as a bare slug, and it must never render as a
     /// persona name either.
     private static let offRosterTitles: [String: String] = [
+        // Gauntlet R1 (2026-09-14): the Assistant home's driver slug is "mom";
+        // its rows rendered as "Mom" under an "Assistant" title. One assistant, one name.
+        "mom": "Assistant",
         "corner": "Corner",
         "studio": "Studio",
     ]
