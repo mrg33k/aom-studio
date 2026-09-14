@@ -67,7 +67,13 @@ struct VideoArtifactView: View {
         // playing as soon as ~2 s is buffered instead of waiting for the
         // system's stall-avoidance heuristic, and cap remote bitrate so the
         // first frame lands on cellular too.
-        let item = AVPlayerItem(url: url)
+        // Convex storage URLs carry no file extension; without a MIME hint
+        // AVFoundation refuses the asset (-11829 "Cannot Open", seen on the
+        // sim with a valid faststart MP4). Hint the container explicitly.
+        let asset = url.isFileURL
+            ? AVURLAsset(url: url)
+            : AVURLAsset(url: url, options: [AVURLAssetOverrideMIMETypeKey: "video/mp4"])
+        let item = AVPlayerItem(asset: asset)
         item.preferredForwardBufferDuration = 2
         if !url.isFileURL { item.preferredPeakBitRate = 4_000_000 }
         let p = AVPlayer(playerItem: item)
