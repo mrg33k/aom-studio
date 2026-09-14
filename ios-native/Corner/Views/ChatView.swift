@@ -312,6 +312,10 @@ struct ChatView: View {
     /// match the export and the hamburger opens the drawer. Swipe-back still
     /// pops to the home tree; the drawer is the forward path.
     @State private var v2ShowingDrawer = false
+    /// 2026-09-13 (feature map: unread divider): the moment this thread was
+    /// last left, read once on open. Agent events after it get one "New"
+    /// line above the first of them. Local, per thread, never on the wire.
+    @State private var v2ReadCutoff: Double? = nil
     /// The per-room agent connections panel (Patrik 2026-09-08).
     @State private var v2ShowingConnections = false
 
@@ -538,6 +542,7 @@ struct ChatView: View {
                 V2RecentStore.shared.record(project: context.project, mission: context.mission)
                 // R28: Talk aloud is per-thread, like every other thread pref.
                 if talkAloud == nil { talkAloud = V2TalkAloud(threadID: context.thread.id) }
+                if v2ReadCutoff == nil { v2ReadCutoff = V2LastSeen.read(threadID: context.thread.id) }
                 // Setup step 6 stages the first goal here — reviewed, never sent.
                 if v2model.draft.isEmpty {
                     if let staged = V2DraftStore.take(threadID: context.thread.id) {
@@ -583,6 +588,7 @@ struct ChatView: View {
             }
         }
         .onDisappear {
+            if let id = v2?.thread.id { V2LastSeen.stamp(threadID: id) }
             v2model.stop()
             window.stop()
             window.onExternalTabs = nil
@@ -709,6 +715,19 @@ struct ChatView: View {
     /// pre-filled "Pick up where we left off on <project>." — staged as a
     /// draft, never sent. A card naming this very thread pre-fills in
     /// place (opening it would be a no-op and strand the stash).
+    /// The first agent event newer than the last-seen stamp gets the "New"
+    /// line. The person's own sends never do; a thread never seen shows none.
+    private func v2OpensUnread(_ event: ThreadEvent) -> Bool {
+        guard let cutoff = v2ReadCutoff, event.author == .agent else { return false }
+        let ms = event.createdAt.timeIntervalSince1970 * 1000
+        guard ms > cutoff else { return false }
+        guard let index = v2model.events.firstIndex(where: { $0.id == event.id }) else { return false }
+        for earlier in v2model.events[..<index] where earlier.author == .agent {
+            if earlier.createdAt.timeIntervalSince1970 * 1000 > cutoff { return false }
+        }
+        return true
+    }
+
     private func v2HomeOpen(_ suggestion: HomeSuggestion) {
         if suggestion.projectID == v2?.project.id {
             v2model.draft = suggestion.prefillText
@@ -810,6 +829,10 @@ struct ChatView: View {
                             .accessibilityIdentifier("v2-earlier-messages")
                         }
                         ForEach(v2model.events) { event in
+                            if v2OpensUnread(event) {
+                                unreadDivider
+                                    .accessibilityIdentifier("v2-unread-divider")
+                            }
                             V2EventRow(
                                 event: event,
                                 threadID: v2?.thread.id ?? "",
@@ -5102,5 +5125,18 @@ struct V2CameraPicker: UIViewControllerRepresentable {
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
             onDone(nil)
         }
+    }
+}
+
+
+/// 2026-09-13: per-thread "last left" stamps for the unread divider.
+enum V2LastSeen {
+    private static func key(_ id: String) -> String { "corner.v2.last-seen.\(id)" }
+    static func stamp(threadID: String) {
+        UserDefaults.standard.set(Date().timeIntervalSince1970 * 1000, forKey: key(threadID))
+    }
+    static func read(threadID: String) -> Double? {
+        let v = UserDefaults.standard.double(forKey: key(threadID))
+        return v > 0 ? v : nil
     }
 }
