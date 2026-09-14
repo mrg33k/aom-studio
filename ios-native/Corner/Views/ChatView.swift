@@ -407,9 +407,7 @@ struct ChatView: View {
                                     onTalkToggle: {
                                         talkAloud?.setEnabled(!(talkAloud?.enabled ?? false))
                                     },
-                                    onReadChecklist: {
-                                        talkAloud?.speakChecklist(texts: v2review.sendablePins.map(\.text))
-                                    },
+                                    onContext: { eye.cycle() },
                                     onActed: { v2ShowingCommands = false }
                                 )
                                 Spacer(minLength: 0)
@@ -1357,7 +1355,6 @@ struct ChatView: View {
             // with the input column. Attach became the + inside the pill and
             // Checklist moved into the command menu, so the chip row under the
             // composer is gone.
-            v2ContextChipRow
             HStack(alignment: .bottom, spacing: V2ComposerMetrics.sendSpacing) {
                 // Patrik 2026-09-13: the magic button is OUT of the box, on
                 // the left, the same size as send.
@@ -3463,31 +3460,6 @@ struct ChatView: View {
         .accessibilitySortPriority(4.5)
     }
 
-    /// Patrik 2026-09-13: Context (the Visual Window eye) sits above the
-    /// text box, aligned with the input column.
-    private var v2ContextChipRow: some View {
-        HStack(spacing: V2ComposerMetrics.sendSpacing) {
-            Color.clear.frame(width: V2ComposerMetrics.sendSize, height: 0)
-            Button { eye.cycle() } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: eye.iconName).font(.system(size: 13, weight: .medium))
-                    Text("Context").font(.hanken(12).weight(.semibold))
-                }
-                .foregroundStyle(eye.mode == .hidden ? Theme.inkSoft : Theme.accent)
-                .padding(.horizontal, 10)
-                .frame(height: 28)
-                .background(eye.mode == .hidden ? Theme.raised2 : Theme.accentWeak,
-                            in: Capsule())
-                .overlay(
-                    Capsule().strokeBorder(eye.mode == .hidden ? Theme.hairline : Theme.accent, lineWidth: 1)
-                )
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("v2-composer-eye")
-            .accessibilityLabel(eye.accessibilityLabel)
-            Spacer(minLength: 0)
-        }
-    }
 
     /// R19: the commands chip INSIDE the v2 pill, left of Record. Its look
     /// follows the design's Record chip (32pt height, 8pt radius, 12px label)
@@ -3548,7 +3520,7 @@ struct ChatView: View {
             specialistTitle: state.specialistTitle,
             specialistCount: state.specialistRoster.count,
             talkEnabled: talkAloud?.enabled ?? false,
-            canReadChecklist: !v2review.sendablePins.isEmpty
+            contextIcon: eye.iconName
         )
     }
 

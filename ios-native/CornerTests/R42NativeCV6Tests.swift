@@ -86,7 +86,7 @@ final class R42NativeCV6Tests: XCTestCase {
         V2CommandsCardData(
             chatMode: "work", modelChoice: "default", modelSub: "Auto (Claude → Codex)",
             hasSpecialist: true, specialistTitle: "Paige", specialistCount: 12,
-            talkEnabled: false, canReadChecklist: false
+            talkEnabled: false, contextIcon: "eye.slash"
         )
     }
 
@@ -97,8 +97,8 @@ final class R42NativeCV6Tests: XCTestCase {
         XCTAssertEqual(groups.count, 4)
         XCTAssertEqual(groups[0], [.work, .plan])
         XCTAssertEqual(groups[1], [.model, .specialist])
-        XCTAssertEqual(groups[2], [.files, .image])
-        XCTAssertEqual(groups[3], [.talk, .readChecklist])
+        XCTAssertEqual(groups[2], [.files, .checklist, .image])
+        XCTAssertEqual(groups[3], [.talk, .context])
     }
 
     /// No roster, no Specialist row — never faked.

@@ -210,11 +210,11 @@ struct V2CommandsCardData: Equatable {
     var specialistTitle: String
     var specialistCount: Int
     var talkEnabled: Bool
-    var canReadChecklist: Bool
+    var contextIcon: String
 }
 
 enum V2CommandsCardRow: Equatable {
-    case work, plan, model, specialist, files, checklist, image, talk, readChecklist
+    case work, plan, model, specialist, files, checklist, image, talk, context
 }
 
 enum V2CommandsCardSections {
@@ -228,7 +228,9 @@ enum V2CommandsCardSections {
         // Patrik 2026-09-13: the room checklist lives in the menu now — the
         // row of chips under the composer is gone.
         out.append([.files, .checklist, .image])
-        out.append([.talk, .readChecklist])
+        // Patrik 2026-09-13: Context (the Visual Window eye) lives here, in
+        // place of 'Read checklist aloud'. No chip above the input.
+        out.append([.talk, .context])
         return out
     }
 
@@ -258,7 +260,7 @@ struct V2CommandsCard: View {
     let onChecklist: () -> Void
     let onImage: () -> Void
     let onTalkToggle: () -> Void
-    let onReadChecklist: () -> Void
+    let onContext: () -> Void
     let onActed: () -> Void
 
     @State private var picking: V2CommandsPick?
@@ -346,11 +348,11 @@ struct V2CommandsCard: View {
             checkRow(title: "Talk aloud", icon: "speaker.wave.2", checked: data.talkEnabled) {
                 onTalkToggle()
             }
-        case .readChecklist:
-            plainRow(title: "Read checklist aloud", icon: "list.bullet") {
-                onReadChecklist(); onActed()
+        case .context:
+            plainRow(title: "Context", icon: data.contextIcon) {
+                onContext(); onActed()
             }
-            .disabled(!data.canReadChecklist)
+            .accessibilityIdentifier("v2-composer-eye")
         }
     }
 
