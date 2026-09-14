@@ -3835,6 +3835,9 @@ struct V2EventRow: View {
     /// The agent line: a specialist label on the event wins; otherwise the
     /// project name (the default agent), then the event label, then Corner.
     private var displayAgentName: String {
+        // Gauntlet R1 (2026-09-14): the bridge stamps the home driver as "Mom";
+        // the one assistant reads "Assistant" on every row, whatever the lane says.
+        if let label = event.agentLabel, label.lowercased() == "mom" { return "Assistant" }
         if let label = event.agentLabel, label != "Corner" { return label }
         return agentName ?? event.agentLabel ?? "Corner"
     }
