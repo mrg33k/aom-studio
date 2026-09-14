@@ -77,12 +77,19 @@ final class V2PermissionsStore: ObservableObject {
 
 /// The step-6 goal, delivered as the new thread's composer draft (consumed
 /// once by ChatView). No surprise sends: the user reviews and taps send.
+extension Notification.Name {
+    static let v2DraftStashed = Notification.Name("corner.v2DraftStashed")
+}
+
 @MainActor
 enum V2DraftStore {
     private static func key(_ threadID: String) -> String { "corner.v2.pending-draft.\(threadID)" }
 
     static func stash(_ text: String, threadID: String) {
         UserDefaults.standard.set(text, forKey: key(threadID))
+        // 2026-09-13: a thread already on screen (the Assistant under the
+        // setup overlay) consumed its slot at load — tell it to look again.
+        NotificationCenter.default.post(name: .v2DraftStashed, object: threadID)
     }
 
     static func take(threadID: String) -> String? {

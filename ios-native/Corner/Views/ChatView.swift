@@ -350,6 +350,15 @@ struct ChatView: View {
             await v2home.load(world: CornerAPI.shared.world ?? "aom",
                               accountName: CornerAPI.shared.userDisplayName)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .v2DraftStashed)) { note in
+            // 2026-09-13: setup's Import step (or any late stash) lands in
+            // the composer of the thread it names, even if that thread is
+            // already on screen. Never overwrites typing in progress.
+            guard let threadID = note.object as? String, threadID == v2?.thread.id,
+                  v2model.draft.isEmpty,
+                  let staged = V2DraftStore.take(threadID: threadID) else { return }
+            v2model.draft = staged
+        }
         .onReceive(NotificationCenter.default.publisher(for: .v2DidReconnect)) { _ in
             // R24 P075: the network came back while foregrounded — flush.
             Task { await v2model.foreground() }
