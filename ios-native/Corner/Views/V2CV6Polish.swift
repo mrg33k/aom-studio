@@ -214,23 +214,23 @@ struct V2CommandsCardData: Equatable {
 }
 
 enum V2CommandsCardRow: Equatable {
-    case work, plan, model, specialist, files, checklist, image, talk, context
+    case work, plan, model, specialist, files, checklist, image, talk, context, connections
 }
 
 enum V2CommandsCardSections {
     /// The card's groups, in order — the desktop menu's rhythm. The caption
     /// under the mode toggle is the web's copy, verbatim.
     static func sections(_ data: V2CommandsCardData) -> [[V2CommandsCardRow]] {
+        // Patrik 2026-09-14: Specialist and Talk aloud are out of the menu.
         var out: [[V2CommandsCardRow]] = [[.work, .plan]]
-        var second: [V2CommandsCardRow] = [.model]
-        if data.hasSpecialist { second.append(.specialist) }
-        out.append(second)
+        out.append([.model])
         // Patrik 2026-09-13: the room checklist lives in the menu now — the
         // row of chips under the composer is gone.
         out.append([.files, .checklist, .image])
         // Patrik 2026-09-13: Context (the Visual Window eye) lives here, in
         // place of 'Read checklist aloud'. No chip above the input.
-        out.append([.talk, .context])
+        // Patrik 2026-09-14: Connections moved here from the nav.
+        out.append([.connections, .context])
         return out
     }
 
@@ -261,6 +261,7 @@ struct V2CommandsCard: View {
     let onImage: () -> Void
     let onTalkToggle: () -> Void
     let onContext: () -> Void
+    let onConnections: () -> Void
     let onActed: () -> Void
 
     @State private var picking: V2CommandsPick?
@@ -348,6 +349,11 @@ struct V2CommandsCard: View {
             checkRow(title: "Talk aloud", icon: "speaker.wave.2", checked: data.talkEnabled) {
                 onTalkToggle()
             }
+        case .connections:
+            plainRow(title: "Connections", icon: "point.3.connected.trianglepath.dotted") {
+                onConnections(); onActed()
+            }
+            .accessibilityIdentifier("v2-connections-room")
         case .context:
             plainRow(title: "Context", icon: data.contextIcon) {
                 onContext(); onActed()

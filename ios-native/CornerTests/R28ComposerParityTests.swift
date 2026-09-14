@@ -89,7 +89,7 @@ final class R28ComposerParityTests: XCTestCase {
         // Specialist appears only with a roster (the v2 analogue of
         // `agentPreferenceKey != nil`).
         XCTAssertFalse(V2SlashPalette.filtered("/spec", hasSpecialist: false).map(\.id).contains(.specialist))
-        XCTAssertTrue(V2SlashPalette.filtered("/spec", hasSpecialist: true).map(\.id).contains(.specialist))
+        XCTAssertFalse(V2SlashPalette.filtered("/spec", hasSpecialist: true).map(\.id).contains(.specialist))  // 2026-09-14: removed
         // No match, no rows — never a phantom command.
         XCTAssertTrue(V2SlashPalette.filtered("/zzz", hasSpecialist: true).isEmpty)
     }

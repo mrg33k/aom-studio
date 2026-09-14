@@ -226,13 +226,9 @@ struct V2DrawerView: View {
             V2ConnectionsSheet()
         }
         .onAppear {
-            // The open thread's project starts expanded; the rest collapsed.
-            if let id = currentThreadID,
-               let found = v2.workspace?.projects.first(where: {
-                   $0.threadID == id || $0.missions.contains(where: { $0.threadID == id })
-               }) {
-                expandedProjectIDs = [found.id]
-            }
+            // Patrik 2026-09-14: every project starts collapsed, including
+            // the open thread's.
+            expandedProjectIDs = []
             // File counts for the Files rows (absent, never zero, on failure).
             Task { await v2.refreshFileCounts() }
         }

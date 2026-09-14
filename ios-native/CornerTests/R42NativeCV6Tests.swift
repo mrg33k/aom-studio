@@ -96,9 +96,9 @@ final class R42NativeCV6Tests: XCTestCase {
         let groups = V2CommandsCardSections.sections(cardData())
         XCTAssertEqual(groups.count, 4)
         XCTAssertEqual(groups[0], [.work, .plan])
-        XCTAssertEqual(groups[1], [.model, .specialist])
+        XCTAssertEqual(groups[1], [.model])
         XCTAssertEqual(groups[2], [.files, .checklist, .image])
-        XCTAssertEqual(groups[3], [.talk, .context])
+        XCTAssertEqual(groups[3], [.connections, .context])
     }
 
     /// No roster, no Specialist row — never faked.

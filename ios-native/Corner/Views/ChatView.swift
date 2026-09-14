@@ -439,6 +439,7 @@ struct ChatView: View {
                                         talkAloud?.setEnabled(!(talkAloud?.enabled ?? false))
                                     },
                                     onContext: { eye.cycle() },
+                                    onConnections: { v2ShowingConnections = true },
                                     onActed: { v2ShowingCommands = false }
                                 )
                                 Spacer(minLength: 0)
@@ -649,7 +650,6 @@ struct ChatView: View {
                 }
                 // Connections (Patrik 2026-09-08): left of the eye on every
                 // room — what this room's agent can reach, and the on/off.
-                V2ConnectionsButton(identifier: "v2-connections-room") { v2ShowingConnections = true }
                 // R43 P094: the eye sits top-right on every chat and cycles
                 // the Visual Window — facetime → full → hidden.
                 Button { eye.cycle() } label: {
@@ -981,6 +981,16 @@ struct ChatView: View {
                 // R66c: to the sentinel, so v2AtBottom settles true at the tail.
                 if v2model.events.last != nil {
                     proxy.scrollTo(V2BottomSentinelID, anchor: .bottom)
+                }
+            }
+            // Patrik 2026-09-14: "the chat never loads scrolled all the way
+            // down". Rows finish laying out after the first snap (images,
+            // wrapped text), so snap again once the layout has settled.
+            for delay in [0.25, 0.7] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    if v2model.events.last != nil, v2DistanceFromBottom > 8 {
+                        proxy.scrollTo(V2BottomSentinelID, anchor: .bottom)
+                    }
                 }
             }
         case .followSmooth:
@@ -1475,7 +1485,9 @@ struct ChatView: View {
                     // +4pt in) — the placeholder budget below counts that
                     // inset as chrome, not text room.
                     TextField(
-                        V2ComposerMetrics.placeholder(project: v2?.project.name ?? "Corner"),
+                        // Patrik 2026-09-14: the model lives in the placeholder
+                        // ("Assistant: Claude Sonnet"), not in a caption below.
+                        "\(v2?.project.name ?? "Corner"): \(v2model.modelDisplayName)",
                         text: $v2model.draft, axis: .vertical
                     )
                         // P106's design value (14.5px input), not 15: the
@@ -1575,16 +1587,6 @@ struct ChatView: View {
             // Item 9b caption: the live model name under the pill, aligned
             // with the input text column (same HStack geometry as the pill
             // above, circle column as spacer) so nothing clips or overlaps.
-            HStack(spacing: V2ComposerMetrics.sendSpacing) {
-                Color.clear.frame(width: V2ComposerMetrics.sendSize, height: 0)
-                Text(v2model.modelCaption)
-                    .font(.hanken(12).weight(.semibold))
-                    .foregroundStyle(Theme.inkSoft)
-                    .lineLimit(1)
-                    .padding(.leading, V2ComposerMetrics.pillLeading)
-                    .accessibilityIdentifier("v2-model-caption")
-                Spacer(minLength: 0)
-            }
         }
         // R60 P093 (Patrik phone review 2026-09-08): the project-tinted glow
         // is a soft CENTRED bloom behind the pill — full width, centred, so it

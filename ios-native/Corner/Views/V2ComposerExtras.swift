@@ -33,16 +33,13 @@ enum V2SlashPalette {
             V2SlashCommand(id: .model, title: "Model", detail: "Pick the model for this thread"),
             V2SlashCommand(id: .files, title: "Files", detail: "Open this conversation's files"),
             V2SlashCommand(id: .image, title: "Generate an image", detail: "Describe it in the field first"),
-            V2SlashCommand(id: .talk, title: "Talk aloud", detail: "Hear the driver's replies"),
             V2SlashCommand(id: .integrations, title: "Integrations", detail: "Connections in Settings"),
             V2SlashCommand(id: .clear, title: "Clear chat", detail: "Confirm before anything clears"),
         ]
-        if hasSpecialist {
-            rows.insert(
-                V2SlashCommand(id: .specialist, title: "Specialist", detail: "Route this thread's replies"),
-                at: 3
-            )
-        }
+        // Patrik 2026-09-14: Talk aloud and Specialist are out of the palette
+        // (same as the command card). `hasSpecialist` stays in the signature
+        // for callers; it no longer adds a row.
+        _ = hasSpecialist
         return rows
     }
 

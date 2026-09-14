@@ -2094,6 +2094,12 @@ final class V2ChatModel: ObservableObject {
 
     var resolvedModel: String { modelChoice == "default" ? "muse-spark" : modelChoice }
 
+    /// 2026-09-14: the composer placeholder's model half ("Claude Sonnet").
+    var modelDisplayName: String {
+        if modelChoice == "default" { return "Muse" }
+        return ChatView.modelOptions.first(where: { $0.id == modelChoice })?.label ?? modelChoice
+    }
+
     var modelCaption: String {
         if modelChoice == "default" { return "Muse · Default" }
         let name = ChatView.modelOptions.first(where: { $0.id == modelChoice })?.label ?? modelChoice
