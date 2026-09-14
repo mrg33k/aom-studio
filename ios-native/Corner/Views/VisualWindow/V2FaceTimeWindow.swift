@@ -23,7 +23,9 @@ enum V2FaceTimeMetrics {
     /// R60 (Patrik phone review 2026-09-08): flush under the nav — remove the
     /// gap above the box. The 52pt nav bar sits directly on the safe-area top;
     /// the box top lands right under it (a 2pt hairline of breathing room).
-    static let topBelowNav: CGFloat = 54
+    /// 2026-09-13: the nav grew to 84pt (avatar bubble over the title), so the
+    /// box seat moves with it: 84 + 2 (Patrik 2026-09-14: "almost flush").
+    static let topBelowNav: CGFloat = 86
     static let cornerRadius: CGFloat = 12
     /// R60: the content renders smaller (laid out wider, then scaled down) so
     /// a document reads legibly instead of one huge wrapped word per line.
