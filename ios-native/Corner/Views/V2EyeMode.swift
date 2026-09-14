@@ -135,7 +135,10 @@ struct V2EyeOverlay: ViewModifier {
     }
 
     private func sync() {
-        if eye.mode == .full, window.selectedTab != nil {
+        // 2026-09-13 (Patrik: the eye "does nothing"): full presents the
+        // window even with no tab open — an empty stage that says so beats
+        // a button that toggles state and draws nothing.
+        if eye.mode == .full {
             if !window.isPresented { window.isPresented = true }
         } else if window.isPresented {
             window.isPresented = false

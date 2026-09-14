@@ -397,7 +397,18 @@ struct ChatView: View {
                                     // selected tab presents nothing, so the
                                     // row was dead. Same RoomFilesView sheet
                                     // as the legacy path below.
-                                    onFiles: { v2ShowingFiles = true },
+                                    // 2026-09-13: on v2 threads the files ARE the
+                                    // Visual Window's artifacts — open the window on
+                                    // its Context list, not the legacy message-API
+                                    // sheet (which was always empty here).
+                                    onFiles: {
+                                        if v2 != nil {
+                                            window.openOnContext = true
+                                            eye.set(.full)
+                                        } else {
+                                            v2ShowingFiles = true
+                                        }
+                                    },
                                     onChecklist: {
                                         withAnimation(.spring(response: 0.24, dampingFraction: 0.8)) {
                                             checklistOpen.toggle()

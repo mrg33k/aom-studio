@@ -27,7 +27,7 @@ struct VisualWindowHost<Main: View>: View {
             if proxy.size.width >= 768 {
                 HStack(spacing: 0) {
                     main().frame(maxWidth: .infinity)
-                    if window.isPresented && window.selectedTab != nil {
+                    if window.isPresented {
                         // R62 (Patrik iPad review 2026-09-09): the viewer opens
                         // roughly double its old size — cap 880 (was 440), 0.6
                         // of the width (was 0.45); the chat keeps ~40%.
@@ -38,9 +38,7 @@ struct VisualWindowHost<Main: View>: View {
             } else {
                 main()
                     .sheet(isPresented: $window.isPresented) {
-                        if window.selectedTab != nil {
-                            VisualWindowSheet(statusText: statusText, projectName: projectName, onCarryOn: onCarryOn)
-                        }
+                        VisualWindowSheet(statusText: statusText, projectName: projectName, onCarryOn: onCarryOn)
                     }
             }
         }
@@ -310,6 +308,34 @@ struct VisualWindowSheet: View {
                                     .padding(.top, Theme.s3)
                             }
                         }
+                    } else {
+                        // 2026-09-13: nothing open yet is a state, not a blank.
+                        VStack(spacing: 10) {
+                            Image(systemName: "rectangle.on.rectangle.slash")
+                                .font(.system(size: 28, weight: .light))
+                                .foregroundStyle(Theme.inkFaint)
+                            Text("Nothing on the stage yet.")
+                                .font(.hanken(15).weight(.semibold))
+                                .foregroundStyle(Theme.ink)
+                            Text("Ask \(projectName.isEmpty ? "the Assistant" : projectName) to pull something up, or pick a file under Context.")
+                                .font(.hanken(13))
+                                .foregroundStyle(Theme.inkSoft)
+                                .multilineTextAlignment(.center)
+                            Button { sheetView = .context } label: {
+                                Text("Open Context")
+                                    .font(.hanken(13).weight(.semibold))
+                                    .foregroundStyle(Color.white)
+                                    .padding(.horizontal, 16)
+                                    .frame(height: 34)
+                                    .background(Theme.accent, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("visual-empty-open-context")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 220)
+                        .padding(.horizontal, 32)
+                        .accessibilityIdentifier("visual-stage-empty")
                     }
                 } else {
                     VisualWindowContextView(projectName: projectName, onOpenFile: openArtifact)
@@ -341,6 +367,12 @@ struct VisualWindowSheet: View {
             // A reopened sheet resets to half, but review may already be on
             // (pins parked on another tab): still needs the room.
             if review.reviewing { detent = .v2Full }
+            // 2026-09-13: "Files in this conversation" asked for the Context list.
+            if window.openOnContext {
+                window.openOnContext = false
+                sheetView = .context
+                detent = .v2Full
+            }
         }
     }
 }

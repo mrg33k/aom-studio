@@ -90,6 +90,10 @@ struct V2FaceTimeWindow: View {
                 } else {
                     faceTimeBox(tab: tab, in: geo)
                 }
+            } else if eye.mode == .facetime {
+                // 2026-09-13: no tab yet — a small "nothing open" box so the
+                // eye visibly did something; a tap opens the full window.
+                emptyBox(in: geo)
             }
         }
     }
@@ -130,6 +134,34 @@ struct V2FaceTimeWindow: View {
             x: geo.size.width / 2,
             y: V2FaceTimeMetrics.defaultTop(safeAreaTop: geo.safeAreaInsets.top) + (titleH + bandH) / 2
         )
+        .onTapGesture { eye.set(.full) }
+    }
+
+    private func emptyBox(in geo: GeometryProxy) -> some View {
+        let seat = defaultOrigin(in: geo)
+        return VStack(spacing: 6) {
+            Image(systemName: "rectangle.on.rectangle.slash")
+                .font(.system(size: 18, weight: .light))
+                .foregroundStyle(Theme.inkFaint)
+            Text("Nothing open yet")
+                .font(.hanken(11).weight(.semibold))
+                .foregroundStyle(Theme.inkSoft)
+            Text("Tap to open")
+                .font(.hanken(10))
+                .foregroundStyle(Theme.inkFaint)
+        }
+        .frame(width: V2FaceTimeMetrics.width, height: V2FaceTimeMetrics.height)
+        .background(Theme.raised)
+        .clipShape(RoundedRectangle(cornerRadius: V2FaceTimeMetrics.cornerRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: V2FaceTimeMetrics.cornerRadius, style: .continuous)
+                .strokeBorder(Theme.hairline, lineWidth: 1)
+        }
+        .shadow(color: Color.black.opacity(0.35), radius: 8, y: 2)
+        .accessibilityIdentifier("v2-facetime-empty")
+        .accessibilityLabel("Visual window: nothing open yet")
+        .position(x: seat.x + offset.width, y: seat.y + offset.height)
+        .gesture(drag(in: geo, seat: seat))
         .onTapGesture { eye.set(.full) }
     }
 

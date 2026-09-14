@@ -24,6 +24,10 @@ final class VisualWindowStore: ObservableObject {
     @Published private(set) var tabs: [VisualWindowTab] = []
     @Published var selectedTabID: String?
     @Published var isPresented = false
+    /// 2026-09-13: a caller can ask the sheet to open on Context (the files
+    /// list) instead of Preview — the command menu's "Files in this
+    /// conversation" on v2 threads. Consumed once by the sheet.
+    @Published var openOnContext = false
     /// The thread's artifacts, for file cards and sourceURL resolution.
     @Published private(set) var artifacts: [Artifact] = []
 
