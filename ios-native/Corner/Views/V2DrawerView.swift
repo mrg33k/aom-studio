@@ -667,7 +667,57 @@ struct V2DrawerView: View {
 
     // MARK: footer
 
+    /// 2026-09-13 (feature map: Tracker and Email "exist; untested"): the v2
+    /// drawer had no way to reach them at all. Two quiet rows above the
+    /// account line; Email only for the operations owner (the server gates
+    /// it too).
+    private var toolsRows: some View {
+        HStack(spacing: 8) {
+            toolChip("Tracker", systemImage: "rectangle.3.group", id: "v2-drawer-tracker") {
+                isPresented = false
+                router.open(.tracker)
+            }
+            if api.isEmailOwner {
+                toolChip("Email", systemImage: "envelope", id: "v2-drawer-email") {
+                    isPresented = false
+                    router.open(.email)
+                }
+            }
+            toolChip("Review", systemImage: "checkmark.seal", id: "v2-drawer-review") {
+                isPresented = false
+                router.open(.review)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 6)
+    }
+
+    private func toolChip(_ title: String, systemImage: String, id: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage).font(.system(size: 13, weight: .medium))
+                Text(title).font(.hanken(12.5).weight(.semibold))
+            }
+            .foregroundStyle(Theme.inkSoft)
+            .padding(.horizontal, 12)
+            .frame(height: 32)
+            .background(Theme.raised2, in: Capsule())
+            .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(id)
+        .accessibilityLabel(title)
+    }
+
     private var footer: some View {
+        VStack(spacing: 0) {
+            toolsRows
+            footerAccountRow
+        }
+    }
+
+    private var footerAccountRow: some View {
         HStack(spacing: 0) {
             Text(api.userDisplayName?.prefix(1).uppercased() ?? "C")
                 .font(.hanken(12).weight(.bold))
