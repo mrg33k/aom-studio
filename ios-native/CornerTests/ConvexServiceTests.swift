@@ -126,4 +126,77 @@ final class ConvexServiceTests: XCTestCase {
         let workspace = try await service.request(.workspaceTree, as: TransportProbe.self)
         XCTAssertEqual(workspace.id, "w1")
     }
+
+    // MARK: - R69 (2026-09-15): preserveClientIdentity escape hatch
+    //
+    // Some legacy-path Convex functions (arcade:listIntegrationsByStringId,
+    // arcade:upsertIntegration, arcade:removeIntegration) take `userId` as a
+    // genuine data argument — which mailbox to read/write — not an
+    // auth-identity assertion. The default sanitizer must still strip a bare
+    // `userId`; `preserveClientIdentity: true` is the explicit opt-out.
+
+    func testQueryPreservesClientUserIdWhenRequested() async throws {
+        let transport = FakeConvexTransport.success(value: [] as [String])
+        let service = ConvexService(session: .valid, transport: transport)
+        let _: [String] = try await service.query(
+            "arcade:listIntegrationsByStringId", args: ["userId": "user-1"],
+            preserveClientIdentity: true
+        )
+        XCTAssertEqual(transport.lastArgs?["userId"] as? String, "user-1")
+    }
+
+    func testMutationPreservesClientUserIdWhenRequested() async throws {
+        // A bare scalar (Bool/String) trips FakeConvexTransport's fragment
+        // encoding — [String] mirrors the other envelope fixtures in this file.
+        let transport = FakeConvexTransport.success(value: [] as [String])
+        let service = ConvexService(session: .valid, transport: transport)
+        try await service.mutation(
+            "arcade:removeIntegration", args: ["userId": "user-1", "service": "gmail:work"],
+            preserveClientIdentity: true
+        )
+        XCTAssertEqual(transport.lastArgs?["userId"] as? String, "user-1")
+        XCTAssertEqual(transport.lastArgs?["service"] as? String, "gmail:work")
+    }
+
+    func testMutationWithResultPreservesClientUserIdWhenRequested() async throws {
+        let transport = FakeConvexTransport.success(value: ["row-1"] as [String])
+        let service = ConvexService(session: .valid, transport: transport)
+        let ids: [String] = try await service.mutationWithResult(
+            "arcade:upsertIntegration", args: ["userId": "user-1", "service": "gmail"],
+            preserveClientIdentity: true
+        )
+        XCTAssertEqual(ids, ["row-1"])
+        XCTAssertEqual(transport.lastArgs?["userId"] as? String, "user-1")
+    }
+
+    // MARK: - R69: V2ArcadeConnectStore pure helpers
+
+    @MainActor
+    func testIsConnectedStatusAcceptsConnectedAndActiveOnly() {
+        XCTAssertTrue(V2ArcadeConnectStore.isConnectedStatus("connected"))
+        XCTAssertTrue(V2ArcadeConnectStore.isConnectedStatus("active"))
+        XCTAssertFalse(V2ArcadeConnectStore.isConnectedStatus("failed"))
+        XCTAssertFalse(V2ArcadeConnectStore.isConnectedStatus("pending"))
+        XCTAssertFalse(V2ArcadeConnectStore.isConnectedStatus(nil))
+    }
+
+    @MainActor
+    func testMailboxLabelPrefersEmailOverSlug() {
+        XCTAssertEqual(
+            V2ArcadeConnectStore.mailboxLabel(service: "gmail:work", email: "hello@aom.com"),
+            "hello@aom.com"
+        )
+    }
+
+    @MainActor
+    func testMailboxLabelFallsBackToReadableSlug() {
+        XCTAssertEqual(
+            V2ArcadeConnectStore.mailboxLabel(service: "gmail:side-hustle", email: nil),
+            "Side Hustle"
+        )
+        XCTAssertEqual(
+            V2ArcadeConnectStore.mailboxLabel(service: "gmail:side-hustle", email: "   "),
+            "Side Hustle"
+        )
+    }
 }

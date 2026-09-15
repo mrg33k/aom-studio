@@ -250,7 +250,12 @@ final class ConvexService {
 
     // MARK: - Query
 
-    func query<T: Decodable>(_ functionName: String, args: [String: Any] = [:]) async throws -> T {
+    /// `preserveClientIdentity`: keep a client `userId` in the args (default
+    /// strips it — see `actionWithResult`). Needed by queries like
+    /// `arcade:listIntegrationsByStringId` whose `userId` is a genuine data
+    /// parameter (which mailbox to list), not an auth-identity assertion.
+    func query<T: Decodable>(_ functionName: String, args: [String: Any] = [:],
+                              preserveClientIdentity: Bool = false) async throws -> T {
         var request = URLRequest(url: baseURL.appendingPathComponent("api/query"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -258,7 +263,8 @@ final class ConvexService {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         request.timeoutInterval = 30
-        let body: [String: Any] = ["path": functionName, "args": Self.sanitizedArgs(args), "format": "json"]
+        let sentArgs = preserveClientIdentity ? args : Self.sanitizedArgs(args)
+        let body: [String: Any] = ["path": functionName, "args": sentArgs, "format": "json"]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await transport.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
@@ -270,7 +276,9 @@ final class ConvexService {
 
     // MARK: - Mutation
 
-    func mutation(_ functionName: String, args: [String: Any] = [:]) async throws {
+    /// `preserveClientIdentity`: see `query(_:args:preserveClientIdentity:)`.
+    func mutation(_ functionName: String, args: [String: Any] = [:],
+                  preserveClientIdentity: Bool = false) async throws {
         var request = URLRequest(url: baseURL.appendingPathComponent("api/mutation"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -278,7 +286,8 @@ final class ConvexService {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         request.timeoutInterval = 30
-        let body: [String: Any] = ["path": functionName, "args": Self.sanitizedArgs(args), "format": "json"]
+        let sentArgs = preserveClientIdentity ? args : Self.sanitizedArgs(args)
+        let body: [String: Any] = ["path": functionName, "args": sentArgs, "format": "json"]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await transport.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
@@ -289,7 +298,9 @@ final class ConvexService {
 
     // MARK: - Mutation with return value
 
-    func mutationWithResult<T: Decodable>(_ functionName: String, args: [String: Any] = [:]) async throws -> T {
+    /// `preserveClientIdentity`: see `query(_:args:preserveClientIdentity:)`.
+    func mutationWithResult<T: Decodable>(_ functionName: String, args: [String: Any] = [:],
+                                          preserveClientIdentity: Bool = false) async throws -> T {
         var request = URLRequest(url: baseURL.appendingPathComponent("api/mutation"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -297,7 +308,8 @@ final class ConvexService {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         request.timeoutInterval = 30
-        let body: [String: Any] = ["path": functionName, "args": Self.sanitizedArgs(args), "format": "json"]
+        let sentArgs = preserveClientIdentity ? args : Self.sanitizedArgs(args)
+        let body: [String: Any] = ["path": functionName, "args": sentArgs, "format": "json"]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, response) = try await transport.data(for: request)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {

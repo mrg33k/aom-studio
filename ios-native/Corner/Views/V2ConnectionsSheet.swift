@@ -172,9 +172,84 @@ final class V2ArcadeConnectStore: ObservableObject {
     /// integrations service key ("gmail:work") they live under.
     @Published private(set) var extraMailboxes: [(service: String, label: String)] = []
 
+    /// Services with a Remove in flight right now, so the row can disable its
+    /// button instead of racing a second tap.
+    @Published private(set) var removing: Set<String> = []
+
     /// The signed-in person's email: the default Arcade user id.
     static var viewerEmail: String {
         CornerAPI.shared.userEmail ?? ConvexAuth.shared.load()?.user.email ?? ""
+    }
+
+    /// One row from `arcade:listIntegrationsByStringId` — only the fields the
+    /// sheet reads.
+    private struct IntegrationRow: Decodable {
+        let service: String
+        let status: String?
+        let email: String?
+    }
+
+    /// R69 (2026-09-15, "Connections must be truthful"): pure — same status
+    /// string always answers the same way, no store/network involved, so it's
+    /// tested on its own.
+    static func isConnectedStatus(_ status: String?) -> Bool {
+        status == "connected" || status == "active"
+    }
+
+    /// R69: pure — the label a "gmail:<slug>" row shows when it has no saved
+    /// email. Tested on its own for the same reason as `isConnectedStatus`.
+    static func mailboxLabel(service: String, email: String?) -> String {
+        if let email, !email.trimmingCharacters(in: .whitespaces).isEmpty { return email }
+        let slug = service.split(separator: ":", maxSplits: 1).last.map(String.init) ?? service
+        let words = slug.replacingOccurrences(of: "-", with: " ").replacingOccurrences(of: "_", with: " ")
+        return words.isEmpty ? service : words.capitalized
+    }
+
+    /// R69: the sheet's on-appear truth read. Reads every integrations row for
+    /// the signed-in user and folds it into local state — so "Gmail" reads
+    /// Connected, and an added mailbox survives a relaunch, because both now
+    /// come from what Convex actually has instead of only this session's
+    /// memory. Never downgrades a state this session already knows is better
+    /// (an in-flight connect, a fresh failure) — it only upgrades to connected.
+    func loadIntegrations() async {
+        guard let userId = ConvexAuth.shared.load()?.user.id, !userId.isEmpty else { return }
+        do {
+            let rows: [IntegrationRow] = try await ConvexService.shared.query(
+                "arcade:listIntegrationsByStringId", args: ["userId": userId],
+                preserveClientIdentity: true)
+            var mailboxes: [(service: String, label: String)] = []
+            for row in rows where Self.isConnectedStatus(row.status) {
+                if row.service.hasPrefix("gmail:") {
+                    let label = Self.mailboxLabel(service: row.service, email: row.email)
+                    if !mailboxes.contains(where: { $0.service == row.service }) {
+                        mailboxes.append((service: row.service, label: label))
+                    }
+                } else {
+                    byService[row.service] = .connected
+                }
+            }
+            extraMailboxes = mailboxes
+        } catch {
+            NSLog("[arcade] listIntegrationsByStringId failed: %@", String(describing: error))
+        }
+    }
+
+    /// Drops one added mailbox: calls `arcade:removeIntegration`, then updates
+    /// the list only once the server confirms it (never optimistic — a failed
+    /// remove must still show the mailbox, or "Remove" would lie too).
+    func removeMailbox(service: String) async {
+        guard let userId = ConvexAuth.shared.load()?.user.id, !userId.isEmpty else { return }
+        guard !removing.contains(service) else { return }
+        removing.insert(service)
+        defer { removing.remove(service) }
+        do {
+            try await ConvexService.shared.mutation(
+                "arcade:removeIntegration", args: ["userId": userId, "service": service],
+                preserveClientIdentity: true)
+            extraMailboxes.removeAll { $0.service == service }
+        } catch {
+            NSLog("[arcade] removeIntegration(%@) failed: %@", service, String(describing: error))
+        }
     }
 
     /// 2026-09-14 (Patrik: "users need to add multiple gmails, in app"): a
@@ -197,11 +272,16 @@ final class V2ArcadeConnectStore: ObservableObject {
         guard let userId = ConvexAuth.shared.load()?.user.id, !userId.isEmpty else { return }
         Task { @MainActor in
             do {
-                _ = try await ConvexService.shared.mutation(
+                // R69: needs preserveClientIdentity — `userId` here is who to
+                // save the row under, not an auth assertion, and the default
+                // sanitizer used to strip it, so this write silently never
+                // reached Convex (root cause of mailboxes vanishing on relaunch).
+                try await ConvexService.shared.mutation(
                     "arcade:upsertIntegration",
                     args: ["userId": userId, "service": service, "arcadeAuthId": "app",
                            "status": "connected", "email": label ?? Self.viewerEmail,
-                           "connectionId": arcadeUserId] as [String: Any])
+                           "connectionId": arcadeUserId] as [String: Any],
+                    preserveClientIdentity: true)
                 if service.hasPrefix("gmail:"), let label, !extraMailboxes.contains(where: { $0.service == service }) {
                     extraMailboxes.append((service: service, label: label))
                 }
@@ -346,6 +426,20 @@ struct V2ConnectionsSheet: View {
                                             }
                                         }
                                         Spacer(minLength: 8)
+                                        if connect.removing.contains(box.service) {
+                                            ProgressView().controlSize(.small)
+                                        } else {
+                                            Button {
+                                                Task { await connect.removeMailbox(service: box.service) }
+                                            } label: {
+                                                Text("Remove")
+                                                    .font(.hanken(12.5).weight(.semibold))
+                                                    .foregroundStyle(Theme.inkFaint)
+                                            }
+                                            .buttonStyle(.plain)
+                                            .accessibilityIdentifier("v2-remove-mailbox-\(box.service)")
+                                            .accessibilityLabel("Remove \(box.label)")
+                                        }
                                     }
                                     .padding(.horizontal, 12)
                                     .frame(minHeight: 56)
@@ -385,6 +479,7 @@ struct V2ConnectionsSheet: View {
         .background(Theme.ground.ignoresSafeArea())
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .task { await connect.loadIntegrations() }
         .alert("Add a Gmail account", isPresented: $showingAddMailbox) {
             TextField("Name it (Work, Personal, hello@)", text: $addMailboxLabel)
             Button("Cancel", role: .cancel) { }
