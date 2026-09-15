@@ -1828,6 +1828,7 @@ struct ChatView: View {
             }
             v2model.clearStaged()
             v2ReplyQuote = nil
+            window.clearAll()
             if let threadID = v2?.thread.id {
                 V2ComposerDrafts.clear(threadID: threadID)
             }

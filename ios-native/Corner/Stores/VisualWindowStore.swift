@@ -230,6 +230,17 @@ final class VisualWindowStore: ObservableObject {
         }
     }
 
+    /// Clear-chat twin of the server's `closeAllTabsCore`: the backend has
+    /// already closed every tab, so the local mirror drops at once instead
+    /// of waiting for the next poll. Artifacts (the thread's files) stay.
+    func clearAll() {
+        tabs = []
+        localState = [:]
+        selectedTabID = nil
+        Self.clearSelection(sessionID: visualSessionID)
+        isPresented = false
+    }
+
     /// Renderer state write-back. Local only: v2Native has no update-state
     /// mutation, so this caches per tab id (survives `load`) and is sent on
     /// the next `open` of the same target.
