@@ -121,10 +121,16 @@ struct V2DrawerView: View {
 
     /// Projects matching the search (by project or mission title), or all of
     /// them when the field is empty.
+    private var generalProjectID: String? {
+        v2.workspace?.projects.first(where: { $0.kind == .general })?.id
+    }
+
     private var visibleProjects: [ProjectSummary] {
         guard let workspace = v2.workspace else { return [] }
-        guard isSearching else { return workspace.projects }
-        return workspace.projects.filter { project in
+        // Patrik 2026-09-15: the Assistant has its own box up top.
+        let projects = workspace.projects.filter { $0.kind != .general }
+        guard isSearching else { return projects }
+        return projects.filter { project in
             project.name.localizedCaseInsensitiveContains(searchText)
                 || project.missions.contains {
                     $0.title.localizedCaseInsensitiveContains(searchText)
@@ -167,9 +173,10 @@ struct V2DrawerView: View {
                         VStack(alignment: .leading, spacing: 0) {
                             newRow
                             searchRow
+                            if !isSearching { assistantRow }
                             if !recents.recents.isEmpty, !isSearching {
                                 drawerLabel("Recent")
-                                ForEach(Array(recents.recents.enumerated()), id: \.offset) { _, recent in
+                                ForEach(Array(recents.recents.filter { $0.id != generalProjectID }.enumerated()), id: \.offset) { _, recent in
                                     recentRow(recent)
                                 }
                             }
@@ -413,6 +420,48 @@ struct V2DrawerView: View {
         return workspace.projects.first(where: { $0.id == recent.id })?.threadID
     }
 
+    /// Patrik 2026-09-15: the Assistant (home chat) lives in its own painted
+    /// box with the live agent, above Recent — it is not one project among
+    /// many. Opens the General thread (the clean home).
+    @ViewBuilder
+    private var assistantRow: some View {
+        if let general = v2.workspace?.projects.first(where: { $0.kind == .general }) {
+            Button {
+                isPresented = false
+                router.open(.project(projectID: general.id))
+            } label: {
+                HStack(spacing: 12) {
+                    LiveAgentAvatarView(size: 34)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Assistant")
+                            .font(.hanken(15).weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                        Text("Talk here. It moves the thread to the right room.")
+                            .font(.hanken(11.5))
+                            .foregroundStyle(Theme.inkSoft)
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Theme.inkFaint)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .background(Theme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Theme.accent.opacity(0.35), lineWidth: 1)
+                )
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.vertical, 6)
+            .accessibilityIdentifier("v2-drawer-assistant")
+            .accessibilityLabel("Assistant")
+        }
+    }
+
     private func recentRow(_ recent: V2RecentThread) -> some View {
         Button {
             isPresented = false
@@ -628,6 +677,8 @@ struct V2DrawerView: View {
         if let count = v2.fileCounts[project.threadID], count > 0 {
             Button {
                 isPresented = false
+                // Patrik 2026-09-15: this project's folder, not the picker.
+                OrganizeStore.pendingOpenSlug = V2SearchFileHit.slug(project.name)
                 router.open(.organize)
             } label: {
                 HStack(spacing: 10) {

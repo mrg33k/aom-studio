@@ -57,6 +57,13 @@ struct OrganizeView: View {
         }
         .task {
             if !store.hasLoadedPicker { await store.loadProjects() }
+            if let slug = OrganizeStore.pendingOpenSlug {
+                OrganizeStore.pendingOpenSlug = nil
+                if let project = store.projects.first(where: { $0.id == slug }) {
+                    store.open(project)
+                    await store.loadOpenFolder()
+                }
+            }
             review.startPolling()
         }
     }

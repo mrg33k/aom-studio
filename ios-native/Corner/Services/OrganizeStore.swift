@@ -102,6 +102,10 @@ final class OrganizeStore: ObservableObject {
         }
     }
 
+    /// Patrik 2026-09-15: a drawer Files row names the project to land in;
+    /// consumed once after the picker loads.
+    static var pendingOpenSlug: String?
+
     func loadProjects() async {
         if projects.isEmpty { pickerState = .loading }
         do {
