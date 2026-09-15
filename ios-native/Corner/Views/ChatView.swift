@@ -128,6 +128,12 @@ struct ChatView: View {
     /// A hardware Shift+Return just inserted a newline: the soft-Return
     /// submit detector stands down for that one change.
     @State private var v2AllowNewlineOnce = false
+    /// 2026-09-15: a restored stash (setup goal, import, next-step card)
+    /// lands in `v2model.draft` programmatically — the onChange it fires
+    /// stands down for that one change so restoring never re-promotes a
+    /// one-shot stash into the permanent per-thread disk draft. Only a
+    /// keystroke after that saves it, same as ordinary typing.
+    @State private var v2SuppressDraftPersistOnce = false
     /// The server clear failed: the tray names it plainly with a retry.
     @State private var v2ClearFailed = false
     /// `/` hints inline and submits to the commands sheet (same rows).
@@ -369,6 +375,7 @@ struct ChatView: View {
             guard let threadID = note.object as? String, threadID == v2?.thread.id,
                   v2model.draft.isEmpty,
                   let staged = V2DraftStore.take(threadID: threadID) else { return }
+            v2SuppressDraftPersistOnce = true
             v2model.draft = staged
         }
         .onReceive(NotificationCenter.default.publisher(for: .v2DidReconnect)) { _ in
@@ -555,6 +562,7 @@ struct ChatView: View {
                 // Setup step 6 stages the first goal here — reviewed, never sent.
                 if v2model.draft.isEmpty {
                     if let staged = V2DraftStore.take(threadID: context.thread.id) {
+                        v2SuppressDraftPersistOnce = true
                         v2model.draft = staged
                     } else if let saved = V2ComposerDrafts.load(threadID: context.thread.id) {
                         // R28: the disk draft — survives relaunch, per thread.
@@ -741,7 +749,7 @@ struct ChatView: View {
             v2model.draft = suggestion.prefillText
             return
         }
-        V2DraftStore.stash(suggestion.prefillText, threadID: suggestion.projectThreadID)
+        V2DraftStore.stash(suggestion.prefillText, threadID: suggestion.projectThreadID, origin: .cardPrefill)
         router.open(.project(projectID: suggestion.projectID))
     }
 
@@ -1762,6 +1770,14 @@ struct ChatView: View {
     /// the slash flow through v2Submit. Multiline entry arrives via paste
     /// or hardware Shift+Return (see the field's onKeyPress).
     private func v2DraftChanged(old: String, new: String) {
+        // 2026-09-15: a restored stash set `draft` programmatically — this
+        // is that one change firing. Skip the disk save so a one-shot
+        // prefill never becomes a permanent per-thread draft on its own;
+        // it only earns disk persistence once the person actually types.
+        if v2SuppressDraftPersistOnce {
+            v2SuppressDraftPersistOnce = false
+            return
+        }
         // R32: a hardware Shift+Return newline stands down the submitter
         // for exactly one change (the flag is set around the insertion).
         if v2AllowNewlineOnce {

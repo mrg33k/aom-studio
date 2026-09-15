@@ -81,22 +81,92 @@ extension Notification.Name {
     static let v2DraftStashed = Notification.Name("corner.v2DraftStashed")
 }
 
+/// 2026-09-15: a stashed draft used to sit in UserDefaults forever, so a
+/// prefill written days ago (setup, an import, a next-step card) could still
+/// land in the composer at the next open. Two rules now bound it: a stash
+/// older than `ttl` never comes back (dropped the moment anything looks at
+/// it, and swept at launch too — see `dropExpired`), and a next-step card's
+/// prefill specifically is dropped when its thread opens from the drawer
+/// instead of from the card that wrote it.
 @MainActor
 enum V2DraftStore {
-    private static func key(_ threadID: String) -> String { "corner.v2.pending-draft.\(threadID)" }
+    /// Where a stash came from. Only `cardPrefill` is special-cased by the
+    /// drawer; everything else just lives or dies by the timestamp.
+    enum Origin: String, Codable {
+        case cardPrefill
+        case other
+    }
 
-    static func stash(_ text: String, threadID: String) {
-        UserDefaults.standard.set(text, forKey: key(threadID))
+    private struct Entry: Codable {
+        var text: String
+        var stashedAt: Date
+        var origin: Origin
+    }
+
+    /// A restored draft two hours old no longer matches "what I was doing
+    /// when this got written" — pure and unit-tested (see isExpired).
+    static let ttl: TimeInterval = 2 * 60 * 60
+    private static let keyPrefix = "corner.v2.pending-draft."
+
+    private static func key(_ threadID: String) -> String { keyPrefix + threadID }
+
+    /// Pure: whether a stash written at `stashedAt` is still good at `now`.
+    static func isExpired(stashedAt: Date, now: Date, ttl: TimeInterval = V2DraftStore.ttl) -> Bool {
+        now.timeIntervalSince(stashedAt) > ttl
+    }
+
+    static func stash(_ text: String, threadID: String, origin: Origin = .other, now: Date = Date()) {
+        let entry = Entry(text: text, stashedAt: now, origin: origin)
+        guard let data = try? JSONEncoder().encode(entry) else { return }
+        UserDefaults.standard.set(data, forKey: key(threadID))
         // 2026-09-13: a thread already on screen (the Assistant under the
         // setup overlay) consumed its slot at load — tell it to look again.
         NotificationCenter.default.post(name: .v2DraftStashed, object: threadID)
     }
 
-    static func take(threadID: String) -> String? {
+    /// One-shot: whatever this returns is cleared right along with it,
+    /// restored or not. Anything older than `ttl` — or written before the
+    /// timestamp existed, back when the key held a bare string — never
+    /// comes back; it is dropped here instead of shown and re-saved.
+    static func take(threadID: String, now: Date = Date()) -> String? {
         let k = key(threadID)
-        let text = UserDefaults.standard.string(forKey: k)
+        defer { UserDefaults.standard.removeObject(forKey: k) }
+        guard let data = UserDefaults.standard.data(forKey: k),
+              let entry = try? JSONDecoder().decode(Entry.self, from: data),
+              !entry.text.isEmpty,
+              !isExpired(stashedAt: entry.stashedAt, now: now, ttl: ttl) else {
+            return nil
+        }
+        return entry.text
+    }
+
+    /// The drawer calls this before it navigates to a thread it did not
+    /// just prefill: a next-step card's draft was written for the card's
+    /// own open, not for a later visit from Recent or the project list.
+    static func dropCardPrefill(threadID: String) {
+        let k = key(threadID)
+        guard let data = UserDefaults.standard.data(forKey: k),
+              let entry = try? JSONDecoder().decode(Entry.self, from: data),
+              entry.origin == .cardPrefill else { return }
         UserDefaults.standard.removeObject(forKey: k)
-        return (text?.isEmpty == false) ? text : nil
+    }
+
+    /// Launch-time sweep: nothing older than `ttl` survives to be looked
+    /// at, even for a thread the user never reopens.
+    static func dropExpired(now: Date = Date()) {
+        let defaults = UserDefaults.standard
+        for fullKey in defaults.dictionaryRepresentation().keys where fullKey.hasPrefix(keyPrefix) {
+            guard let data = defaults.data(forKey: fullKey) else {
+                // Legacy bare-string stash: always expired.
+                defaults.removeObject(forKey: fullKey)
+                continue
+            }
+            guard let entry = try? JSONDecoder().decode(Entry.self, from: data),
+                  !isExpired(stashedAt: entry.stashedAt, now: now, ttl: ttl) else {
+                defaults.removeObject(forKey: fullKey)
+                continue
+            }
+        }
     }
 }
 

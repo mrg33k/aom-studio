@@ -53,6 +53,9 @@ struct CornerApp: App {
         // Stranded room-keyed entries are dropped with a log line, never
         // replayed — see V2OutboxStore.migrateIfNeeded.
         V2OutboxStore.shared.migrateIfNeeded()
+        // 2026-09-15: a stashed composer prefill older than 2h never shows
+        // again — swept here so a room nobody reopens still loses it.
+        V2DraftStore.dropExpired()
         #if DEBUG
         // Deterministic visual-proof mode. `simctl defaults write` can race the
         // process preferences cache, so captures opt into Glass explicitly.
@@ -96,6 +99,16 @@ struct CornerApp: App {
         // shows this device's genuine history only. Debug builds only.
         if ProcessInfo.processInfo.arguments.contains("-v2ClearRecents") {
             V2RecentStore.shared.clear()
+        }
+        // 2026-09-15 draft-expiry proof: seed a 3h-old stash (the exact
+        // "Open Wolfpack: Week 5" bug case) on a real thread through the
+        // store's own API, so the fix can be screenshotted end to end —
+        // launch, open the thread, composer stays empty. Debug builds only.
+        if let staleThreadID = ProcessInfo.processInfo.environment["V2_SEED_STALE_DRAFT_THREAD_ID"] {
+            V2DraftStore.stash(
+                "Open Wolfpack: Week 5", threadID: staleThreadID,
+                now: Date().addingTimeInterval(-3 * 60 * 60)
+            )
         }
 
         // Auto sign-in for simulator testing. Reads email/password from launch

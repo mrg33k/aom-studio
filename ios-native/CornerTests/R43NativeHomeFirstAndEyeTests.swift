@@ -290,4 +290,118 @@ final class R43NativeHomeFirstAndEyeTests: XCTestCase {
         XCTAssertEqual(V2SiteBandMetrics.bandHeight(forWidth: 390, screenHeight: 844), 219, accuracy: 1)
         XCTAssertEqual(V2SiteBandMetrics.bandHeight(forWidth: 440, screenHeight: 956), 248, accuracy: 1)
     }
+
+    // MARK: - V2DraftStore expiry (2026-09-15)
+    //
+    // The bug: "Open Wolfpack: Week 5" sat in the Wolfpack composer days
+    // after the card that wrote it. A stash now carries a timestamp and
+    // only comes back inside a 2h window, once; a next-step card's prefill
+    // specifically is dropped when the drawer (not the card) opens it.
+
+    private var draftKeys: [String] = []
+
+    private func draftKey(_ threadID: String) -> String {
+        let key = "corner.v2.pending-draft.\(threadID)"
+        draftKeys.append(key)
+        return key
+    }
+
+    private func clearDraftKeys() {
+        for key in draftKeys { UserDefaults.standard.removeObject(forKey: key) }
+        draftKeys.removeAll()
+    }
+
+    /// Pure function: the whole expiry rule in one place, no UserDefaults.
+    func testIsExpiredPureFunction() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let ttl: TimeInterval = 2 * 60 * 60
+        XCTAssertFalse(V2DraftStore.isExpired(stashedAt: now, now: now, ttl: ttl), "just stashed")
+        XCTAssertFalse(
+            V2DraftStore.isExpired(stashedAt: now.addingTimeInterval(-ttl), now: now, ttl: ttl),
+            "exactly at the boundary still counts"
+        )
+        XCTAssertTrue(
+            V2DraftStore.isExpired(stashedAt: now.addingTimeInterval(-ttl - 1), now: now, ttl: ttl),
+            "one second past the boundary is expired"
+        )
+        XCTAssertTrue(
+            V2DraftStore.isExpired(stashedAt: now.addingTimeInterval(-3 * 60 * 60), now: now, ttl: ttl),
+            "three hours old, days-later bug case"
+        )
+    }
+
+    /// Inside the window: restored once, gone the second time (one-shot).
+    func testStashWithinWindowRestoresOnce() {
+        let threadID = "thread-fresh-\(UUID().uuidString)"
+        _ = draftKey(threadID)
+        defer { clearDraftKeys() }
+        let stashedAt = Date(timeIntervalSince1970: 2_000_000)
+        V2DraftStore.stash("Open Wolfpack: Week 5", threadID: threadID, now: stashedAt)
+        let restored = V2DraftStore.take(threadID: threadID, now: stashedAt.addingTimeInterval(60))
+        XCTAssertEqual(restored, "Open Wolfpack: Week 5")
+        XCTAssertNil(V2DraftStore.take(threadID: threadID, now: stashedAt.addingTimeInterval(120)), "one-shot")
+    }
+
+    /// The days-later case: a stash older than 2h never comes back.
+    func testStashOlderThanTwoHoursIsDropped() {
+        let threadID = "thread-stale-\(UUID().uuidString)"
+        _ = draftKey(threadID)
+        defer { clearDraftKeys() }
+        let stashedAt = Date(timeIntervalSince1970: 2_000_000)
+        V2DraftStore.stash("Open Wolfpack: Week 5", threadID: threadID, now: stashedAt)
+        let threeDaysLater = stashedAt.addingTimeInterval(3 * 24 * 60 * 60)
+        XCTAssertNil(V2DraftStore.take(threadID: threadID, now: threeDaysLater))
+    }
+
+    /// Backward compatibility: a pre-timestamp entry (a bare string, the
+    /// old format) is treated as expired rather than crashing or restoring.
+    func testLegacyPlainStringEntryIsTreatedAsExpired() {
+        let threadID = "thread-legacy-\(UUID().uuidString)"
+        let key = draftKey(threadID)
+        defer { clearDraftKeys() }
+        UserDefaults.standard.set("Open Wolfpack: Week 5", forKey: key)
+        XCTAssertNil(V2DraftStore.take(threadID: threadID))
+    }
+
+    /// A card prefill is dropped when a drawer open (Recent, project list)
+    /// checks for it — but an ordinary stash (setup, import, file search)
+    /// is left alone by the same call.
+    func testDropCardPrefillOnlyTouchesCardOrigin() {
+        let cardThread = "thread-card-\(UUID().uuidString)"
+        let otherThread = "thread-other-\(UUID().uuidString)"
+        _ = draftKey(cardThread)
+        _ = draftKey(otherThread)
+        defer { clearDraftKeys() }
+        let now = Date(timeIntervalSince1970: 3_000_000)
+        V2DraftStore.stash("Yes, go ahead: ship it", threadID: cardThread, origin: .cardPrefill, now: now)
+        V2DraftStore.stash("Open Wolfpack: Week 5", threadID: otherThread, origin: .other, now: now)
+
+        V2DraftStore.dropCardPrefill(threadID: cardThread)
+        V2DraftStore.dropCardPrefill(threadID: otherThread)
+
+        XCTAssertNil(V2DraftStore.take(threadID: cardThread, now: now), "drawer open drops the card's own draft")
+        XCTAssertEqual(
+            V2DraftStore.take(threadID: otherThread, now: now), "Open Wolfpack: Week 5",
+            "a non-card stash survives a drawer open"
+        )
+    }
+
+    /// The launch sweep drops anything past the window, even for a thread
+    /// nobody reopens — the fresh entry for another thread is untouched.
+    func testDropExpiredSweepsStaleEntriesAtLaunch() {
+        let staleThread = "thread-sweep-stale-\(UUID().uuidString)"
+        let freshThread = "thread-sweep-fresh-\(UUID().uuidString)"
+        _ = draftKey(staleThread)
+        _ = draftKey(freshThread)
+        defer { clearDraftKeys() }
+        let stashedAt = Date(timeIntervalSince1970: 4_000_000)
+        V2DraftStore.stash("Open Wolfpack: Week 5", threadID: staleThread, now: stashedAt)
+        let launchTime = stashedAt.addingTimeInterval(3 * 24 * 60 * 60)
+        V2DraftStore.stash("still today", threadID: freshThread, now: launchTime)
+
+        V2DraftStore.dropExpired(now: launchTime)
+
+        XCTAssertNil(V2DraftStore.take(threadID: staleThread, now: launchTime))
+        XCTAssertEqual(V2DraftStore.take(threadID: freshThread, now: launchTime), "still today")
+    }
 }

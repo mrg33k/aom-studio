@@ -400,9 +400,27 @@ struct V2DrawerView: View {
 
     // MARK: rows
 
+    /// Recent rows carry the project or mission id, not the thread it
+    /// opens — resolved here so a leftover next-step-card draft can be
+    /// dropped before a drawer-initiated open would otherwise show it.
+    private func recentThreadID(_ recent: V2RecentThread) -> String? {
+        guard let workspace = v2.workspace else { return nil }
+        if recent.kind == "mission" {
+            return workspace.projects
+                .flatMap(\.missions)
+                .first(where: { $0.id == recent.id })?.threadID
+        }
+        return workspace.projects.first(where: { $0.id == recent.id })?.threadID
+    }
+
     private func recentRow(_ recent: V2RecentThread) -> some View {
         Button {
             isPresented = false
+            // 2026-09-15: opening from Recent is a drawer open, not the
+            // next-step card's own open — its prefill does not belong here.
+            if let threadID = recentThreadID(recent) {
+                V2DraftStore.dropCardPrefill(threadID: threadID)
+            }
             if recent.kind == "mission" {
                 router.open(.mission(missionID: recent.id))
             } else {
@@ -569,12 +587,15 @@ struct V2DrawerView: View {
 
     private func openProject(_ project: ProjectSummary) {
         isPresented = false
+        // 2026-09-15: the project list is a drawer open too.
+        V2DraftStore.dropCardPrefill(threadID: project.threadID)
         router.open(.project(projectID: project.id))
     }
 
     private func missionRow(project: ProjectSummary, mission: MissionSummary) -> some View {
         Button {
             isPresented = false
+            V2DraftStore.dropCardPrefill(threadID: mission.threadID)
             router.open(.mission(missionID: mission.id))
         } label: {
             HStack(spacing: 10) {
