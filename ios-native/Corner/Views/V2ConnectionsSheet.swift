@@ -168,13 +168,58 @@ final class V2ArcadeConnectStore: ObservableObject {
     private struct AuthResp: Decodable { let authUrl: String; let authId: String; let status: String? }
     private struct StatusResp: Decodable { let status: String }
 
+    /// Mailboxes the person added in the app (2026-09-14): label + the
+    /// integrations service key ("gmail:work") they live under.
+    @Published private(set) var extraMailboxes: [(service: String, label: String)] = []
+
+    /// The signed-in person's email: the default Arcade user id.
+    static var viewerEmail: String {
+        CornerAPI.shared.userEmail ?? ConvexAuth.shared.load()?.user.email ?? ""
+    }
+
+    /// 2026-09-14 (Patrik: "users need to add multiple gmails, in app"): a
+    /// second mailbox is authorized under its own Arcade user id
+    /// ("<viewer>::<label>") and recorded as integrations service
+    /// "gmail:<label>", so the assistant reads every mailbox and names it.
+    func addMailbox(label rawLabel: String) {
+        let label = rawLabel.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !label.isEmpty else { return }
+        let slug = label.lowercased().replacingOccurrences(of: "[^a-z0-9]+", with: "-", options: .regularExpression)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        let service = "gmail:\(slug.isEmpty ? "mailbox" : slug)"
+        connect(service: service, arcadeService: "gmail",
+                arcadeUserId: "\(Self.viewerEmail)::\(slug)", label: label)
+    }
+
+    /// Record a completed authorization in Convex so every device and the
+    /// bridge see the mailbox. Never fails the connect itself.
+    private func record(service: String, arcadeUserId: String, label: String?) {
+        guard let userId = ConvexAuth.shared.load()?.user.id, !userId.isEmpty else { return }
+        Task { @MainActor in
+            do {
+                _ = try await ConvexService.shared.mutation(
+                    "arcade:upsertIntegration",
+                    args: ["userId": userId, "service": service, "arcadeAuthId": "app",
+                           "status": "connected", "email": label ?? Self.viewerEmail,
+                           "connectionId": arcadeUserId] as [String: Any])
+                if service.hasPrefix("gmail:"), let label, !extraMailboxes.contains(where: { $0.service == service }) {
+                    extraMailboxes.append((service: service, label: label))
+                }
+            } catch {
+                NSLog("[arcade] upsertIntegration(%@) failed: %@", service, String(describing: error))
+            }
+        }
+    }
+
     func connect(service: String) {
+        connect(service: service, arcadeService: service, arcadeUserId: nil, label: nil)
+    }
+
+    func connect(service: String, arcadeService: String, arcadeUserId: String?, label: String?) {
         // 2026-09-13: CornerAPI's session can lag the Keychain session at
         // launch, so fall back to the stored viewer — a signed-in phone must
         // never see "Sign in first" here.
-        let userId = CornerAPI.shared.userEmail
-            ?? ConvexAuth.shared.load()?.user.email
-            ?? ""
+        let userId = arcadeUserId ?? Self.viewerEmail
         guard !userId.isEmpty else {
             NSLog("[arcade] connect(%@): no signed-in email available", service)
             byService[service] = .failed("Sign in first"); return
@@ -183,12 +228,13 @@ final class V2ArcadeConnectStore: ObservableObject {
         Task { @MainActor in
             do {
                 let resp: AuthResp = try await ConvexService.shared.actionWithResult(
-                    "arcade:initiateAuth", args: ["userId": userId, "service": service],
+                    "arcade:initiateAuth", args: ["userId": userId, "service": arcadeService],
                     preserveClientIdentity: true)
                 // Already authorized with Arcade: no link comes back, the
                 // status is simply "completed". That is a success, not a fault.
                 if resp.status == "completed" {
                     byService[service] = .connected
+                    record(service: service, arcadeUserId: userId, label: label)
                     return
                 }
                 guard !resp.authUrl.isEmpty, let url = URL(string: resp.authUrl) else {
@@ -205,7 +251,7 @@ final class V2ArcadeConnectStore: ObservableObject {
                         self.byService[service] = .failed("Couldn't open the browser")
                     }
                 }
-                poll(service: service, authId: resp.authId)
+                poll(service: service, authId: resp.authId, arcadeUserId: userId, label: label)
             } catch {
                 NSLog("[arcade] initiateAuth(%@) failed: %@", service, String(describing: error))
                 byService[service] = .failed("Couldn't start")
@@ -213,7 +259,7 @@ final class V2ArcadeConnectStore: ObservableObject {
         }
     }
 
-    private func poll(service: String, authId: String) {
+    private func poll(service: String, authId: String, arcadeUserId: String, label: String?) {
         polls[service]?.cancel()
         guard !authId.isEmpty else { return }
         polls[service] = Task { @MainActor in
@@ -223,7 +269,11 @@ final class V2ArcadeConnectStore: ObservableObject {
                 do {
                     let s: StatusResp = try await ConvexService.shared.actionWithResult(
                         "arcade:checkAuth", args: ["authId": authId])
-                    if s.status == "completed" { byService[service] = .connected; return }
+                    if s.status == "completed" {
+                        byService[service] = .connected
+                        record(service: service, arcadeUserId: arcadeUserId, label: label)
+                        return
+                    }
                     if s.status == "failed" { byService[service] = .failed("Authorization failed"); return }
                 } catch { /* transient — keep polling */ }
             }
@@ -250,6 +300,9 @@ struct V2ConnectionsSheet: View {
         return "What every agent can use"
     }
 
+    @State private var showingAddMailbox = false
+    @State private var addMailboxLabel = ""
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -267,6 +320,58 @@ struct V2ConnectionsSheet: View {
                                         .padding(.leading, 46)
                                 }
                             }
+                            if group.id == "email" {
+                                // 2026-09-14: more than one Gmail, added here,
+                                // never on a Mac.
+                                ForEach(connect.extraMailboxes, id: \.service) { box in
+                                    Rectangle().fill(Theme.divider).frame(height: 1).padding(.leading, 46)
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                                                .fill(Theme.accent.opacity(0.16))
+                                                .frame(width: 34, height: 34)
+                                            Image(systemName: "envelope")
+                                                .font(.system(size: 15, weight: .medium))
+                                                .foregroundStyle(Theme.accent)
+                                        }
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Gmail · \(box.label)")
+                                                .font(.hanken(15).weight(.semibold))
+                                                .foregroundStyle(Theme.ink)
+                                            HStack(spacing: 5) {
+                                                Circle().fill(Theme.success).frame(width: 6, height: 6)
+                                                Text("Connected · the assistant reads it too")
+                                                    .font(.hanken(12))
+                                                    .foregroundStyle(Theme.inkFaint)
+                                            }
+                                        }
+                                        Spacer(minLength: 8)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .frame(minHeight: 56)
+                                    .accessibilityIdentifier("v2-mailbox-\(box.service)")
+                                }
+                                Rectangle().fill(Theme.divider).frame(height: 1).padding(.leading, 46)
+                                Button {
+                                    addMailboxLabel = ""
+                                    showingAddMailbox = true
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "plus.circle")
+                                            .font(.system(size: 17, weight: .medium))
+                                            .foregroundStyle(Theme.accent)
+                                            .frame(width: 34, height: 34)
+                                        Text("Add another Gmail account")
+                                            .font(.hanken(15).weight(.semibold))
+                                            .foregroundStyle(Theme.accent)
+                                        Spacer(minLength: 8)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .frame(minHeight: 52)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("v2-add-mailbox")
+                            }
                         }
                         .background(Theme.raised2, in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
                         .padding(.bottom, 18)
@@ -280,6 +385,13 @@ struct V2ConnectionsSheet: View {
         .background(Theme.ground.ignoresSafeArea())
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        .alert("Add a Gmail account", isPresented: $showingAddMailbox) {
+            TextField("Name it (Work, Personal, hello@)", text: $addMailboxLabel)
+            Button("Cancel", role: .cancel) { }
+            Button("Connect") { connect.addMailbox(label: addMailboxLabel) }
+        } message: {
+            Text("You'll sign in to that Google account in the browser. The assistant will read it alongside your other mailboxes and name it when it answers.")
+        }
     }
 
     // MARK: header
