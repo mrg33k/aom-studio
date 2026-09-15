@@ -245,26 +245,56 @@ enum DocumentMarkdown {
     /// frontmatter block (`---\nkey: value\n---`) meant for machines, not
     /// the person reading the stage. Strip it before parsing so the reader
     /// never shows raw `last_updated: ...` lines as a paragraph. Pure: only
-    /// a real frontmatter block (opening `---` on line one, a matching
-    /// closing `---` before the first blank line breaks it) is removed; a
-    /// document that merely opens with a horizontal rule is left alone.
+    /// a real frontmatter block is removed. A block counts as real when
+    /// every line between the opening and closing `---` looks like YAML
+    /// (`key: value` or a `- item` list entry) with no blank line in
+    /// between; the scan stops the moment a line doesn't fit that shape, so
+    /// a leading `---` used as a plain section divider (real prose next,
+    /// possibly with an unrelated `---key: value---` block further down —
+    /// see `corner/users/aom/agents/steffen/incoming-tasks.md`) is left
+    /// completely untouched instead of eating everything up to that later
+    /// fence.
     static func stripFrontmatter(_ raw: String) -> String {
         let normalized = raw.replacingOccurrences(of: "\r\n", with: "\n")
         var lines = normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         guard let first = lines.first, first.trimmingCharacters(in: .whitespaces) == "---" else { return raw }
         guard lines.count > 1 else { return raw }
-        // Find the closing fence among the following lines.
-        guard let closeOffset = lines.dropFirst().firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == "---" }) else {
-            return raw
+        // Scan forward for the closing fence, but bail the moment a line
+        // stops looking like a YAML key/value or list entry -- that means
+        // the opener was a plain divider, not frontmatter, regardless of
+        // whether a `---` shows up later for an unrelated reason.
+        var closeOffset: Int?
+        for offset in 1..<lines.count {
+            let trimmed = lines[offset].trimmingCharacters(in: .whitespaces)
+            if trimmed == "---" {
+                closeOffset = offset
+                break
+            }
+            guard looksLikeFrontmatterLine(trimmed) else { break }
         }
+        guard let close = closeOffset else { return raw }
         // A closing fence right after the opener (no body) is not frontmatter.
-        guard closeOffset > 1 else { return raw }
-        lines.removeSubrange(0...closeOffset)
+        guard close > 1 else { return raw }
+        lines.removeSubrange(0...close)
         // Drop the blank line that usually separates frontmatter from the body.
         while let leading = lines.first, leading.trimmingCharacters(in: .whitespaces).isEmpty {
             lines.removeFirst()
         }
         return lines.joined(separator: "\n")
+    }
+
+    /// Does `trimmed` look like a line of YAML frontmatter -- `key: value`,
+    /// a bare `key:` (block scalar start), or a `- item` list entry? Prose
+    /// (bold text, headings, plain sentences) never matches, which is what
+    /// lets `stripFrontmatter` tell a real frontmatter block apart from a
+    /// document that merely opens with a horizontal-rule divider.
+    private static func looksLikeFrontmatterLine(_ trimmed: String) -> Bool {
+        if trimmed.isEmpty { return false }
+        if trimmed.hasPrefix("- ") || trimmed == "-" { return true }
+        guard let colon = trimmed.firstIndex(of: ":") else { return false }
+        let key = trimmed[trimmed.startIndex..<colon]
+        guard !key.isEmpty else { return false }
+        return key.allSatisfy { $0.isLetter || $0.isNumber || $0 == "_" || $0 == "-" }
     }
 
     static func blocks(from raw: String) -> [Block] {

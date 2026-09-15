@@ -247,6 +247,31 @@ final class DocumentReaderParsingTests: XCTestCase {
         XCTAssertEqual(DocumentMarkdown.stripFrontmatter(noLeadingRule), noLeadingRule)
     }
 
+    /// Real shape from `corner/users/aom/agents/steffen/incoming-tasks.md`
+    /// (and jacob/steve/pixel/sys's copies): a leading bare `---` divider
+    /// followed by real prose, then a genuine `---key: value---` frontmatter
+    /// block further down for the next handoff entry. The divider must be
+    /// left alone -- Elon's message is never silently deleted -- even
+    /// though a later `---` exists in the file.
+    func testStripFrontmatterLeavesLeadingDividerWithLaterGenuineBlockAlone() {
+        let raw = """
+        ---
+        **From elon** (2026-04-16 22:41 UTC):
+        Yeah, worker built a generic task card, not Steffen's.
+
+        ---
+        handoff_id: 87b030cf
+        from: elon
+        to: steffen
+        status: pending
+        ---
+        # R3 -- Daemon Check
+        """
+        let stripped = DocumentMarkdown.stripFrontmatter(raw)
+        XCTAssertEqual(stripped, raw, "a leading bare divider must not be treated as frontmatter just because a real fence exists later")
+        XCTAssertTrue(stripped.contains("From elon"), "Elon's message must never be silently deleted")
+    }
+
     /// Plain text with no markdown syntax at all still renders — every line
     /// that matches no block type falls through to a paragraph, never a
     /// blank stage.
