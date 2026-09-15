@@ -792,3 +792,24 @@ enum BrainMention {
         return out
     }
 }
+
+
+// MARK: - Active rooms (Patrik 2026-09-14: the strip above the composer)
+
+/// One active room for the strip: an open run (its current step) or an agent
+/// turn waiting on the user (its last line). `v2Native:activeRooms`.
+struct V2ActiveRoom: Codable, Identifiable, Equatable {
+    let threadId: String
+    let projectId: String
+    let missionId: String?
+    let title: String
+    let running: Bool
+    let needsYou: Bool
+    let lastStep: String
+    let lastText: String
+    let lastAt: Double
+
+    var id: String { threadId }
+    /// The card body: the live step while working, else the last line.
+    var body: String { running && !lastStep.isEmpty ? lastStep : (lastText.isEmpty ? lastStep : lastText) }
+}

@@ -97,6 +97,7 @@ struct ChatView: View {
     /// R41 home: the welcome column's two reads + cards, loaded when the
     /// General thread shows empty.
     @StateObject private var v2home: V2HomeModel
+    @StateObject private var v2activeRooms = V2ActiveRoomsModel()
     /// Corner v2 Visual Window state (native Task 7). Owned per thread: the
     /// server session is the durable copy, so a rebuild restores via load().
     /// Inert on the legacy path.
@@ -354,6 +355,13 @@ struct ChatView: View {
             await v2home.load(world: CornerAPI.shared.world ?? "aom",
                               accountName: CornerAPI.shared.userDisplayName)
         }
+        // 2026-09-14: the active-rooms strip polls while any v2 chat is open.
+        .task(id: v2?.thread.id) {
+            guard v2 != nil else { return }
+            v2activeRooms.dismissed = false
+            v2activeRooms.start()
+        }
+        .onDisappear { v2activeRooms.stop() }
         .onReceive(NotificationCenter.default.publisher(for: .v2DraftStashed)) { note in
             // 2026-09-13: setup's Import step (or any late stash) lands in
             // the composer of the thread it names, even if that thread is
@@ -1349,42 +1357,78 @@ struct ChatView: View {
     /// empty thread, so a real user never saw them. A tap opens that
     /// project with "Yes, go ahead: …" staged, never sent.
     @ViewBuilder
+    /// Patrik 2026-09-14: the strip above the composer is for ACTIVE rooms —
+    /// the room's live step while it works, or its last line when it is
+    /// waiting on you. Needs-you cards flash once, carry a badge, and sit
+    /// first. Closable. (The fresh-home suggestions are a different surface.)
     private var v2NextStepsStrip: some View {
-        let offers = v2home.suggestions.filter(\.isNextStep)
-        if v2?.project.kind == .general, !v2ShowingHome, !offers.isEmpty {
+        let rooms = v2activeRooms.rooms.filter { $0.threadId != v2?.thread.id }
+        return Group {
+        if !v2ShowingHome, !v2activeRooms.dismissed, !rooms.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(offers) { offer in
-                        Button { v2HomeOpen(offer) } label: {
+                    ForEach(rooms) { room in
+                        Button {
+                            if let missionID = room.missionId {
+                                router.open(.mission(missionID: missionID))
+                            } else {
+                                router.open(.project(projectID: room.projectId))
+                            }
+                        } label: {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(offer.projectTitle)
-                                    .font(.hanken(11).weight(.semibold))
-                                    .foregroundStyle(Theme.accent)
-                                Text(offer.subline)
+                                HStack(spacing: 6) {
+                                    Text(room.title)
+                                        .font(.hanken(11).weight(.semibold))
+                                        .foregroundStyle(room.needsYou ? Theme.warning : Theme.accent)
+                                        .lineLimit(1)
+                                    if room.needsYou {
+                                        Circle().fill(Theme.warning).frame(width: 6, height: 6)
+                                            .accessibilityLabel("needs you")
+                                    } else if room.running {
+                                        Circle().fill(Theme.success).frame(width: 6, height: 6)
+                                            .accessibilityLabel("working")
+                                    }
+                                }
+                                Text(room.body)
                                     .font(.hanken(12.5))
                                     .foregroundStyle(Theme.ink)
                                     .lineLimit(2)
                                     .multilineTextAlignment(.leading)
+                                    .id(room.body)
+                                    .transition(.opacity)
                             }
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
                             .frame(width: 240, alignment: .leading)
-                            .background(Theme.raised2, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                            .background(
+                                (v2activeRooms.flashing.contains(room.threadId) ? Theme.warning.opacity(0.22) : Theme.raised2),
+                                in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .strokeBorder(Theme.hairline, lineWidth: 1)
+                                    .strokeBorder(room.needsYou ? Theme.warning.opacity(0.5) : Theme.hairline, lineWidth: 1)
                             )
+                            .animation(.easeInOut(duration: 0.6), value: v2activeRooms.flashing)
+                            .animation(.easeInOut(duration: 0.35), value: room.body)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityIdentifier("v2-next-step-\(offer.subject)")
-                        .accessibilityLabel("\(offer.projectTitle): \(offer.subline)")
+                        .accessibilityIdentifier("v2-active-room-\(room.threadId)")
+                        .accessibilityLabel("\(room.title): \(room.body)")
                     }
+                    Button {
+                        v2activeRooms.dismissed = true
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Theme.inkFaint)
+                            .padding(8)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Hide active rooms")
+                    .accessibilityIdentifier("v2-active-rooms-hide")
                 }
                 .padding(.horizontal, 2)
             }
-            // Patrik 2026-09-14: the strip sat hard against the last message
-            // and read as a glitch. Room above it, and a soft fade so the
-            // thread scrolls out under it instead of being sliced.
+            .animation(.easeInOut(duration: 0.35), value: rooms.map(\.threadId))
             .padding(.top, 14)
             .padding(.bottom, 2)
             .background(alignment: .top) {
@@ -1394,7 +1438,8 @@ struct ChatView: View {
                     .offset(y: -28)
                     .allowsHitTesting(false)
             }
-            .accessibilityIdentifier("v2-next-steps")
+            .accessibilityIdentifier("v2-active-rooms")
+        }
         }
     }
 
@@ -5291,5 +5336,50 @@ struct V2StepTickerView: View {
         .animation(.easeInOut(duration: 0.35), value: settled)
         .accessibilityIdentifier("v2-step-ticker")
         .accessibilityLabel(shown.last.map { "Working: \($0.label)" } ?? "Working")
+    }
+}
+
+
+// MARK: - Active rooms model (2026-09-14)
+
+/// Polls `v2Native:activeRooms` while a chat is open. A room that turns
+/// needs-you flashes once (0.6 s) and then keeps its badge; the backend
+/// orders needs-you first, then working, then newest.
+@MainActor
+final class V2ActiveRoomsModel: ObservableObject {
+    @Published private(set) var rooms: [V2ActiveRoom] = []
+    @Published var flashing: Set<String> = []
+    @Published var dismissed = false
+    private var seenNeedsYou: Set<String> = []
+    private var task: Task<Void, Never>?
+    var api: (any CornerV2API)?
+
+    static func flashTargets(previous: Set<String>, rooms: [V2ActiveRoom]) -> Set<String> {
+        Set(rooms.filter { $0.needsYou && !previous.contains($0.threadId) }.map(\.threadId))
+    }
+
+    func start(interval: Double = 8) {
+        guard task == nil else { return }
+        task = Task { [weak self] in
+            while !Task.isCancelled {
+                await self?.refresh()
+                try? await Task.sleep(for: .seconds(interval))
+            }
+        }
+    }
+
+    func stop() { task?.cancel(); task = nil }
+
+    func refresh() async {
+        let api = self.api ?? WorkspaceStore.shared.v2api
+        guard let fresh = try? await api.activeRooms() else { return }
+        let newly = Self.flashTargets(previous: seenNeedsYou, rooms: fresh)
+        seenNeedsYou = Set(fresh.filter(\.needsYou).map(\.threadId))
+        rooms = fresh
+        if !newly.isEmpty {
+            flashing = newly
+            try? await Task.sleep(for: .milliseconds(900))
+            flashing = []
+        }
     }
 }

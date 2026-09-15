@@ -34,6 +34,8 @@ protocol CornerV2API {
     /// load 200, "Earlier messages" +200); nil means the server default,
     /// which is the same 200. Polls never pass it — they keep `after`.
     func threadEvents(threadID: String, limit: Int?) async throws -> [ThreadEvent]
+    /// 2026-09-14: the active-rooms strip. Default = empty for fakes/previews.
+    func activeRooms() async throws -> [V2ActiveRoom]
     /// Send one message. `mode` is the commands menu's Work/Plan intent
     /// (R19): "work" rides only when a backend field exists for it — today
     /// only "plan" is sent, and a backend that does not know the field gets
@@ -104,6 +106,7 @@ protocol CornerV2API {
 /// The 3-arg send every pre-R19 caller uses: mode unset (Work default),
 /// room-less (global intake routing).
 extension CornerV2API {
+    func activeRooms() async throws -> [V2ActiveRoom] { [] }
     func send(text: String, mentioning: [String], preferredProjectID: String?) async throws -> RouteDecision {
         try await send(
             text: text, mentioning: mentioning, preferredProjectID: preferredProjectID,
@@ -146,6 +149,8 @@ extension ConvexEndpoint {
     }
 
     static var v2EnsureWorkspace: ConvexEndpoint { v2("ensureWorkspace", kind: .mutation) }
+    /// 2026-09-14: rooms with an open run or an agent turn waiting on the user.
+    static var v2ActiveRooms: ConvexEndpoint { v2("activeRooms", kind: .query) }
     static var v2WorkspaceTree: ConvexEndpoint { v2("workspaceTree", kind: .query) }
 
     static func v2ThreadForProject(_ projectID: String) -> ConvexEndpoint {
@@ -330,6 +335,10 @@ final class DefaultCornerV2API: CornerV2API {
 
     func threadEvents(threadID: String, limit: Int? = nil) async throws -> [ThreadEvent] {
         try await service.request(.v2ThreadEvents(threadID: threadID, limit: limit), as: [ThreadEvent].self)
+    }
+
+    func activeRooms() async throws -> [V2ActiveRoom] {
+        try await service.request(.v2ActiveRooms, as: [V2ActiveRoom].self)
     }
 
     func send(
