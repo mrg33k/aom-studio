@@ -474,6 +474,10 @@ struct ChatView: View {
                 .presentationDragIndicator(.visible)
         }
         // Connections (Patrik 2026-09-08): this room's agent toolkit + on/off.
+        .onReceive(NotificationCenter.default.publisher(for: .v2OpenConnections)) { _ in
+            // 2026-09-15: back from a mailbox sign-in; the sheet re-reads state on appear.
+            v2ShowingConnections = true
+        }
         .sheet(isPresented: $v2ShowingConnections) {
             V2ConnectionsSheet(scopeTitle: v2?.project.name ?? v2model.displayTitle)
         }

@@ -545,6 +545,15 @@ final class AppRouter: ObservableObject {
     @discardableResult
     func handle(url: URL) -> Bool {
         guard url.scheme?.lowercased() == Config.urlScheme else { return false }
+        // 2026-09-15: Arcade's verifier sends the browser back to
+        // corner://connections?connected=1&service=gmail after a mailbox
+        // sign-in. Reopen the Connections sheet where the person left off.
+        if url.host?.lowercased() == "connections" {
+            let q = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            let info: [String: String] = Dictionary(uniqueKeysWithValues: q.compactMap { i in i.value.map { (i.name, $0) } })
+            NotificationCenter.default.post(name: .v2OpenConnections, object: nil, userInfo: info)
+            return true
+        }
         guard let target = DeepLinkTarget(url: url) else {
             unresolvedLink = url.absoluteString
             return false
@@ -563,4 +572,12 @@ final class AppRouter: ObservableObject {
         pendingEntry = nil
         messageFocus = nil
     }
+}
+
+
+extension Notification.Name {
+    /// A `corner://connections` link (the Arcade verifier's return trip) asks
+    /// the open chat to present the Connections sheet. userInfo carries the
+    /// query (connected=1, service=gmail).
+    static let v2OpenConnections = Notification.Name("corner.v2.open-connections")
 }
