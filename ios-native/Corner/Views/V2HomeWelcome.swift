@@ -269,20 +269,13 @@ struct V2HomeWelcomeView: View {
                 .padding(.top, 28)
             // A light, friendly mark in the app's own language: the
             // project-tile treatment, floating over a soft accent glow.
+            // Patrik 2026-09-15: the live agent — a looping animated
+            // character in a circle, the assistant's face on the home screen.
             ZStack {
                 Circle()
                     .fill(Theme.accent.opacity(0.12))
-                    .frame(width: 132, height: 132)
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(Theme.accent.opacity(0.16))
-                    .frame(width: 88, height: 88)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .strokeBorder(Theme.accent.opacity(0.35), lineWidth: 1)
-                    )
-                Image(systemName: "sparkles")
-                    .font(.system(size: 38, weight: .medium))
-                    .foregroundStyle(Theme.accent)
+                    .frame(width: 148, height: 148)
+                LiveAgentAvatarView(size: 132)
             }
             .accessibilityIdentifier("v2-home-illustration")
             .accessibilityLabel("Welcome illustration")

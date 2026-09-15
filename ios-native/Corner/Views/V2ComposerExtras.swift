@@ -351,12 +351,9 @@ enum V2RunState {
     /// The "<driver> is on it…" name: the newest agent voice in the thread,
     /// else the thread's project, else Corner (the web's `driverFor` twin).
     static func driverName(events: [ThreadEvent], projectName: String?) -> String {
-        let label = events.reversed().first(where: { $0.author == .agent })
-            .flatMap(\.agentLabel)?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if !label.isEmpty { return label }
-        let fallback = (projectName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        return fallback.isEmpty ? "Corner" : fallback
+        // Patrik 2026-09-15: the working line names the one assistant, never
+        // the model behind it ("Muse is on it" read as a stranger).
+        "Assistant"
     }
 
     /// The working line's copy. Quiet (past the bound, still no reply) is

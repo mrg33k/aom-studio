@@ -36,21 +36,9 @@ struct RoomAvatarView: View {
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-            // Avatar circle
-            Circle()
-                .fill(tint.opacity(0.18))
-                .frame(width: size, height: size)
-                .overlay(
-                    Text(initials)
-                        .font(.system(size: size * 0.37, weight: .semibold, design: .rounded))
-                        .foregroundStyle(tint)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                )
-                .overlay(
-                    Circle()
-                        .strokeBorder(tint.opacity(0.30), lineWidth: 1)
-                )
+            // Patrik 2026-09-15: one assistant drives every room, so every
+            // profile circle is the live animated agent (initials retired).
+            LiveAgentAvatarView(size: size)
 
             // Presence dot — same lime as Theme.live (--status-working)
             if isActive {

@@ -98,6 +98,8 @@
 		7530BD568F038D6380193456 /* R32WiringUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2957F965A86EA2FD3FE9EC58 /* R32WiringUITests.swift */; };
 		76BD23C3F1067385C26F7DA5 /* ScreenshotCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75ACE47EA6B1C041A0B19583 /* ScreenshotCapture.swift */; };
 		78CCD69E75CFB96D57688755 /* V2DrawerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A4E08805DDA8C292933E3C /* V2DrawerView.swift */; };
+		A11E5A9E03000000000000AA /* agent-live.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = A11E5A9E01000000000000AA /* agent-live.mp4 */; };
+		A11E5A9E04000000000000AA /* LiveAgentAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11E5A9E02000000000000AA /* LiveAgentAvatarView.swift */; };
 		7924B8A0025880C33F1527B8 /* HankenGrotesk-VF.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A9D2EAFD89EEDF532AC5F081 /* HankenGrotesk-VF.ttf */; };
 		7FDC7B1CC07EF4CD49D61305 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 93F4B6205055988397D45943 /* PrivacyInfo.xcprivacy */; };
 		834F5785B82740C2DE2A472D /* R24SendAndSheetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5282418684E41024646BED6 /* R24SendAndSheetTests.swift */; };
@@ -345,6 +347,8 @@
 		A8F666DC72182C86CE541956 /* V2ViewState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V2ViewState.swift; sourceTree = "<group>"; };
 		A8F7FAB74C1ABCC07C31988E /* V2ComposerExtras.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V2ComposerExtras.swift; sourceTree = "<group>"; };
 		A9A7EBC6A868EA4CCC848CC5 /* CornerV2APIFake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerV2APIFake.swift; sourceTree = "<group>"; };
+		A11E5A9E01000000000000AA /* agent-live.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "agent-live.mp4"; sourceTree = "<group>"; };
+		A11E5A9E02000000000000AA /* LiveAgentAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAgentAvatarView.swift; sourceTree = "<group>"; };
 		A9D2EAFD89EEDF532AC5F081 /* HankenGrotesk-VF.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "HankenGrotesk-VF.ttf"; sourceTree = "<group>"; };
 		AA3BE3F5BD4EDB230E204F21 /* ReadStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadStateStore.swift; sourceTree = "<group>"; };
 		ABC46B4A3A7F0833A3E7AC0C /* V2Onboarding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V2Onboarding.swift; sourceTree = "<group>"; };
@@ -453,6 +457,7 @@
 				37A4E08805DDA8C292933E3C /* V2DrawerView.swift */,
 				92584FCDB72A39AC595198ED /* V2EyeMode.swift */,
 				61C954A6C2FBF6A2C8D7C170 /* V2HomeWelcome.swift */,
+				A11E5A9E02000000000000AA /* LiveAgentAvatarView.swift */,
 				85FF71AEBE8D9EF46363DE28 /* V2IntakeSheet.swift */,
 				ABC46B4A3A7F0833A3E7AC0C /* V2Onboarding.swift */,
 				97992C432BB995FF09A83BBC /* V2SettingsView.swift */,
@@ -619,6 +624,7 @@
 			children = (
 				A54363CBE8FA5FD2990ABB47 /* Data */,
 				3F431192897A7E91C2AEB990 /* Fonts */,
+				A11E5A9E01000000000000AA /* agent-live.mp4 */,
 				F6B519A79FF1C08AD0F2C43A /* Models */,
 				67DAA622703677F8F0BE8D76 /* Services */,
 				4BC14D307631D98B89EBC8C5 /* Stores */,
@@ -849,6 +855,7 @@
 			files = (
 				BD31F80A925155A28D8A320E /* Assets.xcassets in Resources */,
 				7924B8A0025880C33F1527B8 /* HankenGrotesk-VF.ttf in Resources */,
+				A11E5A9E03000000000000AA /* agent-live.mp4 in Resources */,
 				37E264721226C44D2B8330E5 /* OFL.txt in Resources */,
 				7FDC7B1CC07EF4CD49D61305 /* PrivacyInfo.xcprivacy in Resources */,
 				EC4F35A76275B7663711C150 /* aster-brief.pdf in Resources */,
@@ -1037,6 +1044,7 @@
 				3EC0C1A861A0CD3FB51CD63C /* V2FaceTimeWindow.swift in Sources */,
 				906D2673B153341D5FFEB269 /* V2FollowState.swift in Sources */,
 				20B7413AFC9FE18A5F36B074 /* V2HomeWelcome.swift in Sources */,
+				A11E5A9E04000000000000AA /* LiveAgentAvatarView.swift in Sources */,
 				9C82F9A98703F46F6B8E1BE3 /* V2IntakeSheet.swift in Sources */,
 				6D00A6B43B7F1D709BD0D463 /* V2Onboarding.swift in Sources */,
 				0716BE3F5CD216DF3D99A9C1 /* V2ReconnectMonitor.swift in Sources */,

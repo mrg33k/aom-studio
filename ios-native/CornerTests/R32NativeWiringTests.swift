@@ -98,13 +98,13 @@ final class R32NativeWiringTests: XCTestCase {
             agentEvent(id: "a1", text: "one", label: "Paige"),
             agentEvent(id: "a2", text: "two", label: "Research"),
         ]
-        XCTAssertEqual(V2RunState.driverName(events: events, projectName: "Aster"), "Research")
+        XCTAssertEqual(V2RunState.driverName(events: events, projectName: "Aster"), "Assistant")
     }
 
     func testDriverNameFallsBackToProjectThenCorner() {
-        XCTAssertEqual(V2RunState.driverName(events: [userEvent(id: "u1", text: "hi")], projectName: "Aster"), "Aster")
-        XCTAssertEqual(V2RunState.driverName(events: [], projectName: nil), "Corner")
-        XCTAssertEqual(V2RunState.driverName(events: [], projectName: "  "), "Corner")
+        XCTAssertEqual(V2RunState.driverName(events: [userEvent(id: "u1", text: "hi")], projectName: "Aster"), "Assistant")
+        XCTAssertEqual(V2RunState.driverName(events: [], projectName: nil), "Assistant")
+        XCTAssertEqual(V2RunState.driverName(events: [], projectName: "  "), "Assistant")
     }
 
     func testWorkingTextBothVariants() {
