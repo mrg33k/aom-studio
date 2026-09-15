@@ -232,6 +232,25 @@ final class V2ArcadeConnectStore: ObservableObject {
         } catch {
             NSLog("[arcade] listIntegrationsByStringId failed: %@", String(describing: error))
         }
+        // 2026-09-15: the default Gmail may have been authorized straight with
+        // Arcade before Corner ever stored a row (Patrik's own mailbox). Ask
+        // Arcade once: an already-authorized user gets status "completed" with
+        // no link, which is the truth; store it so the next open is instant.
+        if state(for: "gmail") != .connected {
+            let arcadeUser = Self.viewerEmail
+            guard !arcadeUser.isEmpty else { return }
+            do {
+                let resp: AuthResp = try await ConvexService.shared.actionWithResult(
+                    "arcade:initiateAuth", args: ["userId": arcadeUser, "service": "gmail"],
+                    preserveClientIdentity: true)
+                if resp.status == "completed" {
+                    byService["gmail"] = .connected
+                    record(service: "gmail", arcadeUserId: arcadeUser, label: arcadeUser)
+                }
+            } catch {
+                NSLog("[arcade] gmail truth probe failed: %@", String(describing: error))
+            }
+        }
     }
 
     /// Drops one added mailbox: calls `arcade:removeIntegration`, then updates
