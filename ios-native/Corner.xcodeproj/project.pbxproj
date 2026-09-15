@@ -99,6 +99,7 @@
 		76BD23C3F1067385C26F7DA5 /* ScreenshotCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75ACE47EA6B1C041A0B19583 /* ScreenshotCapture.swift */; };
 		78CCD69E75CFB96D57688755 /* V2DrawerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37A4E08805DDA8C292933E3C /* V2DrawerView.swift */; };
 		A11E5A9E03000000000000AA /* agent-live.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = A11E5A9E01000000000000AA /* agent-live.mp4 */; };
+		A11E5A9E06000000000000AA /* V2RoomMenuSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11E5A9E05000000000000AA /* V2RoomMenuSheet.swift */; };
 		A11E5A9E04000000000000AA /* LiveAgentAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11E5A9E02000000000000AA /* LiveAgentAvatarView.swift */; };
 		7924B8A0025880C33F1527B8 /* HankenGrotesk-VF.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A9D2EAFD89EEDF532AC5F081 /* HankenGrotesk-VF.ttf */; };
 		7FDC7B1CC07EF4CD49D61305 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 93F4B6205055988397D45943 /* PrivacyInfo.xcprivacy */; };
@@ -348,6 +349,7 @@
 		A8F7FAB74C1ABCC07C31988E /* V2ComposerExtras.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V2ComposerExtras.swift; sourceTree = "<group>"; };
 		A9A7EBC6A868EA4CCC848CC5 /* CornerV2APIFake.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CornerV2APIFake.swift; sourceTree = "<group>"; };
 		A11E5A9E01000000000000AA /* agent-live.mp4 */ = {isa = PBXFileReference; lastKnownFileType = file; path = "agent-live.mp4"; sourceTree = "<group>"; };
+		A11E5A9E05000000000000AA /* V2RoomMenuSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = V2RoomMenuSheet.swift; sourceTree = "<group>"; };
 		A11E5A9E02000000000000AA /* LiveAgentAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAgentAvatarView.swift; sourceTree = "<group>"; };
 		A9D2EAFD89EEDF532AC5F081 /* HankenGrotesk-VF.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "HankenGrotesk-VF.ttf"; sourceTree = "<group>"; };
 		AA3BE3F5BD4EDB230E204F21 /* ReadStateStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadStateStore.swift; sourceTree = "<group>"; };
@@ -458,6 +460,7 @@
 				92584FCDB72A39AC595198ED /* V2EyeMode.swift */,
 				61C954A6C2FBF6A2C8D7C170 /* V2HomeWelcome.swift */,
 				A11E5A9E02000000000000AA /* LiveAgentAvatarView.swift */,
+				A11E5A9E05000000000000AA /* V2RoomMenuSheet.swift */,
 				85FF71AEBE8D9EF46363DE28 /* V2IntakeSheet.swift */,
 				ABC46B4A3A7F0833A3E7AC0C /* V2Onboarding.swift */,
 				97992C432BB995FF09A83BBC /* V2SettingsView.swift */,
@@ -1045,6 +1048,7 @@
 				906D2673B153341D5FFEB269 /* V2FollowState.swift in Sources */,
 				20B7413AFC9FE18A5F36B074 /* V2HomeWelcome.swift in Sources */,
 				A11E5A9E04000000000000AA /* LiveAgentAvatarView.swift in Sources */,
+				A11E5A9E06000000000000AA /* V2RoomMenuSheet.swift in Sources */,
 				9C82F9A98703F46F6B8E1BE3 /* V2IntakeSheet.swift in Sources */,
 				6D00A6B43B7F1D709BD0D463 /* V2Onboarding.swift in Sources */,
 				0716BE3F5CD216DF3D99A9C1 /* V2ReconnectMonitor.swift in Sources */,

@@ -199,6 +199,8 @@ struct ChatView: View {
     @State private var searchQuery = ""
     @FocusState private var searchFocused: Bool
     @State private var showingSettings = false
+    @State private var v2ShowingRoomMenu = false
+    @State private var v2FieldHeight: CGFloat = 0
     @State private var showingImageGenerator = false
     @State private var showingRename = false
     @State private var highlightedMessageID: String?
@@ -330,8 +332,10 @@ struct ChatView: View {
     /// iPad and over it as a sheet on iPhone. Same store, same selection.
     private var v2Main: some View {
         VStack(spacing: 0) {
-            v2NavBar
+            // Patrik 2026-09-15: the bar floats over the thread with a soft
+            // dark fall-off (no hard band); the list scrolls under it.
             v2ThreadList
+                .safeAreaInset(edge: .top, spacing: 0) { v2NavBar }
             if let confirmation = v2model.pendingConfirmation {
                 v2ConfirmationCard(confirmation)
             }
@@ -645,12 +649,13 @@ struct ChatView: View {
             HStack(spacing: 0) {
                 Button { v2ShowingDrawer = true } label: {
                     Image(systemName: "line.3.horizontal")
-                        .font(.system(size: 20, weight: .regular))
+                        .font(.system(size: 18, weight: .medium))
                         .foregroundStyle(Theme.ink)
                         .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .v2GlassCircle()
                 .accessibilityIdentifier("v2-drawer-button")
                 .accessibilityLabel("Open menu")
                 .padding(.leading, 12)
@@ -674,12 +679,13 @@ struct ChatView: View {
                 // the Visual Window — facetime → full → hidden.
                 Button { eye.cycle() } label: {
                     Image(systemName: eye.iconName)
-                        .font(.system(size: 20, weight: .regular))
+                        .font(.system(size: 18, weight: .medium))
                         .foregroundStyle(Theme.ink)
                         .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
+                .v2GlassCircle()
                 .accessibilityIdentifier("v2-eye")
                 .accessibilityLabel(eye.accessibilityLabel)
                 .padding(.trailing, 12)
@@ -688,12 +694,15 @@ struct ChatView: View {
             // The centred title block (P022's 12.5px project line over the
             // 16px title). Padded past both arms so a long title truncates
             // rather than sliding under the eye. Home shows no title.
+            // Patrik 2026-09-15: the bubble + name is one glass pill; a tap
+            // opens this room's menu (files, assistant settings).
+            Button { v2ShowingRoomMenu = true } label: {
             VStack(spacing: 3) {
                 if !v2ShowingHome {
                     // Patrik 2026-09-13: every chat carries its bubble,
                     // centred above the name, iMessage-style.
                     if let context = v2 {
-                        RoomAvatarView(room: context.compatRoom, size: 32,
+                        RoomAvatarView(room: context.compatRoom, size: 48,
                                        isActive: v2Working)
                             .accessibilityIdentifier("chat-avatar")
                     }
@@ -711,14 +720,38 @@ struct ChatView: View {
                         .accessibilityIdentifier("chat-title")
                 }
             }
-            .padding(.horizontal, 100)
+            .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(v2ShowingHome)
+            .accessibilityIdentifier("chat-title-button")
+            .accessibilityLabel("Room menu")
+            .padding(.horizontal, 64)
             .overlay(alignment: .top) {
                 Color.clear.frame(width: 1, height: 1)
                     .accessibilityIdentifier("chat-screen")
             }
-            .allowsHitTesting(false)
         }
-        .frame(height: v2ShowingHome ? 52 : 84)
+        .frame(height: v2ShowingHome ? 52 : 96)
+        .background(
+            // Soft dark fall-off: solid through the status bar and the
+            // controls, fading out under the first messages.
+            LinearGradient(stops: [
+                .init(color: Theme.ground, location: 0),
+                .init(color: Theme.ground, location: 0.55),
+                .init(color: Theme.ground.opacity(0), location: 1),
+            ], startPoint: .top, endPoint: .bottom)
+                .padding(.bottom, -40)
+                .ignoresSafeArea(edges: .top)
+                .allowsHitTesting(false)
+        )
+        .sheet(isPresented: $v2ShowingRoomMenu) {
+            if let context = v2 {
+                V2RoomMenuSheet(context: context)
+                    .environmentObject(window)
+                    .environmentObject(router)
+            }
+        }
     }
 
     /// R41 home: the General thread with no messages (and nothing queued)
@@ -1544,112 +1577,59 @@ struct ChatView: View {
                 // Patrik 2026-09-13: the magic button is OUT of the box, on
                 // the left, the same size as send.
                 v2CommandCircle
+                if v2ComposerExpanded {
+                    // Patrik 2026-09-15 (Gemini reference): once the text
+                    // wraps, the card grows — text on top, the controls in
+                    // their own row underneath (+ left, mic + send right).
+                    VStack(alignment: .leading, spacing: 4) {
+                        v2ComposerField
+                            .padding(.horizontal, 6)
+                        HStack(spacing: V2ComposerMetrics.interSpacing) {
+                            v2AttachPlus
+                            Spacer(minLength: 0)
+                            if speech.isListening {
+                                V2LevelMeter(level: speech.level)
+                                    .accessibilityIdentifier("v2-dictation-meter")
+                                    .accessibilityLabel("Dictation level")
+                            }
+                            v2MicButton
+                            v2SendOrStop(size: 36)
+                        }
+                    }
+                    .padding(.leading, V2ComposerMetrics.pillLeading)
+                    .padding(.trailing, 8)
+                    .padding(.vertical, 8)
+                    .background(Theme.raised, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .strokeBorder(composerFocused ? Theme.accent : Theme.hairline, lineWidth: 1)
+                    )
+                } else {
                 // P023: the pill with + (attach) and Record inside. The pill
                 // fill is surface; the focused ring is the only chrome.
                 HStack(spacing: V2ComposerMetrics.interSpacing) {
                     v2AttachPlus
-                    // P038: `Tell Aster what to make next`, not `Message…`.
-                    // R24 P076: the multiline axis is UITextView-backed with
-                    // a ~5pt/side text inset (measured: placeholder starts
-                    // +4pt in) — the placeholder budget below counts that
-                    // inset as chrome, not text room.
-                    TextField(
-                        // Patrik 2026-09-14: the model lives in the placeholder
-                        // ("Assistant: Claude Sonnet"), not in a caption below.
-                        "\(v2?.project.name ?? "Corner"): \(v2model.modelDisplayName)",
-                        text: $v2model.draft, axis: .vertical
-                    )
-                        // P106's design value (14.5px input), not 15: the
-                        // half point is R24 P076's placeholder budget.
-                        .font(.hanken(14.5))
-                        .lineLimit(1...5)
-                        .focused($composerFocused)
-                        .foregroundStyle(Theme.ink)
-                        .padding(.vertical, 8)
-                        .submitLabel(.send)
-                        .onSubmit { v2Submit() }
-                        .onKeyPress(keys: [.return]) { press in
-                            // R32 multiline: hardware Shift+Return inserts
-                            // a newline instead of sending. The design
-                            // carries no newline key, so the invisible
-                            // hardware path is the design-consistent one;
-                            // soft Return still sends. Anything unshifted
-                            // falls through to the submit path.
-                            guard press.modifiers.contains(.shift) else { return .ignored }
-                            v2AllowNewlineOnce = true
-                            v2model.draft = V2ShiftReturn.newlineDraft(v2model.draft)
-                            return .handled
-                        }
-                        .onChange(of: v2model.draft) { old, new in v2DraftChanged(old: old, new: new) }
-                        .accessibilityIdentifier("v2-composer-field")
-                        .accessibilityLabel("Message")
-                        .accessibilitySortPriority(5)
-                    // R60: the command affordance is the leading purple circle
-                    // now; attachment + eye moved to the row UNDER the pill.
-                    // R28: the live level meter rides beside Record while
-                    // dictating — the CV6 live-meter twin, in the pill.
+                    v2ComposerField
                     if speech.isListening {
                         V2LevelMeter(level: speech.level)
                             .accessibilityIdentifier("v2-dictation-meter")
                             .accessibilityLabel("Dictation level")
                             .accessibilitySortPriority(1.5)
                     }
-                    if speech.supported {
-                        // P041: a bare muted glyph — no circle behind it.
-                        // R42 P091: the 15pt icon matches the sparkle chip.
-                        Button(action: toggleV2Dictation) {
-                            Image(systemName: speech.isListening ? "mic.fill" : "mic")
-                                .font(.system(size: 15, weight: .regular))
-                                .foregroundStyle(speech.isListening ? Color.red : Theme.inkSoft)
-                                .frame(width: 36, height: 36)
-                        }
-                        .accessibilityIdentifier("v2-record")
-                        .accessibilityLabel(speech.isListening ? "Stop dictation" : "Speak your message")
-                        .accessibilitySortPriority(2)
-                    }
+                    v2MicButton
                 }
                 .padding(.leading, V2ComposerMetrics.pillLeading)
                 .padding(.trailing, V2ComposerMetrics.pillTrailing)
                 .frame(minHeight: V2ComposerMetrics.sendSize)
                 .background(Theme.raised, in: Capsule())
                 .overlay(
-                    // R42 P091: the design's pill wears its hairline always;
-                    // focus promotes it to accent.
                     Capsule()
                         .strokeBorder(composerFocused ? Theme.accent : Theme.hairline, lineWidth: 1)
                 )
-                // P023 + P040: the 50px round send — always accent with an
-                // up-arrow, even with an empty draft. R28: while a send or an
-                // image run is generating, it becomes Stop.
-                if v2model.isSending || v2model.hasActiveImageRuns {
-                    Button {
-                        v2StopGenerating()
-                    } label: {
-                        Image(systemName: "stop.fill")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(Color.white)
-                            .frame(width: V2ComposerMetrics.sendSize, height: V2ComposerMetrics.sendSize)
-                            .background(Theme.warning, in: Circle())
-                    }
-                    .accessibilityIdentifier("v2-composer-stop")
-                    .accessibilityLabel("Stop generating")
-                    .accessibilitySortPriority(1)
-                } else {
-                    Button {
-                        v2Submit()
-                    } label: {
-                        Image(systemName: "arrow.up")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(Color.white)
-                            .frame(width: V2ComposerMetrics.sendSize, height: V2ComposerMetrics.sendSize)
-                            .background(Theme.accent, in: Circle())
-                    }
-                    .accessibilityIdentifier("v2-composer-send")
-                    .accessibilityLabel("Send message")
-                    .accessibilitySortPriority(1)
-                    .disabled(!v2CanSend)
+                v2SendOrStop(size: V2ComposerMetrics.sendSize)
                 }
             }
+            .animation(.spring(response: 0.28, dampingFraction: 0.85), value: v2ComposerExpanded)
             // R62 (Patrik iPad review 2026-09-09): padding ABOVE the input —
             // the pill had none and read cramped against the messages.
             .padding(.top, 10)
@@ -3619,6 +3599,79 @@ struct ChatView: View {
                 guard !Task.isCancelled else { return }
                 v2ModelNotice = nil
             }
+        }
+    }
+
+    /// Patrik 2026-09-15: the card grows once the field wraps past one line.
+    private var v2ComposerExpanded: Bool { v2FieldHeight > 44 }
+
+    /// The text field itself (shared by the one-line pill and the grown card).
+    private var v2ComposerField: some View {
+        TextField(
+            "\(v2?.project.name ?? "Corner"): \(v2model.modelDisplayName)",
+            text: $v2model.draft, axis: .vertical
+        )
+            .font(.hanken(14.5))
+            .lineLimit(1...8)
+            .focused($composerFocused)
+            .foregroundStyle(Theme.ink)
+            .padding(.vertical, 8)
+            .submitLabel(.send)
+            .onSubmit { v2Submit() }
+            .onKeyPress(keys: [.return]) { press in
+                guard press.modifiers.contains(.shift) else { return .ignored }
+                v2AllowNewlineOnce = true
+                v2model.draft = V2ShiftReturn.newlineDraft(v2model.draft)
+                return .handled
+            }
+            .onChange(of: v2model.draft) { old, new in v2DraftChanged(old: old, new: new) }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { v2FieldHeight = $0 }
+            .accessibilityIdentifier("v2-composer-field")
+            .accessibilityLabel("Message")
+            .accessibilitySortPriority(5)
+    }
+
+    @ViewBuilder
+    private var v2MicButton: some View {
+        if speech.supported {
+            Button(action: toggleV2Dictation) {
+                Image(systemName: speech.isListening ? "mic.fill" : "mic")
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundStyle(speech.isListening ? Color.red : Theme.inkSoft)
+                    .frame(width: 36, height: 36)
+            }
+            .accessibilityIdentifier("v2-record")
+            .accessibilityLabel(speech.isListening ? "Stop dictation" : "Speak your message")
+            .accessibilitySortPriority(2)
+        }
+    }
+
+    /// The round send — Stop while a send or image run is generating.
+    @ViewBuilder
+    private func v2SendOrStop(size: CGFloat) -> some View {
+        if v2model.isSending || v2model.hasActiveImageRuns {
+            Button { v2StopGenerating() } label: {
+                Image(systemName: "stop.fill")
+                    .font(.system(size: size * 0.32, weight: .semibold))
+                    .foregroundStyle(Color.white)
+                    .frame(width: size, height: size)
+                    .background(Theme.warning, in: Circle())
+            }
+            .accessibilityIdentifier("v2-composer-stop")
+            .accessibilityLabel("Stop generating")
+            .accessibilitySortPriority(1)
+        } else {
+            Button { v2Submit() } label: {
+                Image(systemName: "arrow.up")
+                    .font(.system(size: size * 0.36, weight: .semibold))
+                    .foregroundStyle(Color.white)
+                    .frame(width: size, height: size)
+                    .background(Theme.accent, in: Circle())
+            }
+            .accessibilityIdentifier("v2-composer-send")
+            .accessibilityLabel("Send message")
+            .accessibilitySortPriority(1)
+            .disabled(!v2CanSend)
         }
     }
 

@@ -463,3 +463,33 @@ enum AgentColors {
         "media", "pixel", "corner", "studio", "user", "you"
     ]
 }
+
+// MARK: - Patrik 2026-09-15: stock Apple glass on nav controls
+
+extension View {
+    /// A 44pt round nav control in iOS 26 Liquid Glass; a soft raised disc
+    /// on iOS 17/18 so the layout never changes across OS versions.
+    @ViewBuilder
+    func v2GlassCircle() -> some View {
+        if #available(iOS 26.0, *) {
+            self.glassEffect(.regular.interactive(), in: .circle)
+        } else {
+            self.background(Theme.raised.opacity(0.9), in: Circle())
+                .overlay(Circle().strokeBorder(Theme.hairline, lineWidth: 1))
+        }
+    }
+
+    /// The header pill (bubble + name) in glass; `enabled: false` renders
+    /// the content bare (the home screen carries no pill).
+    @ViewBuilder
+    func v2GlassCapsule(enabled: Bool) -> some View {
+        if !enabled {
+            self
+        } else if #available(iOS 26.0, *) {
+            self.glassEffect(.regular.interactive(), in: .capsule)
+        } else {
+            self.background(Theme.raised.opacity(0.9), in: Capsule())
+                .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: 1))
+        }
+    }
+}
