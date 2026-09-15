@@ -201,6 +201,10 @@ struct ChatView: View {
     @State private var showingSettings = false
     @State private var v2ShowingRoomMenu = false
     @State private var v2FieldHeight: CGFloat = 0
+    /// Patrik 2026-09-15: hand-off follow — the home chat polls where its
+    /// conversation went and slides there on its own.
+    @State private var v2HandoffTask: Task<Void, Never>?
+    @State private var v2HandoffBanner: String?
     @State private var showingImageGenerator = false
     @State private var showingRename = false
     @State private var highlightedMessageID: String?
@@ -331,6 +335,28 @@ struct ChatView: View {
     /// The chat column itself; the host lays the Visual Window beside it on
     /// iPad and over it as a sheet on iPhone. Same store, same selection.
     private var v2Main: some View {
+        v2MainColumn
+            .overlay(alignment: .center) {
+                if let banner = v2HandoffBanner {
+                    HStack(spacing: 10) {
+                        LiveAgentAvatarView(size: 28)
+                        Text(banner)
+                            .font(.hanken(14).weight(.semibold))
+                            .foregroundStyle(Theme.ink)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Theme.raised, in: Capsule())
+                    .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.4), lineWidth: 1))
+                    .shadow(color: .black.opacity(0.35), radius: 18, y: 8)
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                    .accessibilityIdentifier("v2-handoff-banner")
+                }
+            }
+            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: v2HandoffBanner)
+    }
+
+    private var v2MainColumn: some View {
         VStack(spacing: 0) {
             // Patrik 2026-09-15: the bar floats over the thread with a soft
             // dark fall-off (no hard band); the list scrolls under it.
@@ -596,6 +622,7 @@ struct ChatView: View {
                 }
                 Task { await v2model.start(thread: context.thread, project: context.project, mission: context.mission) }
                 Task { await window.start(threadID: context.thread.id) }
+                v2StartHandoffWatch(context)
                 // R43 P095 agent-driven open: tabs the agent adds while the
                 // eye is hidden bring the window back in FaceTime mode.
                 window.onExternalTabs = { [eye] in
@@ -616,6 +643,8 @@ struct ChatView: View {
             if let id = v2?.thread.id { V2LastSeen.stamp(threadID: id) }
             v2model.stop()
             window.stop()
+            v2HandoffTask?.cancel()
+            v2HandoffTask = nil
             window.onExternalTabs = nil
             window.onSession = nil
             viewSync.detach()
@@ -3600,6 +3629,50 @@ struct ChatView: View {
                 v2ModelNotice = nil
             }
         }
+    }
+
+    /// Patrik 2026-09-15: on the home chat, poll `threadHandoff` every 2 s.
+    /// A hand-off newer than the last one we followed shows the "Moving to
+    /// <room>…" pill for a beat, then opens that room (the conversation is
+    /// already there; home is clean behind us).
+    private func v2StartHandoffWatch(_ context: V2ChatContext) {
+        guard context.mission == nil, context.project.kind == .general else { return }
+        v2HandoffTask?.cancel()
+        let threadID = context.thread.id
+        let key = "corner.v2.handoff-followed.\(threadID)"
+        v2HandoffTask = Task { @MainActor in
+            while !Task.isCancelled {
+                if let endpoint = try? ConvexEndpoint(kind: .query, path: "v2Workspace:threadHandoff", args: ["threadId": threadID]),
+                   let handoff = try? await ConvexService.shared.request(endpoint, as: V2ThreadHandoffEnvelope.self).value {
+                    let followed = UserDefaults.standard.double(forKey: key)
+                    if handoff.at > followed {
+                        UserDefaults.standard.set(handoff.at, forKey: key)
+                        let name = v2HandoffTitle(handoff)
+                        v2HandoffBanner = "Moving to \(name)…"
+                        try? await Task.sleep(for: .seconds(1.1))
+                        v2HandoffBanner = nil
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            if let missionID = handoff.missionId {
+                                router.open(.mission(missionID: missionID))
+                            } else {
+                                router.open(.project(projectID: handoff.projectId))
+                            }
+                        }
+                        return
+                    }
+                }
+                try? await Task.sleep(for: .seconds(2))
+            }
+        }
+    }
+
+    private func v2HandoffTitle(_ handoff: V2ThreadHandoff) -> String {
+        let projects = WorkspaceStore.shared.workspace?.projects ?? []
+        if let missionID = handoff.missionId,
+           let m = projects.flatMap(\.missions).first(where: { $0.id == missionID }) {
+            return m.title
+        }
+        return projects.first(where: { $0.id == handoff.projectId })?.name ?? "the room"
     }
 
     /// Patrik 2026-09-15: the card grows once the field wraps past one line.

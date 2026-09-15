@@ -813,3 +813,22 @@ struct V2ActiveRoom: Codable, Identifiable, Equatable {
     /// The card body: the live step while working, else the last line.
     var body: String { running && !lastStep.isEmpty ? lastStep : (lastText.isEmpty ? lastStep : lastText) }
 }
+
+
+/// `v2Workspace:threadHandoff`: where the home chat's conversation moved.
+struct V2ThreadHandoff: Decodable, Equatable {
+    let threadId: String
+    let projectId: String
+    let missionId: String?
+    let at: Double
+}
+
+/// A `null` result decodes as `.value == nil` (a bare optional top level
+/// does not survive the service's decoder).
+struct V2ThreadHandoffEnvelope: Decodable {
+    let value: V2ThreadHandoff?
+    init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        value = c.decodeNil() ? nil : try c.decode(V2ThreadHandoff.self)
+    }
+}
