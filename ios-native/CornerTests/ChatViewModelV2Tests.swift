@@ -305,3 +305,35 @@ final class ChatViewModelV2Tests: XCTestCase {
         XCTAssertEqual(store.migrateIfNeeded(legacyDirectory: legacyDir), 0)
     }
 }
+
+// MARK: - Step ticker (2026-09-14)
+
+extension ChatViewModelV2Tests {
+    private func ev(_ id: String, author: ThreadAuthor, blocks: [ThreadBlock]) -> ThreadEvent {
+        ThreadEvent(id: id, threadID: "t", author: author, agentLabel: author == .agent ? "Assistant" : nil,
+                    blocks: blocks, createdAt: Date())
+    }
+
+    func testStepTickerGroupsConsecutiveStepsAndSettlesOnAnswer() {
+        let step = { (id: String, label: String) in
+            self.ev(id, author: .agent, blocks: [.steps([StepState(id: id, label: label, state: "done")])])
+        }
+        let events = [
+            ev("u1", author: .user, blocks: [.text("latest")]),
+            step("s1", "Reading the project notes..."),
+            step("s2", "Read the Wolfpack notes"),
+            step("s3", "Wrote the draft"),
+            step("s4", "Opening it on your stage..."),
+            ev("a1", author: .agent, blocks: [.text("Done.")]),
+            step("s5", "Reading the project notes..."),
+        ]
+        let items = V2Timeline.items(from: events)
+        XCTAssertEqual(items.count, 4)
+        guard case .ticker(_, let steps, let settled) = items[1] else { return XCTFail("expected ticker") }
+        XCTAssertEqual(steps.map(\.label), ["Reading the project notes...", "Read the Wolfpack notes", "Wrote the draft", "Opening it on your stage..."])
+        XCTAssertTrue(settled)
+        XCTAssertEqual(V2Timeline.visible(steps).map(\.label), ["Read the Wolfpack notes", "Wrote the draft", "Opening it on your stage..."])
+        guard case .ticker(_, _, let live) = items[3] else { return XCTFail("expected live ticker") }
+        XCTAssertFalse(live)
+    }
+}

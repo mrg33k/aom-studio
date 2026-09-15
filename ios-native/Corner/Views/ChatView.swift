@@ -828,7 +828,15 @@ struct ChatView: View {
                             .padding(.vertical, 6)
                             .accessibilityIdentifier("v2-earlier-messages")
                         }
-                        ForEach(v2model.events) { event in
+                        ForEach(V2Timeline.items(from: v2model.events)) { item in
+                            switch item {
+                            case .ticker(_, let steps, let settled):
+                                // Patrik 2026-09-14: steps stack to three and
+                                // dissolve as new ones arrive; a finished run
+                                // collapses to its last line.
+                                V2StepTickerView(steps: steps, settled: settled)
+                                    .id(item.id)
+                            case .event(let event):
                             if v2OpensUnread(event) {
                                 unreadDivider
                                     .accessibilityIdentifier("v2-unread-divider")
@@ -851,6 +859,7 @@ struct ChatView: View {
                                 }
                             )
                             .id(event.id)
+                            }
                         }
                         // R32 P081: the optimistic working line under the
                         // just-sent message — the design's thinking
@@ -876,6 +885,9 @@ struct ChatView: View {
                 .padding(.horizontal, V2ThreadType.gutter)
                 .padding(.top, Theme.s3)
                 .padding(.bottom, 28)
+                // Patrik 2026-09-14: swiping down on the thread dismisses the
+                // keyboard interactively (the legacy list already does).
+                .scrollDismissesKeyboard(.interactively)
                 // Continuous measurement for the follow state: content
                 // height + offset in the scroll's coordinate space (the
                 // legacy thread's ThreadMetricsKey, same math) — plus the
@@ -5155,5 +5167,129 @@ enum V2LastSeen {
     static func read(threadID: String) -> Double? {
         let v = UserDefaults.standard.double(forKey: key(threadID))
         return v > 0 ? v : nil
+    }
+}
+
+
+// MARK: - Step ticker (Patrik 2026-09-14: "steps stack to three and dissolve as new ones come in")
+
+/// One live step for the ticker.
+struct V2TickerStep: Identifiable, Equatable {
+    let id: String
+    let label: String
+    let done: Bool
+}
+
+/// A timeline row: a normal event, or a run of consecutive agent step
+/// events collapsed into one ticker.
+enum V2TimelineItem: Identifiable, Equatable {
+    case event(ThreadEvent)
+    /// `settled` = a non-step event followed the run (the turn answered), so
+    /// the ticker collapses to its last line.
+    case ticker(id: String, steps: [V2TickerStep], settled: Bool)
+
+    var id: String {
+        switch self {
+        case .event(let e): return e.id
+        case .ticker(let id, _, _): return id
+        }
+    }
+}
+
+enum V2Timeline {
+    /// True when an agent event carries nothing but step blocks.
+    static func isStepOnly(_ e: ThreadEvent) -> Bool {
+        guard e.author == .agent, !e.blocks.isEmpty else { return false }
+        return e.blocks.allSatisfy {
+            if case .steps = $0 { return true }
+            return false
+        }
+    }
+
+    static func labels(_ e: ThreadEvent) -> [V2TickerStep] {
+        var out: [V2TickerStep] = []
+        for block in e.blocks {
+            if case .steps(let steps) = block {
+                for (i, s) in V2StepsPrepare.rows(from: steps).enumerated() {
+                    out.append(V2TickerStep(id: "\(e.id)-\(i)", label: s.label, done: s.state == "done"))
+                }
+            }
+        }
+        return out
+    }
+
+    /// Consecutive agent step-only events become ONE ticker. A ticker followed
+    /// by any other event is settled (collapses to its last step). Pure.
+    static func items(from events: [ThreadEvent]) -> [V2TimelineItem] {
+        var out: [V2TimelineItem] = []
+        var run: [V2TickerStep] = []
+        var runID = ""
+        func flush(settled: Bool) {
+            if !run.isEmpty {
+                out.append(.ticker(id: "ticker-\(runID)", steps: run, settled: settled))
+                run = []
+                runID = ""
+            }
+        }
+        for e in events {
+            if isStepOnly(e) {
+                if run.isEmpty { runID = e.id }
+                run.append(contentsOf: labels(e))
+            } else {
+                flush(settled: true)
+                out.append(.event(e))
+            }
+        }
+        flush(settled: false)
+        return out
+    }
+
+    /// The last `keep` steps, oldest first.
+    static func visible(_ steps: [V2TickerStep], keep: Int = 3) -> [V2TickerStep] {
+        Array(steps.suffix(keep))
+    }
+}
+
+/// The ticker: newest step in full, the two before it dimmer and smaller,
+/// everything older dissolved. Settled tickers show one faint line.
+struct V2StepTickerView: View {
+    let steps: [V2TickerStep]
+    let settled: Bool
+
+    var body: some View {
+        let shown = settled ? Array(steps.suffix(1)) : V2Timeline.visible(steps)
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(Array(shown.enumerated()), id: \.element.id) { index, step in
+                let isLatest = index == shown.count - 1
+                let depth = shown.count - 1 - index   // 0 latest, 1, 2 older
+                HStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .fill((step.done || settled) ? Theme.success.opacity(0.16) : Color.clear)
+                            .frame(width: 16, height: 16)
+                        if step.done || settled {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(Theme.success)
+                        } else {
+                            Circle()
+                                .strokeBorder(Theme.inkFaint, lineWidth: 1.5)
+                                .frame(width: 16, height: 16)
+                        }
+                    }
+                    Text(step.label)
+                        .font(.hanken(isLatest && !settled ? 14.5 : 13))
+                        .foregroundStyle(settled ? Theme.inkFaint : (isLatest ? Theme.inkSoft : Theme.inkFaint))
+                        .lineLimit(isLatest ? 2 : 1)
+                }
+                .opacity(settled ? 0.7 : (depth == 0 ? 1.0 : depth == 1 ? 0.55 : 0.3))
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+        }
+        .padding(.vertical, 2)
+        .animation(.easeInOut(duration: 0.35), value: shown.map(\.id))
+        .animation(.easeInOut(duration: 0.35), value: settled)
+        .accessibilityIdentifier("v2-step-ticker")
+        .accessibilityLabel(shown.last.map { "Working: \($0.label)" } ?? "Working")
     }
 }
