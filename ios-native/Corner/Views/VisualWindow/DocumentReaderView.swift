@@ -89,7 +89,7 @@ struct DocumentReaderView: View {
                                 .font(.hanken(11))
                                 .foregroundStyle(Theme.warning)
                         }
-                        ForEach(Array(DocumentMarkdown.blocks(from: text).enumerated()), id: \.offset) { _, block in
+                        ForEach(Array(DocumentMarkdown.blocks(from: DocumentMarkdown.stripFrontmatter(text)).enumerated()), id: \.offset) { _, block in
                             blockView(block)
                         }
                     }
@@ -239,6 +239,32 @@ enum DocumentMarkdown {
         case quote(String)
         case code(String)
         case rule
+    }
+
+    /// Room briefs and project context docs open with a leading YAML
+    /// frontmatter block (`---\nkey: value\n---`) meant for machines, not
+    /// the person reading the stage. Strip it before parsing so the reader
+    /// never shows raw `last_updated: ...` lines as a paragraph. Pure: only
+    /// a real frontmatter block (opening `---` on line one, a matching
+    /// closing `---` before the first blank line breaks it) is removed; a
+    /// document that merely opens with a horizontal rule is left alone.
+    static func stripFrontmatter(_ raw: String) -> String {
+        let normalized = raw.replacingOccurrences(of: "\r\n", with: "\n")
+        var lines = normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        guard let first = lines.first, first.trimmingCharacters(in: .whitespaces) == "---" else { return raw }
+        guard lines.count > 1 else { return raw }
+        // Find the closing fence among the following lines.
+        guard let closeOffset = lines.dropFirst().firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == "---" }) else {
+            return raw
+        }
+        // A closing fence right after the opener (no body) is not frontmatter.
+        guard closeOffset > 1 else { return raw }
+        lines.removeSubrange(0...closeOffset)
+        // Drop the blank line that usually separates frontmatter from the body.
+        while let leading = lines.first, leading.trimmingCharacters(in: .whitespaces).isEmpty {
+            lines.removeFirst()
+        }
+        return lines.joined(separator: "\n")
     }
 
     static func blocks(from raw: String) -> [Block] {

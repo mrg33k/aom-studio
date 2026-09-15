@@ -210,4 +210,49 @@ final class DocumentReaderParsingTests: XCTestCase {
         XCTAssertTrue(DocumentText.looksLikeHTML("\n\n   <!doctype html><html><body>x</body></html>"))
         XCTAssertTrue(DocumentText.looksLikeHTML("\u{FEFF}<html><head><title>x</title></head></html>"))
     }
+
+    /// Room briefs and project context docs (e.g. `CONTEXT.md`) open with a
+    /// YAML frontmatter block meant for machines. It must never render as
+    /// a paragraph of raw `key: value` lines on the stage.
+    func testStripFrontmatterRemovesLeadingYAMLBlock() {
+        let raw = """
+        ---
+        last_updated: 2026-08-18T15:05:05Z
+        draft: true
+        ---
+
+        # Aom — Project Context
+
+        Real body text.
+        """
+        let stripped = DocumentMarkdown.stripFrontmatter(raw)
+        XCTAssertFalse(stripped.contains("last_updated"))
+        XCTAssertFalse(stripped.contains("draft: true"))
+        XCTAssertTrue(stripped.hasPrefix("# Aom"))
+        let blocks = DocumentMarkdown.blocks(from: stripped)
+        XCTAssertEqual(blocks.first, .heading(level: 1, text: "Aom — Project Context"))
+    }
+
+    /// A document that merely opens with a horizontal rule (no closing
+    /// fence, or an empty fence) is left untouched — only a real
+    /// `---`-delimited block with a body counts as frontmatter.
+    func testStripFrontmatterLeavesPlainRuleAlone() {
+        let noClose = "---\n\n# Title\nbody"
+        XCTAssertEqual(DocumentMarkdown.stripFrontmatter(noClose), noClose)
+
+        let emptyFence = "---\n---\n\nBody text."
+        XCTAssertEqual(DocumentMarkdown.stripFrontmatter(emptyFence), emptyFence)
+
+        let noLeadingRule = "# Title\n\nBody text."
+        XCTAssertEqual(DocumentMarkdown.stripFrontmatter(noLeadingRule), noLeadingRule)
+    }
+
+    /// Plain text with no markdown syntax at all still renders — every line
+    /// that matches no block type falls through to a paragraph, never a
+    /// blank stage.
+    func testPlainTextFallsBackToParagraphs() {
+        let text = "Just a note.\nNothing fancy here."
+        let blocks = DocumentMarkdown.blocks(from: DocumentMarkdown.stripFrontmatter(text))
+        XCTAssertEqual(blocks, [.paragraph("Just a note. Nothing fancy here.")])
+    }
 }
