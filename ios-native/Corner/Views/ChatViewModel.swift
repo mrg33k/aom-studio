@@ -2463,6 +2463,12 @@ final class V2ChatModel: ObservableObject {
     func clearThread() async throws {
         guard let thread else { return }
         try await api.clearThread(threadID: thread.id)
+        // Patrik 2026-09-15 ("clear works for a few seconds then the old
+        // conversation comes back"): the poller keeps its own cache of every
+        // event it has seen and re-emits the whole list each tick. Restart
+        // it so the cache starts empty from the cleared surface.
+        subscription?.cancel()
+        subscription = nil
         events = []
         loadState = .empty
         lastDecision = nil
@@ -2470,6 +2476,7 @@ final class V2ChatModel: ObservableObject {
         runWorking = false
         draft = ""
         await refreshEvents()
+        subscribe()
     }
 
     // MARK: - R32 staged attachments (upload at stage time)
