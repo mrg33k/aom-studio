@@ -594,14 +594,24 @@ struct ChatView: View {
                 if talkAloud == nil { talkAloud = V2TalkAloud(threadID: context.thread.id) }
                 if v2ReadCutoff == nil { v2ReadCutoff = V2LastSeen.read(threadID: context.thread.id) }
                 // Setup step 6 stages the first goal here — reviewed, never sent.
+                // Clean portal (2026-09-15): the Assistant/home thread never
+                // reopens with a stale disk draft, reply-quote, or staged
+                // file — every open is a blank composer. A setup stash still
+                // wins (it's a fresh, intentional prefill, not a leftover).
+                let isHomePortal = context.mission == nil && context.project.kind == .general
                 if v2model.draft.isEmpty {
                     if let staged = V2DraftStore.take(threadID: context.thread.id) {
                         v2SuppressDraftPersistOnce = true
                         v2model.draft = staged
-                    } else if let saved = V2ComposerDrafts.load(threadID: context.thread.id) {
+                    } else if !isHomePortal, let saved = V2ComposerDrafts.load(threadID: context.thread.id) {
                         // R28: the disk draft — survives relaunch, per thread.
                         v2model.draft = saved
                     }
+                }
+                if isHomePortal {
+                    V2ComposerDrafts.clear(threadID: context.thread.id)
+                    v2ReplyQuote = nil
+                    v2model.clearStaged()
                 }
                 #if DEBUG
                 if ProcessInfo.processInfo.arguments.contains("-v2PreviewDictation") {
@@ -910,7 +920,8 @@ struct ChatView: View {
                             .padding(.vertical, 6)
                             .accessibilityIdentifier("v2-earlier-messages")
                         }
-                        ForEach(V2Timeline.items(from: v2model.events)) { item in
+                        let items = V2Timeline.items(from: v2model.events)
+                        ForEach(items) { item in
                             switch item {
                             case .ticker(_, let steps, let settled):
                                 // Patrik 2026-09-14: steps stack to three and
@@ -918,6 +929,19 @@ struct ChatView: View {
                                 // collapses to its last line.
                                 V2StepTickerView(steps: steps, settled: settled)
                                     .id(item.id)
+                            case .agentGroup(let groupID, let agentLabel, _, let text, let createdAt):
+                                // R66: consecutive same-turn agent sentences
+                                // render as ONE growing bubble; a subtle
+                                // typing cursor shows only on the last group
+                                // while the run is still open.
+                                V2AgentGroupRow(
+                                    agentLabel: agentLabel,
+                                    agentName: v2?.project.name,
+                                    text: text,
+                                    createdAt: createdAt,
+                                    showsTypingCursor: v2model.runWorking && item.id == items.last?.id
+                                )
+                                .id(groupID)
                             case .event(let event):
                             if v2OpensUnread(event) {
                                 unreadDivider
@@ -935,8 +959,13 @@ struct ChatView: View {
                                     v2ReplyQuote = quote
                                 },
                                 onQuoteTap: { messageID in
+                                    // A quote may target an event that got
+                                    // folded into a group — resolve it to
+                                    // the group's anchor id so the jump
+                                    // still lands on-screen.
+                                    let target = V2Timeline.anchorID(for: messageID, in: items)
                                     withAnimation(.easeOut(duration: 0.25)) {
-                                        proxy.scrollTo(messageID, anchor: .top)
+                                        proxy.scrollTo(target, anchor: .top)
                                     }
                                 }
                             )
@@ -4229,6 +4258,302 @@ enum V2StepsPrepare {
     }
 }
 
+// MARK: - Rich markdown body (headings, lists, tables, inline code, links)
+
+/// A parsed markdown block, in document order. Table rows render as a
+/// compact grid; everything else is one paragraph of inline-styled text.
+private enum V2MDBlock {
+    case heading(level: Int, text: String)
+    case bullet(text: String)
+    case numbered(index: Int, text: String)
+    case codeBlock(String)
+    case table(header: [String], rows: [[String]])
+    case paragraph(String)
+}
+
+/// Line-based markdown parser for the handful of constructs agents actually
+/// emit: `#`/`##`/`###` headings, `-`/`*` bullets, `1.` numbered lists,
+/// fenced code blocks, and simple `|a|b|` pipe tables. Inline styling
+/// (**bold**, `code`, [links](url)) is left to `AttributedString(markdown:)`
+/// per paragraph. Unknown/malformed lines fall through as plain paragraphs —
+/// this must never lose text, only under-style it.
+private enum V2MarkdownParse {
+    static func blocks(from raw: String) -> [V2MDBlock] {
+        var out: [V2MDBlock] = []
+        var paragraph: [String] = []
+        var codeBuffer: [String]? = nil
+        var tableRows: [[String]] = []
+
+        func flushParagraph() {
+            guard !paragraph.isEmpty else { return }
+            out.append(.paragraph(paragraph.joined(separator: "\n")))
+            paragraph = []
+        }
+        func flushTable() {
+            guard tableRows.count > 1 else {
+                tableRows = []
+                return
+            }
+            let header = tableRows[0]
+            let dataRows = Array(tableRows.dropFirst()).filter { row in
+                // Drop the `---|---` alignment row.
+                !row.allSatisfy { $0.trimmingCharacters(in: CharacterSet(charactersIn: "-: ")).isEmpty }
+            }
+            out.append(.table(header: header, rows: dataRows))
+            tableRows = []
+        }
+        func isTableRow(_ line: String) -> [String]? {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard trimmed.hasPrefix("|"), trimmed.contains("|") else { return nil }
+            var cells = trimmed.split(separator: "|", omittingEmptySubsequences: false)
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+            if cells.first == "" { cells.removeFirst() }
+            if cells.last == "" { cells.removeLast() }
+            return cells
+        }
+
+        for line in raw.components(separatedBy: "\n") {
+            if line.trimmingCharacters(in: .whitespaces).hasPrefix("```") {
+                if let buf = codeBuffer {
+                    flushParagraph()
+                    out.append(.codeBlock(buf.joined(separator: "\n")))
+                    codeBuffer = nil
+                } else {
+                    flushParagraph()
+                    flushTable()
+                    codeBuffer = []
+                }
+                continue
+            }
+            if codeBuffer != nil {
+                codeBuffer?.append(line)
+                continue
+            }
+            if let cells = isTableRow(line) {
+                flushParagraph()
+                tableRows.append(cells)
+                continue
+            } else if !tableRows.isEmpty {
+                flushTable()
+            }
+
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty {
+                flushParagraph()
+                continue
+            }
+            if let m = trimmed.range(of: "^#{1,3}\\s+", options: .regularExpression) {
+                flushParagraph()
+                let level = trimmed.distance(from: trimmed.startIndex, to: m.upperBound) - 1
+                out.append(.heading(level: min(level, 3), text: String(trimmed[m.upperBound...])))
+                continue
+            }
+            if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") {
+                flushParagraph()
+                out.append(.bullet(text: String(trimmed.dropFirst(2))))
+                continue
+            }
+            if let m = trimmed.range(of: "^\\d+\\.\\s+", options: .regularExpression) {
+                flushParagraph()
+                let numPart = trimmed[trimmed.startIndex..<m.upperBound]
+                let n = Int(numPart.prefix(while: { $0.isNumber })) ?? 1
+                out.append(.numbered(index: n, text: String(trimmed[m.upperBound...])))
+                continue
+            }
+            paragraph.append(trimmed)
+        }
+        flushParagraph()
+        flushTable()
+        if let buf = codeBuffer, !buf.isEmpty {
+            out.append(.codeBlock(buf.joined(separator: "\n")))
+        }
+        return out
+    }
+}
+
+/// Renders a full agent message as real markdown — headings, bold, bullet
+/// and numbered lists, simple pipe tables, inline code, links — matching
+/// what Claude/ChatGPT-style clients do, instead of one flat `Text`.
+struct V2MarkdownBody: View {
+    let raw: String
+    var isUser: Bool = false
+    /// A pulsing "still typing" indicator appended after the last line while
+    /// the run producing this bubble is still open.
+    var showsTypingCursor: Bool = false
+
+    private var ink: Color { isUser ? .white : Theme.ink }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(V2MarkdownParse.blocks(from: raw).enumerated()), id: \.offset) { _, block in
+                view(for: block)
+            }
+            if showsTypingCursor {
+                V2TypingCursor()
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func view(for block: V2MDBlock) -> some View {
+        switch block {
+        case .heading(let level, let text):
+            Text(MessageBubbleView.attributed(text))
+                .font(.hankenFixed(level == 1 ? 20 : level == 2 ? 18 : 16).weight(.bold))
+                .foregroundStyle(ink)
+                .lineSpacing(V2ThreadType.bodyLineSpacing)
+        case .bullet(let text):
+            HStack(alignment: .top, spacing: 8) {
+                Text("•").font(.hankenFixed(15)).foregroundStyle(ink)
+                Text(MessageBubbleView.attributed(text))
+                    .font(.hankenFixed(15))
+                    .foregroundStyle(ink)
+                    .lineSpacing(V2ThreadType.bodyLineSpacing)
+            }
+        case .numbered(let index, let text):
+            HStack(alignment: .top, spacing: 8) {
+                Text("\(index).").font(.hankenFixed(15)).foregroundStyle(ink)
+                Text(MessageBubbleView.attributed(text))
+                    .font(.hankenFixed(15))
+                    .foregroundStyle(ink)
+                    .lineSpacing(V2ThreadType.bodyLineSpacing)
+            }
+        case .codeBlock(let code):
+            Text(code)
+                .font(.system(.footnote, design: .monospaced))
+                .foregroundStyle(ink)
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.black.opacity(0.22), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .textSelection(.enabled)
+        case .table(let header, let rows):
+            V2MarkdownTable(header: header, rows: rows, ink: ink)
+        case .paragraph(let text):
+            Text(MessageBubbleView.attributed(text))
+                .font(.hankenFixed(15))
+                .foregroundStyle(ink)
+                .lineSpacing(V2ThreadType.bodyLineSpacing + 2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+/// A compact grid for a parsed pipe table — one column per header cell,
+/// equal width, hairline separators between rows.
+private struct V2MarkdownTable: View {
+    let header: [String]
+    let rows: [[String]]
+    let ink: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            gridRow(header, weight: .semibold)
+            Rectangle().fill(Theme.hairline).frame(height: 1)
+            ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                gridRow(row, weight: .regular)
+                if index < rows.count - 1 {
+                    Rectangle().fill(Theme.hairline.opacity(0.6)).frame(height: 1)
+                }
+            }
+        }
+        .background(Color.black.opacity(0.12), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Theme.hairline, lineWidth: 1))
+    }
+
+    private func gridRow(_ cells: [String], weight: Font.Weight) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
+                Text(cell)
+                    .font(.hankenFixed(13).weight(weight))
+                    .foregroundStyle(ink)
+                    .padding(8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+}
+
+/// The subtle "still typing" affordance at the end of a growing bubble: a
+/// small pulsing dot, never a hard pop.
+private struct V2TypingCursor: View {
+    @State private var pulsing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        Circle()
+            .fill(Theme.inkFaint)
+            .frame(width: 6, height: 6)
+            .opacity(reduceMotion ? 0.6 : (pulsing ? 0.25 : 0.9))
+            .onAppear {
+                guard !reduceMotion else { return }
+                withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
+                    pulsing = true
+                }
+            }
+            .accessibilityHidden(true)
+    }
+}
+
+/// One merged-turn bubble: the shared CV6 card treatment, growing with a
+/// spring as new pieces arrive (never a hard re-layout).
+struct V2AgentGroupRow: View {
+    let agentLabel: String?
+    let agentName: String?
+    let text: String
+    let createdAt: Date
+    var showsTypingCursor: Bool = false
+
+    private var displayAgentName: String {
+        if let label = agentLabel, label.lowercased() == "mom" { return "Assistant" }
+        if let label = agentLabel, label != "Corner" { return label }
+        return agentName ?? agentLabel ?? "Corner"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Text(displayAgentName)
+                    .font(.hankenFixed(12.5).weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                    .accessibilityIdentifier("v2-agent-label")
+                Text(V2ThreadClock.string(createdAt))
+                    .font(.hankenFixed(11))
+                    .foregroundStyle(Theme.inkSoft)
+                    .accessibilityIdentifier("v2-event-time")
+            }
+            ZStack(alignment: .leading) {
+                Rectangle().fill(Theme.accent).frame(width: 3)
+                V2MarkdownBody(raw: text, showsTypingCursor: showsTypingCursor)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Theme.agentBubble)
+                    .overlay(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: V2ThreadType.bubbleTail,
+                            bottomLeadingRadius: V2ThreadType.bubbleRadius,
+                            bottomTrailingRadius: V2ThreadType.bubbleRadius,
+                            topTrailingRadius: V2ThreadType.bubbleRadius,
+                            style: .continuous
+                        )
+                        .strokeBorder(Theme.hairline, lineWidth: 1)
+                    )
+                    .padding(.leading, 3)
+            }
+            .clipShape(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: V2ThreadType.bubbleTail,
+                    bottomLeadingRadius: V2ThreadType.bubbleRadius,
+                    bottomTrailingRadius: V2ThreadType.bubbleRadius,
+                    topTrailingRadius: V2ThreadType.bubbleRadius,
+                    style: .continuous
+                )
+            )
+            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: text)
+            .accessibilityIdentifier("v2-event-text")
+        }
+    }
+}
+
 private struct V2BlockView: View {
     let block: ThreadBlock
     let threadID: String
@@ -5379,11 +5704,17 @@ enum V2TimelineItem: Identifiable, Equatable {
     /// `settled` = a non-step event followed the run (the turn answered), so
     /// the ticker collapses to its last line.
     case ticker(id: String, steps: [V2TickerStep], settled: Bool)
+    /// One or more consecutive same-author agent text events, folded into a
+    /// single growing bubble. `eventIDs` preserves every source event id
+    /// (first = the row/anchor id; quote-tap on any of them should resolve
+    /// to this group).
+    case agentGroup(id: String, agentLabel: String?, eventIDs: [String], text: String, createdAt: Date)
 
     var id: String {
         switch self {
         case .event(let e): return e.id
         case .ticker(let id, _, _): return id
+        case .agentGroup(let id, _, _, _, _): return id
         }
     }
 }
@@ -5410,35 +5741,140 @@ enum V2Timeline {
         return out
     }
 
-    /// Consecutive agent step-only events become ONE ticker. A ticker followed
-    /// by any other event is settled (collapses to its last step). Pure.
+    /// True when an agent event carries nothing but plain text blocks (the
+    /// bridge's one-sentence-per-block stream). These are the events that
+    /// fold into a single growing bubble.
+    static func isPureAgentText(_ e: ThreadEvent) -> Bool {
+        guard e.author == .agent, !e.blocks.isEmpty else { return false }
+        return e.blocks.allSatisfy {
+            if case .text = $0 { return true }
+            return false
+        }
+    }
+
+    /// The joined text of one event's text blocks.
+    static func text(of e: ThreadEvent) -> String {
+        e.blocks.compactMap { block -> String? in
+            if case .text(let value) = block { return value }
+            return nil
+        }.joined(separator: "\n")
+    }
+
+    /// Two events belong to the same streamed turn: same agent label, and
+    /// under ~90s apart (the bridge's per-sentence cadence; a longer gap
+    /// reads as a new turn, not a continuation).
+    static func groupable(_ last: ThreadEvent, _ next: ThreadEvent) -> Bool {
+        guard last.agentLabel == next.agentLabel else { return false }
+        return next.createdAt.timeIntervalSince(last.createdAt) < 90
+    }
+
+    /// Joins streamed sentence pieces into one markdown body: a newline
+    /// between pieces when the previous one already ended a sentence
+    /// (terminal punctuation), a plain space otherwise — so a piece the
+    /// bridge split mid-sentence doesn't get its own paragraph.
+    static func joinPieces(_ pieces: [String]) -> String {
+        var result = ""
+        for (index, raw) in pieces.enumerated() {
+            let piece = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !piece.isEmpty else { continue }
+            if result.isEmpty { result = piece; continue }
+            let endsTerminal = result.range(
+                of: "[.!?\"'”)]\\s*$", options: .regularExpression
+            ) != nil
+            result += (endsTerminal ? "\n" : " ") + piece
+        }
+        return result
+    }
+
+    /// Consecutive agent step-only events become ONE ticker (settled once a
+    /// non-step event follows). Consecutive agent pure-text events from the
+    /// same turn (see `groupable`) become ONE growing bubble; a step-only
+    /// run in between doesn't end the text group — it renders as its own
+    /// ticker item, positioned right before the bubble it interrupted, so
+    /// the steps line still reads above the bubble. Pure function.
     static func items(from events: [ThreadEvent]) -> [V2TimelineItem] {
         var out: [V2TimelineItem] = []
-        var run: [V2TickerStep] = []
-        var runID = ""
-        func flush(settled: Bool) {
-            if !run.isEmpty {
-                out.append(.ticker(id: "ticker-\(runID)", steps: run, settled: settled))
-                run = []
-                runID = ""
-            }
-        }
-        for e in events {
-            if isStepOnly(e) {
-                if run.isEmpty { runID = e.id }
-                run.append(contentsOf: labels(e))
+        var textGroup: [ThreadEvent] = []
+
+        func flushText() {
+            guard let first = textGroup.first else { return }
+            if textGroup.count == 1 {
+                out.append(.event(first))
             } else {
-                flush(settled: true)
-                out.append(.event(e))
+                let text = joinPieces(textGroup.map { Self.text(of: $0) })
+                out.append(.agentGroup(
+                    id: first.id, agentLabel: first.agentLabel,
+                    eventIDs: textGroup.map(\.id), text: text,
+                    createdAt: first.createdAt
+                ))
             }
+            textGroup = []
         }
-        flush(settled: false)
+
+        var i = 0
+        while i < events.count {
+            let e = events[i]
+            if isStepOnly(e) {
+                // Collapse the whole consecutive run in one pass, then look
+                // one event past it: if that next event continues the
+                // CURRENTLY open text group, these steps sit inside that
+                // turn — emit the ticker but keep the group open (steps
+                // line above the still-growing bubble). Otherwise these
+                // steps close out whatever came before them (flush any
+                // open group first, so it lands ahead of this new ticker).
+                var run: [V2TickerStep] = []
+                let runID = e.id
+                var j = i
+                while j < events.count, isStepOnly(events[j]) {
+                    run.append(contentsOf: labels(events[j]))
+                    j += 1
+                }
+                let next: ThreadEvent? = j < events.count ? events[j] : nil
+                let continuesOpenGroup: Bool = {
+                    guard let next, isPureAgentText(next), let last = textGroup.last else { return false }
+                    return groupable(last, next)
+                }()
+                if continuesOpenGroup {
+                    out.append(.ticker(id: "ticker-\(runID)", steps: run, settled: true))
+                } else {
+                    flushText()
+                    out.append(.ticker(id: "ticker-\(runID)", steps: run, settled: next != nil))
+                }
+                i = j
+                continue
+            }
+            if isPureAgentText(e) {
+                if let last = textGroup.last, !groupable(last, e) {
+                    flushText()
+                }
+                textGroup.append(e)
+                i += 1
+                continue
+            }
+            flushText()
+            out.append(.event(e))
+            i += 1
+        }
+        flushText()
         return out
     }
 
     /// The last `keep` steps, oldest first.
     static func visible(_ steps: [V2TickerStep], keep: Int = 3) -> [V2TickerStep] {
         Array(steps.suffix(keep))
+    }
+
+    /// Resolves a quoted message id to the row it actually renders on: an
+    /// `.event`'s own id, or the first-event id of the `.agentGroup` that
+    /// absorbed it. Falls back to the id itself (e.g. an older event outside
+    /// the current window) so scrollTo simply no-ops instead of crashing.
+    static func anchorID(for messageID: String, in items: [V2TimelineItem]) -> String {
+        for item in items {
+            if case .agentGroup(let groupID, _, let eventIDs, _, _) = item, eventIDs.contains(messageID) {
+                return groupID
+            }
+        }
+        return messageID
     }
 }
 

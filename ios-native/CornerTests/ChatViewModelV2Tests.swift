@@ -336,4 +336,90 @@ extension ChatViewModelV2Tests {
         guard case .ticker(_, _, let live) = items[3] else { return XCTFail("expected live ticker") }
         XCTAssertFalse(live)
     }
+
+    private func evAt(_ id: String, author: ThreadAuthor, blocks: [ThreadBlock], at: Date, agentLabel: String? = nil) -> ThreadEvent {
+        ThreadEvent(id: id, threadID: "t", author: author,
+                    agentLabel: agentLabel ?? (author == .agent ? "Assistant" : nil),
+                    blocks: blocks, createdAt: at)
+    }
+
+    /// R66 grouping: consecutive same-turn agent sentences fold into ONE
+    /// `.agentGroup`, joined per the terminal-punctuation rule.
+    func testConsecutiveAgentSentencesFoldIntoOneGroup() {
+        let base = Date()
+        let events = [
+            evAt("a1", author: .agent, blocks: [.text("Got it, that's on Wolfpack now.")], at: base),
+            evAt("a2", author: .agent, blocks: [.text("Want me to draft the follow-up too?")], at: base.addingTimeInterval(1)),
+        ]
+        let items = V2Timeline.items(from: events)
+        XCTAssertEqual(items.count, 1)
+        guard case .agentGroup(let id, _, let eventIDs, let text, _) = items[0] else {
+            return XCTFail("expected agentGroup")
+        }
+        XCTAssertEqual(id, "a1")
+        XCTAssertEqual(eventIDs, ["a1", "a2"])
+        XCTAssertEqual(text, "Got it, that's on Wolfpack now.\nWant me to draft the follow-up too?")
+    }
+
+    /// A gap of 90s+ or a different agent label starts a new group; a lone
+    /// event stays a plain `.event` (not wrapped as a one-item group).
+    func testAgentGroupingBreaksOnGapAndOnLabelChange() {
+        let base = Date()
+        let events = [
+            evAt("a1", author: .agent, blocks: [.text("First.")], at: base),
+            evAt("a2", author: .agent, blocks: [.text("Second.")], at: base.addingTimeInterval(120)),
+            evAt("a3", author: .agent, blocks: [.text("Third.")], at: base.addingTimeInterval(121), agentLabel: "Bobby"),
+        ]
+        let items = V2Timeline.items(from: events)
+        XCTAssertEqual(items.count, 3)
+        guard case .event(let e1) = items[0] else { return XCTFail("expected plain event") }
+        XCTAssertEqual(e1.id, "a1")
+        guard case .event(let e2) = items[1] else { return XCTFail("expected plain event") }
+        XCTAssertEqual(e2.id, "a2")
+        guard case .event(let e3) = items[2] else { return XCTFail("expected plain event") }
+        XCTAssertEqual(e3.id, "a3")
+    }
+
+    /// A steps-only run between two same-turn text pieces renders its own
+    /// ticker item but does not split the surrounding text into two groups.
+    func testStepsBetweenSameTurnTextStayOneGroupWithTickerAbove() {
+        let base = Date()
+        let events = [
+            evAt("a1", author: .agent, blocks: [.text("Looking into it.")], at: base),
+            evAt("s1", author: .agent, blocks: [.steps([StepState(id: "s1", label: "Reading the notes", state: "done")])], at: base.addingTimeInterval(1)),
+            evAt("a2", author: .agent, blocks: [.text("Found it, one sec.")], at: base.addingTimeInterval(2)),
+        ]
+        let items = V2Timeline.items(from: events)
+        XCTAssertEqual(items.count, 2)
+        guard case .ticker = items[0] else { return XCTFail("expected ticker first") }
+        guard case .agentGroup(_, _, let eventIDs, let text, _) = items[1] else {
+            return XCTFail("expected agentGroup second")
+        }
+        XCTAssertEqual(eventIDs, ["a1", "a2"])
+        XCTAssertEqual(text, "Looking into it.\nFound it, one sec.")
+    }
+
+    func testAnchorIDResolvesMergedEventToGroupID() {
+        let base = Date()
+        let events = [
+            evAt("a1", author: .agent, blocks: [.text("Got it.")], at: base),
+            evAt("a2", author: .agent, blocks: [.text("On it now.")], at: base.addingTimeInterval(1)),
+        ]
+        let items = V2Timeline.items(from: events)
+        XCTAssertEqual(V2Timeline.anchorID(for: "a2", in: items), "a1")
+        XCTAssertEqual(V2Timeline.anchorID(for: "a1", in: items), "a1")
+        XCTAssertEqual(V2Timeline.anchorID(for: "missing", in: items), "missing")
+    }
+}
+
+extension ChatViewModelV2Tests {
+    @MainActor
+    func testActiveRoomsFlashOnlyNewlyNeedsYou() {
+        let a = V2ActiveRoom(threadId: "a", projectId: "p", missionId: nil, title: "Wolfpack", running: false, needsYou: true, lastStep: "", lastText: "Done", lastAt: 1)
+        let b = V2ActiveRoom(threadId: "b", projectId: "p", missionId: nil, title: "Kohrs", running: true, needsYou: false, lastStep: "Reading the notes", lastText: "", lastAt: 2)
+        XCTAssertEqual(V2ActiveRoomsModel.flashTargets(previous: [], rooms: [a, b]), ["a"])
+        XCTAssertEqual(V2ActiveRoomsModel.flashTargets(previous: ["a"], rooms: [a, b]), [])
+        XCTAssertEqual(b.body, "Reading the notes")
+        XCTAssertEqual(a.body, "Done")
+    }
 }

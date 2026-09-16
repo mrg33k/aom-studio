@@ -252,6 +252,10 @@ struct V2HomeWelcomeView: View {
     @ObservedObject var home: V2HomeModel
     var onOpenProject: (HomeSuggestion) -> Void
     var onPrefill: (String) -> Void
+    /// 2026-09-15: which suggestion ids have played their entrance — so a
+    /// fresh set (new ids) re-animates in, but a card that's already on
+    /// screen never re-pops when unrelated state changes trigger a redraw.
+    @State private var animatedInIDs: Set<String> = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -293,7 +297,11 @@ struct V2HomeWelcomeView: View {
             Spacer(minLength: 24)
             VStack(spacing: 12) {
                 ForEach(Array(home.suggestions.enumerated()), id: \.element.id) { index, suggestion in
+                    let isIn = animatedInIDs.contains(suggestion.id)
                     homeCard(suggestion, index: index)
+                        .opacity(isIn ? 1 : 0)
+                        .offset(y: isIn ? 0 : 14)
+                        .onAppear { animateIn(suggestion.id, index: index) }
                 }
             }
             // R60 (Patrik phone review 2026-09-08): clear the composer so the
@@ -308,6 +316,24 @@ struct V2HomeWelcomeView: View {
                     world: CornerAPI.shared.world ?? "aom",
                     accountName: CornerAPI.shared.userDisplayName
                 )
+            }
+        }
+        .onChange(of: home.suggestions.map(\.id)) { _, newIDs in
+            // A changed suggestion set (new ids) re-plays the entrance —
+            // cards that already animated in and are still present keep
+            // their state, so the row doesn't blink.
+            animatedInIDs.formIntersection(Set(newIDs))
+        }
+    }
+
+    /// Staggered entrance: fade + slight upward slide + spring, ~70ms apart
+    /// per card, keyed on the card's id so it never re-pops once shown.
+    private func animateIn(_ id: String, index: Int) {
+        guard !animatedInIDs.contains(id) else { return }
+        let delay = Double(index) * 0.07
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                _ = animatedInIDs.insert(id)
             }
         }
     }
