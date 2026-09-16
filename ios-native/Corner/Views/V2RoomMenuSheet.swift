@@ -29,8 +29,12 @@ struct V2RoomMenuSheet: View {
     @State private var renaming = false
     @State private var newName = ""
     @State private var moving = false
+    @State private var converting = false
     @State private var archiving = false
     @State private var busy = false
+    /// 2026-09-15: inline surface for a failed manage action — no manage
+    /// action is allowed to fail silently.
+    @State private var manageError: String?
 
     private var isHome: Bool { context.mission == nil && context.project.kind == .general }
     private var roomKey: String { "assistant-instructions:\(context.thread.id)" }
@@ -81,10 +85,29 @@ struct V2RoomMenuSheet: View {
                     Button(project.name) { Task { await moveRoom(to: project) } }
                 }
                 Button("Cancel", role: .cancel) {}
+            } message: {
+                // Patrik 2026-09-15: a project room has no "other project" to
+                // slide into — moving it folds this whole project (its
+                // missions and files) into the one you pick and archives
+                // this one. A mission just changes owner, so it gets no
+                // extra warning.
+                if context.mission == nil {
+                    Text("This folds \"\(context.title)\" into the project you pick — its missions and files move too, and this project is archived (not deleted).")
+                }
+            }
+            .confirmationDialog("Convert to a mission?", isPresented: $converting, titleVisibility: .visible) {
+                ForEach(convertTargets) { project in
+                    Button(project.name) { Task { await convertRoom(to: project) } }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This turns \"\(context.title)\" into its own mission inside the project you pick, with its chat history moving along.")
             }
             .confirmationDialog("Archive this room?", isPresented: $archiving, titleVisibility: .visible) {
                 Button("Archive", role: .destructive) { Task { await archiveRoom() } }
                 Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Nothing is deleted. History stays and this can be brought back later.")
             }
         }
         .task {
@@ -176,7 +199,11 @@ struct V2RoomMenuSheet: View {
     // MARK: - Files
 
     private var filesCard: some View {
-        let files = roomContext?.files ?? []
+        // 2026-09-15: the backend dedupe hasn't landed — a file re-sent or
+        // re-generated shows up twice under the same title. Dedupe here by
+        // title+kind, keeping the newest, so the badge count matches what's
+        // actually visible below it.
+        let files = V2RoomMenuSheet.dedupedByTitleAndKind(roomContext?.files ?? [])
         let grouped = V2RoomMenuSheet.grouped(files)
         return RoomContextCard(
             title: "Files",
@@ -213,6 +240,27 @@ struct V2RoomMenuSheet: View {
             guard let items = buckets[cat], !items.isEmpty else { return nil }
             return (cat, items)
         }
+    }
+
+    /// One row per (title, kind), keeping whichever copy has the latest
+    /// `at`. Preserves the position of each key's first appearance so
+    /// dedupe doesn't also reorder the list.
+    static func dedupedByTitleAndKind(_ files: [RoomContextFile]) -> [RoomContextFile] {
+        func key(_ f: RoomContextFile) -> String { "\(f.kind)|\(f.title)" }
+        var newestByKey: [String: RoomContextFile] = [:]
+        for file in files {
+            if let existing = newestByKey[key(file)], existing.at >= file.at { continue }
+            newestByKey[key(file)] = file
+        }
+        var seen: Set<String> = []
+        var result: [RoomContextFile] = []
+        for file in files {
+            let k = key(file)
+            guard !seen.contains(k) else { continue }
+            seen.insert(k)
+            result.append(newestByKey[k] ?? file)
+        }
+        return result
     }
 
     static func dayLabel(_ date: Date) -> String {
@@ -269,8 +317,19 @@ struct V2RoomMenuSheet: View {
 
     // MARK: - Manage room
 
+    /// Never the current project — moving there is a no-op (mission) or
+    /// nonsensical (project room folding into itself). Never General — it
+    /// holds no missions and both backend mutations reject it as a target.
     private var moveTargets: [ProjectSummary] {
-        (WorkspaceStore.shared.workspace?.projects ?? []).filter { $0.id != context.project.id }
+        (WorkspaceStore.shared.workspace?.projects ?? [])
+            .filter { $0.id != context.project.id && $0.kind != .general }
+    }
+
+    /// Convert is the promote-in-place flow, so — unlike move — the current
+    /// project is a valid, likely-common target: "this room outgrew a
+    /// project chat, give it its own mission right here."
+    private var convertTargets: [ProjectSummary] {
+        (WorkspaceStore.shared.workspace?.projects ?? []).filter { $0.kind != .general }
     }
 
     private var manageCard: some View {
@@ -281,24 +340,46 @@ struct V2RoomMenuSheet: View {
                 .padding(.bottom, 8)
 
             manageRow(icon: "pencil", label: "Rename") {
+                manageError = nil
                 newName = context.title
                 renaming = true
             }
             Divider().overlay(Theme.hairline)
             manageRow(icon: "folder.badge.gearshape", label: "Move to another project", disabled: moveTargets.isEmpty) {
+                manageError = nil
                 moving = true
             }
             Divider().overlay(Theme.hairline)
-            manageRow(icon: "arrow.triangle.branch", label: "Convert to sub-mission", disabled: true, note: "Coming soon") {}
+            manageRow(icon: "arrow.triangle.branch", label: "Convert to sub-mission",
+                      disabled: context.mission != nil || convertTargets.isEmpty,
+                      note: context.mission != nil ? "Already a mission" : nil) {
+                manageError = nil
+                converting = true
+            }
             Divider().overlay(Theme.hairline)
             manageRow(icon: "archivebox", label: "Archive", tint: Theme.warning) {
+                manageError = nil
                 archiving = true
+            }
+            if busy {
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.small)
+                    Text("Working…").font(.hanken(12)).foregroundStyle(Theme.inkSoft)
+                }
+                .padding(.top, 8)
+            }
+            if let manageError {
+                Text(manageError)
+                    .font(.hanken(12))
+                    .foregroundStyle(Theme.warning)
+                    .padding(.top, 8)
             }
         }
         .padding(14)
         .background(Theme.raised, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .animation(.easeOut(duration: 0.2), value: busy)
+        .animation(.easeOut(duration: 0.2), value: manageError)
         .disabled(busy)
-        .opacity(busy ? 0.6 : 1)
     }
 
     private func manageRow(icon: String, label: String, tint: Color? = nil, disabled: Bool = false,
@@ -372,35 +453,77 @@ struct V2RoomMenuSheet: View {
         let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
         busy = true
+        manageError = nil
         defer { busy = false }
         let path = context.mission != nil ? "v2Projects:renameMission" : "v2Projects:renameProject"
         let idKey = context.mission != nil ? "missionId" : "projectId"
         let idValue = context.mission?.id ?? context.project.id
-        if let endpoint = try? ConvexEndpoint(kind: .mutation, path: path, args: [idKey: idValue, "name": name]) {
-            _ = try? await ConvexService.shared.request(endpoint, as: AnyCodableValue.self)
+        do {
+            let endpoint = try ConvexEndpoint(kind: .mutation, path: path, args: [idKey: idValue, "name": name])
+            _ = try await ConvexService.shared.request(endpoint, as: AnyCodableValue.self)
+        } catch {
+            manageError = "Couldn't rename this room. Try again."
         }
     }
 
+    /// A mission just changes owner (`v2Projects:moveMission`). A project
+    /// room has no "other project" of its own to move to — this folds the
+    /// whole project (missions + files) into the target and archives the
+    /// source (`v2Projects:moveProjectRoom`, shipping alongside this).
     private func moveRoom(to project: ProjectSummary) async {
-        guard let missionID = context.mission?.id else { return }
         busy = true
+        manageError = nil
         defer { busy = false }
-        if let endpoint = try? ConvexEndpoint(kind: .mutation, path: "v2Projects:moveMission",
-                                               args: ["missionId": missionID, "targetProjectId": project.id]) {
-            _ = try? await ConvexService.shared.request(endpoint, as: AnyCodableValue.self)
+        do {
+            if let missionID = context.mission?.id {
+                let endpoint = try ConvexEndpoint(kind: .mutation, path: "v2Projects:moveMission",
+                                                   args: ["missionId": missionID, "targetProjectId": project.id])
+                _ = try await ConvexService.shared.request(endpoint, as: AnyCodableValue.self)
+            } else {
+                let endpoint = try ConvexEndpoint(kind: .mutation, path: "v2Projects:moveProjectRoom",
+                                                   args: ["threadId": context.thread.id, "targetProjectId": project.id])
+                _ = try await ConvexService.shared.request(endpoint, as: AnyCodableValue.self)
+            }
             dismiss()
+        } catch {
+            manageError = "Couldn't move this room. Try again."
+        }
+    }
+
+    /// Project rooms only (the manage row is disabled once already a
+    /// mission). Default title is the room's own name — `title?` on the
+    /// backend exists for a future rename-while-converting affordance, not
+    /// used yet. On success the sheet dismisses onto the new mission.
+    private func convertRoom(to project: ProjectSummary) async {
+        busy = true
+        manageError = nil
+        defer { busy = false }
+        do {
+            let endpoint = try ConvexEndpoint(
+                kind: .mutation, path: "v2Projects:convertRoomToMission",
+                args: ["threadId": context.thread.id, "targetProjectId": project.id, "title": context.title]
+            )
+            let result = try await ConvexService.shared.request(endpoint, as: ConvertRoomResult.self)
+            dismiss()
+            router.open(.mission(missionID: result.missionId))
+        } catch {
+            manageError = "Couldn't convert this room. Try again."
         }
     }
 
     private func archiveRoom() async {
         busy = true
+        manageError = nil
         defer { busy = false }
         let path = context.mission != nil ? "v2Projects:archiveMission" : "v2Projects:archiveProject"
         let idKey = context.mission != nil ? "missionId" : "projectId"
         let idValue = context.mission?.id ?? context.project.id
-        if let endpoint = try? ConvexEndpoint(kind: .mutation, path: path, args: [idKey: idValue]) {
-            _ = try? await ConvexService.shared.request(endpoint, as: AnyCodableValue.self)
+        do {
+            let endpoint = try ConvexEndpoint(kind: .mutation, path: path, args: [idKey: idValue])
+            _ = try await ConvexService.shared.request(endpoint, as: AnyCodableValue.self)
             dismiss()
+        } catch {
+            manageError = "Couldn't archive this room. Try again."
         }
     }
 
@@ -641,6 +764,13 @@ struct RoomContextFile: Codable, Identifiable {
         default: return .other
         }
     }
+}
+
+/// `v2Projects:convertRoomToMission`'s return shape — the only manage-room
+/// mutation whose result this sheet reads, so it can hand the router the new
+/// mission's id.
+struct ConvertRoomResult: Decodable {
+    let missionId: String
 }
 
 struct RoomContext: Codable {

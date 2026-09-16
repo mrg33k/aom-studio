@@ -87,6 +87,40 @@ extension Notification.Name {
     static let v2ShowNotifications = Notification.Name("corner.v2.show-notifications")
 }
 
+// MARK: - Order freeze (Patrik 2026-09-15)
+
+/// Freezes a live-resorting list's display order for the lifetime of one
+/// drawer presentation. Recent reorders as `V2RecentStore` re-inserts an
+/// entry at the front, and a project's missions resort server-side by
+/// `updatedAt` as messages land — both used to shuffle rows out from under a
+/// tap while the drawer sat open. `reset` captures the order once (on
+/// drawer open); `sync` keeps every already-seen id pinned to its spot and
+/// appends newly-appearing ids at the end; `apply` renders the frozen order,
+/// falling through to the live order until a snapshot exists.
+private struct DrawerOrderFreeze<ID: Hashable> {
+    private(set) var order: [ID] = []
+
+    mutating func reset<T>(_ items: [T], id: (T) -> ID) {
+        order = items.map(id)
+    }
+
+    mutating func sync<T>(_ items: [T], id: (T) -> ID) {
+        let currentIDs = Set(items.map(id))
+        order.removeAll { !currentIDs.contains($0) }
+        let known = Set(order)
+        for item in items {
+            let key = id(item)
+            if !known.contains(key) { order.append(key) }
+        }
+    }
+
+    func apply<T>(_ items: [T], id: (T) -> ID) -> [T] {
+        guard !order.isEmpty else { return items }
+        let byID = Dictionary(items.map { (id($0), $0) }, uniquingKeysWith: { first, _ in first })
+        return order.compactMap { byID[$0] }
+    }
+}
+
 // MARK: - The drawer
 
 struct V2DrawerView: View {
@@ -112,6 +146,13 @@ struct V2DrawerView: View {
     @State private var fileSearchTask: Task<Void, Never>?
     /// The global agent connections panel (Patrik 2026-09-08).
     @State private var showingConnections = false
+    /// 2026-09-15: order snapshots for the lifetime of this presentation —
+    /// see `DrawerOrderFreeze`.
+    @State private var recentOrder = DrawerOrderFreeze<String>()
+    @State private var projectOrder = DrawerOrderFreeze<String>()
+    @State private var missionOrder: [String: DrawerOrderFreeze<String>] = [:]
+
+    private static func recentKey(_ recent: V2RecentThread) -> String { "\(recent.kind):\(recent.id)" }
 
     private var searchText: String {
         searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -125,10 +166,18 @@ struct V2DrawerView: View {
         v2.workspace?.projects.first(where: { $0.kind == .general })?.id
     }
 
+    /// Order frozen for the life of this presentation (see
+    /// `DrawerOrderFreeze`); the raw project list is already alphabetical
+    /// server-side, but this holds it steady against any future resort.
+    private var orderedRecents: [V2RecentThread] {
+        recentOrder.apply(recents.recents) { Self.recentKey($0) }
+    }
+
     private var visibleProjects: [ProjectSummary] {
         guard let workspace = v2.workspace else { return [] }
         // Patrik 2026-09-15: the Assistant has its own box up top.
-        let projects = workspace.projects.filter { $0.kind != .general }
+        let raw = workspace.projects.filter { $0.kind != .general }
+        let projects = projectOrder.apply(raw) { $0.id }
         guard isSearching else { return projects }
         return projects.filter { project in
             project.name.localizedCaseInsensitiveContains(searchText)
@@ -138,10 +187,14 @@ struct V2DrawerView: View {
         }
     }
 
+    /// A project's missions sort server-side by `updatedAt` — live activity
+    /// while the drawer is open used to resort this list under a tap.
+    /// Frozen the same way as Recent.
     private func visibleMissions(of project: ProjectSummary) -> [MissionSummary] {
-        guard isSearching else { return project.missions }
-        if project.name.localizedCaseInsensitiveContains(searchText) { return project.missions }
-        return project.missions.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
+        let missions = missionOrder[project.id]?.apply(project.missions) { $0.id } ?? project.missions
+        guard isSearching else { return missions }
+        if project.name.localizedCaseInsensitiveContains(searchText) { return missions }
+        return missions.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
     }
 
     /// Searching expands every match; otherwise the open thread's project.
@@ -176,7 +229,7 @@ struct V2DrawerView: View {
                             if !isSearching { assistantRow }
                             if !recents.recents.isEmpty, !isSearching {
                                 drawerLabel("Recent")
-                                ForEach(Array(recents.recents.filter { $0.id != generalProjectID }.enumerated()), id: \.offset) { _, recent in
+                                ForEach(Array(orderedRecents.filter { $0.id != generalProjectID }.enumerated()), id: \.offset) { _, recent in
                                     recentRow(recent)
                                 }
                             }
@@ -236,8 +289,27 @@ struct V2DrawerView: View {
             // Patrik 2026-09-14: every project starts collapsed, including
             // the open thread's.
             expandedProjectIDs = []
+            // 2026-09-15: capture the ordering the moment the drawer opens —
+            // see `DrawerOrderFreeze`.
+            recentOrder.reset(recents.recents) { Self.recentKey($0) }
+            if let projects = v2.workspace?.projects {
+                projectOrder.reset(projects.filter { $0.kind != .general }) { $0.id }
+                for project in projects {
+                    missionOrder[project.id, default: DrawerOrderFreeze()].reset(project.missions) { $0.id }
+                }
+            }
             // File counts for the Files rows (absent, never zero, on failure).
             Task { await v2.refreshFileCounts() }
+        }
+        .onChange(of: recents.recents) { _, newValue in
+            recentOrder.sync(newValue) { Self.recentKey($0) }
+        }
+        .onChange(of: v2.workspace) { _, newWorkspace in
+            guard let projects = newWorkspace?.projects else { return }
+            projectOrder.sync(projects.filter { $0.kind != .general }) { $0.id }
+            for project in projects {
+                missionOrder[project.id, default: DrawerOrderFreeze()].sync(project.missions) { $0.id }
+            }
         }
     }
 
@@ -495,7 +567,7 @@ struct V2DrawerView: View {
         .frame(height: 46)
         .padding(.horizontal, 10)
         .background(
-            recent.id == currentThreadID || recents.recents.first?.id == recent.id
+            recent.id == currentThreadID || orderedRecents.first?.id == recent.id
                 ? Theme.divider : Color.clear,
             in: RoundedRectangle(cornerRadius: 11, style: .continuous)
         )
