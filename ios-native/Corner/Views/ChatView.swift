@@ -651,6 +651,15 @@ struct ChatView: View {
         }
         .onDisappear {
             if let id = v2?.thread.id { V2LastSeen.stamp(threadID: id) }
+            // Patrik 2026-09-15: the Assistant home is a clean portal every
+            // time. Leaving it with a conversation on screen clears the
+            // surface (history is kept server-side, like /clear) and empties
+            // its Visual Window, so the next visit starts fresh.
+            if let context = v2, context.mission == nil, context.project.kind == .general,
+               !v2model.events.isEmpty, !v2model.runWorking {
+                Task { try? await v2model.clearThread() }
+                window.clearAll()
+            }
             v2model.stop()
             window.stop()
             v2HandoffTask?.cancel()

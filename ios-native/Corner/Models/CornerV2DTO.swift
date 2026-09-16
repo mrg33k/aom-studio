@@ -811,7 +811,27 @@ struct V2ActiveRoom: Codable, Identifiable, Equatable {
 
     var id: String { threadId }
     /// The card body: the live step while working, else the last line.
-    var body: String { running && !lastStep.isEmpty ? lastStep : (lastText.isEmpty ? lastStep : lastText) }
+    var body: String {
+        let raw = running && !lastStep.isEmpty ? lastStep : (lastText.isEmpty ? lastStep : lastText)
+        return V2ActiveRoom.plain(raw)
+    }
+
+    /// Patrik 2026-09-15: the card is a preview, never raw markdown. Drops
+    /// table pipes/rules, heading hashes, list bullets and emphasis marks.
+    static func plain(_ text: String) -> String {
+        var lines: [String] = []
+        for rawLine in text.split(separator: "\n", omittingEmptySubsequences: true) {
+            var line = String(rawLine).trimmingCharacters(in: .whitespaces)
+            if line.range(of: #"^\|?\s*(:?-{2,}:?\s*\|)+\s*(:?-{2,}:?)?\s*\|?$"#, options: .regularExpression) != nil { continue }
+            line = line.replacingOccurrences(of: "|", with: " ")
+            line = line.replacingOccurrences(of: #"^#{1,6}\s*"#, with: "", options: .regularExpression)
+            line = line.replacingOccurrences(of: #"^[-*•]\s+"#, with: "", options: .regularExpression)
+            line = line.replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "`", with: "")
+            line = line.replacingOccurrences(of: #"\s{2,}"#, with: " ", options: .regularExpression).trimmingCharacters(in: .whitespaces)
+            if !line.isEmpty { lines.append(line) }
+        }
+        return lines.joined(separator: " ")
+    }
 }
 
 
