@@ -297,6 +297,7 @@ struct OrganizeFolderView: View {
         case .ready:
             if store.visible.isEmpty {
                 emptyState
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
                     if store.truncated {
@@ -366,7 +367,10 @@ struct OrganizeEmptyState: View {
     let message: String
 
     var body: some View {
-        VStack(spacing: Theme.s2) {
+        VStack(spacing: Theme.s3) {
+            Image(systemName: "folder")
+                .font(.system(size: 40, weight: .regular))
+                .foregroundStyle(Theme.inkFaint)
             Text(title)
                 .font(.hkHeadline)
                 .foregroundStyle(Theme.ink)
