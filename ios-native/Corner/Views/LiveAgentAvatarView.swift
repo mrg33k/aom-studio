@@ -41,6 +41,10 @@ final class LoopingPlayerUIView: UIView {
 
     init(resource: String, ext: String) {
         super.init(frame: .zero)
+        // Patrik 2026-09-15: a silent avatar loop must never take the audio
+        // session — music and podcasts keep playing (ambient + mix). The
+        // dictation/voice services set their own category when they run.
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
         playerLayer.player = player
         playerLayer.videoGravity = .resizeAspectFill
         player.isMuted = true

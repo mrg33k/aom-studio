@@ -78,6 +78,8 @@ final class SpeechService: ObservableObject {
         task = nil
         request = nil
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        // Back to the app's resting state: silent ambient, mixes with music.
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
     }
 
     func clearGuidance() { guidance = nil }
