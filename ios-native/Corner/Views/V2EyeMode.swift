@@ -84,14 +84,17 @@ final class V2EyeModeStore: ObservableObject {
         "corner.v2.eye-mode.\(threadID)"
     }
 
+    // Patrik 2026-09-16: the Visual Window is closed every time the app
+    // opens. The eye's choice lives for this launch only (per thread), never
+    // on disk, so a window left open yesterday does not greet you today.
+    nonisolated(unsafe) private static var session: [String: V2EyeMode] = [:]
+
     private static func read(threadID: String) -> V2EyeMode {
-        guard let raw = UserDefaults.standard.string(forKey: key(threadID: threadID)),
-              let mode = V2EyeMode(rawValue: raw) else { return .hidden }
-        return mode
+        session[key(threadID: threadID)] ?? .hidden
     }
 
     private static func write(_ mode: V2EyeMode, threadID: String) {
-        UserDefaults.standard.set(mode.rawValue, forKey: key(threadID: threadID))
+        session[key(threadID: threadID)] = mode
     }
 }
 

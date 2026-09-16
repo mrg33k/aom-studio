@@ -394,7 +394,6 @@ struct ChatView: View {
         // 2026-09-14: the active-rooms strip polls while any v2 chat is open.
         .task(id: v2?.thread.id) {
             guard v2 != nil else { return }
-            v2activeRooms.dismissed = false
             v2activeRooms.start()
         }
         .onDisappear { v2activeRooms.stop() }
@@ -1081,7 +1080,9 @@ struct ChatView: View {
             // the gap. Reuses the measured distance + v2ScrollToBottom; the
             // new-messages pill takes precedence when it's showing.
             .overlay(alignment: .bottomTrailing) {
-                if !v2AtBottom, !v2Follow.showsNewMessages {
+                // Patrik 2026-09-16: never on the home portal (it sat over
+                // the suggestion cards).
+                if !v2AtBottom, !v2Follow.showsNewMessages, !v2ShowingHome {
                     Button {
                         v2ScrollToBottom(proxy: proxy, animated: true)
                     } label: {
@@ -1482,6 +1483,33 @@ struct ChatView: View {
     private var v2NextStepsStrip: some View {
         let rooms = v2activeRooms.rooms.filter { $0.threadId != v2?.thread.id }
         return Group {
+        // Patrik 2026-09-16: the strip is collapsible and stays collapsed
+        // until you open it again (it was "always in the way").
+        if !v2ShowingHome, v2activeRooms.dismissed, !rooms.isEmpty {
+            HStack {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { v2activeRooms.dismissed = false }
+                } label: {
+                    HStack(spacing: 6) {
+                        Circle().fill(rooms.contains { $0.needsYou } ? Theme.warning : Theme.success).frame(width: 6, height: 6)
+                        Text(rooms.count == 1 ? "1 room active" : "\(rooms.count) rooms active")
+                            .font(.hanken(11.5).weight(.semibold))
+                            .foregroundStyle(Theme.inkSoft)
+                        Image(systemName: "chevron.up")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(Theme.inkFaint)
+                    }
+                    .padding(.horizontal, 10)
+                    .frame(height: 24)
+                    .background(Theme.raised2, in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("v2-active-rooms-expand")
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 8)
+            .transition(.opacity)
+        }
         if !v2ShowingHome, !v2activeRooms.dismissed, !rooms.isEmpty {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -1533,15 +1561,15 @@ struct ChatView: View {
                         .accessibilityLabel("\(room.title): \(room.body)")
                     }
                     Button {
-                        v2activeRooms.dismissed = true
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { v2activeRooms.dismissed = true }
                     } label: {
-                        Image(systemName: "xmark")
+                        Image(systemName: "chevron.down")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(Theme.inkFaint)
                             .padding(8)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Hide active rooms")
+                    .accessibilityLabel("Collapse active rooms")
                     .accessibilityIdentifier("v2-active-rooms-hide")
                 }
                 .padding(.horizontal, 2)
@@ -5947,7 +5975,10 @@ struct V2StepTickerView: View {
 final class V2ActiveRoomsModel: ObservableObject {
     @Published private(set) var rooms: [V2ActiveRoom] = []
     @Published var flashing: Set<String> = []
-    @Published var dismissed = false
+    /// Collapsed state, remembered across rooms and launches.
+    @Published var dismissed: Bool = UserDefaults.standard.bool(forKey: "corner.v2.active-rooms.collapsed") {
+        didSet { UserDefaults.standard.set(dismissed, forKey: "corner.v2.active-rooms.collapsed") }
+    }
     private var seenNeedsYou: Set<String> = []
     private var task: Task<Void, Never>?
     var api: (any CornerV2API)?
