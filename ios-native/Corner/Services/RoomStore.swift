@@ -667,6 +667,23 @@ final class WorkspaceStore: ObservableObject {
         try await api.thread(missionID: missionID)
     }
 
+    /// A thread created mid-session (a room just converted to a mission, or a
+    /// project made via "+ New") has no visualSession row until the backend's
+    /// `ensureWorkspace` backfills one -- and this store only calls that once
+    /// per app launch (`ensuredWorkspaceID` guard above). Re-reading the same
+    /// missing session never converges on its own, so callers that hit a nil
+    /// thread call this once before giving up, instead of making Patrik
+    /// relaunch the app (2026-09-16, R-sim-verify: Convert to sub-mission
+    /// landed on "This mission has no conversation yet").
+    func forceEnsureWorkspace() async {
+        do {
+            let ensured = try await api.ensureWorkspace()
+            ensuredWorkspaceID = ensured.workspaceId
+        } catch {
+            // Best effort -- the caller's own error path still fires.
+        }
+    }
+
     /// Artifact counts for the Files rows, fetched on demand and cached by
     /// thread id. Failures leave the count absent rather than wrong.
     func refreshFileCounts() async {

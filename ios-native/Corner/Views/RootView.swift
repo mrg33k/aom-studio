@@ -379,7 +379,16 @@ struct V2ProjectChatView: View {
                     thread = loaded
                     return
                 } else if last {
-                    errorText = "This project has no conversation yet."
+                    // A project created this session has no visualSession row
+                    // yet -- force one re-ensure before giving up (same fix as
+                    // V2MissionChatView, 2026-09-16).
+                    await store.forceEnsureWorkspace()
+                    if let loaded = try await store.threadForProject(projectID) {
+                        project = found
+                        thread = loaded
+                    } else {
+                        errorText = "This project has no conversation yet."
+                    }
                     return
                 }
             } catch {
@@ -432,6 +441,17 @@ struct V2MissionChatView: View {
             return
         }
         do {
+            if let loaded = try await store.threadForMission(missionID) {
+                project = found.project
+                mission = found.mission
+                thread = loaded
+                return
+            }
+            // A mission created by converting a room mid-session (Manage room >
+            // Convert to sub-mission) has no visualSession row yet -- force one
+            // re-ensure before surfacing an error the person can't fix by
+            // waiting (2026-09-16, R-sim-verify item E).
+            await store.forceEnsureWorkspace()
             if let loaded = try await store.threadForMission(missionID) {
                 project = found.project
                 mission = found.mission
