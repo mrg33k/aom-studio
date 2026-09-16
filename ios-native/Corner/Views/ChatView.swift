@@ -504,8 +504,14 @@ struct ChatView: View {
                 .presentationDragIndicator(.visible)
         }
         // Connections (Patrik 2026-09-08): this room's agent toolkit + on/off.
-        .onReceive(NotificationCenter.default.publisher(for: .v2OpenConnections)) { _ in
-            // 2026-09-15: back from a mailbox sign-in; the sheet re-reads state on appear.
+        .onReceive(NotificationCenter.default.publisher(for: .v2OpenConnections)) { note in
+            // 2026-09-15: back from an account sign-in; the sheet re-reads
+            // state on appear and shows "Connected <service>" for a beat.
+            let info = note.userInfo as? [String: String] ?? [:]
+            if info["connected"] == "1" {
+                let service = info["service"] ?? "account"
+                V2ArcadeConnectStore.shared.justConnected = service.capitalized
+            }
             v2ShowingConnections = true
         }
         .sheet(isPresented: $v2ShowingConnections) {

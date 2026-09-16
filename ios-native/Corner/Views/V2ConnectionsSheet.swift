@@ -17,6 +17,7 @@
 
 import SwiftUI
 import UIKit
+import AuthenticationServices
 
 // MARK: - Model
 
@@ -154,9 +155,67 @@ final class V2ToolkitStore: ObservableObject {
 /// provider OAuth URL → open it in Safari → poll `arcade:checkAuth` until the
 /// user finishes approving. Verified live: the action returns a real Google
 /// sign-in. Needs ARCADE_API_KEY set on the backend + a deploy (Patrik).
+/// The connector picker for "Add another account" — mirrors the backend
+/// catalog in `convex/arcade.ts` CONNECTORS. Gmail first (the common case),
+/// then whatever else Arcade already lists for this workspace.
+struct V2ArcadeProvider: Identifiable {
+    let service: String
+    let name: String
+    let icon: String
+    var id: String { service }
+}
+
+let v2ArcadeProviders: [V2ArcadeProvider] = [
+    V2ArcadeProvider(service: "gmail", name: "Gmail", icon: "envelope"),
+    V2ArcadeProvider(service: "googlecalendar", name: "Calendar", icon: "calendar"),
+    V2ArcadeProvider(service: "googledrive", name: "Drive", icon: "folder"),
+    V2ArcadeProvider(service: "slack", name: "Slack", icon: "message"),
+    V2ArcadeProvider(service: "github", name: "GitHub", icon: "chevron.left.forwardslash.chevron.right"),
+    V2ArcadeProvider(service: "notion", name: "Notion", icon: "doc.text"),
+    V2ArcadeProvider(service: "figma", name: "Figma", icon: "paintbrush"),
+    V2ArcadeProvider(service: "dropbox", name: "Dropbox", icon: "shippingbox"),
+    V2ArcadeProvider(service: "linear", name: "Linear", icon: "checklist"),
+    V2ArcadeProvider(service: "outlook", name: "Outlook", icon: "envelope.badge"),
+]
+
+/// 2026-09-15 (Patrik: "it takes you to Arcade instead of back to the app"):
+/// runs the Arcade authorize URL in the system auth sheet so a successful
+/// sign-in returns to Corner on its own — no Safari hand-off, no dead end on
+/// account.arcade.dev. The verifier route redirects to `corner://connections`,
+/// which is this app's own callback scheme, so the session closes itself.
+@MainActor
+final class V2ArcadeAuthPresenter: NSObject, ASWebAuthenticationPresentationContextProviding {
+    static let shared = V2ArcadeAuthPresenter()
+    private var session: ASWebAuthenticationSession?
+
+    func present(_ url: URL) {
+        session?.cancel()
+        let s = ASWebAuthenticationSession(url: url, callbackURLScheme: "corner") { callbackURL, error in
+            // The app's own URL handler (AppRouter.handle(url:)) already reacts
+            // to corner://connections — this callback only needs to let the
+            // sheet close; nothing else to do with callbackURL/error here.
+            if let callbackURL { AppRouter.shared.handle(url: callbackURL) }
+        }
+        s.presentationContextProvider = self
+        s.prefersEphemeralWebBrowserSession = false
+        session = s
+        s.start()
+    }
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { ($0 as? UIWindowScene)?.keyWindow }
+            .first ?? ASPresentationAnchor()
+    }
+}
+
 @MainActor
 final class V2ArcadeConnectStore: ObservableObject {
     static let shared = V2ArcadeConnectStore()
+
+    /// Set by the Arcade verifier's return trip (corner://connections?...) so
+    /// the sheet can show "Connected <name>" once, then clear it.
+    @Published var justConnected: String? = nil
 
     enum ConnectState: Equatable { case idle, connecting, connected, failed(String) }
 
@@ -271,18 +330,28 @@ final class V2ArcadeConnectStore: ObservableObject {
         }
     }
 
-    /// 2026-09-14 (Patrik: "users need to add multiple gmails, in app"): a
-    /// second mailbox is authorized under its own Arcade user id
-    /// ("<viewer>::<label>") and recorded as integrations service
-    /// "gmail:<label>", so the assistant reads every mailbox and names it.
-    func addMailbox(label rawLabel: String) {
+    /// 2026-09-14 (Patrik: "users need to add multiple gmails, in app"),
+    /// generalized 2026-09-15 (Patrik: "'Add another account', you pick the
+    /// account"): a second account of any Arcade-backed provider is
+    /// authorized under its own Arcade user id ("<viewer>::<label>") and
+    /// recorded as integrations service "<provider>:<label>", so the
+    /// assistant reads every account and names it. Gmail keeps the bare
+    /// "gmail:<slug>" shape other code already keys off of; every other
+    /// provider gets the same "<service>:<slug>" pattern.
+    func addAccount(provider: V2ArcadeProvider, label rawLabel: String) {
         let label = rawLabel.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !label.isEmpty else { return }
         let slug = label.lowercased().replacingOccurrences(of: "[^a-z0-9]+", with: "-", options: .regularExpression)
             .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-        let service = "gmail:\(slug.isEmpty ? "mailbox" : slug)"
-        connect(service: service, arcadeService: "gmail",
+        let service = "\(provider.service):\(slug.isEmpty ? "account" : slug)"
+        connect(service: service, arcadeService: provider.service,
                 arcadeUserId: "\(Self.viewerEmail)::\(slug)", label: label)
+    }
+
+    /// Back-compat for the one call site (deep-link tests, older builds)
+    /// that only ever added Gmail.
+    func addMailbox(label rawLabel: String) {
+        addAccount(provider: v2ArcadeProviders.first(where: { $0.service == "gmail" })!, label: rawLabel)
     }
 
     /// Record a completed authorization in Convex so every device and the
@@ -301,7 +370,7 @@ final class V2ArcadeConnectStore: ObservableObject {
                            "status": "connected", "email": label ?? Self.viewerEmail,
                            "connectionId": arcadeUserId] as [String: Any],
                     preserveClientIdentity: true)
-                if service.hasPrefix("gmail:"), let label, !extraMailboxes.contains(where: { $0.service == service }) {
+                if service.contains(":"), let label, !extraMailboxes.contains(where: { $0.service == service }) {
                     extraMailboxes.append((service: service, label: label))
                 }
             } catch {
@@ -340,16 +409,11 @@ final class V2ArcadeConnectStore: ObservableObject {
                     byService[service] = .failed("No sign-in link came back")
                     return
                 }
-                // 2026-09-13: never spin on "Connecting…" with nothing on
-                // screen — if the browser refuses the URL, say so and stop.
-                UIApplication.shared.open(url, options: [:]) { [weak self] ok in
-                    NSLog("[arcade] open(%@) -> %d", service, ok ? 1 : 0)
-                    guard let self, !ok else { return }
-                    Task { @MainActor in
-                        self.polls[service]?.cancel()
-                        self.byService[service] = .failed("Couldn't open the browser")
-                    }
-                }
+                // 2026-09-15: the system auth sheet (ASWebAuthenticationSession),
+                // not plain Safari — a completed sign-in returns to the app on
+                // its own via the verifier's corner://connections redirect,
+                // instead of stranding the person on account.arcade.dev.
+                V2ArcadeAuthPresenter.shared.present(url)
                 poll(service: service, authId: resp.authId, arcadeUserId: userId, label: label)
             } catch {
                 NSLog("[arcade] initiateAuth(%@) failed: %@", service, String(describing: error))
@@ -399,8 +463,10 @@ struct V2ConnectionsSheet: View {
         return "What every agent can use"
     }
 
+    @State private var showingAddProvider = false
     @State private var showingAddMailbox = false
     @State private var addMailboxLabel = ""
+    @State private var addMailboxProvider: V2ArcadeProvider = v2ArcadeProviders[0]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -434,7 +500,7 @@ struct V2ConnectionsSheet: View {
                                                 .foregroundStyle(Theme.accent)
                                         }
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text("Gmail · \(box.label)")
+                                            Text("\(v2ArcadeProviders.first(where: { box.service.hasPrefix($0.service + ":") })?.name ?? "Gmail") · \(box.label)")
                                                 .font(.hanken(15).weight(.semibold))
                                                 .foregroundStyle(Theme.ink)
                                             HStack(spacing: 5) {
@@ -466,15 +532,14 @@ struct V2ConnectionsSheet: View {
                                 }
                                 Rectangle().fill(Theme.divider).frame(height: 1).padding(.leading, 46)
                                 Button {
-                                    addMailboxLabel = ""
-                                    showingAddMailbox = true
+                                    showingAddProvider = true
                                 } label: {
                                     HStack(spacing: 12) {
                                         Image(systemName: "plus.circle")
                                             .font(.system(size: 17, weight: .medium))
                                             .foregroundStyle(Theme.accent)
                                             .frame(width: 34, height: 34)
-                                        Text("Add another Gmail account")
+                                        Text("Add another account")
                                             .font(.hanken(15).weight(.semibold))
                                             .foregroundStyle(Theme.accent)
                                         Spacer(minLength: 8)
@@ -495,16 +560,47 @@ struct V2ConnectionsSheet: View {
                 .padding(.top, 4)
             }
         }
+        .overlay(alignment: .top) {
+            if let name = connect.justConnected {
+                Text("Connected \(name)")
+                    .font(.hanken(13).weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                    .padding(.horizontal, 14).padding(.vertical, 9)
+                    .background(Theme.raised2, in: Capsule())
+                    .shadow(radius: 6, y: 2)
+                    .padding(.top, 8)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .onAppear {
+                        Task {
+                            try? await Task.sleep(nanoseconds: 2_500_000_000)
+                            withAnimation { connect.justConnected = nil }
+                        }
+                    }
+            }
+        }
         .background(Theme.ground.ignoresSafeArea())
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         .task { await connect.loadIntegrations() }
-        .alert("Add a Gmail account", isPresented: $showingAddMailbox) {
+        // Patrik 2026-09-15: "Instead of 'Add another Gmail account' it
+        // should say 'Add another account', you pick the account" — a
+        // provider picker comes first, then the existing name prompt.
+        .confirmationDialog("Add another account", isPresented: $showingAddProvider, titleVisibility: .visible) {
+            ForEach(v2ArcadeProviders) { provider in
+                Button(provider.name) {
+                    addMailboxProvider = provider
+                    addMailboxLabel = ""
+                    showingAddMailbox = true
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        }
+        .alert("Add a \(addMailboxProvider.name) account", isPresented: $showingAddMailbox) {
             TextField("Name it (Work, Personal, hello@)", text: $addMailboxLabel)
             Button("Cancel", role: .cancel) { }
-            Button("Connect") { connect.addMailbox(label: addMailboxLabel) }
+            Button("Connect") { connect.addAccount(provider: addMailboxProvider, label: addMailboxLabel) }
         } message: {
-            Text("You'll sign in to that Google account in the browser. The assistant will read it alongside your other mailboxes and name it when it answers.")
+            Text("You'll sign in to that \(addMailboxProvider.name) account, then land right back here. The assistant will read it alongside your other accounts and name it when it answers.")
         }
     }
 
