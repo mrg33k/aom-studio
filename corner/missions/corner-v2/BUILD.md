@@ -210,3 +210,9 @@ Shipped: ten briefs (`openclaw.md` primary, `claude-code.md`, `claude-agent-sdk.
 Not done in this round: Phase 1 (the Corner spec written in the exemplars' terms), the fixture, any cage. Clones live in the session scratchpad only.
 
 **Status:** done (Phase 0 delivered; Phase 1 waits on Patrik's read of PATTERN.md §11)
+
+### R83 — Corner on a substrate: OpenClaw as the engine (plan approved 2026-09-17)
+
+Follows R82. Plan: `PLAN-openclaw-substrate.md` in this folder (approved by Patrik 2026-09-17). Decisions: OpenClaw replaces the bridge subject to a two-day spike and a cage against the current bridge; no second engine; Muse first via OpenClaw's built-in Meta provider (`muse-spark-1.3`, AOM's key); a Mac-side agent executes from a brief; the phone stays untouched (channel plugin over Convex) so the existing gauntlet is the judge. Next: this session writes `corner/openclaw/` (channel plugin, hands plugin, config, workspace, spike brief) in AOM-EA plus the bridge's `R25_SKIP_THREADS` exclusion.
+
+**Status:** in progress (step zero done: plan in repo)
