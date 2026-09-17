@@ -215,4 +215,6 @@ Not done in this round: Phase 1 (the Corner spec written in the exemplars' terms
 
 Follows R82. Plan: `PLAN-openclaw-substrate.md` in this folder (approved by Patrik 2026-09-17). Decisions: OpenClaw replaces the bridge subject to a two-day spike and a cage against the current bridge; no second engine; Muse first via OpenClaw's built-in Meta provider (`muse-spark-1.3`, AOM's key); a Mac-side agent executes from a brief; the phone stays untouched (channel plugin over Convex) so the existing gauntlet is the judge. Next: this session writes `corner/openclaw/` (channel plugin, hands plugin, config, workspace, spike brief) in AOM-EA plus the bridge's `R25_SKIP_THREADS` exclusion.
 
+Added 2026-09-17: section 8 of the plan, the desktop companion (Patrik: full machine control, user's own drives incl. cloud and mounted, own LLM subscriptions only with the companion). Verified the substrate already carries it: OpenClaw's macOS menu-bar app supervises the gateway, handles TCC, exposes computer-use/system.run node tools; `claude-cli` and `google-gemini-cli` CLI backends plus the Codex app-server harness reuse local logins. Corner builds the thin shell after the spike.
+
 **Status:** in progress (step zero done: plan in repo)

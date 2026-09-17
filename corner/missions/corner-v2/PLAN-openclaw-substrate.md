@@ -170,3 +170,27 @@ Later, app-facing cage: A' channel over Convex (phone unchanged) vs B' the phone
 - Which worlds share the studio gateway and which get their own install.
 - Which sends get a standing "always" tier from day one and which never do (the send tool ships in ask tier only).
 - Whether to run the app-facing cage (direct gateway RPC) or keep Convex as the only wire.
+
+## 8. The desktop companion (Patrik, 2026-09-17, after the substrate decision)
+
+**The ask, in his words.** "A desktop companion app that gives users the same ability that I have had this entire time working with the agents where the agent can actually see the files and folders on a user's computer and therefore can adjust things and make changes locally… understand mounted drives, cloud drives… best served as an actual Mac application… through Xcode in a very similar style to how the iPad version is." And: "control the computer completely, as well as get permission to pick up on the user's LLM subscriptions… like how we use Claude currently or how we use Codex… but only if they have the desktop companion app."
+
+**What the substrate already provides (verified in the v2026.9.4 clone).**
+- The OpenClaw macOS app is its "menu bar companion" (`apps/macos`, shared Swift package `apps/shared/OpenClawKit`, macOS 15+): it installs and supervises the Gateway as a LaunchAgent (`GatewayLaunchAgentManager`, `GatewayAutostartPolicy`), walks the user through macOS permission prompts (`DeviceSettingsPermissions.swift`: notifications, accessibility, screen recording, microphone), and is a node exposing Mac-hosted tools: `system.run`, the built-in computer-use tool (screen image + accessibility tree, `ComputerControlProvider.swift`, `docs/nodes/computer-use.md`), camera, audio, file transfers, device commands, command policy.
+- Subscription logins as backends: `claude-cli` (Anthropic plugin, reuses the local Claude Code login) and `google-gemini-cli` are registered CLI backends; the bundled `codex` plugin runs the user's Codex app-server as a native harness (`docs/plugins/codex-harness.md`). These exist only on the machine running the gateway, so "own subscriptions only with the companion" is structural.
+- Filesystem boundary per session (`read-only | guarded | workspace | full`) and the approval stack for writes and commands.
+
+**What Corner builds (thin shell, Xcode, SwiftUI, xcodegen like `ios-native`, shared Swift package for models/theme/event rendering).**
+1. Gateway install and supervision (their LaunchAgent pattern), plus a power assertion while work runs (the Mac-asleep bar).
+2. Roots picker and permission explainer: home folders, `/Volumes/*`, cloud drives under `~/Library/CloudStorage/*` (Dropbox, Google Drive, OneDrive) and iCloud under `~/Library/Mobile Documents/`; placeholder files hydrate on read.
+3. The Corner file index over those roots (replaces the repo-only gateway index) feeding `corner_find_file` / `corner_open_file`; paths never leave the Mac.
+4. "What the agent is touching now" from the tool stream; approvals answerable here or on the phone.
+5. The product gate: companion paired → local subscriptions, full machine, user's drives; phone only → hosted Muse on AOM's key, metered, no machine.
+
+**Rules for "completely".** Capability, not default permission: reads in scope free; writes under approval; system-level and destructive actions ask, with an owner-controlled "always" ladder; never a persisted run-everything for sends or deletes (Cursor lesson, R82).
+
+**Constraints.** Ships outside the Mac App Store (Developer ID + notarization) because the sandbox blocks the point of it; TCC grants only stick with proper signing. Before the subscription lane is advertised, read the current Anthropic and OpenAI terms on subscription use inside third-party products; OpenClaw's shape (run the vendor's own CLI or app-server on the user's machine, never lift tokens into our client) is the defensible one, and the check is Patrik's call to commission.
+
+**Sequence.** After the spike (section 4): the spike's day-1 install on the studio Mac is the first companion by hand; the Mac app wraps what the spike proves. It starts the R82 way: read `apps/macos` and `docs/nodes/*` first, copy gateway supervision and the permission flow, invent nothing.
+
+**Patrik's decisions for it:** default roots in scope; the write and delete tiers; thin Corner shell (recommended) vs rebranded OpenClaw app; commissioning the terms check.
