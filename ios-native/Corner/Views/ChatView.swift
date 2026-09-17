@@ -5931,30 +5931,9 @@ struct V2StepTickerView: View {
         let shown = settled ? Array(steps.suffix(1)) : V2Timeline.visible(steps)
         VStack(alignment: .leading, spacing: 6) {
             ForEach(Array(shown.enumerated()), id: \.element.id) { index, step in
-                let isLatest = index == shown.count - 1
-                let depth = shown.count - 1 - index   // 0 latest, 1, 2 older
-                HStack(spacing: 8) {
-                    ZStack {
-                        Circle()
-                            .fill((step.done || settled) ? Theme.success.opacity(0.16) : Color.clear)
-                            .frame(width: 16, height: 16)
-                        if step.done || settled {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(Theme.success)
-                        } else {
-                            Circle()
-                                .strokeBorder(Theme.inkFaint, lineWidth: 1.5)
-                                .frame(width: 16, height: 16)
-                        }
-                    }
-                    Text(step.label)
-                        .font(.hanken(isLatest && !settled ? 14.5 : 13))
-                        .foregroundStyle(settled ? Theme.inkFaint : (isLatest ? Theme.inkSoft : Theme.inkFaint))
-                        .lineLimit(isLatest ? 2 : 1)
-                }
-                .opacity(settled ? 0.7 : (depth == 0 ? 1.0 : depth == 1 ? 0.55 : 0.3))
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                row(step: step,
+                    isLatest: index == shown.count - 1,
+                    depth: shown.count - 1 - index)
             }
         }
         .padding(.vertical, 2)
@@ -5963,6 +5942,125 @@ struct V2StepTickerView: View {
         .accessibilityIdentifier("v2-step-ticker")
         .accessibilityLabel(shown.last.map { "Working: \($0.label)" } ?? "Working")
     }
+
+    // One ticker line. Extracted from `body` so the type-checker can handle it.
+    // The line the agent is working right now (R83 "see the thinking") shows a
+    // rotating arc + shimmering label instead of a static circle.
+    @ViewBuilder
+    private func row(step: V2TickerStep, isLatest: Bool, depth: Int) -> some View {
+        let isActive = isLatest && !settled
+        HStack(spacing: 8) {
+            mark(step: step, isActive: isActive)
+                .frame(width: 16, height: 16)
+            Text(step.label)
+                .font(.hanken(isActive ? 14.5 : 13))
+                .foregroundStyle(labelColor(isActive: isActive, isLatest: isLatest))
+                .lineLimit(isLatest ? 2 : 1)
+                .shimmering(active: isActive)
+        }
+        .opacity(rowOpacity(depth: depth))
+        .transition(.opacity.combined(with: .move(edge: .bottom)))
+    }
+
+    @ViewBuilder
+    private func mark(step: V2TickerStep, isActive: Bool) -> some View {
+        ZStack {
+            if isActive {
+                ThinkingArc()
+            } else if step.done || settled {
+                Circle()
+                    .fill(Theme.success.opacity(0.16))
+                    .frame(width: 16, height: 16)
+                Image(systemName: "checkmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(Theme.success)
+            } else {
+                Circle()
+                    .strokeBorder(Theme.inkFaint, lineWidth: 1.5)
+                    .frame(width: 16, height: 16)
+            }
+        }
+    }
+
+    private func labelColor(isActive: Bool, isLatest: Bool) -> Color {
+        if isActive { return Theme.ink }
+        if settled { return Theme.inkFaint }
+        return isLatest ? Theme.inkSoft : Theme.inkFaint
+    }
+
+    private func rowOpacity(depth: Int) -> Double {
+        if settled { return 0.7 }
+        return depth == 0 ? 1.0 : (depth == 1 ? 0.55 : 0.3)
+    }
+}
+
+// MARK: - "See the thinking" animation (R83, 2026-09-17)
+// Kept in this file (not a standalone one) so it lands in the target's compile
+// list without a project.pbxproj edit — same reason BlockView's helpers live
+// beside their view.
+
+/// A small rotating accent arc — the "working on this" indicator that replaces
+/// the static hollow circle on the active step.
+struct ThinkingArc: View {
+    @State private var spin = false
+
+    var body: some View {
+        Circle()
+            .trim(from: 0, to: 0.68)
+            .stroke(
+                AngularGradient(
+                    gradient: Gradient(colors: [Theme.accent.opacity(0.12), Theme.accent]),
+                    center: .center
+                ),
+                style: StrokeStyle(lineWidth: 1.8, lineCap: .round)
+            )
+            .frame(width: 14, height: 14)
+            .rotationEffect(.degrees(spin ? 360 : 0))
+            .onAppear {
+                withAnimation(.linear(duration: 0.85).repeatForever(autoreverses: false)) {
+                    spin = true
+                }
+            }
+            .accessibilityHidden(true)
+    }
+}
+
+/// A light highlight sweeping across the content, masked to its shape — the
+/// label looks like it is "thinking". No-op when `active` is false.
+struct ShimmerModifier: ViewModifier {
+    let active: Bool
+    @State private var phase: CGFloat = -1
+
+    func body(content: Content) -> some View {
+        if active {
+            content
+                .overlay(
+                    GeometryReader { geo in
+                        LinearGradient(
+                            gradient: Gradient(colors: [.clear, Theme.accent.opacity(0.5), .clear]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                        .frame(width: max(geo.size.width * 0.5, 40))
+                        .offset(x: phase * (geo.size.width * 1.6))
+                    }
+                    .mask(content)
+                    .allowsHitTesting(false)
+                )
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 1.25).repeatForever(autoreverses: false)) {
+                        phase = 1
+                    }
+                }
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    /// Sweep a shimmer across this view while `active` (the step being worked).
+    func shimmering(active: Bool) -> some View { modifier(ShimmerModifier(active: active)) }
 }
 
 
