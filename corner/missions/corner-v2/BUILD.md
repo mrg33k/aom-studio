@@ -205,4 +205,8 @@ Deliverable of this round: one structural brief per exemplar harness (loop, skil
 
 Two more Patrik notes during the round: (1) "one of the best ways we have figured things out is by a/b testing, or cage-matching different methods rapidly until something feels and proves to be better… this is how we figured out chat the first time we built it for just Claude" (Phase 2 is written as cage matches; the `cage-match` house skill is the judge format). (2) "we can't make the LLMs give us AGI level thinking but we can guide it for the user's sake towards an AGI feeling experience the way we create our app" (every brief now has a section on what the harness does so a normal model feels smarter than it is).
 
-**Status:** in progress
+Shipped: ten briefs (`openclaw.md` primary, `claude-code.md`, `claude-agent-sdk.md`, `codex-cli.md`, `gemini-cli.md`, `cursor.md`, `cline-roo.md`, `goose.md`, `openhands.md`, `letta.md`) read from pinned commits (Cursor from docs excerpts, its domains are egress-blocked; Claude Code from docs), and `PATTERN.md`: the shared machine (model-driven loop as an ordered ops list; SKILL.md catalog by description; MCP hands with annotations; three-tier memory + memory tool + reflection; approval decision stack with scoped, persisted answers and deny-with-reason; one server-owned typed item stream; provider layer), what fits an owner on a phone, the earlier plan's hypotheses judged, and five cages. Two findings worth the round on their own: nobody in the field routes by regex or makes one completion per turn, and nobody has a "never" rule for sends, they all have a tier. The 159 s stall is explained (repo hooks/plugins at startup, not tools; the SDK's isolation mode is the light path).
+
+Not done in this round: Phase 1 (the Corner spec written in the exemplars' terms), the fixture, any cage. Clones live in the session scratchpad only.
+
+**Status:** done (Phase 0 delivered; Phase 1 waits on Patrik's read of PATTERN.md §11)
