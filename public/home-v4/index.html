@@ -61,6 +61,33 @@ button{font:inherit}
   [data-intro=".55"] a[href="#"] > span{display:none !important}
   [data-intro=".55"] button[style*="999px"]{white-space:nowrap !important;letter-spacing:.12em !important;font-size:.68rem !important;padding:.5rem .85rem .46rem !important}
 }
+/* ===== MOBILE-FIRST HERO — refs: masterclass.com (qualifier hero, uniform rows), bridgephx.com (reel as a feature band) ===== */
+@media (max-width: 720px){
+  [data-screen-label="Hero"]{height:auto !important;min-height:0 !important;background:#060606}
+  [data-screen-label="Hero"] > div:first-child{position:relative !important;height:auto !important;display:flex !important;flex-direction:column !important;overflow:visible !important;background:#060606}
+  /* the question, in flow, first */
+  [data-screen-label="Hero"] > div:first-child > div[style*="z-index: 5"][style*="inset: 0"]{position:relative !important;inset:auto !important;order:1;display:block !important;height:auto !important;padding:clamp(4.8rem,13vh,6.2rem) var(--gx) clamp(1.8rem,4vh,2.4rem) !important}
+  [data-screen-label="Hero"] > div:first-child > div[style*="z-index: 5"][style*="inset: 0"] > div{width:100% !important;flex:none !important}
+  /* the reel: a full-bleed 16:9 band under the question, captioned */
+  [data-screen-label="Hero"] > div:first-child > div[style*="transform-origin"]{position:relative !important;inset:auto !important;order:2;width:100%;aspect-ratio:16/9;transform:none !important;overflow:hidden;background:#000}
+  [data-screen-label="Hero"] > div:first-child > div[style*="transform-origin"] > div[aria-hidden]{background:linear-gradient(to top, rgba(6,6,6,.6), transparent 55%) !important}
+  [data-screen-label="Hero"] > div:first-child > div[style*="transform-origin"]::after{content:"The reel";position:absolute;left:var(--gx);bottom:.95rem;z-index:5;font:700 .72rem/1 'Space Grotesk',system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#C4A46A;pointer-events:none}
+  /* desktop-only chrome leaves the hero on a phone */
+  [data-screen-label="Hero"] [data-intro="1"]{display:none !important}
+  /* the sticky-scroll choreography (pills interstitial + dim) is desktop-only */
+  [data-screen-label="Hero"] > div:first-child > div[style*="z-index: 7"],[data-screen-label="Hero"] > div:first-child > div[style*="z-index: 6"]{display:none !important}
+  [data-screen-label="Hero"] div[aria-hidden="true"][style*="margin-bottom"]{display:none !important}
+  /* type for arm's length */
+  [data-screen-label="Hero"] h1{font-size:2.75rem !important;line-height:.92 !important;letter-spacing:-.035em !important}
+  /* uniform answer rows */
+  [data-screen-label="Hero"] button[data-row]{width:100% !important;min-height:54px !important;padding:.55rem 1rem !important;border-radius:8px !important;gap:.9rem !important;transform:none !important}
+  [data-screen-label="Hero"] button[data-row] > span:first-child{width:34px !important;height:34px !important;font-size:.85rem !important;flex:none}
+  /* one CTA, full width; email under it */
+  [data-screen-label="Hero"] [data-intro=".6"]{flex-direction:column !important;align-items:stretch !important;gap:.6rem !important;width:100% !important}
+  [data-screen-label="Hero"] [data-intro=".6"] > button{width:100%;min-height:54px !important;border-radius:999px !important;font-size:1.05rem !important}
+  [data-screen-label="Hero"] [data-intro=".6"] > a{justify-content:center !important;width:100%}
+  [data-screen-label="Hero"] form{width:100% !important}
+}
 @media (max-width: 900px){ [data-screen-label="Home v4"]{--revd:none;--revw:0px} }
 @media (max-height: 700px){ [data-screen-label="Home v4"]{--revd:none;--revw:0px} }
 @media (prefers-reduced-motion: reduce){ [data-intro],[data-row]{animation:none !important;opacity:1 !important;transform:none !important} }
