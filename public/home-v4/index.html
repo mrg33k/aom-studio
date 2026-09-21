@@ -48,6 +48,18 @@ button{font:inherit}
   /* hero quick-pick pills: wrap + slim so all three fit a phone */
   [data-fastpills]{flex-wrap:wrap !important;gap:.55rem !important;justify-content:center}
   [data-fastpills] > button{min-height:48px !important;padding:.7rem 1.15rem !important;font-size:.9rem !important}
+  /* natural scroll on phones: no forced full-screen snapping */
+  [data-screen-label="Home v4"]{scroll-snap-type:none !important}
+  [data-slide]{scroll-snap-align:none !important;scroll-snap-stop:normal !important}
+  /* text sections size to their content (media sections stay full-bleed) */
+  #pipeline,#dept,#contact,[data-screen-label="Voices"]{height:auto !important;min-height:0 !important}
+  #pipeline > div[style*="z-index: 3"],#dept > div[style*="z-index: 3"],#contact > div[style*="z-index: 3"],[data-screen-label="Voices"] > div[style*="z-index: 3"]{height:auto !important;padding-top:clamp(2.6rem,7vh,4rem) !important;padding-bottom:clamp(2.6rem,7vh,4rem) !important}
+  /* pipeline: 2x2 instead of four slivers */
+  #pipeline div[style*="repeat(4"]{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  /* nav: one clean line — compact CTA, monogram-only brand */
+  [data-intro=".55"] > div{gap:.9rem !important}
+  [data-intro=".55"] a[href="#"] > span{display:none !important}
+  [data-intro=".55"] button[style*="999px"]{white-space:nowrap !important;letter-spacing:.12em !important;font-size:.68rem !important;padding:.5rem .85rem .46rem !important}
 }
 @media (max-width: 900px){ [data-screen-label="Home v4"]{--revd:none;--revw:0px} }
 @media (max-height: 700px){ [data-screen-label="Home v4"]{--revd:none;--revw:0px} }
@@ -688,25 +700,35 @@ class Component extends DCLogic {
   }
   startReel() {
     const vids = [this.el.v0, this.el.v1]; if (!vids[0] || !vids[1]) return;
-    vids.forEach(v => { v.muted = true; v.loop = false; });
-    let active = 0, queue = shuffle(REEL), qi = 0, cur = null;
+    vids.forEach(v => { v.muted = true; v.loop = false; v.style.transition = 'opacity .7s ease'; });
+    const HOLD = 3800, FADE = 700; // a few seconds per clip, soft crossfade
+    let active = -1, queue = shuffle(REEL), qi = 0, cur = null;
     const next = () => { for (let i = 0; i < REEL.length; i++) { if (qi >= queue.length) { queue = shuffle(REEL); qi = 0; } const s = queue[qi++]; if (s !== cur) return s; } return queue[0]; };
-    const show = v => { v.style.opacity = '1'; v.style.zIndex = '2'; if (this.el.poster) this.el.poster.style.opacity = '0'; };
-    cur = next(); vids[0].src = cur; vids[0].onplaying = () => show(vids[0]); vids[0].play().catch(() => {});
-    const cycle = () => {
-      const slot = active ? 0 : 1, v = vids[slot], src = next(); let playing = false, due = false, done = false;
-      const commit = () => { if (done || !playing || !due) return; done = true; try { v.currentTime = 0; } catch {} v.play().catch(() => {}); show(v); const old = vids[active]; old.style.opacity = '0'; old.style.zIndex = '1'; active = slot; cur = src; this.timer = setTimeout(cycle, 500); };
-      v.onplaying = () => { playing = true; commit(); };
-      v.onerror = () => { this.timer = setTimeout(cycle, 0); };
+    // load a clip into a slot, seek to a random in-point, resolve only once a frame is actually painting
+    const prime = (v, src) => new Promise(res => {
+      let done = false; const fin = ok => { if (!done) { done = true; res(ok); } };
+      v.onerror = () => fin(false);
+      v.onloadedmetadata = () => { const d = v.duration; if (isFinite(d) && d > HOLD / 1000 + 0.6) { try { v.currentTime = Math.random() * (d - HOLD / 1000 - 0.4); } catch {} } };
+      v.onplaying = () => { let t = setTimeout(() => fin(true), 140); if ('requestVideoFrameCallback' in v) v.requestVideoFrameCallback(() => { clearTimeout(t); fin(true); }); };
       v.src = src; v.play().catch(() => {});
-      this.timer = setTimeout(() => { due = true; commit(); }, 1100 + Math.random() * 300);
+      setTimeout(() => fin(false), 4000);
+    });
+    const cycle = async () => {
+      const slot = active === 0 ? 1 : 0, v = vids[slot], old = active >= 0 ? vids[active] : null, src = next();
+      const ready = await prime(v, src);
+      if (!ready) { this.timer = setTimeout(cycle, 0); return; }
+      v.style.zIndex = '2'; if (old) old.style.zIndex = '1';          // new clip fades in ON TOP of the still-opaque old one
+      v.style.opacity = '1'; if (this.el.poster) this.el.poster.style.opacity = '0';
+      active = slot; cur = src;
+      this.timer2 = setTimeout(() => { if (old) { old.style.opacity = '0'; old.pause(); } }, FADE + 50);
+      this.timer = setTimeout(cycle, HOLD);
     };
-    this.timer = setTimeout(cycle, 900);
+    cycle();
   }
   componentWillUnmount() {
     const box = this.el.root; if (box) box.removeEventListener('scroll', this.apply);
     window.removeEventListener('resize', this.apply); window.removeEventListener('keydown', this.onKey);
-    clearTimeout(this.timer); clearTimeout(this.stTimer); this.io && this.io.disconnect(); this.vio && this.vio.disconnect(); clearInterval(this.reviewTimer);
+    clearTimeout(this.timer); clearTimeout(this.timer2); clearTimeout(this.stTimer); this.io && this.io.disconnect(); this.vio && this.vio.disconnect(); clearInterval(this.reviewTimer);
   }
 }
 </script>
