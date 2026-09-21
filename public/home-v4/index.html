@@ -37,6 +37,18 @@ button{font:inherit}
 @keyframes tileLife{0%{transform:scale(1.02) translate3d(-.6%,0,0)}52%{transform:scale(1.08) translate3d(.7%,-.5%,0)}100%{transform:scale(1.04) translate3d(0,.6%,0)}}
 [data-screen-label="Home v4"]{--revw:min(28rem,34vw)}
 @media (max-width: 720px){ #story > div:first-child{grid-template-columns:1fr !important} #dept [data-d=".34"]{grid-template-columns:1fr 1fr !important} }
+/* mobile: case-study shots -> picked cover full-width on top, 3 supporting stills in a row below */
+@media (max-width: 720px){
+  div[style*="2fr 1fr 1fr 1fr"]{grid-template-columns:repeat(3,1fr) !important;gap:.45rem !important}
+  div[style*="2fr 1fr 1fr 1fr"] > button{grid-column:1 / -1 !important;height:clamp(170px,27vh,240px) !important}
+  div[style*="2fr 1fr 1fr 1fr"] > div{height:clamp(78px,12vh,112px) !important}
+  /* hero skip-the-questions row: let it wrap, keep each link on one line */
+  [data-intro="1"]{flex-wrap:wrap !important;gap:.45rem 1.1rem !important}
+  [data-intro="1"] > button{white-space:nowrap !important;flex:none !important}
+  /* hero quick-pick pills: wrap + slim so all three fit a phone */
+  [data-fastpills]{flex-wrap:wrap !important;gap:.55rem !important;justify-content:center}
+  [data-fastpills] > button{min-height:48px !important;padding:.7rem 1.15rem !important;font-size:.9rem !important}
+}
 @media (max-width: 900px){ [data-screen-label="Home v4"]{--revd:none;--revw:0px} }
 @media (max-height: 700px){ [data-screen-label="Home v4"]{--revd:none;--revw:0px} }
 @media (prefers-reduced-motion: reduce){ [data-intro],[data-row]{animation:none !important;opacity:1 !important;transform:none !important} }
@@ -109,7 +121,7 @@ button{font:inherit}
           <img src="assets/aom-monogram-paper.svg" alt="" style="display:block;width:clamp(6rem,14vw,11rem);height:auto">
           <div style="flex:none;width:clamp(.4rem,.7vw,.6rem);aspect-ratio:1;margin:0 0 7% clamp(-.45rem,-.8vw,-.25rem);background:#C4A46A"></div>
         </div>
-        <div style="display:flex;flex-wrap:nowrap;align-items:center;gap:1rem">
+        <div data-fastpills="" style="display:flex;flex-wrap:nowrap;align-items:center;gap:1rem">
           <button onClick="{{ fastVideo }}" style="pointer-events:auto;white-space:nowrap;min-height:60px;padding:.9rem 2rem;border-radius:999px;border:1px solid rgba(245,244,240,.45);background:transparent;color:#F5F4F0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1.05rem,1.4vw,1.3rem);font-weight:700;cursor:pointer;transition:background-color .18s ease,color .18s ease" style-hover="background-color:#C4A46A;border-color:#C4A46A;color:#0C0C0C">I need a video</button>
           <button onClick="{{ fastWeb }}" style="pointer-events:auto;white-space:nowrap;min-height:60px;padding:.9rem 2rem;border-radius:999px;border:1px solid rgba(245,244,240,.45);background:transparent;color:#F5F4F0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1.05rem,1.4vw,1.3rem);font-weight:700;cursor:pointer;transition:background-color .18s ease,color .18s ease" style-hover="background-color:#C4A46A;border-color:#C4A46A;color:#0C0C0C">I need a website</button>
           <button onClick="{{ fastPromo }}" style="pointer-events:auto;white-space:nowrap;min-height:60px;padding:.9rem 2rem;border-radius:999px;border:1px solid rgba(245,244,240,.45);background:transparent;color:#F5F4F0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1.05rem,1.4vw,1.3rem);font-weight:700;cursor:pointer;transition:background-color .18s ease,color .18s ease" style-hover="background-color:#C4A46A;border-color:#C4A46A;color:#0C0C0C">I need customers</button>
@@ -490,7 +502,7 @@ const STORY = [
   { id: 'neither', label: 'Neither', t1: "We're actually", t2: 'neither of those', sub: 'A video is one asset. A website is one channel. What you need is the whole department behind them.', hasVideo: true, video: 'assets/reel-11.mp4', ...side(false) },
 ];
 const CASES = [
-  { id: 'isa', label: 'ISA Energy', client: 'ISA Energy', made: 'Brand film · demo · validation study', year: '2024', t1: 'ISA', t2: 'Energy', sub: 'A demo, a validation study and a brand film. A three-video series now in every investor meeting.', result: 'Helped raise a substantial round', href: '/work/isa-energy', vid: '6aadf209c2658a788ecff7d7', shots: ['assets/isa-brand.jpg','assets/isa-validation.jpg','assets/isa-demo.jpg','assets/collage-09.jpg'] },
+  { id: 'isa', label: 'ISA Energy', client: 'ISA Energy', made: 'Brand film · demo · validation study', year: '2024', t1: 'ISA', t2: 'Energy', sub: 'A demo, a validation study and a brand film. A three-video series now in every investor meeting.', result: 'Helped raise a substantial round', href: '/work/isa-energy', vid: '6aadf209c2658a788ecff7d7', shots: ['/video-review/covers/isa-energy-brand-video-2026-master-12.jpg','/video-review/covers/isa-energy-brand-video-2026-master-8.jpg','/video-review/covers/isa-energy-brand-video-2026-master-9.jpg','/video-review/covers/isa-energy-brand-video-2026-master-10.jpg'] },
   { id: 'space', label: 'Space Rising', client: 'Space Rising', made: 'Platform build · event film', year: '2025', t1: 'Space', t2: 'Rising', sub: 'SpaceOS, built and launched, and 1,000 people in one room at Space Congress.', result: 'Drove a wave of traffic to the new platform', href: '/work/space-rising', vid: '698a5a8b873071aec5c99c6f', shots: ['assets/site-space-rising.jpg','assets/spacerising-event.jpg','assets/spacerising-render.jpg','assets/site-space-rising-tall.jpg'] },
   { id: 'ih', label: 'Included Health', client: 'Included Health', made: 'Film series', year: '2025', t1: 'Included', t2: 'Health', sub: 'A film series for one of the largest insurers in the US, screened nationwide.', result: 'Produced for the Inspire Summit', href: '/work/included-health', vid: '698a5ef5fc23d3d76fa87ef4', shots: ['assets/ih-life.jpg','assets/ih-culture.jpg','assets/collage-15.jpg','assets/collage-11.jpg'] },
   { id: 'ambition', label: 'Ambition Mechanical', client: 'Ambition Mechanical', made: 'Website · SEO · paid', year: '2026', t1: 'Ambition', t2: 'Mechanical', sub: 'A new site that pulls its own weight. Four solid leads a month, organically.', result: 'Before paid spend even counts', href: '/work/ambition-mechanical', vid: '698a5b86fc23d3d76fa82ece', shots: ['assets/site-ambition.jpg','assets/ambition-vertical.jpg','assets/site-ambition-tall.jpg','assets/collage-13.jpg'] },
