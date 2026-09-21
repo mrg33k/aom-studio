@@ -162,6 +162,8 @@ const VGearTurn = lazy(() => import('./pages/versions/VGearTurn.jsx'))
 const VDensity = lazy(() => import('./pages/versions/VDensity.jsx'))
 const VCinematicGlass = lazy(() => import('./pages/versions/VCinematicGlass.jsx'))
 const HomeR6Baby = lazy(() => import('./pages/HomeR6Baby.jsx'))
+const HomeV4 = lazy(() => import('./pages/HomeV4.jsx'))
+const HardRedirect = ({ to }) => { useEffect(() => { window.location.replace(to) }, [to]); return null }
 const HomeAOM2026 = lazy(() => import('./pages/HomeAOM2026.jsx'))
 const AOMStudioHome = lazy(() => import('./pages/AOMStudioHome.jsx'))
 const ServiceBrandFilm = lazy(() => import('./pages/ServiceBrandFilm.jsx'))
@@ -181,6 +183,7 @@ const WorkPala = lazy(() => import('./pages/WorkPala.jsx'))
 const WorkKohrs = lazy(() => import('./pages/WorkKohrs.jsx'))
 const WorkIntellieplay = lazy(() => import('./pages/WorkIntellieplay.jsx'))
 const WorkIndex = lazy(() => import('./pages/WorkIndex.jsx'))
+const WorkShowcase = lazy(() => import('./pages/WorkShowcase.jsx'))
 const AboutOurStory = lazy(() => import('./pages/AboutOurStory.jsx'))
 const AboutHowWeWork = lazy(() => import('./pages/AboutHowWeWork.jsx'))
 const AboutStandards = lazy(() => import('./pages/AboutStandards.jsx'))
@@ -518,6 +521,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Suspense fallback={<RouteLoadingFallback />}>
         <Routes>
           <Route path="/" element={<HomeR6Baby />} />
+          <Route path="/v4" element={<HomeV4 />} />
+          <Route path="/video-review" element={<HardRedirect to="/video-review/index.html" />} />
+          <Route path="/videos" element={<HardRedirect to="/video-review/index.html" />} />
+          <Route path="/arrange" element={<HardRedirect to="/arrange/index.html" />} />
           <Route path="/slider" element={<AOMStudioHome />} />
           <Route path="/r38" element={<HomeR38Preview />} />
           <Route path="/home-options" element={<HomeLayoutOptions />} />
@@ -546,6 +553,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/work/kohrs" element={<WorkKohrs />} />
           <Route path="/work/intelliplay" element={<WorkIntellieplay />} />
           <Route path="/work" element={<WorkIndex />} />
+          <Route path="/showcase" element={<WorkShowcase />} />
+          <Route path="/s1" element={<WorkShowcase />} />
           <Route path="/about/our-story" element={<AboutOurStory />} />
           <Route path="/about/how-we-work" element={<AboutHowWeWork />} />
           <Route path="/about/standards" element={<AboutStandards />} />

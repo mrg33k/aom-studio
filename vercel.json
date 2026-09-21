@@ -23,6 +23,14 @@
   ],
   "rewrites": [
     {
+      "source": "/s1",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/showcase",
+      "destination": "/index.html"
+    },
+    {
       "source": "/reports",
       "destination": "/index.html"
     },
