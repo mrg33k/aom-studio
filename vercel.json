@@ -31,6 +31,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/v4",
+      "destination": "/index.html"
+    },
+    {
       "source": "/reports",
       "destination": "/index.html"
     },
