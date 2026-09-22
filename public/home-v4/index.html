@@ -18,7 +18,15 @@
 <link rel="apple-touch-icon" href="/brand/favicon/aom-180.png">
 <meta name="theme-color" content="#060606">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XRC3GJ475X"></script>
-<script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-XRC3GJ475X');</script>
+<script>
+window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date());
+// A/B test: hero first (a) vs "How we can help" first (b). Sticky per browser. ?ab=a or ?ab=b forces a variant, ?ab=off forgets it.
+(function(){var q=new URLSearchParams(location.search).get('ab'),k='aom_ab_hero',v='';try{if(q==='off')localStorage.removeItem(k);else if(q==='a'||q==='b')localStorage.setItem(k,q);v=localStorage.getItem(k)||'';if(v!=='a'&&v!=='b'){v=Math.random()<.5?'a':'b';localStorage.setItem(k,v);}}catch(e){v=(q==='a'||q==='b')?q:'a';}
+window.__AB=v;
+gtag('set','user_properties',{exp_hero_order:v});
+// page_location carries the variant so every event can be split by it in the Data API without registering custom dimensions
+gtag('config','G-XRC3GJ475X',{page_location:location.origin+location.pathname+'?ab='+v,exp_hero_order:v});})();
+</script>
 <script>function initApollo(){var n=Math.random().toString(36).substring(7),o=document.createElement("script");o.src="https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache="+n,o.async=!0,o.defer=!0,o.onload=function(){window.trackingFunctions.onLoad({appId:"67d1ee3d721744001db6d915"})},document.head.appendChild(o)}initApollo();</script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -78,6 +86,10 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;backgrou
   /* phones: Menu + Contact stay out of the way until the first scroll */
   [data-nav] > div:first-child > button,[data-nav] > div:last-child{transition:opacity .3s ease}
   [data-nav][data-scrolled="0"] > div:first-child > button,[data-nav][data-scrolled="0"] > div:last-child{opacity:0 !important;pointer-events:none !important}
+  [data-ab="b"] [data-nav][data-scrolled="0"] a[href="/"]{opacity:0 !important}
+  [data-ab="b"] [data-screen-label="Hero"] > div:first-child > div[style*="z-index: 5"][style*="inset: 0"]{padding-top:4.4rem !important}
+  [data-ab="b"] [data-slot]{height:0 !important;margin:0 !important}
+  [data-ab="b"] [data-slot] > a{display:none !important}
   [data-intro=".55"] a[href="/"] > span{display:none !important}
   [data-intro=".55"] button[style*="999px"]{white-space:nowrap !important;letter-spacing:.12em !important;font-size:.68rem !important;padding:.5rem .85rem .46rem !important}
 }
@@ -355,7 +367,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;backgrou
 
       <div style="position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;justify-content:center;padding:clamp(4.5rem,14vh,10rem) var(--gx) clamp(1.25rem,4vh,3rem)">
         <div data-line="" style="width:min(100%,54rem,calc(100% - var(--revw,0px) - 2.5rem));flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center">
-          <div ref="{{ brandSlotRef }}" aria-hidden="true" style="height:clamp(1.3rem,3.2vh,2.4rem);margin-bottom:clamp(.6rem,2.4vh,2.8rem)"></div>
+          <div ref="{{ brandSlotRef }}" data-slot="" aria-hidden="true" style="height:clamp(1.3rem,3.2vh,2.4rem);margin-bottom:clamp(.6rem,2.4vh,2.8rem)"></div>
           <div data-intro="0" style="display:flex;flex-direction:column;gap:.5rem;width:min(100%,36rem);margin-bottom:clamp(1.1rem,3vh,2.6rem);animation:riseIn 1s cubic-bezier(.16,1,.3,1) both">
             <div style="display:flex;align-items:center;gap:.5rem">
               <span style="display:block;flex:1;height:2px;background:{{ seg1 }};transition:background .3s"></span>
@@ -474,6 +486,10 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;backgrou
     <div style="position:relative;z-index:3;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;padding:clamp(4.5rem,10vh,7rem) var(--gx)">
       <div data-pipewrap="" style="display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:center;column-gap:clamp(2rem,5vw,6rem)">
         <div style="min-width:0">
+          <div data-rv="" data-d=".02" data-helplogo="" aria-label="Ahead of Market" style="display:inline-flex;align-items:center;gap:.85rem;margin:0 0 clamp(1rem,2.6vh,1.8rem);font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(.8rem,1vw,.95rem);font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#F6F6F4;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
+            <img src="assets/aom-monogram-paper.svg" alt="" style="display:block;width:clamp(2rem,2.6vw,2.6rem);height:auto">
+            <span style="display:inline-flex;align-items:baseline">Ahead of Market</span>
+          </div>
           <h2 data-rv="" data-d=".06" style="margin:clamp(.7rem,1.8vh,1.2rem) 0 0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.4rem,min(5.4vw,9.5vh),6rem);line-height:.9;letter-spacing:-.03em;color:#F6F6F4;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">How we can help you<i style="display:inline-block;width:.13em;height:.13em;background:#C4A46A;margin-left:.07em"></i></h2>
           <p data-rv="" data-d=".14" style="margin:clamp(1rem,2.6vh,1.8rem) 0 0;max-width:38ch;color:#E6E5E0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1.05rem,min(1.4vw,2.6vh),1.35rem);font-weight:500;line-height:1.45;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Seven things clients come to us for. Swipe through, tap one to start there.</p>
         </div>
@@ -914,6 +930,7 @@ class Component extends DCLogic {
   get skipStinger() { return !!this.props.skipStinger; }
   choose(label) {
     if (this.busy) return; this.busy = true; this.enterFocus('hero');
+    this.track('quiz_answer', label, { answer: label, step: this.state.step + 1 });
     this.setState({ cardOp: 0, cardY: -14 });
     setTimeout(() => {
       this.setState(s => ({ step: s.step + 1, answers: [...s.answers, label], pending: null, cardOp: 0, cardY: 14 }), () => {
@@ -923,7 +940,7 @@ class Component extends DCLogic {
     }, 280);
   }
   enterFocus(from) { this.focusFrom = from || this.focusFrom || 'hero'; if (this.el.root) this.el.root.dataset.focus = '1'; if (!this.state.focus) this.setState({ focus: true }); }
-  openOutcome(k) { this.setState({ outcome: k, intent: k.t, sent: false, sendError: '' }); clearTimeout(this.pipeTimer); }
+  openOutcome(k) { this.track('outcome_open', k.t, { outcome: k.t }); this.setState({ outcome: k, intent: k.t, sent: false, sendError: '' }); clearTimeout(this.pipeTimer); }
   closeOutcome() { this.setState({ outcome: null }); if (this.focusFrom === 'outcome') this.exitFocus(); }
   exitFocus() { if (this.el.root) delete this.el.root.dataset.focus; if (this.state.focus) this.setState({ focus: false }); }
   select(label) { if (this.busy) return; this.enterFocus('hero'); this.setState({ pending: label }); }
@@ -934,14 +951,18 @@ class Component extends DCLogic {
     if (this.state.sending || !form) return;
     const q = n => { const el = form.querySelector(`[name="${n}"]`); return el ? el.value.trim() : ''; };
     const email = q('email'); if (!email) return;
+    const src = form.closest('#contact') ? 'contact' : form.closest('[data-outcome]') ? 'outcome' : 'hero';
     this.setState({ sending: true, sendError: '' });
     const body = { email, notes: q('notes'), website: q('website'), answers: this.state.answers.join(' / '), intent: this.state.intent || '', sourcePage: location.pathname, startedAt: this.startedAt };
     try {
       const r = await fetch('/api/aom-lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (!r.ok) throw new Error('status ' + r.status);
       this.setState({ sent: true, sending: false });
+      this.track('lead_submit', src, { form: src, intent: this.state.intent || '' });
+      if (typeof gtag === 'function') gtag('event', 'generate_lead', { form: src, intent: this.state.intent || '', ab: window.__AB || '' });
       setTimeout(() => this.exitFocus(), 1800);
     } catch (e) {
+      this.track('lead_error', src, { form: src });
       this.setState({ sending: false, sendError: 'That didn\u2019t go through. Email ' + MAIL + ' and we\u2019ll take it from there.' });
     }
   }
@@ -949,7 +970,7 @@ class Component extends DCLogic {
     const { step, answers } = this.state;
     const asking = step < QUESTIONS.length, q = asking ? QUESTIONS[step] : null;
     const gold = '#C4A46A', dim = 'rgba(246,246,244,.22)';
-    const mk = arr => [0, 1, 2].flatMap(() => arr.map(v => ({ t: v.t, src: v.cover || poster(v.id), aria: `Play ${v.t}`, open: () => this.setState({ video: v }) })));
+    const mk = arr => [0, 1, 2].flatMap(() => arr.map(v => ({ t: v.t, src: v.cover || poster(v.id), aria: `Play ${v.t}`, open: () => this.openVideo(v, 'work') })));
     return {
       stinger: this.state.stinger && !this.skipStinger,
       asking, done: !asking,
@@ -1005,7 +1026,7 @@ class Component extends DCLogic {
       rowA: mk(PORTFOLIO.filter((_, i) => i % 2 === 0)), rowB: mk(PORTFOLIO.filter((_, i) => i % 2 === 1)),
       videoOpen: !!this.state.video, videoSrc: this.state.video && !this.state.video.mp4 ? embed(this.state.video.id) : '', videoTitle: this.state.video ? this.state.video.t : '',
       videoMp4: this.state.video ? (this.state.video.mp4 || '') : '', mp4Display: this.state.video && this.state.video.mp4 ? 'block' : 'none', iframeDisplay: this.state.video && this.state.video.mp4 ? 'none' : 'block',
-      closeVideo: () => this.setState({ video: null }), stop: ev => ev.stopPropagation(),
+      closeVideo: () => this.closeVideo(), stop: ev => ev.stopPropagation(),
       rootRef: this.ref('root'), railRef: this.ref('rail'), stingerRef: this.ref('stinger'), brandRef: this.ref('brand'), brandSlotRef: this.ref('slot'),
       reelRef: this.ref('reel'), v0Ref: this.ref('v0'), v1Ref: this.ref('v1'), posterRef: this.ref('poster'), dimRef: this.ref('dim'), interRef: this.ref('inter'), reviewsRef: this.ref('reviews'),
     };
@@ -1030,8 +1051,13 @@ class Component extends DCLogic {
     box.style.setProperty('--hl', mobile ? (H / 2) + 'px' : H + 'px');
     box.style.setProperty('--rt', mobile ? '50%' : '0');
     box.style.setProperty('--seamb', mobile ? '1px' : '0');
-    const y = box.scrollTop / H;
+    const heroSec = this.heroSec || (this.heroSec = box.querySelector('[data-screen-label="Hero"]'));
+    const heroTop = (window.__AB === 'b' && heroSec) ? heroSec.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop : 0;
+    this.heroTop = heroTop;
+    const y = Math.max(0, box.scrollTop - heroTop) / H;
     const p = clamp01(y / (RUNWAY - 1)), e = ease(p);
+    { const max = box.scrollHeight - H; const pct = max > 0 ? Math.round((box.scrollTop / max) * 100) : 100; const fired = this.scrollMarks || (this.scrollMarks = {});
+      [25, 50, 75, 100].forEach(m => { if (pct >= m && !fired[m]) { fired[m] = 1; this.track('scroll_depth', String(m), { percent_scrolled: m, page_path: location.pathname }); } }); }
     if (this.el.colL && this.el.colR) {
       const ph = this.el.colL.parentElement.clientHeight, sp = Math.max(0, y - RUNWAY);
       this.el.colL.style.transform = `translate3d(0, ${(-sp * ph).toFixed(1)}px, 0)`;
@@ -1051,7 +1077,9 @@ class Component extends DCLogic {
     box.querySelectorAll('[data-line]').forEach(n => { if (mobile) { n.style.transform = 'none'; n.style.opacity = '1'; return; } n.style.transform = `translate3d(0, ${(-e * 90).toFixed(1)}px, 0)`; n.style.opacity = String(1 - clamp01(p / 0.7)); });
     if (this.el.brand && this.el.slot) {
       const mb = this.el.brand.previousElementSibling; if (mb) box.style.setProperty('--menuw', mb.offsetWidth + 'px');
-      const b = this.el.brand, k = ease(clamp01(y / 0.45));
+      const b = this.el.brand, k = window.__AB === 'b' ? 1 : ease(clamp01(y / 0.45));
+      if (window.__AB === 'b' && !this.slotClone) { const c = b.cloneNode(true); c.removeAttribute('href'); c.removeAttribute('ref'); c.setAttribute('aria-hidden', 'true'); c.style.cssText += ';transform-origin:left center;pointer-events:none'; this.el.slot.appendChild(c); this.slotClone = c; }
+      if (this.slotClone) { const ch = this.slotClone.getBoundingClientRect().height / ((parseFloat(this.slotClone.style.transform.replace(/[^0-9.]/g, '')) || 1)); const sh = this.el.slot.clientHeight; if (ch > 0 && sh > 0) this.slotClone.style.transform = `scale(${(sh / ch).toFixed(3)})`; }
       b.style.transform = 'none';
       const br = b.getBoundingClientRect(), sr = this.el.slot.getBoundingClientRect();
       if (br.height > 0) {
@@ -1065,6 +1093,22 @@ class Component extends DCLogic {
   componentDidMount() {
     const box = this.el.root; if (!box) return;
     window.__home = this; // debugging handle
+    // A/B variant b: "How we can help" leads the page, the hero (quiz + films) comes second.
+    box.dataset.ab = window.__AB || 'a';
+    if (window.__AB === 'b') { const hero = box.querySelector('[data-screen-label="Hero"]'), pipe = box.querySelector('#pipeline'); if (hero && pipe && hero.parentNode === pipe.parentNode) { pipe.dataset.lead = '1'; hero.parentNode.insertBefore(pipe, hero); } }
+    this.tk = { cur: null, since: performance.now(), seen: new Set() };
+    this.videosWatched = 0;
+    this.onLeave = () => { this.flushSection(); if (this.state.video) this.flushVideo(); if (this.videosWatched) { const n = this.videosWatched; this.videosWatched = 0; this.track('videos_watched', n >= 5 ? '5plus' : String(n), { value: n }); } };
+    this.onVis = () => { if (document.visibilityState === 'hidden') this.onLeave(); else { this.tk.since = performance.now(); if (this.state.video) this.vOpenedAt = performance.now(); } };
+    window.addEventListener('pagehide', this.onLeave); document.addEventListener('visibilitychange', this.onVis);
+    // every button / link click, same names as the client sites (button_click / phone_click / email_click) plus a keyed copy
+    this.onAnyClick = ev => {
+      const el = ev.target && ev.target.closest ? ev.target.closest('a,button,[role=button]') : null; if (!el || el.closest('[data-stackcard]') || el.hasAttribute('data-row')) return;
+      const text = (el.innerText || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 80) || '(no text)'; const href = el.getAttribute('href') || '';
+      const params = { button_text: text, link_url: href, page_path: location.pathname };
+      if (href.indexOf('tel:') === 0) this.track('phone_click', '', params); else if (href.indexOf('mailto:') === 0) this.track('email_click', '', params); else this.track('cta_click', text, params);
+    };
+    box.addEventListener('click', this.onAnyClick, { passive: true });
     this.apply();
     box.addEventListener('scroll', this.apply, { passive: true });
     window.addEventListener('resize', this.apply);
@@ -1074,20 +1118,25 @@ class Component extends DCLogic {
     this.vio = new IntersectionObserver(es => es.forEach(en => { const v = en.target; if (en.isIntersecting) { v.muted = true; v.play().catch(() => {}); } else v.pause(); }), { threshold: 0.2 });
     box.querySelectorAll('[data-bgv]').forEach(v => this.vio.observe(v));
     this.onKey = ev => {
-      if (ev.key === 'Escape') { this.setState({ video: null, menuOpen: false }); if (this.state.outcome) this.closeOutcome(); return; }
-      const { step } = this.state; if (step >= QUESTIONS.length || box.scrollTop > box.clientHeight * 0.3) return;
+      if (ev.key === 'Escape') { this.closeVideo(); this.setState({ menuOpen: false }); if (this.state.outcome) this.closeOutcome(); return; }
+      const { step } = this.state; if (step >= QUESTIONS.length || Math.abs(box.scrollTop - (this.heroTop || 0)) > box.clientHeight * 0.3) return;
       const k = ev.key.toUpperCase(); const i = KEYS.indexOf(k) >= 0 ? KEYS.indexOf(k) : (/^[1-4]$/.test(k) ? Number(k) - 1 : -1);
       const opts = QUESTIONS[step].a; if (i >= 0 && i < opts.length) this.choose(opts[i]);
     };
     window.addEventListener('keydown', this.onKey);
     // typing in the hero form = focus mode (native focusin; the runtime does not forward onFocus)
-    this.onFocusIn = ev => { const f = ev.target && ev.target.closest && ev.target.closest('[data-leadform]'); if (f && !this.state.focus) this.enterFocus(f.closest('#contact') ? 'contact' : f.closest('[data-outcome]') ? 'outcome' : 'hero'); };
+    this.onFocusIn = ev => {
+      const f = ev.target && ev.target.closest && ev.target.closest('[data-leadform]'); if (!f) return;
+      const src = f.closest('#contact') ? 'contact' : f.closest('[data-outcome]') ? 'outcome' : 'hero';
+      if (!f.dataset.fs) { f.dataset.fs = '1'; this.track('form_start', src, { form: src }); }
+      if (!this.state.focus) this.enterFocus(src);
+    };
     ['focusin', 'pointerdown', 'input'].forEach(t => box.addEventListener(t, this.onFocusIn, { passive: true }));
     this.armIntro();
     this.startReel();
     const box2 = this.el.root;
     const heroFront = { k: null, el: null }; let heroOn = true;
-    this.initStack(box2 && box2.querySelector('[data-stack]'), STACK, 'stackTimer', 7000, k => this.setState({ video: { t: k.t, id: k.id, mp4: '' } }),
+    this.initStack(box2 && box2.querySelector('[data-stack]'), STACK, 'stackTimer', 7000, k => this.openVideo({ t: k.t, id: k.id, mp4: '' }, 'hero'),
       { onFront: (k, el) => { heroFront.k = k; heroFront.el = el; if (heroOn) this.playCard(el, k); } });
     this.heroFront = heroFront; this.heroOnRef = { get v() { return heroOn; }, set v(x) { heroOn = x; } };
     this.indState = new Map();
@@ -1104,6 +1153,27 @@ class Component extends DCLogic {
       { ease: .07, onFront: k => { if (!bgs.length) return; const nx = bgs[1 - bgi]; nx.src = k.cover; nx.style.opacity = '.55'; bgs[bgi].style.opacity = '0'; bgi = 1 - bgi; },
         onMove: frac => bgs.forEach(b => { b.style.transform = `translate3d(${(-frac * 60).toFixed(1)}px, 0, 0)`; }) });
   }
+  // ---- analytics -------------------------------------------------------------------------------------------
+  // Each event goes out as a family name with params (GA4 explorations, once the custom dimensions are registered)
+  // and, when keyed, as name_key (queryable from the Data API today with no setup). Every event carries the A/B variant.
+  track(name, key, params) {
+    if (typeof gtag !== 'function') return;
+    const p = Object.assign({ ab: window.__AB || '' }, params || {});
+    try {
+      gtag('event', name, p);
+      if (key) { const slug = String(key).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 39 - name.length); if (slug) gtag('event', name + '_' + slug, p); }
+    } catch {}
+  }
+  sectionKey(sec) { const L = { 'Hero': 'hero', 'Two parts': 'two_parts', 'Pipeline': 'help', 'Department': 'department', 'The work': 'work', 'Voices': 'voices', 'Billboard': 'billboard', 'Contact': 'contact' }; return L[sec.dataset.screenLabel] || sec.id || String(sec.dataset.screenLabel || '').toLowerCase(); }
+  flushSection() { if (!this.tk || !this.tk.cur) return; const sec = Math.round((performance.now() - this.tk.since) / 1000); this.tk.since = performance.now(); if (sec >= 1) this.track('section_time', this.tk.cur, { section: this.tk.cur, value: Math.min(sec, 600) }); }
+  openVideo(v, surface) {
+    this.videosWatched = (this.videosWatched || 0) + 1; this.vOpenedAt = performance.now(); this.vSurface = surface || '';
+    this.track('video_open', v.id, { video_id: v.id, video_title: v.t, surface: surface || '', nth: this.videosWatched });
+    this.track('video_from', surface || 'other', { video_title: v.t, surface: surface || '' });
+    this.setState({ video: v });
+  }
+  flushVideo() { const v = this.state.video; if (!v || !this.vOpenedAt) return; const sec = Math.round((performance.now() - this.vOpenedAt) / 1000); this.vOpenedAt = 0; if (sec >= 1) this.track('video_watch', v.id, { video_id: v.id, video_title: v.t, surface: this.vSurface || '', value: Math.min(sec, 1800) }); }
+  closeVideo() { if (!this.state.video) return; this.flushVideo(); this.setState({ video: null }); }
   // Sections rendered from loops swap their placeholder nodes after mount, so observers and stacks are bound
   // lazily and idempotently: called at mount, shortly after, and on every update.
   reveal(sec) { sec.dataset.revealed = '1'; sec.querySelectorAll('[data-rv]').forEach(n => { n.style.transitionDelay = (n.dataset.d || 0) + 's'; n.style.opacity = '1'; n.style.transform = 'none'; }); }
@@ -1112,6 +1182,12 @@ class Component extends DCLogic {
   syncVisible() {
     const box = this.el.root; if (!box) return; const H = box.clientHeight; if (!H) return;
     const ratio = el => { const r = el.getBoundingClientRect(); const seen = Math.max(0, Math.min(r.bottom, H) - Math.max(r.top, 0)); return seen / Math.min(r.height || H, H); };
+    // which section owns the screen right now (most visible, at least half) — feeds section_view / section_time
+    if (this.tk && document.visibilityState !== 'hidden') {
+      let best = null, bestR = .5; box.querySelectorAll('section').forEach(sec => { const r = ratio(sec); if (r > bestR) { bestR = r; best = sec; } });
+      const key = best ? this.sectionKey(best) : null;
+      if (key !== this.tk.cur) { this.flushSection(); this.tk.cur = key; this.tk.since = performance.now(); if (key && !this.tk.seen.has(key)) { this.tk.seen.add(key); this.track('section_view', key, { section: key }); } }
+    }
     box.querySelectorAll('[data-slide]:not([data-revealed])').forEach(sec => { if (ratio(sec) >= .35) this.reveal(sec); });
     if (this.indState) this.indState.forEach((st, sec) => {
       const on = ratio(sec) >= .25; if (on === st.on) return; st.on = on;
@@ -1130,7 +1206,7 @@ class Component extends DCLogic {
       const ind = INDUSTRIES.find(i => i.id === sec.id); const wrap = sec.querySelector('[data-indstack]'); if (!ind || !wrap) return;
       const st = { on: false, k: null, el: null }; this.indState.set(sec, st);
       const bgs = Array.from(sec.querySelectorAll('[data-indbg]')); let bgi = 0;
-      this.initStack(wrap, ind.films, 'indTimer_' + ind.id, 9000, k => this.setState({ video: { t: k.t, id: k.id, mp4: '' } }),
+      this.initStack(wrap, ind.films, 'indTimer_' + ind.id, 9000, k => this.openVideo({ t: k.t, id: k.id, mp4: '' }, ind.id),
         { ease: .08, onFront: (k, el) => { st.k = k; st.el = el; if (bgs.length) { const nx = bgs[1 - bgi]; nx.src = k.cover; nx.style.opacity = '.5'; bgs[bgi].style.opacity = '0'; bgi = 1 - bgi; } if (st.on) this.playCard(el, k); },
           onMove: frac => bgs.forEach(b => { b.style.transform = `translate3d(${(-frac * 60).toFixed(1)}px, 0, 0)`; }) });
       this.secIo.observe(sec);
@@ -1163,6 +1239,7 @@ class Component extends DCLogic {
   }
   // Hero film stack: fanned cards, drag/swipe to browse, tap the front card to play. Idles forward one card every few seconds.
   initStack(wrap, LIST, timerKey, idleMs, onTap, opts) {
+    const surface = timerKey === 'stackTimer' ? 'hero' : timerKey === 'pipeTimer' ? 'help' : String(timerKey || '').replace('indTimer_', '');
     opts = opts || {}; const EASE = opts.ease || .14; let front = -1;
     const box = this.el.root; if (!wrap) return;
     const cards = Array.from(wrap.querySelectorAll('[data-stackcard]')), n = cards.length; if (!n) return;
@@ -1199,6 +1276,7 @@ class Component extends DCLogic {
       if (Math.abs(dx) < 6 && performance.now() - d.t < 400) { const k = LIST[((Math.round(p) % n) + n) % n]; p = Math.round(p); render(); onTap(k); idle(); return; }
       let shift = Math.round(-dx / cfg().sens - d.v * 1.6); shift = Math.max(-3, Math.min(3, shift));
       go(Math.round(d.p) + shift); idle();
+      if (shift) this.track('card_swipe', surface, { surface });
     };
     drag.addEventListener('pointerup', up); drag.addEventListener('pointercancel', up);
     render(); idle();

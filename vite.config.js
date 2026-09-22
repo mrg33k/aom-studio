@@ -2,6 +2,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
+import { pathToFileURL } from 'node:url'
 import fs from 'fs'
 import os from 'os'
 import { execFile, spawn } from 'child_process'
@@ -1086,6 +1087,18 @@ function localDashboardPlugin() {
           return
         }
         res.statusCode = 405; res.end(JSON.stringify({ error: 'GET or POST only' }))
+      })
+
+      // ---- ANALYTICS REPORT (dev adapter for api/analytics.js; key from ~/.config/gcloud, report key "dev") ----
+      server.middlewares.use('/api/analytics', async (req, res) => {
+        try {
+          if (!process.env.GA_SA_KEY_B64) { const kp = resolve(process.env.HOME || '', '.config/gcloud/ambition-analytics-key.json'); if (fs.existsSync(kp)) process.env.GA_SA_KEY_B64 = fs.readFileSync(kp).toString('base64') }
+          if (!process.env.ANALYTICS_KEY) process.env.ANALYTICS_KEY = 'dev'
+          const mod = await import(pathToFileURL(resolve(server.config.root, 'api/analytics.js')).href + '?t=' + Date.now())
+          req.query = Object.fromEntries(new URL(req.url, 'http://localhost').searchParams)
+          const shim = { setHeader: (k, v) => res.setHeader(k, v), status(c) { res.statusCode = c; return shim }, json(o) { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(o)) }, end: b => res.end(b) }
+          await mod.default(req, shim)
+        } catch (err) { res.statusCode = 500; res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ ok: false, error: err.message })) }
       })
 
       // ---- WEBSITES PICK (which website designs to showcase on the homepage; public/websites-pick/) ----

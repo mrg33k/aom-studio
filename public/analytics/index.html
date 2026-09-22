@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Website report | Ahead of Market</title>
+<link rel="icon" href="/brand/favicon/aom.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Inter+Tight:wght@800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#060606;--ink:#F6F6F4;--mute:rgba(246,246,244,.62);--dim:rgba(246,246,244,.38);--line:rgba(246,246,244,.12);--gold:#C4A46A;--card:#0B0B0A;--gx:clamp(1.1rem,4vw,3rem);--good:#8FD19E;--bad:#E08A7A}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 var(--gx)}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:1.3rem 0;border-bottom:1px solid var(--line)}
+  .brand{display:inline-flex;align-items:center;gap:.7rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;text-decoration:none}
+  .brand img{display:block;width:26px;height:auto}
+  .tag{font-family:'Space Grotesk',system-ui,sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+  .eyebrow{font-family:'Space Grotesk',system-ui,sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold)}
+  h1{margin:.5rem 0 0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.6rem,7vw,5.6rem);line-height:.9;letter-spacing:-.03em}
+  h1 .dot{color:var(--gold)}
+  h2{margin:0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(1.5rem,3vw,2.3rem);line-height:.95;letter-spacing:-.025em}
+  .sub{margin:1rem 0 0;color:var(--mute);font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.02rem;font-weight:500;max-width:60ch;line-height:1.5}
+  .hero{padding:clamp(2.4rem,6vh,4.5rem) 0 clamp(1.6rem,4vh,2.6rem);display:flex;flex-wrap:wrap;gap:1.5rem 3rem;align-items:flex-end;justify-content:space-between}
+  .range{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:.25rem}
+  .range button{background:none;border:0;color:var(--mute);font-family:'Space Grotesk',system-ui,sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.08em;padding:.55rem 1rem;border-radius:999px;cursor:pointer}
+  .range button[aria-pressed="true"]{background:var(--gold);color:#060606}
+  section.blk{padding:clamp(1.8rem,4vh,2.8rem) 0;border-top:1px solid var(--line)}
+  .head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.3rem}
+  .head p{margin:.35rem 0 0;color:var(--mute);font-size:.95rem;max-width:62ch;line-height:1.5}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+  .kpi{background:var(--card);padding:1.2rem 1.2rem 1.1rem;min-height:132px;display:flex;flex-direction:column;justify-content:space-between}
+  .kpi .l{font-family:'Space Grotesk',system-ui,sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--mute)}
+  .kpi .v{font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;font-size:clamp(2rem,3.4vw,2.9rem);letter-spacing:-.03em;line-height:1;margin-top:.9rem}
+  .kpi .d{margin-top:.55rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.8rem;font-weight:700;color:var(--dim)}
+  .kpi .d.up{color:var(--good)} .kpi .d.down{color:var(--bad)}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:clamp(1.4rem,3vw,2.6rem)}
+  .bars{display:grid;gap:.55rem}
+  .bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.8rem;align-items:center}
+  .bar .n{font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar .t{position:relative;height:8px;background:rgba(246,246,244,.08);border-radius:999px;overflow:hidden;grid-column:1/-1}
+  .bar .t i{position:absolute;left:0;top:0;bottom:0;background:var(--gold);border-radius:999px}
+  .bar .x{font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;font-size:.9rem;white-space:nowrap}
+  .bar .x small{color:var(--mute);font-weight:500;margin-left:.4rem}
+  table{width:100%;border-collapse:collapse;font-size:.95rem}
+  th{font-family:'Space Grotesk',system-ui,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);text-align:left;padding:.4rem .6rem .7rem 0;border-bottom:1px solid var(--line)}
+  td{padding:.75rem .6rem .75rem 0;border-bottom:1px solid var(--line);vertical-align:middle}
+  td.num,th.num{text-align:right;font-family:'Space Grotesk',system-ui,sans-serif;font-weight:700;white-space:nowrap}
+  td .mini{display:block;height:6px;background:rgba(246,246,244,.08);border-radius:999px;overflow:hidden;margin-top:.45rem;max-width:22rem}
+  td .mini i{display:block;height:100%;background:var(--gold)}
+  .win{color:var(--gold)}
+  .note{color:var(--dim);font-size:.85rem;line-height:1.5;margin-top:1rem}
+  svg.chart{width:100%;height:auto;display:block}
+  .foot{padding:2.4rem 0 3.5rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;justify-content:space-between;color:var(--dim);font-size:.85rem}
+  .btn{display:inline-flex;align-items:center;gap:.6rem;min-height:48px;padding:.7rem 1.4rem;border-radius:999px;border:1px solid var(--gold);background:transparent;color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;text-decoration:none}
+  .btn.solid{background:var(--gold);color:#060606}
+  .gate{min-height:70vh;display:grid;place-items:center;text-align:center;padding:2rem var(--gx)}
+  .gate .card{max-width:34rem;border:1px solid var(--line);background:var(--card);padding:2.2rem;border-radius:18px}
+  .gate input{width:100%;margin:1.2rem 0;padding:.95rem 1.1rem;border-radius:12px;border:1px solid rgba(246,246,244,.3);background:#060606;color:var(--ink);font:inherit;font-size:1rem}
+  .gate input:focus{outline:2px solid var(--gold);outline-offset:2px}
+  .gate p{color:var(--mute);line-height:1.55}
+  .skeleton{opacity:.35}
+  .pill{display:inline-block;padding:.2rem .6rem;border:1px solid var(--line);border-radius:999px;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+  @media (max-width:640px){ td,th{padding-right:.35rem} .kpi{min-height:112px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/"><img src="/home-v4/assets/aom-monogram-paper.svg" alt="">Ahead of Market</a>
+    <span class="tag">Website report</span>
+  </header>
+</div>
+<main id="app"><div class="gate skeleton"><div class="card"><p class="eyebrow">Loading</p><h2>Pulling the numbers</h2><p>Live from Google Analytics.</p></div></div></main>
+<script>
+(function(){
+  const $app = document.getElementById('app');
+  const path = location.pathname.replace(/\/+$/, '').split('/');
+  const qs = new URLSearchParams(location.search);
+  const site = (qs.get('site') || (path[1] === 'analytics' && path[2]) || '').toLowerCase();
+  let days = parseInt(qs.get('days'), 10) || 28;
+  // report key: #k=... once, then remembered on this device (kept out of the address bar)
+  const hk = (location.hash.match(/k=([^&]+)/) || [])[1];
+  if (hk) { try { localStorage.setItem('aom_report_key', decodeURIComponent(hk)); } catch {} history.replaceState(null, '', location.pathname + location.search); }
+  const key = () => { try { return localStorage.getItem('aom_report_key') || ''; } catch { return ''; } };
+
+  const fmt = n => n >= 10000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : Math.round(n).toLocaleString('en-US');
+  const pct = (n, d) => d ? Math.round((n / d) * 100) + '%' : '0%';
+  const pct1 = x => (x * 100).toFixed(x * 100 >= 10 ? 0 : 1) + '%';
+  const dur = s => { s = Math.round(s || 0); const m = Math.floor(s / 60), r = s % 60; return m ? `${m}m ${String(r).padStart(2, '0')}s` : `${r}s`; };
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const delta = (cur, prev, invert) => { if (!prev) return '<span class="d">no prior period</span>'; const ch = (cur - prev) / prev; const up = ch >= 0; const good = invert ? !up : up; return `<span class="d ${Math.abs(ch) < .005 ? '' : good ? 'up' : 'down'}">${up ? '▲' : '▼'} ${Math.abs(ch * 100).toFixed(0)}% vs prior ${days} days</span>`; };
+  const bars = (rows, labelKey, valKey, total, sub) => { const max = Math.max(1, ...rows.map(r => r[valKey])); return `<div class="bars">${rows.map(r => `<div class="bar"><span class="n">${esc(r[labelKey])}</span><span class="x">${fmt(r[valKey])}${total ? `<small>${pct(r[valKey], total)}</small>` : ''}${sub ? `<small>${sub(r)}</small>` : ''}</span><span class="t"><i style="width:${(r[valKey] / max * 100).toFixed(1)}%"></i></span></div>`).join('')}</div>`; };
+  const chart = daily => {
+    if (!daily.length) return '<p class="note">No visits in this period yet.</p>';
+    const W = 1000, H = 220, P = 24, max = Math.max(1, ...daily.map(d => d.sessions));
+    const x = i => P + (i / Math.max(1, daily.length - 1)) * (W - 2 * P), y = v => H - P - (v / max) * (H - 2 * P);
+    const pts = daily.map((d, i) => `${x(i).toFixed(1)},${y(d.sessions).toFixed(1)}`).join(' ');
+    const first = daily[0].date, last = daily[daily.length - 1].date, f = s => `${s.slice(4, 6)}/${s.slice(6, 8)}`;
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Visits per day"><defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#C4A46A" stop-opacity=".35"/><stop offset="1" stop-color="#C4A46A" stop-opacity="0"/></linearGradient></defs>
+      <polygon fill="url(#g)" points="${x(0)},${H - P} ${pts} ${x(daily.length - 1)},${H - P}"/><polyline fill="none" stroke="#C4A46A" stroke-width="2.5" stroke-linejoin="round" points="${pts}"/>
+      <text x="${P}" y="${H - 4}" fill="rgba(246,246,244,.5)" font-size="12" font-family="Space Grotesk,system-ui">${f(first)}</text><text x="${W - P}" y="${H - 4}" text-anchor="end" fill="rgba(246,246,244,.5)" font-size="12" font-family="Space Grotesk,system-ui">${f(last)}</text>
+      <text x="${W - P}" y="${P - 6}" text-anchor="end" fill="rgba(246,246,244,.5)" font-size="12" font-family="Space Grotesk,system-ui">peak ${max} visits/day</text></svg>`;
+  };
+  const block = (title, body, lead, aside) => `<section class="blk"><div class="head"><div><h2>${title}</h2>${lead ? `<p>${lead}</p>` : ''}</div>${aside || ''}</div>${body}</section>`;
+
+  let films = {};
+  fetch('/analytics/aom-films.json').then(r => r.json()).then(j => { (j.films || []).forEach(f => { films[f.id] = f; }); }).catch(() => {});
+
+  function gate(msg, showInput) {
+    $app.innerHTML = `<div class="gate"><div class="card"><p class="eyebrow">Website report</p><h2>${showInput ? 'Enter the report key' : 'One moment'}</h2><p>${esc(msg)}</p>${showInput ? `<input id="k" type="password" autocomplete="off" placeholder="Report key"><button class="btn solid" id="go">Open the report</button>` : ''}</div></div>`;
+    if (showInput) { const go = () => { try { localStorage.setItem('aom_report_key', document.getElementById('k').value.trim()); } catch {} load(); }; document.getElementById('go').onclick = go; document.getElementById('k').addEventListener('keydown', e => { if (e.key === 'Enter') go(); }); }
+  }
+
+  async function load() {
+    if (!site) return gate('Add the site to the address: /analytics/aom, /analytics/wolfpack or /analytics/ambition.');
+    $app.querySelectorAll('.blk,.hero').forEach(n => n.classList.add('skeleton'));
+    let d;
+    try { const r = await fetch(`/api/analytics?site=${encodeURIComponent(site)}&days=${days}`, { headers: { 'x-analytics-key': key() } }); d = await r.json(); if (r.status === 401) return gate(key() ? 'That key did not work. Try again.' : 'This report is private. Enter the key you were given.', true); }
+    catch (e) { return gate('The numbers could not be loaded right now. Refresh in a minute.'); }
+    if (d.noAccess) return gate(`Google Analytics has not shared "${d.name}" with the report yet. In GA4, add ${d.grant} as a Viewer on the property for ${d.measurement}, then refresh.`);
+    if (!d.ok) return gate(d.error || 'Something went wrong.');
+    render(d);
+  }
+
+  function render(d) {
+    const t = d.totals, v4 = d.kind === 'v4';
+    document.title = `${d.name} website report | Ahead of Market`;
+    const updated = new Date(d.updatedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    const kpis = [
+      ['Visitors', fmt(t.users), delta(t.users, t.prev.users)],
+      ['Visits', fmt(t.sessions), delta(t.sessions, t.prev.sessions)],
+      ['Stayed and engaged', pct1(t.engagementRate), delta(t.engagementRate, t.prev.engagementRate)],
+      ['Time per visit', dur(t.avgSessionSec), delta(t.avgSessionSec, t.prev.avgSessionSec)],
+      ['Contact actions', fmt(t.leads), delta(t.leads, t.prev.leads)],
+      v4 ? ['Films opened', fmt(t.videoOpens), delta(t.videoOpens, t.prev.videoOpens)] : ['Pages viewed', fmt(t.pageViews), delta(t.pageViews, t.prev.pageViews)],
+    ];
+    let html = `<div class="wrap">
+      <div class="hero"><div><p class="eyebrow">Website performance</p><h1>${esc(d.name)}<span class="dot">.</span></h1><p class="sub">${esc(d.host)} · last ${d.days} days · updated ${updated}${d.cached ? '' : ''}</p></div>
+        <div class="range" role="group" aria-label="Period">${[7, 28, 90].map(n => `<button aria-pressed="${n === d.days}" data-days="${n}">${n} days</button>`).join('')}</div></div>
+      <div class="kpis">${kpis.map(k => `<div class="kpi"><span class="l">${k[0]}</span><div><div class="v">${k[1]}</div>${k[2]}</div></div>`).join('')}</div>
+      <p class="note">Contact actions = requests sent, phone taps and email taps. "Stayed and engaged" is Google's measure: a visit longer than ten seconds, with a conversion, or with two or more pages.</p>`;
+
+    html += block('Visits by day', chart(d.daily));
+    html += block('Where visitors come from', `<div class="grid2"><div>${bars(d.channels, 'name', 'sessions', t.sessions)}</div><div>${bars(d.sources, 'name', 'sessions', t.sessions)}</div></div>`, 'Channels on the left, the exact sources on the right.');
+    if (d.devices.length || d.cities.length) html += block('Devices and cities', `<div class="grid2"><div>${bars(d.devices, 'name', 'sessions', t.sessions, r => `${dur(r.avgSessionSec)} avg`)}</div><div>${bars(d.cities, 'name', 'sessions', t.sessions)}</div></div>`);
+
+    if (d.scroll.length) html += block('How far down the page they get', bars(d.scroll.map(s => ({ n: s.googleOwn ? 'Reached 90% (Google\'s own measure)' : `Reached ${s.pct}% of the page`, users: s.users })), 'n', 'users', d.scrollBase), 'Share of visitors who scrolled this far. The drop between steps shows where people stop.');
+
+    if (v4) {
+      const secs = d.sections, maxSec = Math.max(1, ...secs.map(s => s.avgSec)), base = Math.max(1, ...secs.map(s => s.users));
+      html += block('Where they stop, where they stay', `<table><thead><tr><th>Section</th><th class="num">Saw it</th><th>Time spent there (average)</th></tr></thead><tbody>${secs.map(s => `<tr><td>${esc(s.label)}</td><td class="num">${pct(s.users, base)}<br><small style="color:var(--mute);font-weight:500">${fmt(s.users)} people</small></td><td><span style="font-family:'Space Grotesk',system-ui;font-weight:700">${dur(s.avgSec)}</span><span class="mini"><i style="width:${(s.avgSec / maxSec * 100).toFixed(1)}%"></i></span></td></tr>`).join('')}</tbody></table>`,
+        'Every section of the homepage, in page order. "Saw it" is the share of visitors who had that section on screen. Time is how long it stayed on screen before they moved on.');
+
+      const a = d.ab.a, b = d.ab.b, n = a.sessions + b.sessions;
+      const row = (label, fa, fb, fmtF, lowerIsBetter) => { const win = fa === fb ? 0 : ((fa > fb) !== !!lowerIsBetter ? 'a' : 'b'); return `<tr><td>${label}</td><td class="num ${win === 'a' ? 'win' : ''}">${fmtF(fa)}</td><td class="num ${win === 'b' ? 'win' : ''}">${fmtF(fb)}</td></tr>`; };
+      html += block('Hero first vs. How we can help first', `<table><thead><tr><th>Half of visitors see each version</th><th class="num">${esc(d.ab.labels.a)}</th><th class="num">${esc(d.ab.labels.b)}</th></tr></thead><tbody>
+        ${row('Visits', a.sessions, b.sessions, fmt)}
+        ${row('Stayed and engaged', a.engagementRate, b.engagementRate, pct1)}
+        ${row('Time per visit', a.avgSessionSec, b.avgSessionSec, dur)}
+        ${row('Requests sent', a.leads, b.leads, fmt)}
+        ${row('Requests per 100 visits', a.leadRate * 100, b.leadRate * 100, x => x.toFixed(1))}
+        ${row('Started a form', a.formStarts, b.formStarts, fmt)}
+        ${row('Answered the opening question', a.quizAnswers, b.quizAnswers, fmt)}
+        ${row('Opened a film', a.videoUsers, b.videoUsers, fmt)}
+        ${row('Share who opened a film', a.videoRate, b.videoRate, pct1)}
+        ${row('Opened a service card', a.outcomeOpens, b.outcomeOpens, fmt)}
+        ${row('Tapped Get started', a.getStarted, b.getStarted, fmt)}
+        ${row('Swiped through cards', a.swipes, b.swipes, fmt)}
+        ${row('Reached halfway down', a.scroll50, b.scroll50, fmt)}
+        ${row('Reached the bottom', a.scroll100, b.scroll100, fmt)}
+        ${row('Reached Ready when you are', a.reachedContact, b.reachedContact, fmt)}
+      </tbody></table><p class="note">${n < 200 ? `Only ${fmt(n)} visits so far. Below a few hundred visits per version the difference is mostly noise, so treat this as a first read, not a verdict.` : `${fmt(n)} visits in the test so far.`} Gold marks the better number on each row. Force a version with ?ab=a or ?ab=b on the homepage.</p>`,
+        'Each visitor is randomly given one version of the homepage and keeps it. This compares what each group did.');
+
+      if (d.videos.length) html += block('Films people opened', `<table><thead><tr><th>Film</th><th class="num">Opened</th><th class="num">People</th><th class="num">Watched (avg)</th></tr></thead><tbody>${d.videos.map(v => { const f = films[v.id]; return `<tr><td>${esc(f ? f.title : v.id)}${f ? `<br><small style="color:var(--mute)">${esc(f.client)}</small>` : ''}</td><td class="num">${fmt(v.opens)}</td><td class="num">${fmt(v.users)}</td><td class="num">${dur(v.avgWatchSec)}</td></tr>`; }).join('')}</tbody></table>
+        <p class="note">Films per visit, for visits that opened at least one: ${d.videosPerVisit.avg.toFixed(1)} on average${d.videoSurfaces.length ? ' · opened from: ' + d.videoSurfaces.map(s => `${esc(s.surface.replace(/^industry_/, '').replace(/_/g, ' '))} ${fmt(s.count)}`).join(', ') : ''}.</p>`, 'Muted previews on the cards do not count. This is people who tapped a film to watch it.');
+      else html += block('Films people opened', '<p class="note">No films opened yet in this period.</p>');
+
+      const q = d.quiz, qt = q.reduce((s, r) => s + r.count, 0);
+      html += block('The opening question', `<div class="grid2"><div><p class="eyebrow" style="margin-bottom:.8rem">Who's running your marketing today?</p>${q.length ? bars(q, 'label', 'count', qt) : '<p class="note">No answers yet.</p>'}</div><div><p class="eyebrow" style="margin-bottom:.8rem">Service cards opened</p>${d.outcomes.length ? bars(d.outcomes, 'label', 'count') : '<p class="note">None opened yet.</p>'}
+        <p class="eyebrow" style="margin:1.4rem 0 .8rem">Forms</p>${bars(d.forms.map(f => ({ n: { hero: 'Hero form', contact: 'Ready when you are', outcome: 'Service card form' }[f.form], starts: f.starts, sent: f.sent })), 'n', 'starts', 0, r => `${fmt(r.sent)} sent`)}</div></div>`);
+    }
+
+    html += block('What they do', `<div class="grid2"><div>${d.interactions.length ? bars(d.interactions, 'label', 'count', 0, r => `${fmt(r.users)} people`) : '<p class="note">No interactions recorded yet.</p>'}</div><div><p class="eyebrow" style="margin-bottom:.8rem">Most clicked</p>${d.clicks.length ? bars(d.clicks, 'label', 'count', 0, r => `${fmt(r.users)} people`) : '<p class="note">Click text is not broken out for this site yet.</p>'}</div></div>`, 'Every tracked action, most common first.');
+    if (d.pages.length > 1 || !v4) html += block('Pages', `<table><thead><tr><th>Page</th><th class="num">Views</th><th class="num">People</th><th class="num">Engaged time per view</th></tr></thead><tbody>${d.pages.map(p => `<tr><td>${esc(p.path)}</td><td class="num">${fmt(p.views)}</td><td class="num">${fmt(p.users)}</td><td class="num">${dur(p.avgEngageSec)}</td></tr>`).join('')}</tbody></table>`);
+
+    html += `<footer class="foot"><span>Source: Google Analytics 4 · property ${esc(d.property)} · numbers refresh every ten minutes.</span><button class="btn" id="csv">Download spreadsheet (CSV)</button></footer></div>`;
+    $app.innerHTML = html;
+    $app.querySelectorAll('.range button').forEach(b => b.onclick = () => { days = Number(b.dataset.days); const u = new URL(location.href); u.searchParams.set('days', days); history.replaceState(null, '', u); load(); });
+    document.getElementById('csv').onclick = () => csv(d);
+  }
+
+  function csv(d) {
+    const rows = [], add = (title, head, body) => { rows.push([title]); rows.push(head); body.forEach(r => rows.push(r)); rows.push([]); };
+    const t = d.totals;
+    add(`${d.name} website report, last ${d.days} days (updated ${d.updatedAt})`, ['Metric', 'This period', 'Prior period'], [
+      ['Visitors', t.users, t.prev.users], ['Visits', t.sessions, t.prev.sessions], ['Engaged visits', t.engagedSessions, t.prev.engagedSessions], ['Engagement rate', t.engagementRate, t.prev.engagementRate],
+      ['Avg time per visit (sec)', t.avgSessionSec, t.prev.avgSessionSec], ['Contact actions', t.leads, t.prev.leads], ['Page views', t.pageViews, t.prev.pageViews], ['Films opened', t.videoOpens, t.prev.videoOpens]]);
+    add('Visits by day', ['Date', 'Visits', 'Visitors'], d.daily.map(r => [r.date, r.sessions, r.users]));
+    add('Channels', ['Channel', 'Visits', 'Visitors'], d.channels.map(r => [r.name, r.sessions, r.users]));
+    add('Sources', ['Source / medium', 'Visits'], d.sources.map(r => [r.name, r.sessions]));
+    add('Devices', ['Device', 'Visits', 'Engagement rate', 'Avg visit (sec)'], d.devices.map(r => [r.name, r.sessions, r.engagementRate, r.avgSessionSec]));
+    add('Cities', ['City', 'Visits'], d.cities.map(r => [r.name, r.sessions]));
+    add('Scroll depth', ['Reached', 'People', 'Share of visitors'], d.scroll.map(r => [r.pct + '%', r.users, d.scrollBase ? r.users / d.scrollBase : 0]));
+    if (d.sections) add('Sections', ['Section', 'People who saw it', 'Avg seconds on screen', 'Timed views'], d.sections.map(r => [r.label, r.users, Math.round(r.avgSec), r.timeEvents]));
+    if (d.ab) add('A/B: hero first (a) vs how we can help first (b)', ['Metric', 'A', 'B'], Object.keys(d.ab.a).map(k => [k, d.ab.a[k], d.ab.b[k]]));
+    if (d.videos) add('Films opened', ['Film', 'Client', 'Opened', 'People', 'Avg watch (sec)'], d.videos.map(v => [(films[v.id] || {}).title || v.id, (films[v.id] || {}).client || '', v.opens, v.users, Math.round(v.avgWatchSec)]));
+    if (d.quiz) add('Opening question', ['Answer', 'Count'], d.quiz.map(r => [r.label, r.count]));
+    add('Interactions', ['Action', 'Count', 'People'], d.interactions.map(r => [r.label, r.count, r.users]));
+    add('Most clicked', ['Button or link', 'Count', 'People'], d.clicks.map(r => [r.label, r.count, r.users]));
+    add('Pages', ['Page', 'Views', 'People', 'Engaged sec per view'], d.pages.map(r => [r.path, r.views, r.users, Math.round(r.avgEngageSec)]));
+    const text = rows.map(r => r.map(c => { const s = String(c == null ? '' : c); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' })); a.download = `${d.site}-website-report-${d.days}d-${d.updatedAt.slice(0, 10)}.csv`; a.click();
+  }
+  load();
+})();
+</script>
+</body>
+</html>

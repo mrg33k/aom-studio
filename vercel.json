@@ -27,6 +27,10 @@
       "destination": "/home-v4/index.html"
     },
     {
+      "source": "/analytics/:site",
+      "destination": "/analytics/index.html"
+    },
+    {
       "source": "/s1",
       "destination": "/app.html"
     },
