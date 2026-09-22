@@ -1,0 +1,74 @@
+# Handoff — Video Showcase: Descriptions + Company Logos
+
+Written 2026-09-18. For a Sonnet agent (or future session) picking up the AOM website video showcase.
+
+## The job (what Patrik wants next)
+
+1. **Fill out a project description for each showcased video** — what it is, who the client is, the story/result. Plain, real, no marketing fluff (see AOM copy voice rules).
+2. **Identify the real company name for every video** — the 30 finished ("site") videos are tagged with GENERIC labels ("Agency Brand", "Documentary", "Event Recap"), NOT real clients. The real name must be recovered (watch the video, read titles, cross-check the media plan / watch notes).
+3. **Find each company's logo and clean it to white / transparent** so it can sit on AOM's dark site. Source the real brand logo, vectorize/recolor to solid white on transparent. This is logo SOURCING + recolor, not generation — but if any asset must be generated, image gen goes through KIE only (`.claude/rules/image-generation-kie-only.md`), on a neutral bg with the logo composited after.
+
+## LIVE (2026-09-21): the showcase is deployed
+
+- **https://www.aheadofmarket.com/s1** (also `/showcase`) renders the curated set — `src/pages/WorkShowcase.jsx`, routed in `src/main.jsx`, rewrites in `vercel.json`. 38 films, 8 sections, featured strip, tap-to-play gumlet modal, v4 obsidian+gold. Commits `4498ac97` + `4fbb7afa` on `main`.
+- **Content control loop:** the page reads `media-plan.json` (sections/order/featured) + `arrange.json` (cover index per video). To change what's live: edit in the Arrange tool → commit `media-plan.json`, `arrange.json`, and any newly-referenced `covers/<id>-<n>.jpg` → push `main` (auto-deploys). Only the ONE picked cover per video ships; the other frames + all review tooling stay untracked and off the public site.
+- Cover status: 26 hand-picked (frozen in `picked-by-patrik.json`) + 12 auto-picked = all 38 covered.
+- **The v4 new site is also live: https://www.aheadofmarket.com/v4** (commit `a3015531`). `public/home-v4/` (the imported Claude Design "Home – Full Site v4" + runtime) is deployed; `/v4` is a React route (`HomeV4.jsx`) that iframes `/home-v4/index.html`, rewrite added in `vercel.json`. Its **"The work"** marquee is paired with the curation: top 16 films from `media-plan.json` (featured first) with the picked covers, baked into the `PORTFOLIO` array in `public/home-v4/index.html` (marquee timing 110s), plus a "See all 38 films →" link to `/s1`. **When the curation changes, regenerate that array** (see `tmp/v4-portfolio.json` generator logic in the session) — it is NOT runtime-fetched like `/s1` is.
+- v4 case studies: ISA Energy now plays the real ISA brand film (`6aadf209c2658a788ecff7d7`). **Still wrong/placeholder:** Space Rising, Included Health, Ambition Mechanical each point at an unrelated or rejected video — Space Rising and Included Health have no finished cut in Dropbox at all. Patrik must decide what those three cases show.
+- **Mobile pass 2026-09-21 (commit `fb99c354`):** v4's inline styles are React-serialized (`grid-template-columns: 2fr 1fr 1fr 1fr` with a space), so mobile overrides live in the `<style>` block `@media (max-width: 720px)` and target `[style*="2fr 1fr 1fr 1fr"]`, `[data-intro="1"]`, and a `[data-fastpills]` hook. Fixed: case-study shots (cover full-width + 3 stills row), hero skip-row wrap, quick-pick pills wrap. The empty-looking Contact / missing "The work" heading on programmatic scroll are NOT bugs — they're `data-rv` reveals that only fire on real scroll.
+- **Mobile design pass 2026-09-21 (commit after `fb99c354`):** on ≤720px, `[data-screen-label="Home v4"]` gets `scroll-snap-type:none` and `[data-slide]` snap off → natural scroll; `#pipeline,#dept,#contact,[data-screen-label="Voices"]` are `height:auto` with their `z-index: 3` content wrapper unpinned; pipeline grid → 2×2; nav CTA nowrap/compact + wordmark hidden (`[data-intro=".55"]`). **Background reel** (`startReel()`): HOLD 3800ms, FADE 700ms, random in-point via `loadedmetadata`, gate on `requestVideoFrameCallback` (140ms fallback), new clip fades in over the opaque old one, `timer2` clears on unmount. NOTE: neither the desktop-app preview pane nor a background Chrome tab will play the reel (media policy / hidden-tab suspension: `readyState 0`, no error) — verify reel timing on a real phone or a foregrounded browser, not those.
+- **Mobile-first direction (2026-09-21), Patrik's refs: masterclass.com + bridgephx.com.** Anti-list: no shrunk desktop layouts, no text over busy video, no full-screen slides with dead space, no wrapping nav pills. The hero is done in this language (see the `MOBILE-FIRST HERO` block in `public/home-v4/index.html` `<style>`): content in flow on black, 44px headline, uniform 56px rows, one full-width CTA, reel as a captioned 16:9 band under the question; desktop-only chrome (brand slot `[aria-hidden][style*="margin-bottom"]`, skip row `[data-intro="1"]`, pills interstitial `z-index: 7`, dim `z-index: 6`) hidden ≤720px. **Still to roll through in the same system:** case studies as a single card, "The work" as a swipeable rail (not a marquee), Voices, Contact as one block. Rule: show Patrik each before moving on.
+- **Polish pass from Patrik's phone (2026-09-21):** reel is BEHIND the hero again (he rejected the band); `[data-panels]` (the desktop parallax bg columns) hidden ≤720px — they were the "random backgrounds"; each case section has `<img data-casebg src="{{ s.playThumb }}">` (blurred cover bg, mobile-only); Department 2x2 lattice + padding + staggered reveal keyed on the parent's inline `opacity: 1`; `[data-screen-label="Two parts"] li` padding. **Case shots truth:** only ISA has real film + real stills. Space Rising → cover only (`site-space-rising.jpg`, real poster; its `vid` is still the rejected Nook 10 Year). Ambition → cover only (`site-ambition.jpg`, real brand page; `vid` = Noble Real Estate, wrong). Included Health → `assets/dark.jpg` neutral plate (NO real asset; `vid` = Virtu Hospitality, wrong). `site-space-rising-tall.jpg` / `site-ambition-tall.jpg` are corrupt files — don't reuse. **Recommendation pending Patrik:** swap those three cases for curated films with picked shots (To Have and To Host, Virtu Hospitality, Intelliplay) — needs his copy for client/made/result. **Reviews:** Google/5.0/stars framing removed; the 4 named quotes (Daniel Reyes, Priya Natarajan, Marcus Hale, Tom Alvarez) are INVENTED placeholders — replace with real client words (an agent was sent to search email) or remove. Patrik's further wish: per-case muted autoplay video bg + "play from the beginning" + parallax between sections (step 2, needs a clip per case).
+- **Hero reel = real films (2026-09-21).** The export's 6 `reel-XX.mp4` were 1.5s stubs. `REEL` now lists `assets/reel-aom-01..08.mp4`: ~4.5s 720p H.264 muted clips cut with ffmpeg from the top featured gumlet films (featured[] then section order, wide only), in-point ≈ the picked cover's timestamp for auto-picked covers (idx≤10: `dur*0.03 + dur*0.94*(idx-0.5)/10`) or 30% in for hand-grabbed covers (their grab time isn't stored). To refresh after curation changes, re-run that cut (logic in this session) and update `REEL`. Hold adapts to clip length (`min(3800, dur-850ms)`). Keep `reel-03/07/11.mp4` — the story panels use them. Gary Vee's gumlet stream truncates cuts to ~2.9s regardless of in-point; adaptive hold covers it.
+- **Logos are placeholders.** `public/home-v4/assets/logos/*.svg` are 265-byte generated text badges (`<rect>` + `<text>ISA</text>`), not real logos — they render soft because SVG-as-background can't load the web font. Real vectors found in Dropbox: Space Rising `Client/Space Rising/LOGOS/logo-dark.ai`; also FTW, The Seasoned, RW Investments, Du Coeur, AJ Spec. **No SVG found for ISA (only logo animations + a GIF), Included Health, or Ambition** — Patrik says they exist; ask where. Once in hand: replace the stubs, keep filenames.
+- Open: UFB vs UFB Volunteer possible dupe unresolved; whether v4 replaces the production homepage (`/` is still `HomeR6Baby`) is Patrik's call; the 3 non-ISA case studies still need a video assigned before their shots can use picks.
+
+## What's already done (do NOT redo)
+
+- **All 48 approved videos are live on gumlet** (collection `697678222b8b17fbb707acef`), streaming-ready.
+  - 30 finished videos were already there (their gumlet IDs are the `id` field in `videos.json` for `source:"site"`).
+  - 18 Dropbox videos were uploaded 2026-09-18. Their new gumlet IDs are in **`gumlet-uploads.json`** and merged into `videos.json` as `gumletId` / `gumletHls` / `gumletEmbed` on each `source:"dropbox"` entry.
+- HLS per video: `https://video.gumlet.io/697678222b8b17fbb707acef/<gumletId>/main.m3u8`
+- Embed per video: `https://play.gumlet.io/embed/<gumletId>`
+- Covers + 3 supporting stills are being auto-picked via a watch pass (Gemini) into `arrange.json`. Site videos partially done (Google free-tier rate limit); dropbox not yet watched.
+
+## Where the data lives (all under `public/video-review/`)
+
+| File | What it holds |
+|---|---|
+| `videos.json` | 102 entries. `source: site\|dropbox`, `sub` = client label (generic for site!), `title`, `tags`, `year`. Dropbox entries now carry `gumletId`. |
+| `state.json` | Patrik's approvals: `state{id: approved\|rejected}`, `covers`, `flags`. 49 approved (30 site + 19 dropbox; Form Runner has no file). |
+| `gumlet-uploads.json` | The 18 Dropbox→gumlet mapping (slug, gumletId, title, client, hls, embed). |
+| `media-plan.json` / `media-plan.md` | 8 sections, featured order, strength scores, descriptions from watching. **Best source for real content per video.** |
+| `arrange.json` | `order` (per section), `cover` (frame idx), `support` (3 frame idxs) per video. |
+| `logo-clients.json` | Draft list of client labels needing logos — NOTE: polluted with generic site-video labels; real names still to be recovered. |
+| `tmp/moments-done.json`, `tmp/watch-results.json` | Gemini watch output (FINISHED/MATCH/DESC/STRENGTH) — real content clues for naming. |
+
+## Real clients we DO know (the 18 Dropbox videos)
+
+ISA Energy (brand video, system performance demo, self-sustaining demo) · Intelliplay (IAAPA recap) · Nabi (Letter To The World trailer) · The Noble Agency (sizzle) · VIEWPOINT / Del Norte · VIEWPOINT / RW Investments · VIEWPOINT / SOLV Energy · VIEWPOINT / Race Communications · Ember Red Studios (The Rebuild show trailer, BOOM trailer, Thelma Promo 1) · Mission Acceleration Center · Lauren Allen Dinners (Buddy's 80th) · Startup AZ (Retreat 2022) · Cook and Craft (Tequila Old Fashioned reel) · Spirit Sauce Experience (Play With Purpose)
+
+## New video added 2026-09-19 (needs an entry once transcoded)
+
+- **Preferred Choice Restoration** (restoration company) — shot during the Ember/Thelma work. File: `Ember Red Studios/FOR REVIEW/Preferred Choice Restoration.mov`. Uploaded to gumlet 2026-09-19 (processing). TODO once Ready: scrape its gumlet asset id (same method as the other 18 — read the thumbnail URL on the library page), add a `videos.json` entry (source dropbox, client "Preferred Choice Restoration"), add to `media-plan.json` with the gumlet id, and to `gumlet-uploads.json`.
+
+## Still-open gaps / judgment calls to confirm with Patrik
+
+- **Form Runner "No Signal"** — approved but NO finished file exists in Dropbox. Needs Patrik to source or drop it.
+- **Ember Red Studios** — there is no real "Thelma Episode 1" cut; Thelma Promo 1 was substituted. Other Thelma options: Promo 2, GoFundMe vertical, THELMA 45.
+- **Cook & Craft** — one cocktail reel (Tequila Old Fashioned) stands in for a whole reel set; more reels available.
+- **Site videos' real client names** — the whole point of task #2 above.
+
+## Rules that apply
+
+- Copy voice: one thought per line, contractor-real, positive not cynical (`feedback_aom_copy_voice_contractor_real`). No marketing words.
+- Image gen (if any): KIE only. Logo on the site: clean white on transparent, composite over dark.
+- Don't publish client claims you can't verify (`feedback_verify_claims_before_publishing_on_client_sites`).
+
+## 2026-09-21 evening: variation + autoplay cases (v4)
+- **Frame pool shipped:** `public/home-v4/assets/pool/` = all 152 of Patrik's hand-picked frames (cover + 3 support per curated film, 1280px, ~20 MB). Desktop parallax panels (`PANELS_L/R`) and the billboard collage now draw from it, one frame per film, no Hunter repeats. Source list: `tmp/v4-pool.json`.
+- **Case studies autoplay their own film** (`data-casev`, muted loop, poster = picked cover, 12 s 720p clips cut from gumlet HLS around the picked cover frame; parallax drift in `apply()`): ISA `case-isa.mp4` (164–176 s), Space Rising `case-space.mp4` (Arizona Aerospace Summit speakers highlights, 12 s in), Virtu `case-virtu.mp4` (14 s), Ambition `case-ambition.mp4` (Memorial Towers, 25 s). Play button = "Play from the beginning". Sections are opaque now, so the split-screen panels no longer leak behind them.
+- **Case roster changed:** Included Health → **Virtu Hospitality** (real film `698a5ef5fc23d3d76fa87ef4`, picked shots 9/8/10/11). Ambition now plays **Memorial Towers** (`698a584faec3d4e420c20fef`, picked shots 11/8/9/10). **Space Rising** = the Aerospace Summit recap, self-hosted (`assets/space-rising-recap.mp4`, 720p w/ audio, modal plays `<video>` when `mp4` is set; not on gumlet yet — source `Dropbox/AOM/Client/ARIZONA AEROSPACE SUMMIT/AZ AEROSPACE SUMMIT HIGHLIGHTS - SPEAKERS 90s.mov`). Stills `space-rising-1..4.jpg` (12.5/30/54/80 s). Patrik to confirm the Summit is the Space Rising event he meant.
+- **Hero review cards OFF** (`--revw:0px;--revd:none`): the 4 names were invented. Voices section keeps the real Brandon Clarke / Sumit Seth / Gio Osso quotes (from the old site, QA'd real) + a Startup AZ retreat frame on the right.
+- **Department** = 6 items (Strategy, Websites, Photography, Video, Reviews, Social content), 3x2 lattice desktop / 2-col phone, numbered, staggered reveal; word-roll removed (it overlapped the headline). **Two parts** and **Voices** are full-width 2-column on desktop.
+- Story panels + Department bg now use `reel-aom-*` clips (were the old Hunter `reel-03/07/11`).
