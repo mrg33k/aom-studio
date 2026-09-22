@@ -1036,6 +1036,139 @@ function localDashboardPlugin() {
         })
       })
 
+      // ---- VIDEO REVIEW STATE (approve/reject + cover picks) ----
+      // GET returns the saved picks; POST persists them to disk so they survive
+      // a browser wipe and can be read from the repo (public/video-review/state.json).
+      server.middlewares.use('/api/local/video-review', (req, res) => {
+        const filePath = resolve(server.config.root, 'public/video-review/state.json')
+        res.setHeader('Content-Type', 'application/json')
+        if (req.method === 'GET') {
+          try { res.end(fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '{}') }
+          catch (err) { res.statusCode = 500; res.end(JSON.stringify({ error: err.message })) }
+          return
+        }
+        if (req.method === 'POST') {
+          let body = ''
+          req.on('data', c => { body += c })
+          req.on('end', () => {
+            try {
+              const parsed = JSON.parse(body || '{}')
+              const out = { state: parsed.state || {}, covers: parsed.covers || {}, flags: parsed.flags || {}, savedAt: new Date().toISOString() }
+              fs.writeFileSync(filePath, JSON.stringify(out, null, 1))
+              res.end(JSON.stringify({ ok: true, savedAt: out.savedAt }))
+            } catch (err) { res.statusCode = 500; res.end(JSON.stringify({ error: err.message })) }
+          })
+          return
+        }
+        res.statusCode = 405; res.end(JSON.stringify({ error: 'GET or POST only' }))
+      })
+
+      // ---- ARRANGE STATE (order + 3 supporting images + cover per video) ----
+      server.middlewares.use('/api/local/arrange', (req, res) => {
+        const filePath = resolve(server.config.root, 'public/video-review/arrange.json')
+        res.setHeader('Content-Type', 'application/json')
+        if (req.method === 'GET') {
+          try { res.end(fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '{}') }
+          catch (err) { res.statusCode = 500; res.end(JSON.stringify({ error: err.message })) }
+          return
+        }
+        if (req.method === 'POST') {
+          let body = ''
+          req.on('data', c => { body += c })
+          req.on('end', () => {
+            try {
+              const p = JSON.parse(body || '{}')
+              const out = { order: p.order || {}, support: p.support || {}, cover: p.cover || {}, savedAt: new Date().toISOString() }
+              fs.writeFileSync(filePath, JSON.stringify(out, null, 1))
+              res.end(JSON.stringify({ ok: true, savedAt: out.savedAt }))
+            } catch (err) { res.statusCode = 500; res.end(JSON.stringify({ error: err.message })) }
+          })
+          return
+        }
+        res.statusCode = 405; res.end(JSON.stringify({ error: 'GET or POST only' }))
+      })
+
+      // ---- WEBSITES PICK (which website designs to showcase on the homepage; public/websites-pick/) ----
+      server.middlewares.use('/api/local/websites-pick', (req, res) => {
+        const filePath = resolve(server.config.root, 'public/websites-pick/selection.json')
+        res.setHeader('Content-Type', 'application/json')
+        if (req.method === 'GET') {
+          try { res.end(fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '{"picked":[]}') }
+          catch (err) { res.statusCode = 500; res.end(JSON.stringify({ error: err.message })) }
+          return
+        }
+        if (req.method === 'POST') {
+          let body = ''
+          req.on('data', c => { body += c })
+          req.on('end', () => {
+            try {
+              const p = JSON.parse(body || '{}')
+              const out = { picked: Array.isArray(p.picked) ? p.picked : [], notes: p.notes || {}, savedAt: new Date().toISOString() }
+              fs.writeFileSync(filePath, JSON.stringify(out, null, 1))
+              res.end(JSON.stringify({ ok: true, savedAt: out.savedAt }))
+            } catch (err) { res.statusCode = 500; res.end(JSON.stringify({ error: err.message })) }
+          })
+          return
+        }
+        res.statusCode = 405; res.end(JSON.stringify({ error: 'GET or POST only' }))
+      })
+
+      // ---- GRAB FRAME (capture the exact paused moment from a gumlet HLS as a still) ----
+      server.middlewares.use('/api/local/grab-frame', (req, res) => {
+        res.setHeader('Content-Type', 'application/json')
+        if (req.method !== 'POST') { res.statusCode = 405; res.end(JSON.stringify({ error: 'POST only' })); return }
+        let body = ''
+        req.on('data', c => { body += c })
+        req.on('end', () => {
+          let p
+          try { p = JSON.parse(body || '{}') } catch (e) { res.statusCode = 400; res.end(JSON.stringify({ error: 'bad json' })); return }
+          const id = String(p.id || '').replace(/[^a-zA-Z0-9._-]/g, '')
+          const hls = String(p.hls || '')
+          const time = Math.max(0, Number(p.time) || 0)
+          const kind = p.kind === 'cover' ? 'cover' : 'support'
+          const dataUrl = typeof p.dataUrl === 'string' ? p.dataUrl : ''
+          const hasImg = /^data:image\/jpe?g;base64,/.test(dataUrl)
+          if (!id || (!hasImg && !/^https:\/\/video\.gumlet\.io\//.test(hls))) { res.statusCode = 400; res.end(JSON.stringify({ error: 'need id + (frame image or gumlet hls)' })); return }
+          const coversDir = resolve(server.config.root, 'public/video-review/covers')
+          let next = 1
+          try {
+            const rx = new RegExp('^' + id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-(\\d+)\\.jpg$')
+            const nums = fs.readdirSync(coversDir).map(f => { const m = f.match(rx); return m ? +m[1] : 0 })
+            next = (nums.length ? Math.max(...nums) : 0) + 1
+          } catch (e) {}
+          const outFile = resolve(coversDir, id + '-' + next + '.jpg')
+          const finish = () => {
+            const manPath = resolve(coversDir, 'manifest.json')
+            let man = {}
+            try { man = JSON.parse(fs.readFileSync(manPath, 'utf-8')) } catch (e) {}
+            man[id] = next
+            fs.writeFileSync(manPath, JSON.stringify(man, null, 1))
+            const arrPath = resolve(server.config.root, 'public/video-review/arrange.json')
+            let arr = { order: {}, support: {}, cover: {} }
+            try { arr = JSON.parse(fs.readFileSync(arrPath, 'utf-8')) } catch (e) {}
+            arr.cover = arr.cover || {}; arr.support = arr.support || {}
+            if (kind === 'cover') { arr.cover[id] = next; arr.support[id] = (arr.support[id] || []).filter(x => x !== next) }
+            else { let s = (arr.support[id] || []).filter(x => x !== next); if (s.length >= 3) s.shift(); s.push(next); arr.support[id] = s }
+            arr.savedAt = new Date().toISOString()
+            fs.writeFileSync(arrPath, JSON.stringify(arr, null, 1))
+            res.end(JSON.stringify({ ok: true, index: next, kind, time, url: 'covers/' + id + '-' + next + '.jpg' }))
+          }
+          if (hasImg) {
+            // pixel-exact frame captured client-side from the paused <video>
+            try { fs.writeFileSync(outFile, Buffer.from(dataUrl.replace(/^data:image\/jpe?g;base64,/, ''), 'base64')) }
+            catch (e) { res.statusCode = 500; res.end(JSON.stringify({ error: 'write failed: ' + e.message })); return }
+            finish()
+          } else {
+            // fallback: hybrid accurate seek (fast input seek near the point, then precise output seek)
+            const inSs = Math.max(0, time - 12), outSs = (time - inSs).toFixed(3)
+            execFile('ffmpeg', ['-y', '-ss', String(inSs), '-i', hls, '-ss', String(outSs), '-frames:v', '1', '-vf', 'scale=1920:-2', '-q:v', '2', outFile], { timeout: 120000 }, (err) => {
+              if (err || !fs.existsSync(outFile)) { res.statusCode = 500; res.end(JSON.stringify({ error: 'ffmpeg failed: ' + (err && err.message) })); return }
+              finish()
+            })
+          }
+        })
+      })
+
       // ---- RELAY DEBUG ENDPOINT ----
       // Returns full relay system health: per-agent conversation file stats,
       // relay inbox/outbox status, hook status, active persona, pipeline trace.

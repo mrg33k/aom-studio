@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pick the websites to showcase · AOM</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#060606;--ink:#F6F6F4;--dim:#B7B6B0;--gold:#C4A46A;--line:rgba(246,246,244,.12)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem clamp(1rem,4vw,3rem);background:rgba(6,6,6,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  h1{margin:0;font-family:'Inter Tight',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:clamp(1.1rem,2.2vw,1.6rem)}
+  h1 span{color:var(--gold)}
+  .meta{font-size:.85rem;color:var(--dim)}
+  .actions{display:flex;align-items:center;gap:.6rem}
+  button{font:inherit;font-weight:700;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);padding:.6rem 1.1rem;cursor:pointer}
+  button.primary{background:var(--gold);color:#060606;border-color:var(--gold)}
+  button:disabled{opacity:.45;cursor:default}
+  .filters{display:flex;flex-wrap:wrap;gap:.4rem;padding:1rem clamp(1rem,4vw,3rem) 0}
+  .chip{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.35rem .7rem;border-radius:999px;border:1px solid var(--line);color:var(--dim);cursor:pointer;background:none}
+  .chip.on{border-color:var(--gold);color:var(--gold)}
+  main{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;padding:1rem clamp(1rem,4vw,3rem) 6rem}
+  .card{position:relative;display:flex;flex-direction:column;gap:.6rem;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0B0B0A;cursor:pointer;transition:border-color .2s,transform .2s}
+  .card:hover{border-color:rgba(196,164,106,.5)}
+  .card.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+  .card.hidden{display:none}
+  .shot{position:relative;aspect-ratio:16/10;background:#111;overflow:hidden}
+  .shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+  .shot .bad{position:absolute;inset:0;display:grid;place-items:center;color:var(--dim);font-size:.85rem}
+  .num{position:absolute;top:.6rem;left:.6rem;min-width:28px;height:28px;padding:0 .5rem;border-radius:999px;background:var(--gold);color:#060606;font-weight:700;font-size:.85rem;display:none;place-items:center}
+  .card.on .num{display:grid}
+  .open{position:absolute;top:.6rem;right:.6rem;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:rgba(6,6,6,.7);padding:.3rem .55rem;border-radius:999px;text-decoration:none;opacity:0;transition:opacity .2s}
+  .card:hover .open{opacity:1}
+  .body{padding:0 .9rem .9rem;display:flex;flex-direction:column;gap:.15rem}
+  .t{font-family:'Inter Tight',sans-serif;font-weight:800;font-size:1rem;letter-spacing:-.01em}
+  .c{font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+  .n{font-size:.8rem;color:var(--dim)}
+  .toast{position:fixed;left:50%;bottom:1.4rem;transform:translateX(-50%);background:var(--gold);color:#060606;font-weight:700;padding:.7rem 1.2rem;border-radius:999px;opacity:0;transition:opacity .3s;pointer-events:none}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Websites to <span>showcase</span></h1>
+    <div class="meta" id="meta">Loading…</div>
+  </div>
+  <div class="actions">
+    <button id="clear">Clear</button>
+    <button class="primary" id="save" disabled>Save selection</button>
+  </div>
+</header>
+<div class="filters" id="filters"></div>
+<main id="grid"></main>
+<div class="toast" id="toast">Saved</div>
+<script>
+(async () => {
+  const [sites, sel] = await Promise.all([
+    fetch('sites.json?cb=' + Date.now()).then(r => r.json()),
+    fetch('/api/local/websites-pick').then(r => r.json()).catch(() => ({ picked: [] })),
+  ]);
+  let picked = sel.picked || [];
+  const grid = document.getElementById('grid'), meta = document.getElementById('meta'), save = document.getElementById('save'), toast = document.getElementById('toast');
+  const clients = [...new Set(sites.map(s => s.client))];
+  let filter = null;
+  const fl = document.getElementById('filters');
+  const mkChip = (label, val) => { const b = document.createElement('button'); b.className = 'chip' + (filter === val ? ' on' : ''); b.textContent = label; b.onclick = () => { filter = filter === val ? null : val; render(); }; return b; };
+  const render = () => {
+    fl.innerHTML = ''; fl.appendChild(mkChip('All', null)); clients.forEach(c => fl.appendChild(mkChip(c, c)));
+    grid.innerHTML = '';
+    sites.forEach(s => {
+      const i = picked.indexOf(s.slug);
+      const card = document.createElement('div');
+      card.className = 'card' + (i >= 0 ? ' on' : '') + (filter && s.client !== filter ? ' hidden' : '');
+      card.innerHTML = `<div class="shot">${s.ok ? `<img src="${s.shot}?cb=${Date.now()}" alt="">` : '<div class="bad">no screenshot (needs a server or is offline)</div>'}<span class="num">${i + 1}</span><a class="open" href="${s.url}" target="_blank" rel="noopener">Open ↗</a></div>
+        <div class="body"><span class="c">${s.client}</span><span class="t">${s.title}</span><span class="n">${s.note}</span></div>`;
+      card.onclick = ev => { if (ev.target.closest('a')) return; const k = picked.indexOf(s.slug); if (k >= 0) picked.splice(k, 1); else picked.push(s.slug); dirty = true; render(); };
+      grid.appendChild(card);
+    });
+    meta.textContent = `${sites.length} designs · ${picked.length} picked (click to pick, order = order you click)`;
+    save.disabled = !dirty;
+  };
+  let dirty = false;
+  document.getElementById('clear').onclick = () => { picked = []; dirty = true; render(); };
+  save.onclick = async () => {
+    const r = await fetch('/api/local/websites-pick', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ picked }) }).then(r => r.json()).catch(() => ({}));
+    if (r.ok) { dirty = false; render(); toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 1600); }
+  };
+  render();
+})();
+</script>
+</body>
+</html>

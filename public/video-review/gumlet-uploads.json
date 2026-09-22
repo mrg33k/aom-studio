@@ -1,0 +1,152 @@
+{
+ "collection": "697678222b8b17fbb707acef",
+ "uploadedAt": "2026-09-18",
+ "count": 18,
+ "videos": [
+  {
+   "slug": "isa-energy-brand-video-2026-master",
+   "gumletId": "6aadf209c2658a788ecff7d7",
+   "title": "Brand Video — 2026 MASTER",
+   "client": "ISA Energy",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf209c2658a788ecff7d7/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf209c2658a788ecff7d7"
+  },
+  {
+   "slug": "isa-energy-system-performance-demo-2026",
+   "gumletId": "6aadf2097d44d89d0157d32e",
+   "title": "System Performance Demo — 2026",
+   "client": "ISA Energy",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf2097d44d89d0157d32e/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf2097d44d89d0157d32e"
+  },
+  {
+   "slug": "isa-energy-self-sustaining-demo-2026",
+   "gumletId": "6aadf20958101b77bb9d90f5",
+   "title": "Self-Sustaining Demo — 2026",
+   "client": "ISA Energy",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf20958101b77bb9d90f5/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf20958101b77bb9d90f5"
+  },
+  {
+   "slug": "intelliplay-iaapa-2025-full-recap",
+   "gumletId": "6aadf20958101b77bb9d90fb",
+   "title": "IAAPA 2025 Full Recap",
+   "client": "Intelliplay",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf20958101b77bb9d90fb/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf20958101b77bb9d90fb"
+  },
+  {
+   "slug": "nabi-letter-to-the-world-trailer",
+   "gumletId": "6aadf209c2658a788ecff7d8",
+   "title": "Letter To The World — Trailer",
+   "client": "Nabi",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf209c2658a788ecff7d8/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf209c2658a788ecff7d8"
+  },
+  {
+   "slug": "the-noble-agency-noble-edit-full-v2-2025-sizzle",
+   "gumletId": "6aadf209c2658a788ecff7d9",
+   "title": "Noble Edit FULL V2 / 2025 Sizzle",
+   "client": "The Noble Agency",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf209c2658a788ecff7d9/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf209c2658a788ecff7d9"
+  },
+  {
+   "slug": "viewpoint-del-norte-hd-commercial-demo",
+   "gumletId": "6aadf20958101b77bb9d90fe",
+   "title": "HD Commercial + Demo",
+   "client": "VIEWPOINT / Del Norte",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf20958101b77bb9d90fe/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf20958101b77bb9d90fe"
+  },
+  {
+   "slug": "viewpoint-rw-investments-hd-commercial-demo",
+   "gumletId": "6aadf209c2658a788ecff7d6",
+   "title": "HD Commercial + Demo",
+   "client": "VIEWPOINT / RW Investments",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf209c2658a788ecff7d6/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf209c2658a788ecff7d6"
+  },
+  {
+   "slug": "ember-red-studios-the-rebuild-show-trailer",
+   "gumletId": "6aadf20958101b77bb9d90fa",
+   "title": "The Rebuild — Show Trailer",
+   "client": "Ember Red Studios",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf20958101b77bb9d90fa/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf20958101b77bb9d90fa"
+  },
+  {
+   "slug": "mission-acceleration-center-mac-sw-recap-one-two",
+   "gumletId": "6aadf20958101b77bb9d90f0",
+   "title": "MAC SW Recap One / Two",
+   "client": "Mission Acceleration Center",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf20958101b77bb9d90f0/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf20958101b77bb9d90f0"
+  },
+  {
+   "slug": "viewpoint-solv-energy-live-action-main-5-min",
+   "gumletId": "6aadf2097d44d89d0157d329",
+   "title": "Live Action — Main / 5 Min",
+   "client": "VIEWPOINT / SOLV Energy",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf2097d44d89d0157d329/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf2097d44d89d0157d329"
+  },
+  {
+   "slug": "viewpoint-race-communications-5-min-30-second",
+   "gumletId": "6aadf2097d44d89d0157d32d",
+   "title": "5 Min + 30 Second",
+   "client": "VIEWPOINT / Race Communications",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf2097d44d89d0157d32d/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf2097d44d89d0157d32d"
+  },
+  {
+   "slug": "lauren-allen-dinners-buddy-s-80th-birthday-recap-extended",
+   "gumletId": "6aadf2097d44d89d0157d32f",
+   "title": "Buddy's 80th Birthday Recap (+ extended)",
+   "client": "Lauren Allen Dinners",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf2097d44d89d0157d32f/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf2097d44d89d0157d32f"
+  },
+  {
+   "slug": "startup-az-retreat-2022",
+   "gumletId": "6aadf20958101b77bb9d90fc",
+   "title": "Retreat 2022",
+   "client": "Startup AZ",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf20958101b77bb9d90fc/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf20958101b77bb9d90fc"
+  },
+  {
+   "slug": "cook-and-craft-food-reels-brussels-burrata-margarita-old-fashioned",
+   "gumletId": "6aadf2097d44d89d0157d32a",
+   "title": "Food reels (Brussels, Burrata, Margarita, Old Fashioned…)",
+   "client": "Cook and Craft",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf2097d44d89d0157d32a/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf2097d44d89d0157d32a"
+  },
+  {
+   "slug": "ember-red-studios-thelma-promos-boom-trailer",
+   "gumletId": "6aadf20958101b77bb9d90f6",
+   "title": "Thelma — Promos + BOOM Trailer",
+   "client": "Ember Red Studios",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf20958101b77bb9d90f6/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf20958101b77bb9d90f6"
+  },
+  {
+   "slug": "ember-red-studios-thelma-episode-1-ff",
+   "gumletId": "6ab1f7f85b267e78d0cd4f84",
+   "title": "Episode 1 — THELMA FF (full, 13 min)",
+   "client": "Ember Red Studios",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6ab1f7f85b267e78d0cd4f84/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6ab1f7f85b267e78d0cd4f84",
+   "note": "re-uploaded 2026-09-21 from Dropbox (the earlier asset was a 1:45 cut); old id 6aadf20958101b77bb9d90fd"
+  },
+  {
+   "slug": "spirit-sauce-experience-play-with-purpose",
+   "gumletId": "6aadf2097d44d89d0157d32b",
+   "title": "Play With Purpose",
+   "client": "Spirit Sauce Experience",
+   "hls": "https://video.gumlet.io/697678222b8b17fbb707acef/6aadf2097d44d89d0157d32b/main.m3u8",
+   "embed": "https://play.gumlet.io/embed/6aadf2097d44d89d0157d32b"
+  }
+ ]
+}

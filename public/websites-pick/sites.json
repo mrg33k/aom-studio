@@ -1,0 +1,407 @@
+[
+ {
+  "slug": "aom-v4",
+  "title": "Home v4 (current build)",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/home-v4/index.html?skip=1",
+  "note": "Claude Design full site, Sept 2026",
+  "shot": "shots/aom-v4.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-r6",
+  "title": "Home R6 Baby (live /)",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/r6",
+  "note": "Live homepage, Aug 2026",
+  "shot": "shots/aom-r6.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-taste",
+  "title": "Home R6 Taste",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/taste",
+  "note": "Aug 2026",
+  "shot": "shots/aom-taste.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-r5",
+  "title": "Home R5",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/r5",
+  "note": "Aug 2026",
+  "shot": "shots/aom-r5.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-r7",
+  "title": "Home AOM 2026",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/r7",
+  "note": "Aug 2026",
+  "shot": "shots/aom-r7.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-v2",
+  "title": "Home V2",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/home-v2",
+  "note": "Jul 2026",
+  "shot": "shots/aom-v2.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-slider",
+  "title": "Studio slider home",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/slider",
+  "note": "Aug 2026",
+  "shot": "shots/aom-slider.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-hero2",
+  "title": "Cage match m3 round 2",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/hero-2/index.html",
+  "note": "Aug 2026",
+  "shot": "shots/aom-hero2.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-hero-final",
+  "title": "Cage match m3 winner",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/hero/index.html",
+  "note": "Aug 2026",
+  "shot": "shots/aom-hero-final.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-hero-a",
+  "title": "A/B: So we become it",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/hero-ab/a/index.html",
+  "note": "Aug 2026",
+  "shot": "shots/aom-hero-a.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-hero-b",
+  "title": "A/B: Now you do",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/hero-ab/b/index.html",
+  "note": "Aug 2026",
+  "shot": "shots/aom-hero-b.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-superside",
+  "title": "May Superside home",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/versions-static/may-superside/index.html",
+  "note": "May 2026",
+  "shot": "shots/aom-superside.jpg",
+  "ok": false
+ },
+ {
+  "slug": "aom-march",
+  "title": "March redesign",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/versions-static/march-redesign/index.html",
+  "note": "Mar 2026",
+  "shot": "shots/aom-march.jpg",
+  "ok": false
+ },
+ {
+  "slug": "aom-feb",
+  "title": "Feb original",
+  "client": "Ahead of Market",
+  "url": "http://localhost:5173/versions-static/feb-original/index.html",
+  "note": "Feb 2026",
+  "shot": "shots/aom-feb.jpg",
+  "ok": false
+ },
+ {
+  "slug": "aom-steffen-r1",
+  "title": "Steffen site rebuild R1",
+  "client": "Ahead of Market",
+  "url": "file:///Users/aom-inhouse/aom-studio-transfer/AOM-EA/corner/users/aom/agents/steffen/missions/design-pipeline-system/site-rebuild/R1-homepage/index.html",
+  "note": "Apr 2026",
+  "shot": "shots/aom-steffen-r1.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-pilot",
+  "title": "Pilot: Phoenix in motion",
+  "client": "Ahead of Market",
+  "url": "file:///Users/aom-inhouse/aom-studio-transfer/AOM-EA/corner/users/aom/agents/steffen/missions/design-pipeline-system/pilots/aom-homepage/index.html",
+  "note": "Apr 2026",
+  "shot": "shots/aom-pilot.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-direction-lab",
+  "title": "Direction lab: pick a door",
+  "client": "Ahead of Market",
+  "url": "file:///Users/aom-inhouse/aom-studio-transfer/AOM-EA/corner/users/aom/agents/steffen/missions/design-pipeline-system/labs/2026-04-27-direction-lab/index.html",
+  "note": "Apr 2026",
+  "shot": "shots/aom-direction-lab.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-reimagine",
+  "title": "Homepage reimagined",
+  "client": "Ahead of Market",
+  "url": "file:///Users/aom-inhouse/aom-studio-transfer/AOM-EA/corner/users/aom/projects/agent-hooks/missions/design-hook/ab-test-2026-06-24/homepage-reimagine.html",
+  "note": "Jun 2026",
+  "shot": "shots/aom-reimagine.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-vacancy",
+  "title": "Concept: The Vacancy",
+  "client": "Ahead of Market",
+  "url": "file:///Users/aom-inhouse/aom-studio-transfer/AOM-EA/corner/users/aom/missions/design-foundations/cage-match/m3/entry-one/variants/b-the-vacancy.html",
+  "note": "Aug 2026",
+  "shot": "shots/aom-vacancy.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-frontpage",
+  "title": "Concept: The Front Page",
+  "client": "Ahead of Market",
+  "url": "file:///Users/aom-inhouse/aom-studio-transfer/AOM-EA/corner/users/aom/missions/design-foundations/cage-match/m3/entry-one/variants/c-the-front-page.html",
+  "note": "Aug 2026",
+  "shot": "shots/aom-frontpage.jpg",
+  "ok": true
+ },
+ {
+  "slug": "wolfpack-site",
+  "title": "Wolfpack Companies (shipped)",
+  "client": "Wolfpack Companies",
+  "url": "http://localhost:5173/wolfpack-site/index.html",
+  "note": "Live Sept 2026",
+  "shot": "shots/wolfpack-site.jpg",
+  "ok": true
+ },
+ {
+  "slug": "wolfpack-live",
+  "title": "wolfpackcompanies.com (live)",
+  "client": "Wolfpack Companies",
+  "url": "https://wolfpackcompanies.com",
+  "note": "Live",
+  "shot": "shots/wolfpack-live.jpg",
+  "ok": true
+ },
+ {
+  "slug": "wolfpack-pm-a",
+  "title": "Wolfpack property managers A",
+  "client": "Wolfpack Companies",
+  "url": "file:///Users/aom-inhouse/aom-studio-transfer/AOM-EA/corner/users/aom/missions/design-foundations/cage-match/m2/entry-one/index.html",
+  "note": "Aug 2026",
+  "shot": "shots/wolfpack-pm-a.jpg",
+  "ok": true
+ },
+ {
+  "slug": "wolfpack-pm-b",
+  "title": "Wolfpack property managers B",
+  "client": "Wolfpack Companies",
+  "url": "file:///Users/aom-inhouse/aom-studio-transfer/AOM-EA/corner/users/aom/missions/design-foundations/cage-match/m2/entry-two/index.html",
+  "note": "Aug 2026",
+  "shot": "shots/wolfpack-pm-b.jpg",
+  "ok": true
+ },
+ {
+  "slug": "lozano",
+  "title": "Lozano's Mortuary",
+  "client": "Lozano's Flagstaff Mortuary",
+  "url": "http://localhost:5173/lozano/index.html",
+  "note": "Aug 2026 concept",
+  "shot": "shots/lozano.jpg",
+  "ok": true
+ },
+ {
+  "slug": "berg",
+  "title": "Berg Mortuary",
+  "client": "Berg Mortuary",
+  "url": "http://localhost:5173/berg/index.html",
+  "note": "Aug 2026 concept",
+  "shot": "shots/berg.jpg",
+  "ok": true
+ },
+ {
+  "slug": "french",
+  "title": "French Funerals",
+  "client": "French Funerals & Cremations",
+  "url": "http://localhost:5173/french/index.html",
+  "note": "Aug 2026 concept",
+  "shot": "shots/french.jpg",
+  "ok": true
+ },
+ {
+  "slug": "lapaloma",
+  "title": "La Paloma",
+  "client": "La Paloma Funeral Services",
+  "url": "http://localhost:5173/lapaloma/index.html",
+  "note": "Aug 2026 concept",
+  "shot": "shots/lapaloma.jpg",
+  "ok": true
+ },
+ {
+  "slug": "preston",
+  "title": "Preston Funeral Home",
+  "client": "Preston Funeral Home",
+  "url": "http://localhost:5173/preston/index.html",
+  "note": "Aug 2026 concept",
+  "shot": "shots/preston.jpg",
+  "ok": true
+ },
+ {
+  "slug": "kraken",
+  "title": "K.R.A.K.E.N. Corps",
+  "client": "Kraken Corps",
+  "url": "http://localhost:5173/kraken/index.html",
+  "note": "Aug 2026",
+  "shot": "shots/kraken.jpg",
+  "ok": true
+ },
+ {
+  "slug": "caliente",
+  "title": "Caliente Construction",
+  "client": "Caliente Construction",
+  "url": "http://localhost:5173/caliente/index.html",
+  "note": "Jul 2026 concept",
+  "shot": "shots/caliente.jpg",
+  "ok": true
+ },
+ {
+  "slug": "riteway",
+  "title": "Rite Way",
+  "client": "Rite Way HVAC / Plumbing",
+  "url": "http://localhost:5173/riteway/index.html",
+  "note": "Jul 2026 concept",
+  "shot": "shots/riteway.jpg",
+  "ok": true
+ },
+ {
+  "slug": "praevideo",
+  "title": "Praevideo",
+  "client": "Praevideo",
+  "url": "http://localhost:5173/praevideo/index.html",
+  "note": "Jul 2026 concept",
+  "shot": "shots/praevideo.jpg",
+  "ok": true
+ },
+ {
+  "slug": "holisticbalance",
+  "title": "Holistic Balance (HTML)",
+  "client": "Holistic Balance",
+  "url": "http://localhost:5173/holisticbalance/index.html",
+  "note": "Jul 2026",
+  "shot": "shots/holisticbalance.jpg",
+  "ok": true
+ },
+ {
+  "slug": "hb-react",
+  "title": "Holistic Balance (React)",
+  "client": "Holistic Balance",
+  "url": "http://localhost:5173/hb",
+  "note": "Aug 2026",
+  "shot": "shots/hb-react.jpg",
+  "ok": true
+ },
+ {
+  "slug": "artlink",
+  "title": "Artlink site pitch",
+  "client": "Artlink",
+  "url": "http://localhost:5173/brands/artlink/pitch",
+  "note": "Aug 2026",
+  "shot": "shots/artlink.jpg",
+  "ok": true
+ },
+ {
+  "slug": "conrad",
+  "title": "Conrad Foundation",
+  "client": "Conrad Foundation",
+  "url": "http://localhost:5173/conrad",
+  "note": "Aug 2026",
+  "shot": "shots/conrad.jpg",
+  "ok": true
+ },
+ {
+  "slug": "conrad2",
+  "title": "Conrad Foundation 2",
+  "client": "Conrad Foundation",
+  "url": "http://localhost:5173/conradfoundation2",
+  "note": "Aug 2026",
+  "shot": "shots/conrad2.jpg",
+  "ok": true
+ },
+ {
+  "slug": "missionwater",
+  "title": "Mission Water platform",
+  "client": "Mission Water",
+  "url": "http://localhost:5173/platform",
+  "note": "Aug 2026",
+  "shot": "shots/missionwater.jpg",
+  "ok": true
+ },
+ {
+  "slug": "spacerising-brand",
+  "title": "Space Rising brand site",
+  "client": "Space Rising",
+  "url": "http://localhost:5173/brands/space-rising",
+  "note": "Aug 2026",
+  "shot": "shots/spacerising-brand.jpg",
+  "ok": true
+ },
+ {
+  "slug": "space-congress",
+  "title": "Space Congress landing",
+  "client": "Space Rising",
+  "url": "http://localhost:5173/space-congress/index.html",
+  "note": "Jul 2026",
+  "shot": "shots/space-congress.jpg",
+  "ok": true
+ },
+ {
+  "slug": "spacerising-live",
+  "title": "spacerising.org (live)",
+  "client": "Space Rising",
+  "url": "https://spacerising.org",
+  "note": "Live",
+  "shot": "shots/spacerising-live.jpg",
+  "ok": true
+ },
+ {
+  "slug": "ambition-live",
+  "title": "ambitionac.com (live)",
+  "client": "Ambition Mechanical",
+  "url": "https://ambitionac.com",
+  "note": "Live",
+  "shot": "shots/ambition-live.jpg",
+  "ok": true
+ },
+ {
+  "slug": "aom-live",
+  "title": "aheadofmarket.com (live)",
+  "client": "Ahead of Market",
+  "url": "https://aheadofmarket.com",
+  "note": "Live",
+  "shot": "shots/aom-live.jpg",
+  "ok": true
+ },
+ {
+  "slug": "andocia",
+  "title": "Andocia proposal",
+  "client": "Andocia",
+  "url": "http://localhost:5173/andocia-proposal/index.html",
+  "note": "Jul 2026",
+  "shot": "shots/andocia.jpg",
+  "ok": true
+ }
+]
