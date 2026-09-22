@@ -5,6 +5,23 @@
 
 ## Rounds
 
+### R17 — Creative feed reset
+
+- Replaced the mixed `/feed` video source with 52 curated examples focused only on creative construction and food videos.
+- Split the feed into Construction and Food filters, removed AI, agent, music, and generic workflow lanes from this surface.
+- Preserved the snap-scroll video experience and made each card open a YouTube search for the exact example.
+- Verified the data shape, inline script syntax, filter rendering, and production build.
+
+**Status:** shipped to `https://aheadofmarket.com/feed`
+
+### R18 — TikTok vertical previews
+
+- Switched feed destinations from YouTube to TikTok search results.
+- Kept the 9:16 snap-scroll layout and added a unique branded image preview for every item.
+- Verified the two filters, 52-item data set, preview rendering, and production build.
+
+**Status:** shipped to `https://aheadofmarket.com/feed`
+
 ### R1 — Handoff translation and mobile polish
 
 **Status:** shipped and verified on canonical production
@@ -49,3 +66,20 @@ Moved the mobile card 05 headline above its four option rows so the question rem
 **Status:** shipped and verified on canonical production
 
 Restored the previous `HomeR6Baby` experience at `/` and moved the endless-loop build to `/slider` while it continues through polish. The slider’s own brand link stays on `/slider`; focused tests, production build, and canonical browser checks for both `/` and `/slider` pass.
+
+### R? — v4 homepage top sections integrated on /v4 (2026-09-18)
+Imported the Claude Design "Home - Full Site v4" and ported the first four sections into the React app, behind a preview route so live `/` (HomeR6Baby) is untouched.
+- New route: `/v4` -> `src/pages/HomeV4.jsx`.
+- Sections: `src/components/homev4/` — HeroV4 (reel crossfade + interactive questionnaire + rotating Google reviews + email capture), BillboardV4, TwoPartsV4, PipelineV4.
+- **Content model:** ALL copy/images/links live in ONE file — `src/data/homeV4Content.js`. This is the single edit surface for the marketing team. (Next step per Patrik: optional in-dashboard editor on top of this same file, no rework.)
+- Assets: reels reuse `public/videos/reel-*.mp4`; monogram via shared BrandMark; client logo marks in `public/home-v4/assets/logos/`. Billboard collage uses placeholder JPGs from `public/home2026/` until the real v4 photos are pulled from the design project.
+- Verified in browser: all 4 sections render; questionnaire runs to the payoff state; reel plays; reviews rotate.
+**Status:** in progress — first look ready for Patrik's ship/redo call. Pending: real v4 imagery (collage + case photos), the hero scroll choreography (stinger + parallax) if wanted, remaining sections (Department, Cases, Work, Voices, Contact).
+
+### R? — v4 switched to embedding the REAL design file (2026-09-18)
+Patrik reviewed the hand-built React port and flagged it as an "older version" missing the intro animation, questionnaire polish, and the lower sections. Pivoted: `/v4` now serves the ACTUAL Claude Design "Home - Full Site v4" file with its own runtime (`public/home-v4/` = dc.html + React UMD + support.js + _ds_bundle.js), pulled all 28 real photos + reels. Verified: 0 broken images, 13 sections render (Hero→Contact), hero + ISA case match Patrik's references. 4 case photos are stand-ins (came inline, not persisted); nav monogram is a substitute. Next: real 4 photos + exact monogram, self-host React, then lift inline data → editable content file + in-dashboard editor (the original content-control ask).
+**Status:** first faithful look ready for Patrik.
+
+### R-2026-09-22c — scroll/eyebrows/icons/forms/modal round live
+Commits 5f27a67b (rebased ae8315f0) + 38c274ff. Focus mode releases on scroll-away, iOS scroll containment, eyebrows removed, centered animated department icons (no numbers), industry sections without the gold square + prominent pill buttons, boxed lead forms with plain labels, How-we-can-help request modal, phone hero flush to top. Verified on the live domain at phone size.
+**Status:** live. Waiting on Patrik's phone for the iOS bottom-of-page scroll check.
