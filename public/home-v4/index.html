@@ -75,6 +75,8 @@ button{font:inherit}
   [data-stack]{height:26rem !important;margin-top:.9rem !important}
   [data-pipewrap]{grid-template-columns:1fr !important;row-gap:1rem}
   [data-pipestack]{height:26rem !important}
+  [data-contactgrid]{grid-template-columns:1fr !important}
+  [data-contactgrid] form{justify-self:stretch !important;max-width:none !important}
   [data-contactform] textarea{min-height:7rem}
   [data-stackcard]{width:17.5rem !important;height:23.5rem !important;margin-left:-8.75rem !important;border-radius:18px !important}
   [data-stackcard] [data-stackmeta] > span:first-child{font-size:1.25rem !important}
@@ -138,6 +140,19 @@ button{font:inherit}
 /* typeform-style focus: once someone starts typing, everything else steps back */
 [data-focus="1"] [data-stack],[data-focus="1"] [data-intro="1"],[data-focus="1"] [data-nav]{opacity:0 !important;pointer-events:none !important;transition:opacity .5s ease !important}
 [data-focusdim]{transition:opacity .9s ease}
+[data-focus="1"] [data-leadform] textarea{min-height:11rem !important;padding:1.3rem 1.4rem !important;font-size:1.08rem !important;border-radius:22px !important;border-color:rgba(246,246,244,.42) !important}
+[data-focus="1"] [data-leadform] input{height:56px !important;font-size:1.08rem !important}
+[data-focus="1"] [data-leadform] button[type="submit"]{height:56px !important;padding:0 1.8rem !important;font-size:1.05rem !important}
+[data-focus="1"] [data-leadform] textarea:focus,[data-focus="1"] [data-leadform] input:focus{border-color:#C4A46A !important}
+[data-focus="1"] [data-leadform] > div:has(input:focus){border-color:#C4A46A !important}
+@media (min-width: 721px){
+  [data-focus="1"] [data-screen-label="Hero"] [data-line]{width:100% !important}
+  [data-focus="1"] [data-screen-label="Hero"] [data-card]{display:grid !important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:clamp(3rem,7vw,8rem);align-items:center;width:100% !important}
+  [data-focus="1"] [data-screen-label="Hero"] [data-card] > h1{grid-column:1;font-size:clamp(2.8rem,5.6vw,6rem) !important;max-width:12ch}
+  [data-focus="1"] [data-screen-label="Hero"] [data-card] > p{grid-column:1;font-size:clamp(1.1rem,1.4vw,1.4rem) !important}
+  [data-focus="1"] [data-screen-label="Hero"] [data-card] > form{grid-column:2;grid-row:1 / span 2;width:100% !important;max-width:36rem;justify-self:end;margin-top:0 !important}
+  [data-focus="1"] [data-screen-label="Hero"] [data-card] > div[style*="flex-direction: column"]{grid-column:1 / -1}
+}
 [data-stackcard]{transition:opacity .55s ease}
 [data-casev]{transition:opacity 1.2s ease}
 [data-contactform] textarea,[data-contactform] input,[data-leadform] textarea,[data-leadform] input{box-sizing:border-box}
@@ -212,6 +227,7 @@ button{font:inherit}
       </div>
       <div ref="{{ dimRef }}" style="position:absolute;inset:0;z-index:6;background:#060606;opacity:0;pointer-events:none"></div>
       <div data-focusdim="" aria-hidden="true" style="position:absolute;inset:0;z-index:4;background:#040404;opacity:{{ focusOp }};pointer-events:none"></div>
+      <div data-focusbg="" aria-hidden="true" style="position:absolute;inset:0;z-index:4;opacity:{{ focusBgOp }};pointer-events:none;transition:opacity 1.4s ease .2s;background:#040404 url(assets/gen/form-bg.jpg) center / cover no-repeat"><span style="position:absolute;inset:0;background:linear-gradient(to right, rgba(4,4,4,.92) 0%, rgba(4,4,4,.72) 45%, rgba(4,4,4,.45) 100%), linear-gradient(to top, rgba(4,4,4,.9), rgba(4,4,4,.2) 50%)"></span></div>
       <div ref="{{ interRef }}" style="position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(1.8rem,5vh,3.2rem);pointer-events:none;opacity:0;will-change:opacity,transform">
         <div style="display:flex;align-items:flex-end">
           <img src="assets/aom-monogram-paper.svg" alt="" style="display:block;width:clamp(6rem,14vw,11rem);height:auto">
@@ -615,37 +631,47 @@ button{font:inherit}
   </section>
 
   <!-- CONTACT -->
-  <section id="contact" data-slide="" data-screen-label="Contact" style="position:relative;height:var(--vph,100svh);scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;z-index:1;background:transparent">
-    <div aria-hidden="true" style="position:absolute;inset:0;z-index:0;background:linear-gradient(to right, rgba(6,6,6,.92) 0%, rgba(6,6,6,.75) 36%, rgba(6,6,6,.2) 70%), linear-gradient(to top, rgba(6,6,6,.6), transparent 40%)"></div>
-    <div style="position:relative;z-index:3;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;padding:clamp(4.5rem,10vh,7rem) var(--gx);width:min(100%,52rem)">
-      <h2 style="margin:0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.6rem,min(6.4vw,12vh),7rem);line-height:.9;letter-spacing:-.03em">
-        <span data-rv="" data-d="0" style="display:block;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Ready when</span>
-        <span data-rv="" data-d=".1" style="display:block;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">you are<i style="display:inline-block;width:.13em;height:.13em;background:#C4A46A;margin-left:.07em"></i></span>
-      </h2>
-      <p data-rv="" data-d=".2" style="margin:clamp(1rem,2.6vh,2rem) 0 0;max-width:38ch;color:#E6E5E0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1.05rem,min(1.5vw,2.8vh),1.45rem);font-weight:500;line-height:1.4;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">{{ contactCopy }}</p>
+  <section id="contact" data-slide="" data-screen-label="Contact" style="position:relative;height:var(--vph,100svh);scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;z-index:1;background:#060606">
+    <div data-contactbg="" aria-hidden="true" style="position:absolute;inset:0;z-index:0;background:#040404 url(assets/gen/form-bg.jpg) center / cover no-repeat;opacity:{{ contactBgOp }};transition:opacity 1.2s ease"><span style="position:absolute;inset:0;background:linear-gradient(to right, rgba(4,4,4,.9) 0%, rgba(4,4,4,.68) 45%, rgba(4,4,4,.4) 100%), linear-gradient(to top, rgba(4,4,4,.92), rgba(4,4,4,.15) 55%)"></span></div>
+    <div style="position:relative;z-index:3;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;padding:clamp(4.5rem,10vh,7rem) var(--gx);width:100%">
       <sc-if value="{{ contactClosed }}" hint-placeholder-val="{{ true }}">
-        <div data-rv="" data-d=".3" style="margin-top:clamp(1.4rem,3.4vh,2.6rem);display:flex;flex-wrap:wrap;align-items:center;gap:1rem 2rem;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
-          <button onClick="{{ openContact }}" style="min-height:58px;display:inline-flex;align-items:center;padding:1rem 2.4rem;border-radius:999px;border:0;background:#C4A46A;color:#060606;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.1rem;font-weight:700;cursor:pointer;transition:background-color .18s" style-hover="background-color:#A8884C">Get started</button>
-          <a href="tel:+16023732164" style="font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.05rem;font-weight:700;color:#F6F6F4">602 373 2164</a>
+        <div style="width:min(100%,56rem)">
+          <span data-rv="" data-d="0" style="display:block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#C4A46A;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Last thing</span>
+          <h2 style="margin:clamp(.8rem,2vh,1.4rem) 0 0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(3rem,min(8vw,15vh),9rem);line-height:.88;letter-spacing:-.03em">
+            <span data-rv="" data-d=".06" style="display:block;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Ready when</span>
+            <span data-rv="" data-d=".14" style="display:block;color:#C4A46A;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">you are<i style="display:inline-block;width:.13em;height:.13em;background:#F6F6F4;margin-left:.07em"></i></span>
+          </h2>
+          <p data-rv="" data-d=".22" style="margin:clamp(1.2rem,3vh,2.2rem) 0 0;max-width:40ch;color:#E6E5E0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1.1rem,min(1.6vw,3vh),1.5rem);font-weight:500;line-height:1.4;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Two fields and you are in. A real person replies within 24 hours with a plan for the first ninety days.</p>
+          <div data-rv="" data-d=".3" style="margin-top:clamp(1.6rem,4vh,3rem);display:flex;flex-wrap:wrap;align-items:center;gap:1rem 2.2rem;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
+            <button onClick="{{ openContact }}" style="min-height:64px;display:inline-flex;align-items:center;gap:.8rem;padding:1.1rem 2.6rem;border-radius:999px;border:0;background:#C4A46A;color:#060606;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.15rem;font-weight:700;cursor:pointer;transition:background-color .18s ease,transform .18s ease" style-hover="background-color:#A8884C;transform:translateY(-2px)">Get started<span aria-hidden="true">→</span></button>
+            <a href="tel:+16023732164" style="font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.05rem;font-weight:700;color:#F6F6F4">602 373 2164</a>
+            <a href="mailto:hello@aheadofmarket.com" style="font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.05rem;font-weight:700;color:rgba(246,246,244,.7)" style-hover="color:#C4A46A">hello@aheadofmarket.com</a>
+          </div>
         </div>
       </sc-if>
       <sc-if value="{{ contactOpen }}" hint-placeholder-val="{{ false }}">
-        <form data-contactform="" onSubmit="{{ submitLead }}" style="margin-top:clamp(1.2rem,3vh,2rem);width:min(100%,34rem);animation:riseIn .9s cubic-bezier(.16,1,.3,1) both">
-          <sc-if value="{{ notSent }}" hint-placeholder-val="{{ true }}">
-            <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
-            <label style="display:block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#C4A46A;margin-bottom:.5rem">Anything we should know?</label>
-            <textarea name="notes" rows="3" placeholder="The project, the timing, what good looks like…" style="display:block;width:100%;min-height:6.5rem;padding:1rem 1.2rem;border:1px solid rgba(246,246,244,.32);border-radius:18px;background:rgba(6,6,6,.6);color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1rem;font-weight:500;line-height:1.45;resize:vertical;outline:0"></textarea>
-            <div style="margin-top:.6rem;display:grid;grid-template-columns:1fr auto;align-items:center;gap:.4rem;padding:.35rem .35rem .35rem 1.2rem;border:1px solid rgba(246,246,244,.32);border-radius:999px;background:rgba(6,6,6,.6)">
-              <input type="email" name="email" required="" placeholder="you@company.com" style="min-width:0;height:48px;background:transparent;border:0;outline:0;color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1rem;font-weight:500">
-              <button type="submit" disabled="{{ sending }}" style="height:48px;padding:0 1.4rem;border-radius:999px;border:0;background:#C4A46A;color:#060606;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background-color .18s ease" style-hover="background-color:#A8884C">{{ sendLabel }}</button>
-            </div>
-            <div style="margin-top:.6rem;min-height:1.2rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.85rem;font-weight:500;color:#E0A070">{{ sendError }}</div>
-          </sc-if>
-          <sc-if value="{{ sent }}" hint-placeholder-val="{{ false }}">
-            <div style="display:flex;align-items:center;gap:.9rem;min-height:58px;padding:0 1.2rem;border:1px solid #C4A46A;border-radius:999px;color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1rem;font-weight:700"><i style="display:block;width:8px;height:8px;background:#C4A46A"></i>We got it. Expect a reply within 24 hours.</div>
-          </sc-if>
-          <div style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:.6rem 1.6rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.9rem;font-weight:700"><a href="mailto:hello@aheadofmarket.com" style="color:rgba(246,246,244,.7)" style-hover="color:#C4A46A">hello@aheadofmarket.com</a><a href="tel:+16023732164" style="color:rgba(246,246,244,.7)" style-hover="color:#C4A46A">602 373 2164</a></div>
-        </form>
+        <div data-contactgrid="" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;column-gap:clamp(3rem,7vw,8rem);row-gap:1.6rem;width:100%;animation:riseIn 1s cubic-bezier(.16,1,.3,1) both">
+          <div style="min-width:0">
+            <span style="display:block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#C4A46A">Last thing</span>
+            <h2 style="margin:clamp(.8rem,2vh,1.4rem) 0 0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.6rem,min(5.6vw,11vh),6rem);line-height:.9;letter-spacing:-.03em;max-width:12ch">Anything else<span style="display:block;color:#C4A46A">we should know<i style="display:inline-block;width:.13em;height:.13em;background:#F6F6F4;margin-left:.07em"></i></span></h2>
+            <p style="margin:clamp(1rem,2.6vh,1.8rem) 0 0;max-width:36ch;color:#E6E5E0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1.05rem,min(1.4vw,2.6vh),1.35rem);font-weight:500;line-height:1.4">Leave a line and your email. A real person replies within 24 hours.</p>
+          </div>
+          <form data-contactform="" data-leadform="" onSubmit="{{ submitLead }}" style="width:100%;max-width:36rem;justify-self:end">
+            <sc-if value="{{ notSent }}" hint-placeholder-val="{{ true }}">
+              <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+              <textarea name="notes" rows="4" placeholder="The project, the timing, what good looks like…" style="display:block;width:100%;min-height:11rem;padding:1.3rem 1.4rem;border:1px solid rgba(246,246,244,.42);border-radius:22px;background:rgba(6,6,6,.6);color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.08rem;font-weight:500;line-height:1.45;resize:vertical;outline:0;transition:border-color .18s"></textarea>
+              <div style="margin-top:.7rem;display:grid;grid-template-columns:1fr auto;align-items:center;gap:.4rem;padding:.35rem .35rem .35rem 1.3rem;border:1px solid rgba(246,246,244,.42);border-radius:999px;background:rgba(6,6,6,.6)">
+                <input type="email" name="email" required="" placeholder="you@company.com" style="min-width:0;height:56px;background:transparent;border:0;outline:0;color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.08rem;font-weight:500">
+                <button type="submit" disabled="{{ sending }}" style="height:56px;padding:0 1.8rem;border-radius:999px;border:0;background:#C4A46A;color:#060606;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.05rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background-color .18s ease" style-hover="background-color:#A8884C">{{ sendLabel }}</button>
+              </div>
+              <div style="margin-top:.6rem;min-height:1.2rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.85rem;font-weight:500;color:#E0A070">{{ sendError }}</div>
+            </sc-if>
+            <sc-if value="{{ sent }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:.9rem;min-height:64px;padding:0 1.4rem;border:1px solid #C4A46A;border-radius:999px;color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.05rem;font-weight:700"><i style="display:block;width:8px;height:8px;background:#C4A46A"></i>We got it. Expect a reply within 24 hours.</div>
+            </sc-if>
+            <div style="margin-top:1rem;display:flex;flex-wrap:wrap;gap:.6rem 1.6rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.9rem;font-weight:700"><a href="mailto:hello@aheadofmarket.com" style="color:rgba(246,246,244,.7)" style-hover="color:#C4A46A">hello@aheadofmarket.com</a><a href="tel:+16023732164" style="color:rgba(246,246,244,.7)" style-hover="color:#C4A46A">602 373 2164</a></div>
+          </form>
+        </div>
       </sc-if>
     </div>
     <div style="position:absolute;bottom:calc(1.4rem + env(safe-area-inset-bottom));left:var(--gx);font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(246,246,244,.6);z-index:3">© 2026 Ahead of Market</div>
@@ -699,13 +725,13 @@ const CASES = [
 const N_SLIDES = 14;
 // "How we can help": four service cards in the same fanned stack as the hero. Web = Reelay explainer frames.
 const PIPE = [
-  { n: '01', sec: 'Outcome', t: 'Attract the right people', c: 'Content that pulls in the customers you actually want.', cover: 'assets/pool/startup-az-retreat-2022-7.jpg', href: '#contact' },
-  { n: '02', sec: 'Outcome', t: 'Leads', c: 'A site and ads built to make the phone ring.', cover: 'assets/pool/698a584faec3d4e420c20fef-8.jpg', href: '#contact' },
-  { n: '03', sec: 'Outcome', t: 'Sharper story', c: 'A brand film that says it better than a meeting can.', cover: 'assets/pool/698a6296fc23d3d76fa8d992-16.jpg', href: '/services/brand-film' },
-  { n: '04', sec: 'Outcome', t: 'New website', c: 'Rebuilt fast, built to pull its weight.', cover: 'assets/pool/698a5aa5aec3d4e420c263c4-4.jpg', href: '/services/web-build' },
-  { n: '05', sec: 'Outcome', t: 'Profile management', c: 'Google, Yelp and socials kept current and answered.', cover: 'assets/pool/698a5d24aec3d4e420c2a0a0-9.jpg', href: '#contact' },
-  { n: '06', sec: 'Outcome', t: 'Great people applying', c: 'Recruiting films that bring the right hires to you.', cover: 'assets/pool/698a6177873071aec5ca4374-1.jpg', href: '#contact' },
-  { n: '07', sec: 'Outcome', t: 'Raise awareness', c: 'Get seen by the people who have not heard of you yet.', cover: 'assets/pool/698a5fcdfc23d3d76fa893b8-1.jpg', href: '#contact' },
+  { n: '01', sec: 'Outcome', t: 'Attract the right people', c: 'Content that pulls in the customers you actually want.', cover: 'assets/gen/outcome-attract.jpg', href: '#contact' },
+  { n: '02', sec: 'Outcome', t: 'Leads', c: 'A site and ads built to make the phone ring.', cover: 'assets/gen/outcome-leads.jpg', href: '#contact' },
+  { n: '03', sec: 'Outcome', t: 'Sharper story', c: 'A brand film that says it better than a meeting can.', cover: 'assets/gen/outcome-story.jpg', href: '/services/brand-film' },
+  { n: '04', sec: 'Outcome', t: 'New website', c: 'Rebuilt fast, built to pull its weight.', cover: 'assets/gen/outcome-website.jpg', href: '/services/web-build' },
+  { n: '05', sec: 'Outcome', t: 'Profile management', c: 'Google, Yelp and socials kept current and answered.', cover: 'assets/gen/outcome-profile.jpg', href: '#contact' },
+  { n: '06', sec: 'Outcome', t: 'Great people applying', c: 'Recruiting films that bring the right hires to you.', cover: 'assets/gen/outcome-hiring.jpg', href: '#contact' },
+  { n: '07', sec: 'Outcome', t: 'Raise awareness', c: 'Get seen by the people who have not heard of you yet.', cover: 'assets/gen/outcome-awareness.jpg', href: '#contact' },
 ];
 // Hero film stack: every curated film, Patrik's picked cover, tap = play (gumlet embed)
 const STACK = [{"t": "Journey To Gary Vee", "c": "Cinematic Story", "id": "698a6296fc23d3d76fa8d992", "cover": "assets/pool/698a6296fc23d3d76fa8d992-17.jpg", "sec": "Brand"}, {"t": "Letter To The World — Trailer", "c": "Nabi", "id": "6aadf209c2658a788ecff7d8", "cover": "assets/pool/nabi-letter-to-the-world-trailer-11.jpg", "sec": "Brand"}, {"t": "Thelma — Episode 1", "c": "Ember Red Studios", "id": "6aadf20958101b77bb9d90fd", "cover": "assets/pool/ember-red-studios-thelma-episode-1-ff-9.jpg", "sec": "Brand"}, {"t": "Ernie Stevens Jr. Tribute", "c": "Tribute Film", "id": "698a5a6cfc23d3d76fa812a7", "cover": "assets/pool/698a5a6cfc23d3d76fa812a7-12.jpg", "sec": "Brand"}, {"t": "Jason Amador: GCU Basketball x NABI", "c": "Athlete Story", "id": "698a5a6caec3d4e420c25e1a", "cover": "assets/pool/698a5a6caec3d4e420c25e1a-11.jpg", "sec": "Brand"}, {"t": "Rainbow Rider", "c": "Experience Asset", "id": "698a6106aec3d4e420c2fd85", "cover": "assets/pool/698a6106aec3d4e420c2fd85-3.jpg", "sec": "Brand"}, {"t": "System Performance Demo", "c": "ISA Energy", "id": "6aadf2097d44d89d0157d32e", "cover": "assets/pool/isa-energy-system-performance-demo-2026-9.jpg", "sec": "Tech"}, {"t": "Brand Video", "c": "ISA Energy", "id": "6aadf209c2658a788ecff7d7", "cover": "assets/pool/isa-energy-brand-video-2026-master-12.jpg", "sec": "Tech"}, {"t": "IAAPA 2025 Full Recap", "c": "Intelliplay", "id": "6aadf20958101b77bb9d90fb", "cover": "assets/pool/intelliplay-iaapa-2025-full-recap-10.jpg", "sec": "Tech"}, {"t": "Race Communications", "c": "VIEWPOINT", "id": "6aadf2097d44d89d0157d32d", "cover": "assets/pool/viewpoint-race-communications-5-min-30-second-14.jpg", "sec": "Tech"}, {"t": "AZ Cleantech", "c": "Sector Narrative", "id": "698a57da873071aec5c93fa0", "cover": "assets/pool/698a57da873071aec5c93fa0-12.jpg", "sec": "Tech"}, {"t": "Del Norte", "c": "VIEWPOINT", "id": "6aadf20958101b77bb9d90fe", "cover": "assets/pool/viewpoint-del-norte-hd-commercial-demo-11.jpg", "sec": "Tech"}, {"t": "RW Investments", "c": "VIEWPOINT", "id": "6aadf209c2658a788ecff7d6", "cover": "assets/pool/viewpoint-rw-investments-hd-commercial-demo-12.jpg", "sec": "Tech"}, {"t": "Intelliplay Demo", "c": "Product Story", "id": "698a5386aec3d4e420c17a69", "cover": "assets/pool/698a5386aec3d4e420c17a69-7.jpg", "sec": "Tech"}, {"t": "SOLV Energy", "c": "VIEWPOINT", "id": "6aadf2097d44d89d0157d329", "cover": "assets/pool/viewpoint-solv-energy-live-action-main-5-min-11.jpg", "sec": "Tech"}, {"t": "MAC SW Recap", "c": "Mission Acceleration Center", "id": "6aadf20958101b77bb9d90f0", "cover": "assets/pool/mission-acceleration-center-mac-sw-recap-one-two-13.jpg", "sec": "Tech"}, {"t": "Self-Sustaining Demo", "c": "ISA Energy", "id": "6aadf20958101b77bb9d90f5", "cover": "assets/pool/isa-energy-self-sustaining-demo-2026-7.jpg", "sec": "Tech"}, {"t": "Virtu Hospitality", "c": "Scottsdale Premium", "id": "698a5ef5fc23d3d76fa87ef4", "cover": "assets/pool/698a5ef5fc23d3d76fa87ef4-9.jpg", "sec": "Hospitality"}, {"t": "To Have and To Host", "c": "Residential Build", "id": "698a68b7fc23d3d76fa970ef", "cover": "assets/pool/698a68b7fc23d3d76fa970ef-10.jpg", "sec": "Construction"}, {"t": "Abrazo Healthcare", "c": "HVAC Emergency", "id": "698a58aefc23d3d76fa7cdd6", "cover": "assets/pool/698a58aefc23d3d76fa7cdd6-9.jpg", "sec": "Construction"}, {"t": "Memorial Towers", "c": "Industrial Scale", "id": "698a584faec3d4e420c20fef", "cover": "assets/pool/698a584faec3d4e420c20fef-11.jpg", "sec": "Construction"}, {"t": "Refined Gardens", "c": "Brand Authority", "id": "698a57fb873071aec5c94350", "cover": "assets/pool/698a57fb873071aec5c94350-11.jpg", "sec": "Construction"}, {"t": "Tree Guardian", "c": "Documentary", "id": "698a5e91873071aec5c9fc36", "cover": "assets/pool/698a5e91873071aec5c9fc36-8.jpg", "sec": "Construction"}, {"t": "Aiper Homeshow Recap", "c": "Event Recap", "id": "698a58ae873071aec5c953ea", "cover": "assets/pool/698a58ae873071aec5c953ea-7.jpg", "sec": "Events"}, {"t": "Retreat 2022", "c": "Startup AZ", "id": "6aadf20958101b77bb9d90fc", "cover": "assets/pool/startup-az-retreat-2022-10.jpg", "sec": "Events"}, {"t": "Aiper Pool Party", "c": "Event Promo", "id": "698a58c0aec3d4e420c21b78", "cover": "assets/pool/698a58c0aec3d4e420c21b78-11.jpg", "sec": "Events"}, {"t": "Cook & Craft", "c": "Website Background", "id": "698a53a9873071aec5c8b9d7", "cover": "assets/pool/698a53a9873071aec5c8b9d7-6.jpg", "sec": "Brands"}, {"t": "Cynshine Pilates", "c": "Founder Story", "id": "698a63e5aec3d4e420c34783", "cover": "assets/pool/698a63e5aec3d4e420c34783-1.jpg", "sec": "Brands"}, {"t": "Pretty Penny", "c": "Restaurant Identity", "id": "698a5d24aec3d4e420c2a0a0", "cover": "assets/pool/698a5d24aec3d4e420c2a0a0-5.jpg", "sec": "Brands"}, {"t": "Ulisgold Pilates", "c": "Wellness Brand", "id": "698a5ebcaec3d4e420c2c573", "cover": "assets/pool/698a5ebcaec3d4e420c2c573-3.jpg", "sec": "Brands"}, {"t": "United Food Bank", "c": "Year End Impact", "id": "698a5fcdfc23d3d76fa893b8", "cover": "assets/pool/698a5fcdfc23d3d76fa893b8-1.jpg", "sec": "Nonprofit"}, {"t": "AZ Arts Foundation", "c": "Trust Piece", "id": "698a64e5873071aec5ca99ac", "cover": "assets/pool/698a64e5873071aec5ca99ac-8.jpg", "sec": "Nonprofit"}, {"t": "UFB Volunteer", "c": "Community Doc", "id": "698a5fc4fc23d3d76fa892d9", "cover": "assets/pool/698a5fc4fc23d3d76fa892d9-2.jpg", "sec": "Nonprofit"}, {"t": "ASU: Peoria Forward", "c": "Trust Asset", "id": "698a6127873071aec5ca3b36", "cover": "assets/pool/698a6127873071aec5ca3b36-1.jpg", "sec": "Founder"}, {"t": "Keep it Cut", "c": "Recruiting Film", "id": "698a6177873071aec5ca4374", "cover": "assets/pool/698a6177873071aec5ca4374-1.jpg", "sec": "Founder"}, {"t": "Food reels", "c": "Cook and Craft", "id": "6aadf2097d44d89d0157d32a", "cover": "assets/pool/cook-and-craft-food-reels-brussels-burrata-margarita-old-fashioned-8.jpg", "sec": "Social"}, {"t": "PA'LA x HARUMI", "c": "Collab Feature", "id": "698a5391fc23d3d76fa7306c", "cover": "assets/pool/698a5391fc23d3d76fa7306c-6.jpg", "sec": "Social"}, {"t": "Reelay Explainer", "c": "Software Deep Dive", "id": "698a5aa5aec3d4e420c263c4", "cover": "assets/pool/698a5aa5aec3d4e420c263c4-1.jpg", "sec": "Social"}];
@@ -755,7 +781,7 @@ class Component extends DCLogic {
       });
     }, 280);
   }
-  enterFocus() { if (this.state.focus) return; this.setState({ focus: true }); if (this.el.root) this.el.root.dataset.focus = '1'; }
+  enterFocus() { if (this.el.root) this.el.root.dataset.focus = '1'; if (!this.state.focus) this.setState({ focus: true }); }
   select(label) { if (this.busy) return; this.enterFocus(); this.setState({ pending: label }); }
   commit() { if (this.busy || !this.state.pending) return; this.choose(this.state.pending); }
   scrollTo(id) { const box = this.el.root, el = box && box.querySelector(id); if (el) box.scrollTo({ top: el.offsetTop, behavior: 'smooth' }); }
@@ -795,9 +821,8 @@ class Component extends DCLogic {
       submitLead: ev => { ev.preventDefault(); this.sendLead(ev.currentTarget); },
       sending: this.state.sending, sendLabel: this.state.sending ? 'Sending…' : 'Send', sendError: this.state.sendError,
       focusOn: () => { if (!this.state.focus) { this.setState({ focus: true }); if (this.el.root) this.el.root.dataset.focus = '1'; } },
-      focusOp: this.state.focus ? .97 : 0,
-      contactOpen: this.state.contactOpen, contactClosed: !this.state.contactOpen, openContact: () => this.setState({ contactOpen: true }),
-      contactCopy: this.state.contactOpen ? 'Two fields. We reply within 24 hours with a plan for the first ninety days.' : 'Tell us where you are. We reply within 24 hours with a plan for the first ninety days.',
+      focusOp: this.state.focus ? .97 : 0, focusBgOp: this.state.focus ? 1 : 0,
+      contactOpen: this.state.contactOpen, contactClosed: !this.state.contactOpen, openContact: () => { this.setState({ contactOpen: true }); this.enterFocus(); }, contactBgOp: this.state.contactOpen ? .75 : .45,
       pipe: PIPE,
       seg1: gold, seg2: step >= 1 ? gold : dim, seg3: step >= 2 ? gold : dim,
       cardOp: this.state.cardOp, cardY: this.state.cardY,
@@ -934,7 +959,8 @@ class Component extends DCLogic {
         el.style.transform = `translate3d(${(o * c.x).toFixed(1)}px, ${(a * c.y).toFixed(1)}px, 0) rotate(${(o * c.r).toFixed(2)}deg) scale(${(1 - a * c.s).toFixed(3)})`;
         el.style.zIndex = String(Math.round(100 - a * 10));
         // left side fades sooner so the fan never runs into the copy column
-        const fadeL = o < 0 ? Math.max(0, 1 - Math.max(0, -o - .5) / .8) : 1;
+        // desktop: cards only ever arrive from the right; anything past centre is gone (phones keep a soft fade)
+        const fadeL = o < 0 ? (box.clientWidth < 721 ? Math.max(0, 1 - Math.max(0, -o - .5) / .8) : Math.max(0, 1 - (-o) / .35)) : 1;
         el.style.opacity = String(fadeL * (a > 2.7 ? Math.max(0, 1 - (a - 2.7) / .7) : 1));
         const dim = el.querySelector('[data-stackdim]'); if (dim) dim.style.opacity = String(Math.min(.6, a * .3));
         const meta = el.querySelector('[data-stackmeta]'); if (meta) meta.style.opacity = String(Math.max(0, 1 - a * 1.6));
