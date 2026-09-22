@@ -6,6 +6,7 @@
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="./support.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.light.min.js"></script>
 </head>
 <body>
 <x-dc>
@@ -129,12 +130,13 @@ button{font:inherit}
 @media (max-width: 900px){ [data-screen-label="Home v4"]{--revd:none;--revw:0px} }
 /* desktop: the film stack takes the hero's right column; cards sized to the viewport height */
 @media (min-width: 721px){
-  [data-screen-label="Hero"] [data-line]{flex:0 0 auto !important;width:min(100%,54rem,calc(100% - min(58rem,50vw) - 2rem)) !important}
+  [data-screen-label="Hero"] [data-line]{flex:0 0 auto !important;width:max(31rem,min(54rem,calc(100% - min(50rem,44vw) - 2rem))) !important}
+  [data-screen-label="Hero"] h1{font-size:clamp(2rem,min(4.1vw,6vh),5rem) !important}
   [data-screen-label="Hero"] [data-intro="0"],[data-screen-label="Hero"] [data-card]{position:relative;z-index:2}
-  [data-stack]{position:absolute !important;left:calc(100% + 2rem) !important;top:50% !important;transform:translateY(-50%) !important;width:min(58rem,50vw) !important;height:min(46rem,76vh) !important;margin:0 !important;z-index:1}
-  [data-stackcard]{width:min(31rem,52vh) !important;height:min(41.5rem,70vh) !important;margin-left:calc(min(31rem,52vh) / -2) !important;border-radius:22px !important}
+  [data-stack]{position:absolute !important;left:calc(100% + 2rem) !important;top:50% !important;transform:translateY(-50%) !important;width:min(50rem,44vw) !important;height:min(46rem,76vh) !important;margin:0 !important;z-index:1}
+  [data-stackcard]{width:min(28rem,48vh) !important;height:min(37.5rem,64vh) !important;margin-left:calc(min(28rem,48vh) / -2) !important;border-radius:22px !important}
   [data-stackcard] [data-stackmeta] > span:first-child{font-size:1.7rem !important}
-  [data-pipestack] [data-stackcard]{width:min(24rem,40vh) !important;height:min(32rem,54vh) !important;margin-left:calc(min(24rem,40vh) / -2) !important}
+  [data-pipestack] [data-stackcard]{width:min(29rem,50vh) !important;height:min(38.5rem,66vh) !important;margin-left:calc(min(29rem,50vh) / -2) !important}
 }
 [data-dept] > svg{position:relative}
 /* typeform-style focus: once someone starts typing, everything else steps back */
@@ -332,6 +334,7 @@ button{font:inherit}
             <sc-for list="{{ stack }}" as="k" hint-placeholder-count="0">
               <div data-stackcard="" style="position:absolute;left:50%;top:.6rem;width:10.5rem;height:14rem;margin-left:-5.25rem;border-radius:14px;overflow:hidden;background:#0B0B0A;box-shadow:0 18px 40px rgba(0,0,0,.5);will-change:transform;opacity:0">
                 <img src="{{ k.cover }}" alt="{{ k.t }}" loading="lazy" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none">
+                <video muted="" playsinline="" loop="" preload="none" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .7s ease;pointer-events:none"></video>
                 <span aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(to top, rgba(6,6,6,.88) 0%, rgba(6,6,6,.25) 45%, rgba(6,6,6,0) 100%)"></span>
                 <span data-stackdim="" aria-hidden="true" style="position:absolute;inset:0;background:#000;opacity:0"></span>
                 <span style="position:absolute;top:.6rem;right:.6rem;padding:.22rem .55rem .18rem;border-radius:999px;background:rgba(246,246,244,.94);color:#060606;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.58rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase">{{ k.sec }}</span>
@@ -391,6 +394,11 @@ button{font:inherit}
 
   <!-- PIPELINE — how we can help -->
   <section data-slide="" id="pipeline" data-screen-label="Pipeline" style="position:relative;height:var(--vph,100svh);scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;z-index:1;background:#060606">
+    <div aria-hidden="true" style="position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none">
+      <img data-pipebg="" alt="" style="position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;opacity:0;transition:opacity 1.4s ease;filter:saturate(.9);will-change:transform,opacity">
+      <img data-pipebg="" alt="" style="position:absolute;inset:-6%;width:112%;height:112%;object-fit:cover;opacity:0;transition:opacity 1.4s ease;filter:saturate(.9);will-change:transform,opacity">
+      <span style="position:absolute;inset:0;background:linear-gradient(to right, rgba(6,6,6,.94) 0%, rgba(6,6,6,.7) 45%, rgba(6,6,6,.55) 100%), linear-gradient(to top, rgba(6,6,6,.85), rgba(6,6,6,.2) 50%)"></span>
+    </div>
     <div style="position:relative;z-index:3;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;padding:clamp(4.5rem,10vh,7rem) var(--gx)">
       <div data-pipewrap="" style="display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:center;column-gap:clamp(2rem,5vw,6rem)">
         <div style="min-width:0">
@@ -398,7 +406,7 @@ button{font:inherit}
           <h2 data-rv="" data-d=".06" style="margin:clamp(.7rem,1.8vh,1.2rem) 0 0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.4rem,min(5.4vw,9.5vh),6rem);line-height:.9;letter-spacing:-.03em;color:#F6F6F4;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">How we can help you<i style="display:inline-block;width:.13em;height:.13em;background:#C4A46A;margin-left:.07em"></i></h2>
           <p data-rv="" data-d=".14" style="margin:clamp(1rem,2.6vh,1.8rem) 0 0;max-width:38ch;color:#E6E5E0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1.05rem,min(1.4vw,2.6vh),1.35rem);font-weight:500;line-height:1.45;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Seven things clients come to us for. Swipe through, tap one to start there.</p>
         </div>
-        <div data-pipestack="" data-rv="" data-d=".2" aria-label="Services, swipe to browse" style="position:relative;width:100%;height:min(36rem,60vh);touch-action:pan-y;user-select:none;-webkit-user-select:none;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
+        <div data-pipestack="" data-rv="" data-d=".2" aria-label="Services, swipe to browse" style="position:relative;width:100%;height:min(41rem,70vh);touch-action:pan-y;user-select:none;-webkit-user-select:none;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
           <sc-for list="{{ pipe }}" as="k" hint-placeholder-count="0">
             <div data-stackcard="" style="position:absolute;left:50%;top:.6rem;width:10.5rem;height:14rem;margin-left:-5.25rem;border-radius:18px;overflow:hidden;background:#0B0B0A;box-shadow:0 18px 40px rgba(0,0,0,.5);will-change:transform;opacity:0">
               <img src="{{ k.cover }}" alt="{{ k.t }}" loading="lazy" draggable="false" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none">
@@ -940,11 +948,28 @@ class Component extends DCLogic {
     ['focusin', 'pointerdown', 'input'].forEach(t => box.addEventListener(t, this.onFocusIn, { passive: true }));
     this.armIntro();
     this.startReel();
-    this.initStack(this.el.root && this.el.root.querySelector('[data-stack]'), STACK, 'stackTimer', 4200, k => this.setState({ video: { t: k.t, id: k.id, mp4: '' } }));
-    this.initStack(this.el.root && this.el.root.querySelector('[data-pipestack]'), PIPE, 'pipeTimer', 3600, k => { if (k.href.startsWith('#')) this.scrollTo(k.href); else location.href = k.href; });
+    const box2 = this.el.root;
+    this.initStack(box2 && box2.querySelector('[data-stack]'), STACK, 'stackTimer', 7000, k => this.setState({ video: { t: k.t, id: k.id, mp4: '' } }),
+      { onFront: (k, el) => this.playCard(el, k) });
+    const bgs = box2 ? Array.from(box2.querySelectorAll('[data-pipebg]')) : []; let bgi = 0;
+    this.initStack(box2 && box2.querySelector('[data-pipestack]'), PIPE, 'pipeTimer', 6500, k => { if (k.href.startsWith('#')) this.scrollTo(k.href); else location.href = k.href; },
+      { ease: .07, onFront: k => { if (!bgs.length) return; const nx = bgs[1 - bgi]; nx.src = k.cover; nx.style.opacity = '.55'; bgs[bgi].style.opacity = '0'; bgi = 1 - bgi; },
+        onMove: frac => bgs.forEach(b => { b.style.transform = `translate3d(${(-frac * 60).toFixed(1)}px, 0, 0)`; }) });
+  }
+  // Front hero card plays a muted preview of its film (HLS via hls.js, native on Safari). One stream at a time.
+  stopCard() { const v = this.curCard; if (!v) return; this.curCard = null; try { v.pause(); } catch {} v.style.opacity = '0'; if (this.hls) { try { this.hls.destroy(); } catch {} this.hls = null; } v.removeAttribute('src'); try { v.load(); } catch {} }
+  playCard(el, k) {
+    this.stopCard(); const v = el && el.querySelector('video'); if (!v || !k || !k.id) return;
+    const src = `https://video.gumlet.io/697678222b8b17fbb707acef/${k.id}/main.m3u8`;
+    v.muted = true; this.curCard = v;
+    v.onloadedmetadata = () => { const d = v.duration; if (isFinite(d) && d > 20) { try { v.currentTime = d * (0.12 + Math.random() * 0.3); } catch {} } };
+    v.onplaying = () => { if (this.curCard === v) v.style.opacity = '1'; };
+    if (window.Hls && Hls.isSupported()) { this.hls = new Hls({ capLevelToPlayerSize: true, maxBufferLength: 8, startLevel: 0 }); this.hls.loadSource(src); this.hls.attachMedia(v); this.hls.on(Hls.Events.MANIFEST_PARSED, () => v.play().catch(() => {})); }
+    else if (v.canPlayType('application/vnd.apple.mpegurl')) { v.src = src; v.play().catch(() => {}); }
   }
   // Hero film stack: fanned cards, drag/swipe to browse, tap the front card to play. Idles forward one card every few seconds.
-  initStack(wrap, LIST, timerKey, idleMs, onTap) {
+  initStack(wrap, LIST, timerKey, idleMs, onTap, opts) {
+    opts = opts || {}; const EASE = opts.ease || .14; let front = -1;
     const box = this.el.root; if (!wrap) return;
     const cards = Array.from(wrap.querySelectorAll('[data-stackcard]')), n = cards.length; if (!n) return;
     const drag = wrap.querySelector('[data-stackdrag]');
@@ -952,6 +977,8 @@ class Component extends DCLogic {
     let p = 0, target = 0, raf = 0;
     const render = () => {
       const c = cfg();
+      const f = ((Math.round(p) % n) + n) % n; if (f !== front) { front = f; if (opts.onFront) opts.onFront(LIST[f], cards[f], f); }
+      if (opts.onMove) opts.onMove(p - Math.round(p));
       cards.forEach((el, i) => {
         let o = (i - p) % n; if (o > n / 2) o -= n; if (o < -n / 2) o += n; const a = Math.abs(o);
         if (a > 3.4) { el.style.opacity = '0'; el.style.visibility = 'hidden'; return; }
@@ -966,7 +993,7 @@ class Component extends DCLogic {
         const meta = el.querySelector('[data-stackmeta]'); if (meta) meta.style.opacity = String(Math.max(0, 1 - a * 1.6));
       });
     };
-    const tick = () => { p += (target - p) * .14; if (Math.abs(target - p) < .002) { p = target; render(); raf = 0; return; } render(); raf = requestAnimationFrame(tick); };
+    const tick = () => { p += (target - p) * EASE; if (Math.abs(target - p) < .002) { p = target; render(); raf = 0; return; } render(); raf = requestAnimationFrame(tick); };
     const go = t => { target = t; if (!raf) raf = requestAnimationFrame(tick); };
     const idle = () => { clearTimeout(this[timerKey]); this[timerKey] = setTimeout(() => { go(Math.round(target) + 1); idle(); }, idleMs); };
     let down = null;
@@ -1018,7 +1045,7 @@ class Component extends DCLogic {
   componentWillUnmount() {
     const box = this.el.root; if (box) { box.removeEventListener('scroll', this.apply); ['focusin', 'pointerdown', 'input'].forEach(t => box.removeEventListener(t, this.onFocusIn)); }
     window.removeEventListener('resize', this.apply); window.removeEventListener('keydown', this.onKey);
-    clearTimeout(this.timer); clearTimeout(this.timer2); clearTimeout(this.stTimer); clearTimeout(this.stackTimer); clearTimeout(this.pipeTimer); this.io && this.io.disconnect(); this.vio && this.vio.disconnect(); clearInterval(this.reviewTimer);
+    clearTimeout(this.timer); clearTimeout(this.timer2); clearTimeout(this.stTimer); clearTimeout(this.stackTimer); clearTimeout(this.pipeTimer); this.stopCard(); this.io && this.io.disconnect(); this.vio && this.vio.disconnect(); clearInterval(this.reviewTimer);
   }
 }
 </script>
