@@ -1,0 +1,329 @@
+[
+  {
+    "client": "ISA Energy",
+    "slug": "isa-energy",
+    "file": "isa-energy.png",
+    "source": "https://www.isaenergy.com/ (header wordmark PNG)",
+    "format": "png",
+    "quality": "raster",
+    "note": "Wordmark is raster only. Vector infinity mark also shipped as isa-energy-mark.svg from Dropbox Client/ISA Doc Film/Holding/Animation/Project/Media/logo-green.ai.",
+    "original": "originals/isa-energy-wordmark.web.webp",
+    "extra": "isa-energy-mark.svg"
+  },
+  {
+    "client": "Space Rising",
+    "slug": "space-rising",
+    "file": "space-rising.svg",
+    "source": "/Users/aom-inhouse/Library/CloudStorage/Dropbox-AheadofMarket/AOM/Client/Space Rising/LOGOS/logo-dark.ai (PDF-compatible .ai -> pdftocairo SVG)",
+    "format": "svg",
+    "quality": "vector",
+    "note": "Clean stacked wordmark vector. logo-white.png also in same Dropbox folder.",
+    "original": "originals/space-rising.ai.svg"
+  },
+  {
+    "client": "Included Health",
+    "slug": "included-health",
+    "file": "included-health.svg",
+    "source": "https://includedhealth.com/ (inline header SVG)",
+    "format": "svg",
+    "quality": "vector",
+    "note": "Horizontal mark + wordmark.",
+    "original": "originals/included-health-inline.svg"
+  },
+  {
+    "client": "Ambition Mechanical",
+    "slug": "ambition-mechanical",
+    "file": "ambition-mechanical.png",
+    "source": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio/public/ambition-logo.png",
+    "format": "png",
+    "quality": "raster",
+    "note": "Circular seal. Source only 254x250 so the 600px white version is upscaled and soft; ambitionac.com serves no larger asset.",
+    "original": "originals/ambition-mechanical.png"
+  },
+  {
+    "client": "Wolfpack Companies",
+    "slug": "wolfpack-companies",
+    "file": "wolfpack-companies.png",
+    "source": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/corner/users/aom/projects/wolfpack/assets/wolfpack-logo-knockout.png",
+    "format": "png",
+    "quality": "raster",
+    "note": "Wolf badge + 'Wolfpack Companies LLC' wordmark.",
+    "original": "originals/wolfpack-knockout.png"
+  },
+  {
+    "client": "Virtu Hospitality Group",
+    "slug": "virtu-hospitality-group",
+    "file": "virtu-hospitality-group.png",
+    "source": "/Users/aom-inhouse/Library/CloudStorage/Dropbox-AheadofMarket/AOM/Client/Virtu/design stuff/white_logo_transparent_background.png",
+    "format": "png",
+    "quality": "raster",
+    "note": "Client-supplied white version (VH monogram + 'virtu hospitality').",
+    "original": "originals/virtu-white.png"
+  },
+  {
+    "client": "NABI (Native American Basketball Invitational)",
+    "slug": "nabi",
+    "file": "nabi.png",
+    "source": "/Users/aom-inhouse/Library/CloudStorage/Dropbox-AheadofMarket/AOM/Assets/Nabi-Nation-logo-blue-web.png",
+    "format": "png",
+    "quality": "raster",
+    "note": "'NABI Nation' org logo. Event-year block logo (23rd Annual, with Resolution Copper sponsor line) also in repo corner/users/aom/projects/nabi/missions/nabi-2026-shoot/research/brand/.",
+    "original": "originals/nabi-nation-blue.png"
+  },
+  {
+    "client": "Startup AZ Foundation",
+    "slug": "startup-az-foundation",
+    "file": "startup-az-foundation.png",
+    "source": "/Users/aom-inhouse/Library/CloudStorage/Dropbox-AheadofMarket/AOM/Assets/Client Logos/Bitmap.png (pack, 145x47) + https://startupaz.org/wp-content/uploads/2022/08/logo-startupaz.svg (same logo, 800x268 PNG embedded in the SVG)",
+    "format": "png",
+    "quality": "raster",
+    "note": "FROM PACK. Pack copy is only 145x47, so the white version was cut from the identical 800px site asset; pack original saved as startup-az-foundation.pack.png.",
+    "original": "originals/startup-az-foundation.web.png"
+  },
+  {
+    "client": "Naamly",
+    "slug": "naamly",
+    "file": "naamly.png",
+    "source": "https://www.naamly.com/wp-content/uploads/logo-1.png",
+    "format": "png",
+    "quality": "raster",
+    "note": "",
+    "original": "originals/naamly.png"
+  },
+  {
+    "client": "Intelliplay",
+    "slug": "intelliplay",
+    "file": null,
+    "source": "https://intelliplay.net/ checked (stub site, stock photos, no logo asset); no Dropbox Client/Intelliplay logo files; nothing in repo",
+    "format": null,
+    "quality": "missing",
+    "note": "No findable logo."
+  },
+  {
+    "client": "VIEWPOINT",
+    "slug": "viewpoint",
+    "file": null,
+    "source": "Dropbox Client/VIEWPOINT - * folders hold only their end-clients' logos (RW Investments, Race Communications, SOLV/LAGE); Viewpoint's own site not identified (viewpoint.com is Trimble, vimeo 'ilviewpoint' is a Tel Aviv studio)",
+    "format": null,
+    "quality": "missing",
+    "note": "Need Patrik to confirm which Viewpoint this is."
+  },
+  {
+    "client": "Mission Acceleration Center",
+    "slug": "mission-acceleration-center",
+    "file": "mission-acceleration-center.png",
+    "source": "https://missionaccelerationcenter.org/wp-content/uploads/MAC_National_Logo_v1.png",
+    "format": "png",
+    "quality": "raster",
+    "note": "'MAC National Network' badge.",
+    "original": "originals/mission-acceleration-center.png"
+  },
+  {
+    "client": "Ember Red Studios",
+    "slug": "ember-red-studios",
+    "file": "ember-red-studios.png",
+    "source": "https://emberredstudios.com/wp-content/uploads/2025/09/ember-red-studios-official-logo.png",
+    "format": "png",
+    "quality": "raster",
+    "note": "Stacked flame mark + wordmark.",
+    "original": "originals/ember-red-studios.png"
+  },
+  {
+    "client": "Aiper",
+    "slug": "aiper",
+    "file": "aiper.png",
+    "source": "/Users/aom-inhouse/Library/CloudStorage/Dropbox-AheadofMarket/AOM/Client/AIPER/logo/白-左右.png",
+    "format": "png",
+    "quality": "raster",
+    "note": "Client-supplied white horizontal wordmark (from Aiper brand kit folder).",
+    "original": "originals/aiper-white-horizontal.png"
+  },
+  {
+    "client": "Cook & Craft",
+    "slug": "cook-and-craft",
+    "file": "cook-and-craft.png",
+    "source": "https://cookandcraftaz.com/wp-content/uploads/2025/02/CC.png",
+    "format": "png",
+    "quality": "raster",
+    "note": "Site header wordmark (already white). Dropbox Assets also has the yellow-crest JPG banner (saved as cook-and-craft.jpg) but it has a white background.",
+    "original": "originals/cook-and-craft-cc.web.png"
+  },
+  {
+    "client": "Cynshine Pilates",
+    "slug": "cynshine-pilates",
+    "file": "cynshine-pilates.png",
+    "source": "https://cynshine.net/wp-content/uploads/2022/02/logo20without20white20background_edit.webp",
+    "format": "png",
+    "quality": "raster",
+    "note": "Only asset on the site is 125x115, so the white version is upscaled and soft. Ask client for a vector.",
+    "original": "originals/cynshine-pilates.png"
+  },
+  {
+    "client": "Pretty Penny",
+    "slug": "pretty-penny",
+    "file": "pretty-penny.png",
+    "source": "https://www.intastewetrust.com/ (og:image, transparent PNG wordmark)",
+    "format": "png",
+    "quality": "raster",
+    "note": "'Pretty Penny / In Taste We Trust' stacked wordmark.",
+    "original": "originals/pretty-penny-og.png"
+  },
+  {
+    "client": "Ulisgold Pilates",
+    "slug": "ulisgold-pilates",
+    "file": "ulisgold-pilates.png",
+    "source": "https://www.ulisgold.com/ (og:image, gold script on black)",
+    "format": "png",
+    "quality": "raster",
+    "note": "Cut from a flat-black og image by luminance; script edges are fine but this is not a supplied logo file.",
+    "original": "originals/ulisgold-og.png"
+  },
+  {
+    "client": "United Food Bank",
+    "slug": "united-food-bank",
+    "file": "united-food-bank.svg",
+    "source": "https://unitedfoodbank.org/wp-content/uploads/2024/10/Logo.svg",
+    "format": "svg",
+    "quality": "vector",
+    "note": "Yellow badge shape knocked out (it was a solid fill); result is the cactus/flower mark + stacked wordmark in one color.",
+    "original": "originals/united-food-bank.svg"
+  },
+  {
+    "client": "AZ Arts Foundation",
+    "slug": "az-arts-foundation",
+    "file": null,
+    "source": "azartsfoundation.org / arizonaartsfoundation.org are parked; no org by this exact name found; nothing in Dropbox or repo",
+    "format": null,
+    "quality": "missing",
+    "note": "Need the real org name / site from Patrik."
+  },
+  {
+    "client": "ASU Peoria Forward",
+    "slug": "asu-peoria-forward",
+    "file": "asu-peoria-forward.png",
+    "source": "/Users/aom-inhouse/Library/CloudStorage/Dropbox-AheadofMarket/AOM/Assets/Client Logos/ASu.png",
+    "format": "png",
+    "quality": "raster",
+    "note": "FROM PACK. Generic ASU sunburst wordmark, only 86x38 px, so the 600px version is very soft. Needs a proper ASU asset if it must be crisp.",
+    "original": "originals/asu-peoria-forward.pack.png"
+  },
+  {
+    "client": "Keep it Cut",
+    "slug": "keep-it-cut",
+    "file": "keep-it-cut.svg",
+    "source": "https://keepitcut.com/wp-content/uploads/2026/01/KeepItCut-Logo-White.svg",
+    "format": "svg",
+    "quality": "vector",
+    "note": "Scissors mark + 'KEEP IT CUT'.",
+    "original": "originals/keep-it-cut-white.svg"
+  },
+  {
+    "client": "PA'LA",
+    "slug": "pala",
+    "file": "pala.svg",
+    "source": "/Users/aom-inhouse/aom-studio-transfer/AOM-EA/corner/users/aom/projects/pala/missions/cinco-de-mayo-content/research/assets/logos/pala-logo-tagline.svg",
+    "format": "svg",
+    "quality": "vector",
+    "note": "Already white in source; wordmark with tagline.",
+    "original": "originals/pala.svg"
+  },
+  {
+    "client": "Harumi",
+    "slug": "harumi",
+    "file": "harumi.png",
+    "source": "https://harumisushiaz.com/ (site logo JPEG, black script on white)",
+    "format": "png",
+    "quality": "raster",
+    "note": "Cut from JPEG by luminance; hairline script strokes survive at 600px.",
+    "original": "originals/harumi.jpg"
+  },
+  {
+    "client": "Reelay",
+    "slug": "reelay",
+    "file": "reelay.png",
+    "source": "https://cdn.prod.website-files.com/667398378d538a805ee897a9/66739b185b64607abf890732_Reelay%20Logo.png",
+    "format": "png",
+    "quality": "raster",
+    "note": "",
+    "original": "originals/reelay.png"
+  },
+  {
+    "client": "Abrazo",
+    "slug": "abrazo",
+    "file": "abrazo.png",
+    "source": "https://www.abrazohealth.com/images/abrazohealthlibraries/default-album/abrazo_health_logo-h-cmyk.png (fetched via browser, Cloudflare blocks curl; saved at 1400px)",
+    "format": "png",
+    "quality": "raster",
+    "note": "Abrazo Health hospital network (Ambition Mechanical job site). Verify it is OK to show as an AOM client.",
+    "original": "originals/abrazo.png"
+  },
+  {
+    "client": "Memorial Towers",
+    "slug": "memorial-towers",
+    "file": null,
+    "source": "Phoenix Memorial Towers is a building (Ambition Mechanical central-plant job), not a brand; no logo exists",
+    "format": null,
+    "quality": "missing",
+    "note": "Not a client brand; recommend dropping from the strip."
+  },
+  {
+    "client": "Refined Gardens",
+    "slug": "refined-gardens",
+    "file": "refined-gardens.png",
+    "source": "https://static.wixstatic.com/media/632a42_2ea76833a4c44509b3758a09205b0f47~mv2.png (refinedgardens.com header)",
+    "format": "png",
+    "quality": "raster",
+    "note": "Tree mark + 'Refined Gardens / Design Build Maintain'.",
+    "original": "originals/refined-gardens.png"
+  },
+  {
+    "client": "Tree Guardian",
+    "slug": "tree-guardian",
+    "file": null,
+    "source": "https://static.wixstatic.com/media/3ba0b9_293da924d1234eb7bc60564f7a6e7836~mv2.png (treeguardianusa.com header)",
+    "format": "png",
+    "quality": "needs-manual",
+    "note": "Full-color illustrated badge with a photographic tree and flag; a luminance/alpha cut produces mush. Needs a hand-drawn one-color version.",
+    "original": "originals/tree-guardian.png"
+  },
+  {
+    "client": "Rainbow Rider",
+    "slug": "rainbow-ryders",
+    "file": "rainbow-ryders.png",
+    "source": "https://rainbowryders.com/ header logo (rainbow-ryders-logo-retina.png)",
+    "format": "png",
+    "quality": "raster",
+    "note": "Client is actually 'Rainbow Ryders Hot Air Balloon Ride Co.' (Glendale AZ). Source only 400x120 so 600px is upscaled.",
+    "original": "originals/rainbow-ryders.png"
+  },
+  {
+    "client": "AZ Cleantech",
+    "slug": "az-cleantech",
+    "file": "az-cleantech.png",
+    "source": "https://www.azcleantech.com/ (header Logo-white-print.png)",
+    "format": "png",
+    "quality": "raster",
+    "note": "Site's own white wordmark.",
+    "original": "originals/az-cleantech-white.webp"
+  },
+  {
+    "client": "Nick's Menswear",
+    "slug": "nicks-menswear",
+    "file": "nicks-menswear.png",
+    "source": "https://nicksmenswear.com/ (new_nick_s_logo_white_copy_2.png)",
+    "format": "png",
+    "quality": "raster",
+    "note": "Site's own white wordmark.",
+    "original": "originals/nicks-menswear-white.png"
+  },
+  {
+    "client": "Kraken Corps",
+    "slug": "kraken-corps",
+    "file": "kraken-corps.png",
+    "source": "https://www.krakenhq.co/ (header banner PNG, navy octopus + green wordmark on flat red)",
+    "format": "png",
+    "quality": "raster",
+    "note": "Cut by keying out the flat red field; octopus + 'K.R.A.K.E.N. CORPS' become one white silhouette. Eye highlight is lost. Check edges before shipping.",
+    "original": "originals/kraken-corps.png"
+  }
+]
