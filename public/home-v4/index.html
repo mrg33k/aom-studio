@@ -3,6 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<base href="/home-v4/">
+<title>Ahead of Market | Your Marketing Department in Phoenix</title>
+<meta name="description" content="Video, websites and promotion for Phoenix companies that never built a marketing department. Strategy, creative and promotion under one roof.">
+<link rel="canonical" href="https://aheadofmarket.com/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Ahead of Market | Your Marketing Department in Phoenix">
+<meta property="og:description" content="Video, websites and promotion for Phoenix companies that never built a marketing department. Strategy, creative and promotion under one roof.">
+<meta property="og:image" content="https://aheadofmarket.com/home-v4/assets/gen/form-bg.jpg">
+<meta property="og:url" content="https://aheadofmarket.com/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/svg+xml" href="/brand/favicon/aom.svg">
+<link rel="alternate icon" type="image/x-icon" href="/brand/favicon/aom.ico">
+<link rel="apple-touch-icon" href="/brand/favicon/aom-180.png">
+<meta name="theme-color" content="#060606">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XRC3GJ475X"></script>
+<script>window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-XRC3GJ475X');</script>
+<script>function initApollo(){var n=Math.random().toString(36).substring(7),o=document.createElement("script");o.src="https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache="+n,o.async=!0,o.defer=!0,o.onload=function(){window.trackingFunctions.onLoad({appId:"67d1ee3d721744001db6d915"})},document.head.appendChild(o)}initApollo();</script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="./support.js"></script>
@@ -60,7 +77,7 @@ button{font:inherit}
   /* phones: Menu + Contact stay out of the way until the first scroll */
   [data-nav] > div:first-child > button,[data-nav] > div:last-child{transition:opacity .3s ease}
   [data-nav][data-scrolled="0"] > div:first-child > button,[data-nav][data-scrolled="0"] > div:last-child{opacity:0 !important;pointer-events:none !important}
-  [data-intro=".55"] a[href="#"] > span{display:none !important}
+  [data-intro=".55"] a[href="/"] > span{display:none !important}
   [data-intro=".55"] button[style*="999px"]{white-space:nowrap !important;letter-spacing:.12em !important;font-size:.68rem !important;padding:.5rem .85rem .46rem !important}
 }
 /* ===== MOBILE-FIRST HERO — refs: masterclass.com (qualifier hero, uniform rows), bridgephx.com (reel as a feature band) ===== */
@@ -116,7 +133,7 @@ button{font:inherit}
   /* billboard collage: 3 columns on a phone instead of six slivers */
   [data-screen-label="Billboard"] div[style*="repeat(6"]{grid-template-columns:repeat(3,1fr) !important;grid-template-rows:repeat(6,1fr) !important}
   #contact > div[style*="z-index: 3"]{padding-bottom:max(2.6rem,env(safe-area-inset-bottom)) !important}
-  [data-nav][data-scrolled="0"] a[href="#"] > span{display:inline-flex !important;white-space:nowrap}
+  [data-nav][data-scrolled="0"] a[href="/"] > span{display:inline-flex !important;white-space:nowrap}
   [data-screen-label="Hero"] form{width:100% !important}
   /* phones: the masked SVG monogram paints as a white square on first load, so serve the same mark as a transparent PNG */
   img[src$="aom-monogram-paper.svg"]{content:url(assets/aom-monogram.png)}
@@ -134,6 +151,7 @@ button{font:inherit}
   [data-logos] img{height:34px !important;max-width:11rem !important}
   [data-logos] > div{gap:2.4rem !important;animation-duration:55s !important}
   [data-logos]{padding:1.8rem 0 1.4rem !important;margin-top:1.6rem !important}
+  #contact [data-logos]{margin-top:4rem !important}
   [data-screen-label="Voices"] > div[style*="z-index: 3"]{padding-bottom:1.6rem !important}
   [data-screen-label="Two parts"] li{padding:.85rem 0 !important}
 }
@@ -154,8 +172,8 @@ button{font:inherit}
 [data-logos]:hover > div{animation-play-state:paused}
 @media (min-width: 721px){
   [data-logos][data-pos="bottom"]{position:absolute;left:var(--gx);right:var(--gx);bottom:1.4rem;margin:0;z-index:3}
-  #contact [data-logos][data-pos="bottom"]{bottom:3.9rem}
-  #contact > div[style*="z-index: 3"]{padding-bottom:clamp(7rem,14vh,9rem) !important}
+  #contact [data-logos][data-pos="bottom"]{bottom:3.6rem}
+  #contact > div[style*="z-index: 3"]{padding-bottom:clamp(11rem,22vh,14rem) !important}
   #pipeline > div[style*="z-index: 3"]{padding-bottom:clamp(6rem,12vh,8rem) !important}
 }
 /* typeform-style focus: once someone starts typing, everything else steps back */
@@ -233,8 +251,8 @@ button{font:inherit}
 
   <div data-intro=".55" data-nav="" data-scrolled="0" style="position:fixed;left:0;right:0;top:1.1rem;z-index:220;display:flex;justify-content:space-between;align-items:center;padding:0 var(--gx);pointer-events:none;color:#F6F6F4;animation:fadeIn .9s ease both">
     <div style="display:flex;align-items:center;gap:1.6rem">
-      <button style="pointer-events:auto;display:inline-flex;align-items:center;gap:.55rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:inherit;background:none;border:0;padding:0;cursor:pointer" style-hover="color:#C4A46A">Menu<span aria-hidden="true" style="display:inline-flex;flex-direction:column;justify-content:center;gap:4px;width:18px"><i style="display:block;height:1.5px;width:100%;background:currentColor"></i><i style="display:block;height:1.5px;width:100%;background:currentColor"></i></span></button>
-      <a href="#" ref="{{ brandRef }}" style="pointer-events:auto;display:inline-flex;align-items:center;gap:.7rem;transform-origin:left center;will-change:transform;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase"><img src="assets/aom-monogram-paper.svg" alt="" style="display:block;width:26px;height:auto"><span style="display:inline-flex;align-items:baseline">Ahead of Market</span></a>
+      <button style="pointer-events:auto;display:inline-flex;align-items:center;gap:.55rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:inherit;background:none;border:0;padding:0;cursor:pointer" onClick="{{ toggleMenu }}" style-hover="color:#C4A46A">Menu<span aria-hidden="true" style="display:inline-flex;flex-direction:column;justify-content:center;gap:4px;width:18px"><i style="display:block;height:1.5px;width:100%;background:currentColor"></i><i style="display:block;height:1.5px;width:100%;background:currentColor"></i></span></button>
+      <a href="/" ref="{{ brandRef }}" style="pointer-events:auto;display:inline-flex;align-items:center;gap:.7rem;transform-origin:left center;will-change:transform;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase"><img src="assets/aom-monogram-paper.svg" alt="" style="display:block;width:26px;height:auto"><span style="display:inline-flex;align-items:baseline">Ahead of Market</span></a>
     </div>
     <div style="display:flex;align-items:center;gap:1.6rem">
       <button onClick="{{ toContact }}" style="pointer-events:auto;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#060606;border:1px solid #C4A46A;border-radius:999px;padding:.5rem .95rem .46rem;background:#C4A46A;cursor:pointer;transition:color .18s ease,background-color .18s ease" style-hover="color:#F6F6F4;background-color:transparent">Contact us</button>
@@ -292,7 +310,7 @@ button{font:inherit}
           </div>
         </sc-for>
         </div>
-        <a href="#work" style="pointer-events:auto;position:relative;overflow:hidden;display:block;width:100%;aspect-ratio:16/9;border-radius:18px;background:#0B0B0A;box-shadow:0 20px 50px rgba(0,0,0,.5)">
+        <a href="/s1" style="pointer-events:auto;position:relative;overflow:hidden;display:block;width:100%;aspect-ratio:16/9;border-radius:18px;background:#0B0B0A;box-shadow:0 20px 50px rgba(0,0,0,.5)">
           <video data-bgv="" src="assets/reel-05.mp4" muted="" loop="" playsinline="" preload="metadata" poster="assets/collage-09.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.9) contrast(1.05)"></video>
           <span aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(to top, rgba(6,6,6,.92) 0%, rgba(6,6,6,.3) 55%, rgba(6,6,6,.08) 100%)"></span>
           <span style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;gap:.5rem;padding:clamp(1rem,2.4vh,1.4rem) clamp(1.2rem,2vw,1.6rem);color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1rem,1.3vw,1.2rem);font-weight:700">See the work<span aria-hidden="true" style="color:#C4A46A">→</span></span>
@@ -733,6 +751,19 @@ button{font:inherit}
     <div style="position:absolute;bottom:calc(1.4rem + env(safe-area-inset-bottom));left:var(--gx);font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(246,246,244,.6);z-index:3">© 2026 Ahead of Market</div>
   </section>
 
+  <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+    <div data-menu="" role="dialog" aria-label="Menu" style="position:fixed;inset:0;z-index:260;background:rgba(6,6,6,.97);display:flex;flex-direction:column;justify-content:center;padding:clamp(4rem,10vh,7rem) var(--gx);animation:fadeIn .3s ease both">
+      <button onClick="{{ closeMenu }}" style="position:absolute;top:1.1rem;right:var(--gx);background:none;border:0;padding:.4rem 0;cursor:pointer;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#F6F6F4">Close ✕</button>
+      <nav style="display:flex;flex-direction:column;gap:clamp(.5rem,1.4vh,.9rem)">
+        <button onClick="{{ menuPipe }}" style="background:none;border:0;padding:.15rem 0;text-align:left;cursor:pointer;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.2rem,7vw,5rem);line-height:.95;letter-spacing:-.03em;color:#F6F6F4;transition:color .18s" style-hover="color:#C4A46A">How we help</button>
+        <button onClick="{{ menuDept }}" style="background:none;border:0;padding:.15rem 0;text-align:left;cursor:pointer;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.2rem,7vw,5rem);line-height:.95;letter-spacing:-.03em;color:#F6F6F4;transition:color .18s" style-hover="color:#C4A46A">What we do</button>
+        <button onClick="{{ menuWork }}" style="background:none;border:0;padding:.15rem 0;text-align:left;cursor:pointer;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.2rem,7vw,5rem);line-height:.95;letter-spacing:-.03em;color:#F6F6F4;transition:color .18s" style-hover="color:#C4A46A">The work</button>
+        <a href="/s1" style="background:none;border:0;padding:.15rem 0;text-align:left;cursor:pointer;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.2rem,7vw,5rem);line-height:.95;letter-spacing:-.03em;color:#F6F6F4;transition:color .18s;text-decoration:none;display:block" style-hover="color:#C4A46A">All films</a>
+        <button onClick="{{ menuContact }}" style="background:none;border:0;padding:.15rem 0;text-align:left;cursor:pointer;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.2rem,7vw,5rem);line-height:.95;letter-spacing:-.03em;color:#F6F6F4;transition:color .18s;color:#C4A46A">Contact</button>
+      </nav>
+      <div style="margin-top:clamp(1.8rem,5vh,3rem);display:flex;flex-wrap:wrap;gap:.8rem 2.2rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.05rem;font-weight:700"><a href="tel:+16023732164" style="color:#F6F6F4">602 373 2164</a><a href="{{ mailHref }}" style="color:rgba(246,246,244,.7)" style-hover="color:#C4A46A">{{ mailText }}</a></div>
+    </div>
+  </sc-if>
   <sc-if value="{{ videoOpen }}" hint-placeholder-val="{{ false }}">
     <div onClick="{{ closeVideo }}" role="dialog" style="position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:clamp(.75rem,3vw,3rem)">
       <div style="position:relative;width:min(1100px,100%);aspect-ratio:16/9;background:#000">
@@ -775,8 +806,8 @@ const STORY = [
 ];
 const CASES = [
   { id: 'isa', label: 'ISA Energy', client: 'ISA Energy', made: 'Brand film · demo · validation study', year: '2024', t1: 'ISA', t2: 'Energy', sub: 'A demo, a validation study and a brand film. A three-video series now in every investor meeting.', result: 'Helped raise a substantial round', href: '/work/isa-energy', vid: '6aadf209c2658a788ecff7d7', clip: 'assets/case-isa.mp4', shots: ['/video-review/covers/isa-energy-brand-video-2026-master-12.jpg','/video-review/covers/isa-energy-brand-video-2026-master-8.jpg','/video-review/covers/isa-energy-brand-video-2026-master-9.jpg','/video-review/covers/isa-energy-brand-video-2026-master-10.jpg'] },
-  { id: 'nabi', label: 'NABI', client: 'NABI', made: 'Trailer · documentary', year: '2025', t1: 'Letter to', t2: 'the World', sub: 'A trailer for the Native American Basketball Invitational. Basketball, school and community, in their own voices.', result: 'Native youth on the court and in the classroom', href: '/work/nabi', vid: '6aadf209c2658a788ecff7d8', clip: 'assets/case-nabi.mp4', shots: ['assets/pool/nabi-letter-to-the-world-trailer-11.jpg','assets/pool/nabi-letter-to-the-world-trailer-10.jpg','assets/pool/nabi-letter-to-the-world-trailer-8.jpg','assets/pool/nabi-letter-to-the-world-trailer-9.jpg'] },
-  { id: 'virtu', label: 'Virtu Hospitality', client: 'Virtu Hospitality Group', made: 'Brand film', year: '2025', t1: 'Virtu', t2: 'Hospitality', sub: 'A brand film for chef Gio Osso’s Scottsdale restaurant group. The bar, the plates and the people behind both.', result: 'Gio’s own words are further down this page', href: '/work/virtu-hospitality', vid: '698a5ef5fc23d3d76fa87ef4', clip: 'assets/case-virtu.mp4', shots: ['assets/pool/698a5ef5fc23d3d76fa87ef4-9.jpg','assets/pool/698a5ef5fc23d3d76fa87ef4-8.jpg','assets/pool/698a5ef5fc23d3d76fa87ef4-10.jpg','assets/pool/698a5ef5fc23d3d76fa87ef4-11.jpg'] },
+  { id: 'nabi', label: 'NABI', client: 'NABI', made: 'Trailer · documentary', year: '2025', t1: 'Letter to', t2: 'the World', sub: 'A trailer for the Native American Basketball Invitational. Basketball, school and community, in their own voices.', result: 'Native youth on the court and in the classroom', href: '/s1', vid: '6aadf209c2658a788ecff7d8', clip: 'assets/case-nabi.mp4', shots: ['assets/pool/nabi-letter-to-the-world-trailer-11.jpg','assets/pool/nabi-letter-to-the-world-trailer-10.jpg','assets/pool/nabi-letter-to-the-world-trailer-8.jpg','assets/pool/nabi-letter-to-the-world-trailer-9.jpg'] },
+  { id: 'virtu', label: 'Virtu Hospitality', client: 'Virtu Hospitality Group', made: 'Brand film', year: '2025', t1: 'Virtu', t2: 'Hospitality', sub: 'A brand film for chef Gio Osso’s Scottsdale restaurant group. The bar, the plates and the people behind both.', result: 'Gio’s own words are further down this page', href: '/s1', vid: '698a5ef5fc23d3d76fa87ef4', clip: 'assets/case-virtu.mp4', shots: ['assets/pool/698a5ef5fc23d3d76fa87ef4-9.jpg','assets/pool/698a5ef5fc23d3d76fa87ef4-8.jpg','assets/pool/698a5ef5fc23d3d76fa87ef4-10.jpg','assets/pool/698a5ef5fc23d3d76fa87ef4-11.jpg'] },
   { id: 'ambition', label: 'Ambition Mechanical', client: 'Ambition Mechanical', made: 'Website · SEO · film', year: '2026', t1: 'Ambition', t2: 'Mechanical', sub: 'A new site that pulls its own weight, and a film from the Memorial Towers job to prove the work.', result: 'Four solid leads a month, before paid spend', href: '/work/ambition-mechanical', vid: '698a584faec3d4e420c20fef', clip: 'assets/case-ambition.mp4', shots: ['assets/pool/698a584faec3d4e420c20fef-11.jpg','assets/pool/698a584faec3d4e420c20fef-8.jpg','assets/pool/698a584faec3d4e420c20fef-9.jpg','assets/pool/698a584faec3d4e420c20fef-10.jpg'] },
 ];
 const N_SLIDES = 14;
@@ -890,6 +921,9 @@ class Component extends DCLogic {
       fastWeb: () => { this.setState({ intent: 'website' }); this.scrollTo('#contact'); },
       fastPromo: () => { this.setState({ intent: 'promotion' }); this.scrollTo('#contact'); },
       mailHref: 'mailto:' + MAIL, mailText: MAIL,
+      menuOpen: !!this.state.menuOpen, toggleMenu: () => this.setState(st => ({ menuOpen: !st.menuOpen })), closeMenu: () => this.setState({ menuOpen: false }),
+      menuPipe: () => { this.setState({ menuOpen: false }); this.scrollTo('#pipeline'); }, menuDept: () => { this.setState({ menuOpen: false }); this.scrollTo('#dept'); },
+      menuWork: () => { this.setState({ menuOpen: false }); this.scrollTo('#work'); }, menuContact: () => { this.setState({ menuOpen: false }); this.scrollTo('#contact'); },
       contactHref: 'mailto:' + MAIL + (this.state.intent ? '?subject=' + encodeURIComponent({ video: 'I need a video', website: 'I need a website', promotion: 'I need more customers' }[this.state.intent]) : ''),
       fastRef: this.ref('fast'),
       reviewStack: (() => {
@@ -989,7 +1023,7 @@ class Component extends DCLogic {
     this.vio = new IntersectionObserver(es => es.forEach(en => { const v = en.target; if (en.isIntersecting) { v.muted = true; v.play().catch(() => {}); } else v.pause(); }), { threshold: 0.2 });
     box.querySelectorAll('[data-bgv]').forEach(v => this.vio.observe(v));
     this.onKey = ev => {
-      if (ev.key === 'Escape') { this.setState({ video: null }); return; }
+      if (ev.key === 'Escape') { this.setState({ video: null, menuOpen: false }); return; }
       const { step } = this.state; if (step >= QUESTIONS.length || box.scrollTop > box.clientHeight * 0.3) return;
       const k = ev.key.toUpperCase(); const i = KEYS.indexOf(k) >= 0 ? KEYS.indexOf(k) : (/^[1-4]$/.test(k) ? Number(k) - 1 : -1);
       const opts = QUESTIONS[step].a; if (i >= 0 && i < opts.length) this.choose(opts[i]);
@@ -1115,5 +1149,6 @@ class Component extends DCLogic {
   }
 }
 </script>
+<script src="/aom-tracker.js" data-site="aom" data-endpoint="https://ambition-teal.vercel.app/api/track-visitor" defer></script>
 </body>
 </html>

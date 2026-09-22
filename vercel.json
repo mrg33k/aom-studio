@@ -23,6 +23,10 @@
   ],
   "rewrites": [
     {
+      "source": "/",
+      "destination": "/home-v4/index.html"
+    },
+    {
       "source": "/s1",
       "destination": "/index.html"
     },
