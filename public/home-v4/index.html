@@ -152,6 +152,12 @@ button{font:inherit}
 [data-dept] > svg{position:relative}
 @keyframes logoScroll{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
 [data-logos]:hover > div{animation-play-state:paused}
+@media (min-width: 721px){
+  [data-logos][data-pos="bottom"]{position:absolute;left:var(--gx);right:var(--gx);bottom:1.4rem;margin:0;z-index:3}
+  #contact [data-logos][data-pos="bottom"]{bottom:3.9rem}
+  #contact > div[style*="z-index: 3"]{padding-bottom:clamp(7rem,14vh,9rem) !important}
+  #pipeline > div[style*="z-index: 3"]{padding-bottom:clamp(6rem,12vh,8rem) !important}
+}
 /* typeform-style focus: once someone starts typing, everything else steps back */
 [data-focus="1"] [data-stack],[data-focus="1"] [data-intro="1"],[data-focus="1"] [data-nav]{opacity:0 !important;pointer-events:none !important;transition:opacity .5s ease !important}
 [data-focusdim]{transition:opacity .9s ease}
@@ -443,6 +449,13 @@ button{font:inherit}
           <div data-stackdrag="" style="position:absolute;inset:0;z-index:200;cursor:grab;pointer-events:auto"></div>
         </div>
       </div>
+      <div data-logos="" data-pos="bottom" data-rv="" data-d=".4" aria-label="Clients we have worked with" style="position:relative;overflow:hidden;margin-top:clamp(1.6rem,4vh,2.6rem);padding:clamp(1rem,2.4vh,1.5rem) 0;border-top:1px solid rgba(246,246,244,.14);-webkit-mask-image:linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);mask-image:linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
+        <div style="display:flex;align-items:center;gap:clamp(2.6rem,5vw,4.5rem);width:max-content;animation:logoScroll 75s linear infinite">
+          <sc-for list="{{ logos }}" as="l" hint-placeholder-count="0">
+            <img key="{{ l.key }}" src="{{ l.src }}" alt="{{ l.name }}" loading="lazy" draggable="false" style="display:block;height:clamp(30px,3.6vh,42px);width:auto;max-width:13rem;object-fit:contain;opacity:.8;flex:none">
+          </sc-for>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -709,6 +722,13 @@ button{font:inherit}
           </form>
         </div>
       </sc-if>
+      <div data-logos="" data-pos="bottom" data-rv="" data-d=".4" aria-label="Clients we have worked with" style="position:relative;overflow:hidden;margin-top:clamp(1.6rem,4vh,2.6rem);padding:clamp(1rem,2.4vh,1.5rem) 0;border-top:1px solid rgba(246,246,244,.14);-webkit-mask-image:linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);mask-image:linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
+        <div style="display:flex;align-items:center;gap:clamp(2.6rem,5vw,4.5rem);width:max-content;animation:logoScroll 75s linear infinite">
+          <sc-for list="{{ logos }}" as="l" hint-placeholder-count="0">
+            <img key="{{ l.key }}" src="{{ l.src }}" alt="{{ l.name }}" loading="lazy" draggable="false" style="display:block;height:clamp(30px,3.6vh,42px);width:auto;max-width:13rem;object-fit:contain;opacity:.8;flex:none">
+          </sc-for>
+        </div>
+      </div>
     </div>
     <div style="position:absolute;bottom:calc(1.4rem + env(safe-area-inset-bottom));left:var(--gx);font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(246,246,244,.6);z-index:3">© 2026 Ahead of Market</div>
   </section>
