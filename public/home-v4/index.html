@@ -67,7 +67,7 @@ button{font:inherit}
   [data-screen-label="Hero"]{height:auto !important;min-height:0 !important;background:#060606}
   [data-screen-label="Hero"] > div:first-child{position:relative !important;height:auto !important;min-height:100svh !important;display:flex !important;flex-direction:column !important;overflow:hidden !important;background:#060606}
   /* the question, in flow, first */
-  [data-screen-label="Hero"] > div:first-child > div[style*="z-index: 5"][style*="inset: 0"]{position:relative !important;inset:auto !important;order:1;display:block !important;height:auto !important;padding:clamp(3.2rem,8vh,4rem) var(--gx) 1rem !important}
+  [data-screen-label="Hero"] > div:first-child > div[style*="z-index: 5"][style*="inset: 0"]{position:relative !important;inset:auto !important;order:1;display:block !important;height:auto !important;padding:clamp(2.4rem,6vh,3.2rem) var(--gx) 1rem !important}
   [data-screen-label="Hero"] > div:first-child > div[style*="z-index: 5"][style*="inset: 0"] > div{width:100% !important;flex:none !important}
   /* the reel stays BEHIND the question; scrim light enough to actually see it */
   [data-screen-label="Hero"] > div:first-child > div[style*="transform-origin"] > div[aria-hidden]{background:linear-gradient(to bottom, rgba(6,6,6,.76) 0%, rgba(6,6,6,.72) 55%, rgba(6,6,6,.9) 100%) !important}
@@ -101,7 +101,14 @@ button{font:inherit}
   [data-screen-label="Hero"] [data-intro=".6"] > button{flex:1 1 0 !important;min-width:0 !important;box-sizing:border-box !important;min-height:50px !important;padding:.45rem .6rem !important;border-radius:999px !important;font-size:.98rem !important}
   [data-screen-label="Hero"] [data-intro=".6"] > a{flex:1 1 0 !important;min-width:0 !important;box-sizing:border-box !important;justify-content:center !important;min-height:50px !important;padding:.45rem .6rem !important;font-size:.98rem !important;white-space:nowrap}
   [data-screen-label="Hero"] div[aria-hidden="true"][style*="margin-bottom"]{margin-bottom:.5rem !important}
-  [data-screen-label="Hero"] [data-intro="0"]{margin-bottom:.7rem !important}
+  [data-screen-label="Hero"] [data-intro="0"]{margin-bottom:.5rem !important}
+  [data-screen-label="Hero"] [data-intro=".6"] > button{justify-content:center !important}
+  [data-screen-label="Hero"] button[data-row] + button[data-row]{margin-top:0}
+  /* contact: the copyright line sits in flow on a phone instead of over the button */
+  #contact > div:last-child{position:static !important;padding:1.6rem var(--gx) 0 !important}
+  /* billboard collage: 3 columns on a phone instead of six slivers */
+  [data-screen-label="Billboard"] div[style*="repeat(6"]{grid-template-columns:repeat(3,1fr) !important;grid-template-rows:repeat(6,1fr) !important}
+  #contact > div[style*="z-index: 3"]{padding-bottom:max(2.6rem,env(safe-area-inset-bottom)) !important}
   [data-nav][data-scrolled="0"] a[href="#"] > span{display:inline-flex !important;white-space:nowrap}
   [data-screen-label="Hero"] form{width:100% !important}
   /* no random parallax panels on a phone; each case study plays its own film behind the text */
@@ -130,7 +137,9 @@ button{font:inherit}
 [data-dept] > svg{position:relative}
 /* typeform-style focus: once someone starts typing, everything else steps back */
 [data-focus="1"] [data-stack],[data-focus="1"] [data-intro="1"],[data-focus="1"] [data-nav]{opacity:0 !important;pointer-events:none !important;transition:opacity .5s ease !important}
-[data-focusdim]{transition:opacity .7s ease}
+[data-focusdim]{transition:opacity .9s ease}
+[data-stackcard]{transition:opacity .55s ease}
+[data-casev]{transition:opacity 1.2s ease}
 [data-contactform] textarea,[data-contactform] input,[data-leadform] textarea,[data-leadform] input{box-sizing:border-box}
 /* film tiles + department cells wake up on hover */
 [data-pipe]:hover img,[data-dept]:hover img{opacity:.9;transform:scale(1.05)}
@@ -199,7 +208,7 @@ button{font:inherit}
         <video ref="{{ v0Ref }}" playsinline="" preload="auto" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s ease;z-index:1"></video>
         <video ref="{{ v1Ref }}" playsinline="" preload="auto" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s ease;z-index:1"></video>
         <img ref="{{ posterRef }}" src="assets/hero-poster.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:3;transition:opacity 250ms ease;pointer-events:none;display:block">
-        <div style="position:absolute;inset:0;z-index:4;pointer-events:none;background:linear-gradient(to right, rgba(6,6,6,.9) 0%, rgba(6,6,6,.82) 40%, rgba(6,6,6,.78) 100%), linear-gradient(to top, rgba(6,6,6,.6), transparent 30%)"></div>
+        <div style="position:absolute;inset:0;z-index:4;pointer-events:none;background:linear-gradient(to right, rgba(6,6,6,.97) 0%, rgba(6,6,6,.94) 30%, rgba(6,6,6,.8) 50%, rgba(6,6,6,.72) 70%, rgba(6,6,6,.74) 100%), linear-gradient(to top, rgba(6,6,6,.6), transparent 30%)"></div>
       </div>
       <div ref="{{ dimRef }}" style="position:absolute;inset:0;z-index:6;background:#060606;opacity:0;pointer-events:none"></div>
       <div data-focusdim="" aria-hidden="true" style="position:absolute;inset:0;z-index:4;background:#040404;opacity:{{ focusOp }};pointer-events:none"></div>
@@ -264,11 +273,6 @@ button{font:inherit}
               <span style="display:block;flex:1;height:2px;background:{{ seg1 }};transition:background .3s"></span>
               <span style="display:block;flex:1;height:2px;background:{{ seg2 }};transition:background .3s"></span>
               <span style="display:block;flex:1;height:2px;background:{{ seg3 }};transition:background .3s"></span>
-            </div>
-            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:.4rem">
-              <sc-for list="{{ trail }}" as="t" hint-placeholder-count="0">
-                <span style="display:inline-flex;align-items:center;gap:.4rem;padding:.18rem .6rem .14rem;border:1px solid rgba(196,164,106,.5);border-radius:999px;color:#C4A46A;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;animation:fadeIn .4s ease both">{{ t.label }}</span>
-              </sc-for>
             </div>
           </div>
 
@@ -376,7 +380,7 @@ button{font:inherit}
         <div style="min-width:0">
           <span data-rv="" data-d="0" style="display:block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#C4A46A;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">The pipeline</span>
           <h2 data-rv="" data-d=".06" style="margin:clamp(.7rem,1.8vh,1.2rem) 0 0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.4rem,min(5.4vw,9.5vh),6rem);line-height:.9;letter-spacing:-.03em;color:#F6F6F4;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">How we can help you<i style="display:inline-block;width:.13em;height:.13em;background:#C4A46A;margin-left:.07em"></i></h2>
-          <p data-rv="" data-d=".14" style="margin:clamp(1rem,2.6vh,1.8rem) 0 0;max-width:38ch;color:#E6E5E0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1.05rem,min(1.4vw,2.6vh),1.35rem);font-weight:500;line-height:1.45;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Four ways in. Swipe through them, tap one to start there.</p>
+          <p data-rv="" data-d=".14" style="margin:clamp(1rem,2.6vh,1.8rem) 0 0;max-width:38ch;color:#E6E5E0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1.05rem,min(1.4vw,2.6vh),1.35rem);font-weight:500;line-height:1.45;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Seven things clients come to us for. Swipe through, tap one to start there.</p>
         </div>
         <div data-pipestack="" data-rv="" data-d=".2" aria-label="Services, swipe to browse" style="position:relative;width:100%;height:min(36rem,60vh);touch-action:pan-y;user-select:none;-webkit-user-select:none;opacity:0;transform:translateY(24px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
           <sc-for list="{{ pipe }}" as="k" hint-placeholder-count="0">
@@ -688,17 +692,20 @@ const STORY = [
 ];
 const CASES = [
   { id: 'isa', label: 'ISA Energy', client: 'ISA Energy', made: 'Brand film · demo · validation study', year: '2024', t1: 'ISA', t2: 'Energy', sub: 'A demo, a validation study and a brand film. A three-video series now in every investor meeting.', result: 'Helped raise a substantial round', href: '/work/isa-energy', vid: '6aadf209c2658a788ecff7d7', clip: 'assets/case-isa.mp4', shots: ['/video-review/covers/isa-energy-brand-video-2026-master-12.jpg','/video-review/covers/isa-energy-brand-video-2026-master-8.jpg','/video-review/covers/isa-energy-brand-video-2026-master-9.jpg','/video-review/covers/isa-energy-brand-video-2026-master-10.jpg'] },
-  { id: 'space', label: 'Space Rising', client: 'Space Rising', made: 'Platform build · event film', year: '2025', t1: 'Space', t2: 'Rising', sub: 'SpaceOS, built and launched, and 1,000 people in one room at Space Congress.', result: 'Drove a wave of traffic to the new platform', href: '/work/space-rising', vid: '', mp4: 'assets/space-rising-recap.mp4', clip: 'assets/case-space.mp4', shots: ['assets/space-rising-1.jpg','assets/space-rising-2.jpg','assets/space-rising-3.jpg','assets/space-rising-4.jpg'] },
+  { id: 'nabi', label: 'NABI', client: 'NABI', made: 'Trailer · documentary', year: '2025', t1: 'Letter to', t2: 'the World', sub: 'A trailer for the Native American Basketball Invitational. Basketball, school and community, in their own voices.', result: 'Native youth on the court and in the classroom', href: '/work/nabi', vid: '6aadf209c2658a788ecff7d8', clip: 'assets/case-nabi.mp4', shots: ['assets/pool/nabi-letter-to-the-world-trailer-11.jpg','assets/pool/nabi-letter-to-the-world-trailer-10.jpg','assets/pool/nabi-letter-to-the-world-trailer-8.jpg','assets/pool/nabi-letter-to-the-world-trailer-9.jpg'] },
   { id: 'virtu', label: 'Virtu Hospitality', client: 'Virtu Hospitality Group', made: 'Brand film', year: '2025', t1: 'Virtu', t2: 'Hospitality', sub: 'A brand film for chef Gio Osso’s Scottsdale restaurant group. The bar, the plates and the people behind both.', result: 'Gio’s own words are further down this page', href: '/work/virtu-hospitality', vid: '698a5ef5fc23d3d76fa87ef4', clip: 'assets/case-virtu.mp4', shots: ['assets/pool/698a5ef5fc23d3d76fa87ef4-9.jpg','assets/pool/698a5ef5fc23d3d76fa87ef4-8.jpg','assets/pool/698a5ef5fc23d3d76fa87ef4-10.jpg','assets/pool/698a5ef5fc23d3d76fa87ef4-11.jpg'] },
   { id: 'ambition', label: 'Ambition Mechanical', client: 'Ambition Mechanical', made: 'Website · SEO · film', year: '2026', t1: 'Ambition', t2: 'Mechanical', sub: 'A new site that pulls its own weight, and a film from the Memorial Towers job to prove the work.', result: 'Four solid leads a month, before paid spend', href: '/work/ambition-mechanical', vid: '698a584faec3d4e420c20fef', clip: 'assets/case-ambition.mp4', shots: ['assets/pool/698a584faec3d4e420c20fef-11.jpg','assets/pool/698a584faec3d4e420c20fef-8.jpg','assets/pool/698a584faec3d4e420c20fef-9.jpg','assets/pool/698a584faec3d4e420c20fef-10.jpg'] },
 ];
 const N_SLIDES = 14;
 // "How we can help": four service cards in the same fanned stack as the hero. Web = Reelay explainer frames.
 const PIPE = [
-  { n: '01', sec: 'Web', t: 'Web', c: 'Sites and platforms, built or rebuilt to pull their weight.', cover: 'assets/pool/698a5aa5aec3d4e420c263c4-4.jpg', href: '/services/web-build' },
-  { n: '02', sec: 'Video', t: 'Video', c: 'Brand films, docs and social series, shot in-house.', cover: 'assets/pool/698a6296fc23d3d76fa8d992-17.jpg', href: '/services/brand-film' },
-  { n: '03', sec: 'Social', t: 'Social', c: 'Channels run day to day, with content that keeps up.', cover: 'assets/pool/698a5391fc23d3d76fa7306c-6.jpg', href: '#contact' },
-  { n: '04', sec: 'Ads', t: 'Ads', c: 'Google and Meta campaigns that put the work in front of buyers.', cover: 'assets/pool/698a58c0aec3d4e420c21b78-11.jpg', href: '#contact' },
+  { n: '01', sec: 'Outcome', t: 'Attract the right people', c: 'Content that pulls in the customers you actually want.', cover: 'assets/pool/startup-az-retreat-2022-7.jpg', href: '#contact' },
+  { n: '02', sec: 'Outcome', t: 'Leads', c: 'A site and ads built to make the phone ring.', cover: 'assets/pool/698a584faec3d4e420c20fef-8.jpg', href: '#contact' },
+  { n: '03', sec: 'Outcome', t: 'Sharper story', c: 'A brand film that says it better than a meeting can.', cover: 'assets/pool/698a6296fc23d3d76fa8d992-16.jpg', href: '/services/brand-film' },
+  { n: '04', sec: 'Outcome', t: 'New website', c: 'Rebuilt fast, built to pull its weight.', cover: 'assets/pool/698a5aa5aec3d4e420c263c4-4.jpg', href: '/services/web-build' },
+  { n: '05', sec: 'Outcome', t: 'Profile management', c: 'Google, Yelp and socials kept current and answered.', cover: 'assets/pool/698a5d24aec3d4e420c2a0a0-9.jpg', href: '#contact' },
+  { n: '06', sec: 'Outcome', t: 'Great people applying', c: 'Recruiting films that bring the right hires to you.', cover: 'assets/pool/698a6177873071aec5ca4374-1.jpg', href: '#contact' },
+  { n: '07', sec: 'Outcome', t: 'Raise awareness', c: 'Get seen by the people who have not heard of you yet.', cover: 'assets/pool/698a5fcdfc23d3d76fa893b8-1.jpg', href: '#contact' },
 ];
 // Hero film stack: every curated film, Patrik's picked cover, tap = play (gumlet embed)
 const STACK = [{"t": "Journey To Gary Vee", "c": "Cinematic Story", "id": "698a6296fc23d3d76fa8d992", "cover": "assets/pool/698a6296fc23d3d76fa8d992-17.jpg", "sec": "Brand"}, {"t": "Letter To The World — Trailer", "c": "Nabi", "id": "6aadf209c2658a788ecff7d8", "cover": "assets/pool/nabi-letter-to-the-world-trailer-11.jpg", "sec": "Brand"}, {"t": "Thelma — Episode 1", "c": "Ember Red Studios", "id": "6aadf20958101b77bb9d90fd", "cover": "assets/pool/ember-red-studios-thelma-episode-1-ff-9.jpg", "sec": "Brand"}, {"t": "Ernie Stevens Jr. Tribute", "c": "Tribute Film", "id": "698a5a6cfc23d3d76fa812a7", "cover": "assets/pool/698a5a6cfc23d3d76fa812a7-12.jpg", "sec": "Brand"}, {"t": "Jason Amador: GCU Basketball x NABI", "c": "Athlete Story", "id": "698a5a6caec3d4e420c25e1a", "cover": "assets/pool/698a5a6caec3d4e420c25e1a-11.jpg", "sec": "Brand"}, {"t": "Rainbow Rider", "c": "Experience Asset", "id": "698a6106aec3d4e420c2fd85", "cover": "assets/pool/698a6106aec3d4e420c2fd85-3.jpg", "sec": "Brand"}, {"t": "System Performance Demo", "c": "ISA Energy", "id": "6aadf2097d44d89d0157d32e", "cover": "assets/pool/isa-energy-system-performance-demo-2026-9.jpg", "sec": "Tech"}, {"t": "Brand Video", "c": "ISA Energy", "id": "6aadf209c2658a788ecff7d7", "cover": "assets/pool/isa-energy-brand-video-2026-master-12.jpg", "sec": "Tech"}, {"t": "IAAPA 2025 Full Recap", "c": "Intelliplay", "id": "6aadf20958101b77bb9d90fb", "cover": "assets/pool/intelliplay-iaapa-2025-full-recap-10.jpg", "sec": "Tech"}, {"t": "Race Communications", "c": "VIEWPOINT", "id": "6aadf2097d44d89d0157d32d", "cover": "assets/pool/viewpoint-race-communications-5-min-30-second-14.jpg", "sec": "Tech"}, {"t": "AZ Cleantech", "c": "Sector Narrative", "id": "698a57da873071aec5c93fa0", "cover": "assets/pool/698a57da873071aec5c93fa0-12.jpg", "sec": "Tech"}, {"t": "Del Norte", "c": "VIEWPOINT", "id": "6aadf20958101b77bb9d90fe", "cover": "assets/pool/viewpoint-del-norte-hd-commercial-demo-11.jpg", "sec": "Tech"}, {"t": "RW Investments", "c": "VIEWPOINT", "id": "6aadf209c2658a788ecff7d6", "cover": "assets/pool/viewpoint-rw-investments-hd-commercial-demo-12.jpg", "sec": "Tech"}, {"t": "Intelliplay Demo", "c": "Product Story", "id": "698a5386aec3d4e420c17a69", "cover": "assets/pool/698a5386aec3d4e420c17a69-7.jpg", "sec": "Tech"}, {"t": "SOLV Energy", "c": "VIEWPOINT", "id": "6aadf2097d44d89d0157d329", "cover": "assets/pool/viewpoint-solv-energy-live-action-main-5-min-11.jpg", "sec": "Tech"}, {"t": "MAC SW Recap", "c": "Mission Acceleration Center", "id": "6aadf20958101b77bb9d90f0", "cover": "assets/pool/mission-acceleration-center-mac-sw-recap-one-two-13.jpg", "sec": "Tech"}, {"t": "Self-Sustaining Demo", "c": "ISA Energy", "id": "6aadf20958101b77bb9d90f5", "cover": "assets/pool/isa-energy-self-sustaining-demo-2026-7.jpg", "sec": "Tech"}, {"t": "Virtu Hospitality", "c": "Scottsdale Premium", "id": "698a5ef5fc23d3d76fa87ef4", "cover": "assets/pool/698a5ef5fc23d3d76fa87ef4-9.jpg", "sec": "Hospitality"}, {"t": "To Have and To Host", "c": "Residential Build", "id": "698a68b7fc23d3d76fa970ef", "cover": "assets/pool/698a68b7fc23d3d76fa970ef-10.jpg", "sec": "Construction"}, {"t": "Abrazo Healthcare", "c": "HVAC Emergency", "id": "698a58aefc23d3d76fa7cdd6", "cover": "assets/pool/698a58aefc23d3d76fa7cdd6-9.jpg", "sec": "Construction"}, {"t": "Memorial Towers", "c": "Industrial Scale", "id": "698a584faec3d4e420c20fef", "cover": "assets/pool/698a584faec3d4e420c20fef-11.jpg", "sec": "Construction"}, {"t": "Refined Gardens", "c": "Brand Authority", "id": "698a57fb873071aec5c94350", "cover": "assets/pool/698a57fb873071aec5c94350-11.jpg", "sec": "Construction"}, {"t": "Tree Guardian", "c": "Documentary", "id": "698a5e91873071aec5c9fc36", "cover": "assets/pool/698a5e91873071aec5c9fc36-8.jpg", "sec": "Construction"}, {"t": "Aiper Homeshow Recap", "c": "Event Recap", "id": "698a58ae873071aec5c953ea", "cover": "assets/pool/698a58ae873071aec5c953ea-7.jpg", "sec": "Events"}, {"t": "Retreat 2022", "c": "Startup AZ", "id": "6aadf20958101b77bb9d90fc", "cover": "assets/pool/startup-az-retreat-2022-10.jpg", "sec": "Events"}, {"t": "Aiper Pool Party", "c": "Event Promo", "id": "698a58c0aec3d4e420c21b78", "cover": "assets/pool/698a58c0aec3d4e420c21b78-11.jpg", "sec": "Events"}, {"t": "Cook & Craft", "c": "Website Background", "id": "698a53a9873071aec5c8b9d7", "cover": "assets/pool/698a53a9873071aec5c8b9d7-6.jpg", "sec": "Brands"}, {"t": "Cynshine Pilates", "c": "Founder Story", "id": "698a63e5aec3d4e420c34783", "cover": "assets/pool/698a63e5aec3d4e420c34783-1.jpg", "sec": "Brands"}, {"t": "Pretty Penny", "c": "Restaurant Identity", "id": "698a5d24aec3d4e420c2a0a0", "cover": "assets/pool/698a5d24aec3d4e420c2a0a0-5.jpg", "sec": "Brands"}, {"t": "Ulisgold Pilates", "c": "Wellness Brand", "id": "698a5ebcaec3d4e420c2c573", "cover": "assets/pool/698a5ebcaec3d4e420c2c573-3.jpg", "sec": "Brands"}, {"t": "United Food Bank", "c": "Year End Impact", "id": "698a5fcdfc23d3d76fa893b8", "cover": "assets/pool/698a5fcdfc23d3d76fa893b8-1.jpg", "sec": "Nonprofit"}, {"t": "AZ Arts Foundation", "c": "Trust Piece", "id": "698a64e5873071aec5ca99ac", "cover": "assets/pool/698a64e5873071aec5ca99ac-8.jpg", "sec": "Nonprofit"}, {"t": "UFB Volunteer", "c": "Community Doc", "id": "698a5fc4fc23d3d76fa892d9", "cover": "assets/pool/698a5fc4fc23d3d76fa892d9-2.jpg", "sec": "Nonprofit"}, {"t": "ASU: Peoria Forward", "c": "Trust Asset", "id": "698a6127873071aec5ca3b36", "cover": "assets/pool/698a6127873071aec5ca3b36-1.jpg", "sec": "Founder"}, {"t": "Keep it Cut", "c": "Recruiting Film", "id": "698a6177873071aec5ca4374", "cover": "assets/pool/698a6177873071aec5ca4374-1.jpg", "sec": "Founder"}, {"t": "Food reels", "c": "Cook and Craft", "id": "6aadf2097d44d89d0157d32a", "cover": "assets/pool/cook-and-craft-food-reels-brussels-burrata-margarita-old-fashioned-8.jpg", "sec": "Social"}, {"t": "PA'LA x HARUMI", "c": "Collab Feature", "id": "698a5391fc23d3d76fa7306c", "cover": "assets/pool/698a5391fc23d3d76fa7306c-6.jpg", "sec": "Social"}, {"t": "Reelay Explainer", "c": "Software Deep Dive", "id": "698a5aa5aec3d4e420c263c4", "cover": "assets/pool/698a5aa5aec3d4e420c263c4-1.jpg", "sec": "Social"}];
@@ -739,7 +746,7 @@ class Component extends DCLogic {
   ref(n) { return this.refs[n] || (this.refs[n] = e => { this.el[n] = e; }); }
   get skipStinger() { return !!this.props.skipStinger; }
   choose(label) {
-    if (this.busy) return; this.busy = true;
+    if (this.busy) return; this.busy = true; this.enterFocus();
     this.setState({ cardOp: 0, cardY: -14 });
     setTimeout(() => {
       this.setState(s => ({ step: s.step + 1, answers: [...s.answers, label], pending: null, cardOp: 0, cardY: 14 }), () => {
@@ -748,7 +755,8 @@ class Component extends DCLogic {
       });
     }, 280);
   }
-  select(label) { if (this.busy) return; this.setState({ pending: label }); }
+  enterFocus() { if (this.state.focus) return; this.setState({ focus: true }); if (this.el.root) this.el.root.dataset.focus = '1'; }
+  select(label) { if (this.busy) return; this.enterFocus(); this.setState({ pending: label }); }
   commit() { if (this.busy || !this.state.pending) return; this.choose(this.state.pending); }
   scrollTo(id) { const box = this.el.root, el = box && box.querySelector(id); if (el) box.scrollTo({ top: el.offsetTop, behavior: 'smooth' }); }
   // POST to /api/aom-lead (Resend -> studio inbox). Honeypot + startedAt mirror the endpoint's checks.
@@ -926,7 +934,7 @@ class Component extends DCLogic {
         el.style.transform = `translate3d(${(o * c.x).toFixed(1)}px, ${(a * c.y).toFixed(1)}px, 0) rotate(${(o * c.r).toFixed(2)}deg) scale(${(1 - a * c.s).toFixed(3)})`;
         el.style.zIndex = String(Math.round(100 - a * 10));
         // left side fades sooner so the fan never runs into the copy column
-        const fadeL = o < 0 ? Math.max(0, 1 - Math.max(0, -o - 1.05) / .9) : 1;
+        const fadeL = o < 0 ? Math.max(0, 1 - Math.max(0, -o - .5) / .8) : 1;
         el.style.opacity = String(fadeL * (a > 2.7 ? Math.max(0, 1 - (a - 2.7) / .7) : 1));
         const dim = el.querySelector('[data-stackdim]'); if (dim) dim.style.opacity = String(Math.min(.6, a * .3));
         const meta = el.querySelector('[data-stackmeta]'); if (meta) meta.style.opacity = String(Math.max(0, 1 - a * 1.6));
