@@ -68,12 +68,13 @@ button{font:inherit}
   [data-screen-label="Hero"]{height:auto !important;min-height:0 !important;background:#060606}
   [data-screen-label="Hero"] > div:first-child{position:relative !important;height:auto !important;min-height:100svh !important;display:flex !important;flex-direction:column !important;overflow:hidden !important;background:#060606}
   /* the question, in flow, first */
-  [data-screen-label="Hero"] > div:first-child > div[style*="z-index: 5"][style*="inset: 0"]{position:relative !important;inset:auto !important;order:1;display:block !important;height:auto !important;padding:clamp(2.4rem,6vh,3.2rem) var(--gx) 1rem !important}
+  [data-screen-label="Hero"] > div:first-child > div[style*="z-index: 5"][style*="inset: 0"]{position:relative !important;inset:auto !important;order:1;display:block !important;height:auto !important;padding:clamp(3rem,7vh,3.8rem) var(--gx) 1rem !important}
   [data-screen-label="Hero"] > div:first-child > div[style*="z-index: 5"][style*="inset: 0"] > div{width:100% !important;flex:none !important}
   /* the reel stays BEHIND the question; scrim light enough to actually see it */
   [data-screen-label="Hero"] > div:first-child > div[style*="transform-origin"] > div[aria-hidden]{background:linear-gradient(to bottom, rgba(6,6,6,.76) 0%, rgba(6,6,6,.72) 55%, rgba(6,6,6,.9) 100%) !important}
   /* film stack under the form: phone-sized cards */
-  [data-stack]{height:26rem !important;margin-top:.9rem !important}
+  [data-stack]{height:26rem !important;margin-top:1.1rem !important}
+  [data-stackcount]{top:calc(.6rem + 23.5rem + .45rem) !important;bottom:auto !important}
   [data-pipewrap]{grid-template-columns:1fr !important;row-gap:1rem}
   [data-pipestack]{height:26rem !important}
   [data-contactgrid]{grid-template-columns:1fr !important}
@@ -103,8 +104,10 @@ button{font:inherit}
   [data-screen-label="Hero"] [data-intro=".6"]{flex-direction:row !important;flex-wrap:nowrap !important;align-items:stretch !important;gap:.6rem !important;width:100% !important;margin-top:.9rem !important}
   [data-screen-label="Hero"] [data-intro=".6"] > button{flex:1 1 0 !important;min-width:0 !important;box-sizing:border-box !important;min-height:50px !important;padding:.45rem .6rem !important;border-radius:999px !important;font-size:.98rem !important}
   [data-screen-label="Hero"] [data-intro=".6"] > a{flex:1 1 0 !important;min-width:0 !important;box-sizing:border-box !important;justify-content:center !important;min-height:50px !important;padding:.45rem .6rem !important;font-size:.98rem !important;white-space:nowrap}
-  [data-screen-label="Hero"] div[aria-hidden="true"][style*="margin-bottom"]{margin-bottom:.5rem !important}
-  [data-screen-label="Hero"] [data-intro="0"]{margin-bottom:.5rem !important}
+  [data-screen-label="Hero"] div[aria-hidden="true"][style*="margin-bottom"]{margin-bottom:1.1rem !important}
+  [data-screen-label="Hero"] [data-intro="0"]{margin-bottom:1.1rem !important}
+  [data-screen-label="Hero"] h1{margin-bottom:.35rem !important}
+  [data-screen-label="Hero"] button[data-row]{margin-top:.15rem}
   [data-screen-label="Hero"] [data-intro=".6"] > button{justify-content:center !important}
   [data-screen-label="Hero"] button[data-row] + button[data-row]{margin-top:0}
   /* contact: the copyright line sits in flow on a phone instead of over the button */
@@ -136,6 +139,7 @@ button{font:inherit}
   [data-stack]{position:absolute !important;left:calc(100% + 2rem) !important;top:50% !important;transform:translateY(-50%) !important;width:min(50rem,44vw) !important;height:min(46rem,76vh) !important;margin:0 !important;z-index:1}
   [data-stackcard]{width:min(28rem,48vh) !important;height:min(37.5rem,64vh) !important;margin-left:calc(min(28rem,48vh) / -2) !important;border-radius:22px !important}
   [data-stackcard] [data-stackmeta] > span:first-child{font-size:1.7rem !important}
+  [data-stackcount]{top:calc(.6rem + min(37.5rem,64vh) + .5rem) !important;bottom:auto !important}
   [data-pipestack] [data-stackcard]{width:min(29rem,50vh) !important;height:min(38.5rem,66vh) !important;margin-left:calc(min(29rem,50vh) / -2) !important}
 }
 [data-dept] > svg{position:relative}
@@ -176,7 +180,7 @@ button{font:inherit}
     <div ref="{{ stingerRef }}" aria-hidden="true" style="position:fixed;inset:0;z-index:300;background:#060606;display:grid;place-items:center;pointer-events:none;overflow:hidden;animation:stOverlay 2.3s cubic-bezier(.7,0,.3,1) both">
       <div style="display:grid;place-items:center;will-change:transform;animation:stPunch 2.3s cubic-bezier(.8,0,.2,1) both">
         <div style="display:flex;align-items:flex-end;will-change:transform,filter,clip-path;animation:stMark 2.3s cubic-bezier(.16,1,.3,1) both">
-          <img src="assets/aom-monogram-paper.svg" alt="" style="display:block;width:clamp(6rem,14vw,11rem);height:auto">
+          <img src="assets/aom-monogram-flat.svg" alt="" style="display:block;width:clamp(6rem,14vw,11rem);height:auto">
           <div style="flex:none;width:clamp(.4rem,.7vw,.6rem);aspect-ratio:1;margin:0 0 7% clamp(-.45rem,-.8vw,-.25rem);background:#C4A46A;transform-origin:center;animation:stPeriod 2.3s cubic-bezier(.22,1,.36,1) both"></div>
         </div>
       </div>
@@ -211,7 +215,7 @@ button{font:inherit}
   <div data-intro=".55" data-nav="" data-scrolled="0" style="position:fixed;left:0;right:0;top:1.1rem;z-index:220;display:flex;justify-content:space-between;align-items:center;padding:0 var(--gx);pointer-events:none;color:#F6F6F4;animation:fadeIn .9s ease both">
     <div style="display:flex;align-items:center;gap:1.6rem">
       <button style="pointer-events:auto;display:inline-flex;align-items:center;gap:.55rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:inherit;background:none;border:0;padding:0;cursor:pointer" style-hover="color:#C4A46A">Menu<span aria-hidden="true" style="display:inline-flex;flex-direction:column;justify-content:center;gap:4px;width:18px"><i style="display:block;height:1.5px;width:100%;background:currentColor"></i><i style="display:block;height:1.5px;width:100%;background:currentColor"></i></span></button>
-      <a href="#" ref="{{ brandRef }}" style="pointer-events:auto;display:inline-flex;align-items:center;gap:.7rem;transform-origin:left center;will-change:transform;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase"><img src="assets/aom-monogram-paper.svg" alt="" style="display:block;width:26px;height:auto"><span style="display:inline-flex;align-items:baseline">Ahead of Market</span></a>
+      <a href="#" ref="{{ brandRef }}" style="pointer-events:auto;display:inline-flex;align-items:center;gap:.7rem;transform-origin:left center;will-change:transform;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase"><img src="assets/aom-monogram-flat.svg" alt="" style="display:block;width:26px;height:auto"><span style="display:inline-flex;align-items:baseline">Ahead of Market</span></a>
     </div>
     <div style="display:flex;align-items:center;gap:1.6rem">
       <button onClick="{{ toContact }}" style="pointer-events:auto;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#060606;border:1px solid #C4A46A;border-radius:999px;padding:.5rem .95rem .46rem;background:#C4A46A;cursor:pointer;transition:color .18s ease,background-color .18s ease" style-hover="color:#F6F6F4;background-color:transparent">Contact us</button>
@@ -222,6 +226,7 @@ button{font:inherit}
   <section aria-label="Ahead of Market" data-screen-label="Hero" style="position:relative;height:calc(1.6 * var(--vph,100svh));scroll-snap-align:start;z-index:2">
     <div style="position:sticky;top:0;height:var(--vph,100svh);overflow:hidden;background:#060606;isolation:isolate;transform:translateZ(0)">
       <div ref="{{ reelRef }}" style="position:absolute;inset:0;will-change:transform;transform-origin:50% 50%">
+        <canvas data-mirror="" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;z-index:3;opacity:0;transition:opacity .9s ease;pointer-events:none"></canvas>
         <video ref="{{ v0Ref }}" playsinline="" preload="auto" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s ease;z-index:1"></video>
         <video ref="{{ v1Ref }}" playsinline="" preload="auto" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s ease;z-index:1"></video>
         <img ref="{{ posterRef }}" src="assets/hero-poster.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:3;transition:opacity 250ms ease;pointer-events:none;display:block">
@@ -232,7 +237,7 @@ button{font:inherit}
       <div data-focusbg="" aria-hidden="true" style="position:absolute;inset:0;z-index:4;opacity:{{ focusBgOp }};pointer-events:none;transition:opacity 1.4s ease .2s;background:#040404 url(assets/gen/form-bg.jpg) center / cover no-repeat"><span style="position:absolute;inset:0;background:linear-gradient(to right, rgba(4,4,4,.92) 0%, rgba(4,4,4,.72) 45%, rgba(4,4,4,.45) 100%), linear-gradient(to top, rgba(4,4,4,.9), rgba(4,4,4,.2) 50%)"></span></div>
       <div ref="{{ interRef }}" style="position:absolute;inset:0;z-index:7;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(1.8rem,5vh,3.2rem);pointer-events:none;opacity:0;will-change:opacity,transform">
         <div style="display:flex;align-items:flex-end">
-          <img src="assets/aom-monogram-paper.svg" alt="" style="display:block;width:clamp(6rem,14vw,11rem);height:auto">
+          <img src="assets/aom-monogram-flat.svg" alt="" style="display:block;width:clamp(6rem,14vw,11rem);height:auto">
           <div style="flex:none;width:clamp(.4rem,.7vw,.6rem);aspect-ratio:1;margin:0 0 7% clamp(-.45rem,-.8vw,-.25rem);background:#C4A46A"></div>
         </div>
         <div data-fastpills="" style="display:flex;flex-wrap:nowrap;align-items:center;gap:1rem">
@@ -345,7 +350,7 @@ button{font:inherit}
               </div>
             </sc-for>
             <div data-stackdrag="" style="position:absolute;inset:0;z-index:200;cursor:grab;pointer-events:auto"></div>
-            <span aria-hidden="true" data-stackcount="" style="position:absolute;left:50%;bottom:-.2rem;transform:translateX(-50%);font-family:'Space Grotesk',system-ui,sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(246,246,244,.5);white-space:nowrap">Swipe · tap to play</span>
+            <span aria-hidden="true" data-stackcount="" style="position:absolute;left:50%;bottom:-.2rem;transform:translateX(-50%);font-family:'Space Grotesk',system-ui,sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:rgba(246,246,244,.5);white-space:nowrap">Swipe</span>
           </div>
         </div>
         <div ref="{{ fastRef }}" data-intro="1" style="flex:none;width:100%;margin-top:clamp(.6rem,2vh,1.4rem);padding-top:clamp(.6rem,1.8vh,1rem);border-top:1px solid rgba(246,246,244,.16);display:flex;flex-wrap:nowrap;align-items:baseline;gap:.35rem 1.2rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(.72rem,min(.95vw,1.7vh),.9rem);font-weight:500;color:rgba(246,246,244,.6);overflow-x:auto;scrollbar-width:none;animation:fadeIn 1s ease both">
@@ -734,10 +739,10 @@ const N_SLIDES = 14;
 // "How we can help": four service cards in the same fanned stack as the hero. Web = Reelay explainer frames.
 const PIPE = [
   { n: '01', sec: 'Outcome', t: 'Attract the right people', c: 'Content that pulls in the customers you actually want.', cover: 'assets/gen/outcome-attract.jpg', href: '#contact' },
-  { n: '02', sec: 'Outcome', t: 'Leads', c: 'A site and ads built to make the phone ring.', cover: 'assets/gen/outcome-leads.jpg', href: '#contact' },
+  { n: '02', sec: 'Outcome', t: 'Leads', c: 'A site and ads built to make the phone ring.', cover: 'assets/gen/outcome-leads-2.jpg', href: '#contact' },
   { n: '03', sec: 'Outcome', t: 'Sharper story', c: 'A brand film that says it better than a meeting can.', cover: 'assets/gen/outcome-story.jpg', href: '/services/brand-film' },
-  { n: '04', sec: 'Outcome', t: 'New website', c: 'Rebuilt fast, built to pull its weight.', cover: 'assets/gen/outcome-website.jpg', href: '/services/web-build' },
-  { n: '05', sec: 'Outcome', t: 'Profile management', c: 'Google, Yelp and socials kept current and answered.', cover: 'assets/gen/outcome-profile.jpg', href: '#contact' },
+  { n: '04', sec: 'Outcome', t: 'New website', c: 'Rebuilt fast, built to pull its weight.', cover: 'assets/gen/outcome-website-2.jpg', href: '/services/web-build' },
+  { n: '05', sec: 'Outcome', t: 'Profile management', c: 'Google, Yelp and socials kept current and answered.', cover: 'assets/gen/outcome-profile-2.jpg', href: '#contact' },
   { n: '06', sec: 'Outcome', t: 'Great people applying', c: 'Recruiting films that bring the right hires to you.', cover: 'assets/gen/outcome-hiring.jpg', href: '#contact' },
   { n: '07', sec: 'Outcome', t: 'Raise awareness', c: 'Get seen by the people who have not heard of you yet.', cover: 'assets/gen/outcome-awareness.jpg', href: '#contact' },
 ];
@@ -957,13 +962,27 @@ class Component extends DCLogic {
         onMove: frac => bgs.forEach(b => { b.style.transform = `translate3d(${(-frac * 60).toFixed(1)}px, 0, 0)`; }) });
   }
   // Front hero card plays a muted preview of its film (HLS via hls.js, native on Safari). One stream at a time.
-  stopCard() { const v = this.curCard; if (!v) return; this.curCard = null; try { v.pause(); } catch {} v.style.opacity = '0'; if (this.hls) { try { this.hls.destroy(); } catch {} this.hls = null; } v.removeAttribute('src'); try { v.load(); } catch {} }
+  stopCard() { const v = this.curCard; if (!v) return; this.curCard = null; if (this.mirrorRaf) { cancelAnimationFrame(this.mirrorRaf); this.mirrorRaf = 0; } const mc = this.el.root && this.el.root.querySelector('[data-mirror]'); if (mc) mc.style.opacity = '0'; try { v.pause(); } catch {} v.style.opacity = '0'; if (this.hls) { try { this.hls.destroy(); } catch {} this.hls = null; } v.removeAttribute('src'); try { v.load(); } catch {} }
+  // draw the playing card into the full-bleed hero canvas (cover fit) so the background is the same film
+  mirror(v) {
+    const mc = this.el.root && this.el.root.querySelector('[data-mirror]'); if (!mc) return;
+    const ctx = mc.getContext('2d'); let W = 0, H = 0;
+    const draw = () => {
+      if (this.curCard !== v || v.paused || v.ended) { this.mirrorRaf = 0; return; }
+      const cw = mc.clientWidth, ch = mc.clientHeight;
+      if (cw !== W || ch !== H) { W = cw; H = ch; mc.width = Math.min(1280, cw); mc.height = Math.round(mc.width * ch / cw); }
+      const vw = v.videoWidth, vh = v.videoHeight;
+      if (vw && vh) { const sc = Math.max(mc.width / vw, mc.height / vh), dw = vw * sc, dh = vh * sc; ctx.drawImage(v, (mc.width - dw) / 2, (mc.height - dh) / 2, dw, dh); mc.style.opacity = '1'; }
+      this.mirrorRaf = requestAnimationFrame(draw);
+    };
+    if (this.mirrorRaf) cancelAnimationFrame(this.mirrorRaf); this.mirrorRaf = requestAnimationFrame(draw);
+  }
   playCard(el, k) {
     this.stopCard(); const v = el && el.querySelector('video'); if (!v || !k || !k.id) return;
     const src = `https://video.gumlet.io/697678222b8b17fbb707acef/${k.id}/main.m3u8`;
     v.muted = true; this.curCard = v;
     v.onloadedmetadata = () => { const d = v.duration; if (isFinite(d) && d > 20) { try { v.currentTime = d * (0.12 + Math.random() * 0.3); } catch {} } };
-    v.onplaying = () => { if (this.curCard === v) v.style.opacity = '1'; };
+    v.onplaying = () => { if (this.curCard !== v) return; v.style.opacity = '1'; this.mirror(v); };
     if (window.Hls && Hls.isSupported()) { this.hls = new Hls({ capLevelToPlayerSize: true, maxBufferLength: 8, startLevel: 0 }); this.hls.loadSource(src); this.hls.attachMedia(v); this.hls.on(Hls.Events.MANIFEST_PARSED, () => v.play().catch(() => {})); }
     else if (v.canPlayType('application/vnd.apple.mpegurl')) { v.src = src; v.play().catch(() => {}); }
   }
