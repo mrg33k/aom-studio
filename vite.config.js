@@ -2444,8 +2444,23 @@ function webSocketServerPlugin() {
   }
 }
 
+// Emit the React shell as app.html instead of index.html. Vercel serves real files before
+// rewrites, so a built index.html would shadow the "/" -> /home-v4/index.html rewrite that
+// makes the v4 page the homepage. Route rewrites in vercel.json point at /app.html.
+function appShellRenamePlugin() {
+  return {
+    name: 'aom-app-shell-rename',
+    apply: 'build',
+    enforce: 'post',
+    generateBundle(_, bundle) {
+      const html = bundle['index.html']
+      if (html) { html.fileName = 'app.html'; bundle['app.html'] = html; delete bundle['index.html'] }
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), localDashboardPlugin(), webSocketServerPlugin()],
+  plugins: [react(), localDashboardPlugin(), webSocketServerPlugin(), appShellRenamePlugin()],
   build: {
     rollupOptions: {
       input: {

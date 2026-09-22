@@ -19,7 +19,8 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const SRC = resolve(root, 'dist/index.html');
+// The React shell is emitted as app.html (see appShellRenamePlugin in vite.config.js); / is the v4 homepage.
+const SRC = resolve(root, 'dist/app.html');
 const OUT = resolve(root, 'dist/dashboard.html');
 
 // Keep these in step with the 'corner' entry in index.html's SURFACES table.

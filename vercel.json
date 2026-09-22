@@ -28,23 +28,23 @@
     },
     {
       "source": "/s1",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/showcase",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/v4",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/reports",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/reports/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/:reportClient(wolfpack|ambition|kohrs|ella)",
@@ -64,7 +64,7 @@
     },
     {
       "source": "/slider",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/embed",
@@ -72,11 +72,11 @@
     },
     {
       "source": "/outreach",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/about",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/dashboard",
@@ -104,35 +104,35 @@
     },
     {
       "source": "/r4",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/r38",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/home-options",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/r5",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/r6",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/r7",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/services/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/about/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/hear",
@@ -144,19 +144,19 @@
     },
     {
       "source": "/taste",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/versions",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/versions/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/work/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/cv2",
@@ -168,39 +168,39 @@
     },
     {
       "source": "/cv4",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/cv4/project/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/cv4/projects/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/cvg",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/cvg/project/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/cvg/projects/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/cv6",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/cv6kit",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/scribe",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/cv4-static",
@@ -236,43 +236,43 @@
     },
     {
       "source": "/brand",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/brand/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/brands",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/brands/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/social",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/construction",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/research/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/briefs",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/briefs/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/audit/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/proposals/isa-energy",
@@ -284,59 +284,59 @@
     },
     {
       "source": "/ideas",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/guides",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/guides/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/roi-calculator",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/book",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/marketplace",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/ai-guide",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/ai/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/case-study",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/corner",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/corner/book",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/corner/hero-poc",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/corner/surge-preview",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/corner/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/dashboard/agent/:slug",
@@ -412,47 +412,47 @@
     },
     {
       "source": "/skills",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/demo",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/login",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/settings",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/onboarding",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/onboarding/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/accept-invite",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/finance",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/directory",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/artlink",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/blacknight",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/space-rising",
@@ -460,15 +460,15 @@
     },
     {
       "source": "/space-rising/deal-bank",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/space-rising/deal-bank/admin",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/space-rising/deal-bank/completed",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/space-rising/:path*",
@@ -476,127 +476,127 @@
     },
     {
       "source": "/change-password",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/elon-room",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/design/:path*",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/ConradFoundation",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/conradfoundation",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/Conradfoundation",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/conrad-foundation",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/conrad",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/nancy",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/conradfoundation2",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/missionwater",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/MissionWaterGame",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/mission-water-game",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/MissionWaterPlatform",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/missionwaterplatform",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/platform",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/MissionWaterLive",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/missionwaterlive",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/missionwater/live",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/MissionWaterOffering",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/missionwateroffering",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/mission-water-offering",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/missionwater/offering",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/missionwater/lets-talk",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/higherorbits",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/stats",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/ai-hours",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/ai-hours/admin",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/support",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/support/admin",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/privacy",
-      "destination": "/index.html"
+      "destination": "/app.html"
     },
     {
       "source": "/internal/scope/higher-orbits-biz7tkhq9h",
