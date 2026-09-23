@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>AMG One App: The Full Picture · Ahead of Market</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap" rel="stylesheet">
+<style>
+/* AOM client documents, AOM brand (DESIGN.md): obsidian, ivory, gold, stone.
+   One display moment (cover, Druk Wide). Everything else is quiet Schibsted Grotesk.
+   Editorial two-column sections: small label column left, reading column right.
+   Spacing scale: 4 8 12 16 24 32 48 64. Type scale: 32 14 13 12 11px. Print-first, deliberately flat. */
+@font-face { font-family: "Druk Wide"; src: url("amg/DrukWideBold.ttf") format("truetype"); font-weight: 700; }
+@font-face { font-family: "Schibsted Grotesk"; src: url("amg/SchibstedGrotesk-var.woff2") format("woff2"); font-weight: 400 900; }
+
+@page { size: Letter; margin: 0.75in 0.8in; background: #F6F6F4; }
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+html { background: #F6F6F4; }
+body { margin: 0; color: #0B0B0B; font: 13px/1.65 "Schibsted Grotesk", system-ui, sans-serif; }
+.page { max-width: 6.9in; margin: 0 auto; }
+b, strong { font-weight: 600; }
+
+/* cover: the one loud moment */
+.cover { background: #0B0B0B; color: #F6F6F4; padding: 32px; margin-bottom: 24px; }
+.brand { display: flex; align-items: center; gap: 12px; margin-bottom: 64px; }
+.brand img { height: 20px; width: auto; }
+.brand span, .label { font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
+.cover .label { color: #B58A38; }
+.cover h1 { font-family: "Druk Wide", sans-serif; font-weight: 700; text-transform: uppercase; font-size: 38px; line-height: 1.05; margin: 12px 0 16px; }
+.dot { color: #B58A38; }
+.lede { font-size: 14px; line-height: 1.55; color: #B6B2AB; margin: 0; max-width: 30em; }
+.lede b { color: #F6F6F4; font-weight: 500; }
+
+/* facts strip */
+.meta { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid rgba(182,178,171,.7); padding-bottom: 16px; margin-bottom: 8px; }
+.meta div { font-size: 13px; line-height: 1.5; }
+.meta b { display: block; font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: rgba(11,11,11,.5); margin-bottom: 4px; }
+
+/* editorial sections */
+.sec { display: grid; grid-template-columns: 1.6in 1fr; gap: 24px; padding: 24px 0; border-top: 1px solid rgba(182,178,171,.7); }
+
+.sec-h .n { display: block; font-size: 11px; font-weight: 600; letter-spacing: .16em; color: #B58A38; margin-bottom: 4px; }
+.sec-h h2 { font-size: 14px; font-weight: 600; line-height: 1.35; margin: 0; }
+.sec-b > :last-child { margin-bottom: 0; }
+h3 { font-size: 13px; font-weight: 600; margin: 0 0 4px; }
+p { margin: 0 0 12px; }
+ul, ol { margin: 0 0 12px; padding-left: 16px; }
+li { margin-bottom: 4px; padding-left: 4px; }
+li::marker { color: rgba(11,11,11,.35); }
+ol { list-style: none; counter-reset: n; padding-left: 0; }
+ol > li { counter-increment: n; position: relative; padding-left: 24px; }
+ol > li::before { content: counter(n); position: absolute; left: 0; top: 0; font-size: 12px; font-weight: 600; color: #B58A38; }
+
+/* line items inside a section */
+.card { padding: 12px 0; border-top: 1px solid rgba(182,178,171,.45); }
+.sec-b > .card:first-child { padding-top: 0; border-top: 0; }
+.card li, .card p { break-inside: avoid; }
+.card .tag { float: right; font-size: 12px; color: rgba(11,11,11,.5); margin-left: 16px; }
+.card p:last-child, .card ul:last-child { margin-bottom: 0; }
+.small { font-size: 12px; color: rgba(11,11,11,.6); }
+
+.callout { background: rgba(182,178,171,.2); padding: 12px 16px; margin: 16px 0 0; font-size: 13px; break-inside: avoid; }
+
+table { break-inside: avoid; width: 100%; border-collapse: collapse; margin: 0 0 12px; font-size: 13px; }
+th { white-space: nowrap; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: rgba(11,11,11,.5); border-bottom: 1px solid #0B0B0B; padding: 0 12px 8px 0; }
+td { border-bottom: 1px solid rgba(182,178,171,.45); padding: 8px 12px 8px 0; vertical-align: top; }
+td.num, th.num { text-align: right; white-space: nowrap; padding-right: 0; }
+tr.total td { font-weight: 600; border-bottom: 1px solid #0B0B0B; }
+
+/* phase strip */
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 8px; }
+.steps div { padding: 12px; font-size: 12px; line-height: 1.5; border-top: 2px solid rgba(182,178,171,.9); background: rgba(182,178,171,.12); }
+.steps div.now { border-top-color: #B58A38; background: #0B0B0B; color: #F6F6F4; }
+.steps div.now i { color: #B58A38; font-style: normal; font-weight: 600; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
+.steps b { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+
+/* signatures */
+.sig { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 16px; break-inside: avoid; }
+.sig div { font-size: 13px; line-height: 1.5; }
+.sig .line { margin-top: 48px; border-top: 1px solid #0B0B0B; padding-top: 4px; color: rgba(11,11,11,.5); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
+
+.footer { display: flex; align-items: center; gap: 12px; margin-top: 32px; padding-top: 12px; border-top: 1px solid rgba(182,178,171,.7); font-size: 11px; color: rgba(11,11,11,.5); }
+.footer img { height: 14px; width: auto; }
+h2, h3, .sec-h { break-after: avoid; }
+
+/* designed pagination: one fixed sheet per printed page, content planned per sheet */
+.sheet { height: 9.45in; display: flex; flex-direction: column; break-after: page; page-break-after: always; overflow: hidden; }
+.sheet:last-child { break-after: auto; page-break-after: auto; }
+.sheet-body { flex: 1; }
+.sheet-body > .sec:first-child { border-top: 0; padding-top: 0; }
+.first .cover { min-height: 3.9in; display: flex; flex-direction: column; }
+.first .cover .brand { margin-bottom: auto; }
+.first .sheet-body > .sec:first-child { border-top: 0; }
+.cover + .sec, .meta + .sec, .small + .sec { border-top: 0; }
+.steps + .small { margin-bottom: 24px; }
+.cont { font-weight: 400; color: rgba(11,11,11,.45); }
+.sec-h h2 .cont { display: block; font-size: 12px; }
+.pfoot { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid rgba(182,178,171,.7); font-size: 11px; color: rgba(11,11,11,.5); }
+.pfoot img { height: 14px; width: auto; }
+.pfoot .pn { margin-left: auto; font-weight: 600; letter-spacing: .16em; color: #0B0B0B; }
+.sec.signoff .sig { margin-top: 24px; }
+.callout.end { background: #0B0B0B; color: #F6F6F4; padding: 24px; margin-top: 24px; font-size: 14px; line-height: 1.6; }
+.callout.end b { color: #B58A38; }
+
+
+/* ---------- web (screen only) ---------- */
+@media screen {
+  html { background: #E9E6DF; }
+  body { padding: 0 16px 48px; }
+  .page { max-width: 8.5in; }
+  .sheet { height: auto; min-height: 0; overflow: visible; background: #F6F6F4; padding: 0.75in 0.8in 0.5in;
+           margin: 0 auto 24px; border: 1px solid rgba(182,178,171,.7); }
+  .sheet-body { flex: none; }
+  .pfoot { margin-top: 32px; }
+  .topbar { max-width: 8.5in; margin: 0 auto; display: flex; align-items: center; gap: 16px; padding: 16px 0; font-size: 12px; }
+  .topbar a { color: #0B0B0B; text-decoration: none; }
+  .topbar .home { display: flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; font-size: 11px; }
+  .topbar .home img { height: 18px; width: auto; }
+  .topbar .sp { flex: 1; }
+  .topbar .lnk { border-bottom: 1px solid rgba(11,11,11,.3); }
+  .topbar .btn-dl { background: #0B0B0B; color: #F6F6F4; padding: 8px 16px; font-weight: 600; }
+}
+.cover a.brand { color: inherit; text-decoration: none; }
+.cover .site { margin-top: 16px; font-size: 12px; color: #B6B2AB; }
+.cover .site a { color: #B58A38; text-decoration: none; border-bottom: 1px solid rgba(181,138,56,.5); }
+.pfoot a { color: inherit; }
+@media screen and (max-width: 760px) {
+  body { padding: 0 8px 32px; }
+  .topbar { flex-wrap: wrap; gap: 8px 16px; }
+  .topbar .sp { display: none; }
+  .sheet { padding: 24px 20px; }
+  .first .cover { min-height: 0; }
+  .cover { padding: 24px; }
+  .brand { margin-bottom: 32px; }
+  .cover h1 { font-size: 28px; }
+  .meta { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .steps { grid-template-columns: 1fr 1fr; }
+  .sec { grid-template-columns: 1fr; gap: 8px; }
+  .card .tag { float: none; display: block; margin: 0 0 4px; }
+  .siggrid, .signbar .row2 { grid-template-columns: 1fr !important; }
+  .pfoot span:not(.pn) { display: none; }
+}
+
+/* ---------- signing (matches the other AOM agreements) ---------- */
+.siggrid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 16px; }
+.sigcol .for { font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: rgba(11,11,11,.5); }
+.sigcol .co { font-weight: 600; font-size: 13px; margin-top: 4px; }
+.sigline { margin-top: 24px; height: 52px; border-bottom: 1px solid #0B0B0B; position: relative; display: flex; align-items: flex-end; }
+.sigline .rendered { font-family: 'Alex Brush', cursive; font-size: 30px; line-height: 1; white-space: nowrap; overflow: hidden; color: #141B4D; padding-bottom: 4px; }
+.sigline .ink { height: 50px; width: auto; margin-bottom: -4px; mix-blend-mode: multiply; }
+.sigline .draw { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sigcap { display: flex; justify-content: space-between; font-size: 11px; color: rgba(11,11,11,.6); margin-top: 4px; }
+.field { margin-top: 12px; }
+.field label { font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: rgba(11,11,11,.5); display: block; margin-bottom: 4px; }
+.field .val { font-size: 13px; font-weight: 600; }
+.signbar { margin: 16px 0 24px; padding: 16px; background: #0B0B0B; color: #F6F6F4; }
+.signbar h3 { font-size: 14px; font-weight: 600; margin: 0; }
+.signbar p { font-size: 12px; color: #B6B2AB; margin: 4px 0 0; }
+.signbar .tabs { display: flex; gap: 8px; margin-top: 12px; }
+.signbar .tab { font-family: inherit; font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; padding: 8px 12px; background: transparent; color: #B6B2AB; border: 1px solid #3a3a3a; cursor: pointer; }
+.signbar .tab.on { background: #B58A38; color: #0B0B0B; border-color: #B58A38; }
+.signbar .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.signbar label { font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: #B6B2AB; display: block; margin-bottom: 4px; }
+.signbar input { width: 100%; font-family: inherit; font-size: 13px; padding: 8px 12px; border: 1px solid #3a3a3a; background: #1a1a1a; color: #F6F6F4; }
+.signbar input:focus { outline: none; border-color: #B58A38; }
+.previewline { margin-top: 12px; height: 72px; border-bottom: 1px solid #3a3a3a; position: relative; display: flex; align-items: flex-end; }
+.previewline .rendered { font-family: 'Alex Brush', cursive; font-size: 44px; color: #B58A38; }
+.previewline canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+.signbar .acts { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+.sbtn { font-family: inherit; font-size: 12px; font-weight: 600; padding: 12px 16px; cursor: pointer; border: 1px solid transparent; }
+.sbtn.primary { background: #B58A38; color: #0B0B0B; }
+.sbtn.ghost { background: transparent; color: #F6F6F4; border-color: #3a3a3a; }
+.sbtn:disabled { opacity: .45; cursor: not-allowed; }
+.doneflag { display: none; margin-top: 12px; font-size: 12px; color: #9BD4A4; font-weight: 600; }
+@media print { .no-print, .signbar, .topbar { display: none !important; } }
+
+</style>
+</head>
+<body>
+<nav class="topbar no-print"><a class="home" href="https://www.aheadofmarket.com" target="_blank" rel="noopener"><img src="amg/monogram-ink.png" alt="">Ahead of Market</a><span class="sp"></span><a class="lnk" href="/agreements/amg-phase-1">Open the Phase 1 agreement</a><a class="btn-dl" href="amg/AMG-full-picture.pdf" download>Download PDF</a></nav>
+<div class="page">
+
+<div class="sheet first">
+<div class="sheet-body">
+<header class="cover">
+  <a class="brand" href="https://www.aheadofmarket.com" target="_blank" rel="noopener" title="Visit aheadofmarket.com"><img src="amg/monogram-ivory.png" alt=""><span>Ahead of Market</span></a>
+  <div class="label">Anchor Mill Group × AOM In-House · The Full Picture</div>
+  <h1>AMG One App<span class="dot">.</span></h1>
+  <p class="lede"><b>One app. One login. One look.</b> What we're coming to do, how it unfolds, and roughly what it costs from today until launch.</p>
+  <div class="site">View our work at <a href="https://www.aheadofmarket.com" target="_blank" rel="noopener">aheadofmarket.com</a></div>
+</header>
+
+<div class="steps">
+  <div class="now"><b>1 · Clean Up</b>About 5 weeks<br>$15,000 fixed<br><i>Signing now</i></div>
+  <div><b>2 · Build It</b>About 8 weeks<br>Est. $30–50k</div>
+  <div><b>3 · Launch</b>About 4 weeks<br>Est. $10–20k</div>
+  <div><b>4 · Care</b>Ongoing<br>$2.5–5k / month</div>
+</div>
+<p class="small">About 4 to 5 months from signing to the first real family using the app.</p>
+
+<section class="sec">
+  <div class="sec-h"><span class="n">01</span><h2>Where AMG is today</h2></div>
+  <div class="sec-b">
+<p>AMG's software has two front doors:</p>
+<ul>
+  <li><b>The Portal</b> is a large back office for AMG staff, with around 60 screens. It covers client records, programs, tasks, documents, approvals, and reports. It works in places, but it is cluttered, full of test entries, and hasn't been maintained since spring.</li>
+  <li><b>The OS</b> is newer and closer to what AMG actually sells. It gives each family a safety score, watches world news for threats, plans trips and briefings, and uses AI to draft updates that a person approves. It looks premium, but it raises far too many false alarms to put in front of a family today.</li>
+</ul>
+<p>The two don't share information. Staff juggle two logins, and families would see two different products.</p>
+  </div>
+</section>
+</div>
+<div class="pfoot"><img src="amg/monogram-ink.png" alt=""><span>AMG One App · The Full Picture · Draft v1 · September 23, 2026 · <a href="/agreements/amg-phase-1">Open the Phase 1 agreement</a></span><span class="pn">01 / 05</span></div>
+</div>
+<div class="sheet">
+<div class="sheet-body">
+<section class="sec">
+  <div class="sec-h"><span class="n">02</span><h2>Where we're going</h2></div>
+  <div class="sec-b">
+<p><b>One app. One login. One look.</b> The screens each person sees depend on who they are.</p>
+<table>
+  <tr><th>Who logs in</th><th>What they see first</th></tr>
+  <tr><td><b>The family</b></td><td>Their safety score, the three things that matter this quarter, what's coming up on their calendar, and who at AMG is handling each item. Nothing technical and no noise. It answers "what should I worry about, and who's on it?"</td></tr>
+  <tr><td><b>The AMG team</b></td><td>Every family at a glance, what needs attention today, upcoming briefings, prospects in the pipeline, and drafts waiting for approval.</td></tr>
+  <tr><td><b>Outside partners</b></td><td>Only their piece: the assignments they've been given, what's due, and a place to hand in their work. They never see the rest of the family's file.</td></tr>
+</table>
+  </div>
+</section>
+<section class="sec">
+  <div class="sec-h"><span class="n">03</span><h2>The four phases</h2></div>
+  <div class="sec-b">
+<div class="card"><span class="tag">About 5 weeks · $15,000 fixed</span><h3>Phase 1: Clean Up and Design (this agreement)</h3>
+<ul>
+  <li>We take the keys to both apps and all their accounts.</li>
+  <li>We clear the test clutter, fix the broken screens, and stop the dashboard from showing false red.</li>
+  <li>The false alarms get quiet, so only news about the family is marked urgent.</li>
+  <li>Family documents move to permanent, encrypted storage.</li>
+  <li>We walk every screen with your team and decide what to keep, cut, or combine.</li>
+  <li>We deliver a clickable design of the One App.</li>
+  <li>We deliver a fixed price for Phase 2.</li>
+</ul>
+<p class="small">What you walk away with: two working apps that look clean and honest, plus the blueprint for the one app.</p></div>
+  </div>
+</section>
+</div>
+<div class="pfoot"><img src="amg/monogram-ink.png" alt=""><span>AMG One App · The Full Picture · Draft v1 · September 23, 2026 · <a href="/agreements/amg-phase-1">Open the Phase 1 agreement</a></span><span class="pn">02 / 05</span></div>
+</div>
+<div class="sheet">
+<div class="sheet-body">
+<section class="sec">
+  <div class="sec-h"><span class="n">03</span><h2>The four phases <span class="cont">continued</span></h2></div>
+  <div class="sec-b">
+<div class="card"><span class="tag">About 8 weeks · est. $30,000–$50,000</span><h3>Phase 2: Build the One App</h3>
+<ul>
+  <li>One web address and one login for families, staff, and partners.</li>
+  <li>One consistent look, built from the design approved in Phase 1.</li>
+  <li>The family's view built first, because that is what AMG sells.</li>
+  <li>The best parts of the old Portal brought across: partner management, assessments, documents, approvals, and compliance checks.</li>
+  <li>Screens nobody uses are retired.</li>
+  <li>A weekly show-and-tell, so you see each screen before it's finished.</li>
+</ul>
+<p class="small">The price becomes fixed at the end of Phase 1. The range depends on how much of the old Portal AMG wants to keep.</p></div>
+<div class="card"><span class="tag">About 4 weeks · est. $10,000–$20,000</span><h3>Phase 3: Launch with a Real Family</h3>
+<ul>
+  <li>Sample data is removed and real AMG staff are set up.</li>
+  <li>Every account gets two-step sign-in. This matters for this kind of client.</li>
+  <li>An outside security check, backups, and an alert to us if the app ever goes down.</li>
+  <li>AMG's own web address. No more "railway.app" links.</li>
+  <li>The first family is onboarded with AMG and AOM in the room.</li>
+</ul>
+<p class="small">What you walk away with: a live app a real family logs into and trusts.</p></div>
+<div class="card"><span class="tag">Ongoing · $2,500–$5,000 / month</span><h3>Phase 4: Care Plan</h3>
+<ul>
+  <li>We keep it running: hosting, updates, the news feeds, and the AI writer.</li>
+  <li>We watch for problems and fix them.</li>
+  <li>A monthly block of hours for improvements and new ideas.</li>
+  <li>A monthly one-page update in plain language.</li>
+</ul>
+<p class="small">The tier depends on how many families are on the app and how much new work AMG wants each month.</p></div>
+  </div>
+</section>
+</div>
+<div class="pfoot"><img src="amg/monogram-ink.png" alt=""><span>AMG One App · The Full Picture · Draft v1 · September 23, 2026 · <a href="/agreements/amg-phase-1">Open the Phase 1 agreement</a></span><span class="pn">03 / 05</span></div>
+</div>
+<div class="sheet">
+<div class="sheet-body">
+<section class="sec">
+  <div class="sec-h"><span class="n">04</span><h2>Investment</h2></div>
+  <div class="sec-b">
+<table>
+  <tr><th>Phase</th><th>Length</th><th class="num">Investment</th></tr>
+  <tr><td>1 · Clean Up and Design</td><td>About 5 weeks</td><td class="num">$15,000 fixed</td></tr>
+  <tr><td>2 · Build the One App</td><td>About 8 weeks</td><td class="num">$30,000–$50,000</td></tr>
+  <tr><td>3 · Launch</td><td>About 4 weeks</td><td class="num">$10,000–$20,000</td></tr>
+  <tr class="total"><td>To launch</td><td>About 4–5 months</td><td class="num">$55,000–$85,000</td></tr>
+  <tr><td>4 · Care Plan</td><td>Monthly, after launch</td><td class="num">$2,500–$5,000 / mo</td></tr>
+</table>
+<p class="small">Only Phase 1 is fixed today. Phases 2 and 3 are honest ranges. They become firm prices once we've looked inside the software during Phase 1. You approve each phase before it starts.</p>
+
+<h3>Running costs (paid by AMG to outside services)</h3>
+<p>Hosting, the AI writing service, text messaging, breach monitoring, and file storage together run roughly $150 to $550 a month at today's size. These costs grow slowly as families are added. We'll show you the real numbers every month.</p>
+  </div>
+</section>
+<section class="sec">
+  <div class="sec-h"><span class="n">05</span><h2>How we work</h2></div>
+  <div class="sec-b">
+<ul>
+  <li><b>You see everything before it ships.</b> We hold a weekly 30-minute show-and-tell of the actual screens. We don't send status reports full of jargon.</li>
+  <li><b>One point person on each side.</b> Patrik for AOM. AMG names theirs.</li>
+  <li><b>Plain language, always.</b> We describe the work in terms of what's on screen and what the family experiences.</li>
+  <li><b>No surprises on price.</b> Anything outside the agreed scope is written up and priced before we touch it.</li>
+</ul>
+  </div>
+</section>
+</div>
+<div class="pfoot"><img src="amg/monogram-ink.png" alt=""><span>AMG One App · The Full Picture · Draft v1 · September 23, 2026 · <a href="/agreements/amg-phase-1">Open the Phase 1 agreement</a></span><span class="pn">04 / 05</span></div>
+</div>
+<div class="sheet">
+<div class="sheet-body">
+<section class="sec">
+  <div class="sec-h"><span class="n">06</span><h2>Your decisions</h2></div>
+  <div class="sec-b">
+<ol>
+  <li><b>End of Phase 1:</b> approve the One App design and the fixed Phase 2 price.</li>
+  <li><b>During Phase 2:</b> which old Portal features come across and which are retired.</li>
+  <li><b>Before Phase 3:</b> which family goes first, and the web address the app lives on.</li>
+  <li><b>After launch:</b> the Care Plan tier.</li>
+</ol>
+
+  </div>
+</section>
+<section class="sec">
+  <div class="sec-h"><span class="n">07</span><h2>Next steps</h2></div>
+  <div class="sec-b">
+<ol>
+  <li><b>Review the Phase 1 agreement</b> with your team. It's the companion to this document.</li>
+  <li><b>Sign and send the deposit.</b> Work starts when it arrives.</li>
+  <li><b>Share access</b> using the short checklist we send over. Kickoff follows within 3 business days.</li>
+</ol>
+  </div>
+</section>
+<div class="callout end"><b>The short version:</b> AMG has good bones in a messy house. Phase 1 cleans the house and draws the blueprint. Phase 2 builds the one simple app. Phase 3 puts a real family in it. Phase 4 keeps it running.</div>
+</div>
+<div class="pfoot"><img src="amg/monogram-ink.png" alt=""><span>AMG One App · The Full Picture · Draft v1 · September 23, 2026 · <a href="/agreements/amg-phase-1">Open the Phase 1 agreement</a></span><span class="pn">05 / 05</span></div>
+</div>
+
+</div>
+
+</body>
+</html>
