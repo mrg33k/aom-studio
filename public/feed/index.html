@@ -88,6 +88,31 @@ h2:after{content:"";flex:1;height:1px;background:var(--line)}
 .chip.on{border-color:var(--gold);color:var(--gold)}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(96px);background:var(--ivory);color:var(--ink);font-weight:600;font-size:14px;padding:12px 16px;border-radius:999px;transition:transform .25s;z-index:20}
 .toast.on{transform:translateX(-50%) translateY(0)}
+.applied{background:var(--green-bg);color:var(--green);border-radius:16px;padding:12px 16px;font-size:14px;margin-top:16px}
+.read{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;margin-top:24px}
+.read h3{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+.read .big{font-family:var(--serif);font-size:24px;line-height:1.35;color:var(--ivory)}
+.read ul{margin-top:16px;padding:0}
+.read li{list-style:none;color:var(--soft);padding:8px 0 8px 24px;position:relative;border-top:1px solid var(--line)}
+.read li:before{content:"";position:absolute;left:4px;top:16px;width:8px;height:8px;border-radius:50%;background:var(--gold)}
+.idea{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--gold-line);border-radius:16px;padding:24px;margin-bottom:12px;display:grid;grid-template-columns:40px 1fr;gap:16px}
+.idea .num{font-family:var(--serif);font-size:32px;line-height:1;color:var(--gold)}
+.idea h3{font-family:var(--serif);font-weight:600;font-size:24px;line-height:1.2;margin:4px 0 12px;padding-right:48px}
+.kv{display:grid;grid-template-columns:72px 1fr;gap:4px 12px;font-size:14px;margin-top:8px}
+.kv b{color:var(--gold);font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding-top:2px}
+.kv span{color:var(--soft)}
+.size{display:inline-block;margin-top:16px;background:var(--gold);color:var(--ink);font-weight:600;font-size:14px;padding:4px 12px;border-radius:999px}
+.take{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:8px}
+.take .name{font-weight:600}
+.take .state{color:var(--mute);font-size:14px;margin:4px 48px 8px 0}
+.take .think{font-family:var(--serif);font-size:16px}
+.take .do{margin-top:8px;font-size:14px;color:var(--gold)}
+.pb{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+.pill{font-size:12px;font-weight:600;padding:4px 8px;border-radius:999px;background:var(--line);color:var(--soft);white-space:nowrap}
+.written pre{white-space:pre-wrap;font-family:inherit;font-size:14px;color:var(--soft);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:8px}
+.fb{background:var(--card);border:1px solid var(--gold-line);border-radius:16px;padding:24px;margin-top:48px}
+.fb h3{font-family:var(--serif);font-size:24px;font-weight:600}
+.fb textarea{width:100%;min-height:120px;margin-top:12px;background:var(--bg);color:var(--ivory);border:1px solid var(--line);border-radius:8px;padding:12px;font:inherit;font-size:16px;resize:vertical}
 .lock{max-width:420px;margin:24vh auto 0;text-align:center}
 .lock h1{font-size:32px}
 @media(max-width:520px){h1{font-size:32px}.stat b{font-size:24px}.money{padding:16px}.money h3{font-size:24px}}
@@ -141,16 +166,37 @@ h2:after{content:"";flex:1;height:1px;background:var(--line)}
 
   function render() {
     const r = state.report;
-    if (!r) { app.innerHTML = header() + `<p class="empty" style="margin-top:32px">No report yet for this day.</p>`; wire(); return; }
-    [...(r.money||[]), ...(r.left||[]), ...(r.moves||[]), ...(r.alerts||[]), ...((r.prompts||{}).today||[]), r.system, r.idea].forEach(x => { if (x && x.id) byId[x.id] = x; });
-    const money = live(r.money), left = live(r.left), moves = live(r.moves), alerts = live(r.alerts);
-    const system = r.system && !state.cleared[r.system.id] ? r.system : null;
-    const idea = r.idea && !state.cleared[r.idea.id] ? r.idea : null;
+    if (!r) { app.innerHTML = header() + `<p class="empty" style="margin-top:32px">No report yet for this day.</p>` + feedbackBox(); wire(); return; }
     const pr = r.prompts || {};
+    [...(r.money||[]), ...(r.left||[]), ...(r.moves||[]), ...(r.alerts||[]), ...(r.ideas||[]), ...(r.take||[]), ...(r.playbook||[]), ...(pr.today||[]), ...(pr.written||[]), r.system, r.idea].forEach(x => { if (x && x.id) byId[x.id] = x; });
+    const money = live(r.money), left = live(r.left), moves = live(r.moves), alerts = live(r.alerts);
+    const ideas = live(r.ideas), take = live(r.take), playbook = live(r.playbook), written = live(pr.written);
+    const system = r.system && !state.cleared[r.system.id] ? r.system : null;
+    const oldIdea = r.idea && !state.cleared[r.idea.id] ? r.idea : null;
     let h = header();
+    if (r.feedback_applied) h += `<div class="applied">${esc(r.feedback_applied)}</div>`;
+    if (r.read) h += `<div class="read"><h3>${esc(r.read.title || 'The big picture')}</h3><p class="big">${esc(r.read.body)}</p>${(r.read.unseen||[]).length ? `<ul>${r.read.unseen.map(u => `<li>${esc(u)}</li>`).join('')}</ul>` : ''}</div>`;
     h += `<div class="stats">${(r.stats||[]).map(s => `<div class="stat"><b>${esc(s.n)}</b><span>${esc(s.label)}</span></div>`).join('')}</div>`;
 
-    h += `<h2>Money you're not seeing</h2>`;
+    if ((r.ideas||[]).length) {
+      h += `<h2>Ideas you might not see</h2>`;
+      h += ideas.length ? ideas.map(x => `<div class="idea item" data-item="${esc(x.id)}" style="position:relative">${ctl(x.id, x.title)}
+        <div class="num">${(r.ideas.indexOf(x) + 1)}</div><div><div class="tag">${esc(x.lane || '')}</div><h3>${esc(x.title)}</h3>
+        <div class="kv"><b>Why</b><span>${esc(x.why)}</span><b>First step</b><span>${esc(x.how)}</span></div>
+        ${x.size ? `<span class="size">${esc(x.size)}</span>` : ''}</div></div>`).join('') : `<p class="empty">You've cleared every idea.</p>`;
+    }
+
+    if ((r.take||[]).length) {
+      h += `<h2>My take on what's in flight</h2>`;
+      h += take.map(x => `<div class="take item" data-item="${esc(x.id)}" style="position:relative">${ctl(x.id, x.name)}<div class="name">${esc(x.name)}</div><div class="state">${esc(x.state)}</div><p class="think">${esc(x.think)}</p>${x.do ? `<p class="do">${esc(x.do)}</p>` : ''}</div>`).join('') || `<p class="empty">Nothing left here.</p>`;
+    }
+
+    if ((r.playbook||[]).length) {
+      h += `<h2>Add to the client playbook</h2>`;
+      h += playbook.map(x => `<div class="card item pad-r" data-item="${esc(x.id)}" style="position:relative">${ctl(x.id, x.client + ': ' + x.add)}<div class="pb"><span class="pill">${esc(x.client)}</span><div><p>${esc(x.add)}</p><p class="mute">${esc(x.why)}${x.effort ? ' · ' + esc(x.effort) + ' effort' : ''}</p></div></div></div>`).join('') || `<p class="empty">All added.</p>`;
+    }
+
+    h += `<h2>Money in your inbox</h2>`;
     h += money.length ? money.map(x => `<div class="money item" data-item="${esc(x.id)}">${ctl(x.id, x.title)}
       <div class="tag">${esc(x.tag)}</div><h3>${esc(x.title)}</h3><p>${esc(x.body)}</p>
       ${x.action ? `<button class="act" data-open="${esc(x.id)}">${esc(x.action.label || 'Open')}</button>` : ''}</div>`).join('') : `<p class="empty">All handled.</p>`;
@@ -162,6 +208,14 @@ h2:after{content:"";flex:1;height:1px;background:var(--line)}
     h += `<h2>Today's moves</h2>`;
     h += moves.length ? `<ol class="moves">${moves.map(x => `<li class="item" data-item="${esc(x.id)}"><div>${esc(x.title)}<small>${esc(x.sub)}</small></div>${ctl(x.id, x.title)}</li>`).join('')}</ol>` : `<p class="empty">All done.</p>`;
     if (system) h += `<div class="card item pad-r" data-item="${esc(system.id)}" style="margin-top:16px;position:relative">${ctl(system.id, system.body)}<p><b>${esc(system.title || 'System to build')}:</b> ${esc(system.body)}</p>${system.sub ? `<p class="mute">${esc(system.sub)}</p>` : ''}</div>`;
+    if (oldIdea) h += `<h2>Idea just for you</h2><div class="card item pad-r" data-item="${esc(oldIdea.id)}" style="position:relative">${ctl(oldIdea.id, oldIdea.body)}<p>${esc(oldIdea.body)}</p></div>`;
+
+    h += `<h2>Prompts</h2>`;
+    if (written.length) h += written.map(p => `<div class="card item pad-r written" data-item="${esc(p.id)}" style="position:relative">${ctl(p.id, p.title)}<p><b>${esc(p.title)}</b></p><pre>${esc(p.text)}</pre><button class="act" data-copy="${esc(p.id)}">Copy prompt</button></div>`).join('');
+    const today = live(pr.today);
+    if (today.length) h += today.map(p => `<div class="card item pad-r" data-item="${esc(p.id)}" style="position:relative">${ctl(p.id, p.text)}<div class="prompt"><p>${esc(p.text)}</p><p class="mute">${esc(p.who || '')} ${esc(p.engagement || '')} ${p.url ? `· <a href="${esc(p.url)}" target="_blank" rel="noopener">source</a>` : ''}</p></div></div>`).join('');
+    if (pr.note) h += `<div class="card"><p class="mute">${esc(pr.note)}</p></div>`;
+    if ((pr.leaderboard || []).length) h += `<div class="card"><p><b>This month's leaderboard</b></p>${pr.leaderboard.slice(0, 5).map((p, i) => `<p class="mute">${i + 1}. ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener" style="color:var(--gold)">${esc(p.text)}</a>` : esc(p.text)}</p>`).join('')}</div>`;
 
     if (r.corner) {
       const c = r.corner;
@@ -169,21 +223,23 @@ h2:after{content:"";flex:1;height:1px;background:var(--line)}
         ${typeof c.pct === 'number' ? `<div class="bar"><i style="width:${Math.max(0, Math.min(100, c.pct))}%"></i></div>` : ''}
         <p class="mute">${esc(c.body)}</p><p><b>Next step:</b> ${esc(c.next)}</p></div>`;
     }
-    if (idea) h += `<h2>Idea just for you</h2><div class="card item pad-r" data-item="${esc(idea.id)}" style="position:relative">${ctl(idea.id, idea.body)}<p>${esc(idea.body)}</p></div>`;
-
-    h += `<h2>Prompts people shared</h2>`;
-    const today = live(pr.today);
-    if (today.length) h += today.map(p => `<div class="card item pad-r" data-item="${esc(p.id)}" style="position:relative">${ctl(p.id, p.text)}<div class="prompt"><p>${esc(p.text)}</p><p class="mute">${esc(p.who || '')} ${esc(p.engagement || '')} ${p.url ? `· <a href="${esc(p.url)}" target="_blank" rel="noopener">source</a>` : ''}</p></div></div>`).join('');
-    else h += `<div class="card"><p class="mute">${esc(pr.note || 'Nothing worth sharing today.')}</p></div>`;
-    if ((pr.leaderboard || []).length) h += `<div class="card"><p><b>This month's leaderboard</b></p>${pr.leaderboard.slice(0, 5).map((p, i) => `<p class="mute">${i + 1}. ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener" style="color:var(--gold)">${esc(p.text)}</a>` : esc(p.text)}</p>`).join('')}</div>`;
 
     if (alerts.length) h += `<h2>Heads up</h2><div class="card">${alerts.map(a => `<div class="alert item" data-item="${esc(a.id)}"><span class="dot ${a.level === 'red' ? 'red' : ''}"></span><div><b>${esc(a.title)}</b>${a.sub ? `<div class="mute">${esc(a.sub)}</div>` : ''}</div>${ctl(a.id, a.title)}</div>`).join('')}</div>`;
+
+    h += feedbackBox();
 
     const clearedHere = Object.entries(state.cleared).filter(([id]) => byId[id]);
     if (clearedHere.length) h += `<div class="cleared"><h2>Cleared (${clearedHere.length})</h2>${clearedHere.map(([id, c]) => `<div class="row"><div><div class="who">${esc(c.label || id)}</div><div class="what">${c.status === 'done' ? 'Done' : 'Dismissed'}${c.note ? ' · ' + esc(c.note) : ''}</div></div><span></span><button class="undo" data-undo="${esc(id)}">Undo</button></div>`).join('')}</div>`;
 
     app.innerHTML = h;
     wire();
+  }
+
+  function feedbackBox() {
+    const gen = state.generating;
+    return `<div class="fb"><h3>Tell me what to change</h3><p class="mute">Anything: what to cut, what to go deeper on, ideas you want me to chase. Every note shapes every report after this one.${state.feedback_count ? ' ' + state.feedback_count + ' notes so far.' : ''}</p>
+      <textarea id="fb-text" placeholder="e.g. More on clipping. Skip the Corner section. Give me ideas for Ambition."></textarea>
+      <div class="btns"><button class="btn primary" id="fb-go" ${gen ? 'disabled' : ''}>${gen ? 'Making a new one' : 'Send and remake report'}</button><button class="btn plain" id="fb-save">Just send</button></div></div>`;
   }
 
   function header() {
@@ -256,6 +312,20 @@ h2:after{content:"";flex:1;height:1px;background:var(--line)}
     app.querySelectorAll('[data-do]').forEach(b => b.onclick = () => b.dataset.do === 'dismiss' ? askDismiss(b.dataset.id, b.dataset.label) : clearItem('done', b.dataset.id, b.dataset.label, ''));
     app.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openAction(b.dataset.open));
     app.querySelectorAll('[data-undo]').forEach(b => b.onclick = async () => { try { await act({ type: 'undo', id: b.dataset.undo }); delete state.cleared[b.dataset.undo]; render(); toast('Back on the list.'); } catch (e) { toast("Didn't undo."); } });
+    app.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(byId[b.dataset.copy].text); toast('Copied.'); } catch (e) { toast("Couldn't copy."); } });
+    const sendFb = async (regenerate) => {
+      const ta = document.getElementById('fb-text'); const text = (ta.value || '').trim();
+      if (!text) { toast('Type a note first.'); return; }
+      try {
+        const r = await act({ type: 'feedback', text, regenerate, report: state.day });
+        ta.value = ''; state.feedback_count = (state.feedback_count || 0) + 1;
+        if (r.message === 'generating' || r.message === 'already generating') { state.generating = { started_at: new Date().toISOString() }; render(); setTimeout(() => load(), 30000); toast('Got it. Making a new one now.'); }
+        else if (regenerate) toast('Got it. The next report will use it.');
+        else toast('Got it. Saved for the next report.');
+      } catch (e) { toast("Didn't send. Try again."); }
+    };
+    const fg = document.getElementById('fb-go'); if (fg) fg.onclick = () => sendFb(true);
+    const fs = document.getElementById('fb-save'); if (fs) fs.onclick = () => sendFb(false);
     const days = document.getElementById('days'); if (days) days.onchange = () => load(days.value);
     const nb = document.getElementById('new');
     if (nb) nb.onclick = async () => {
