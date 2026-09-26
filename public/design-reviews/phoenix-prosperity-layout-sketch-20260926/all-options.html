@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oak Street clipping layouts | Eight options</title>
+  <style>
+    @font-face { font-family: Nunito; src: url("NunitoSans-Bold.ttf"); font-weight: 700; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #101a13; color: #fbf5e6; font-family: Nunito, sans-serif; }
+    main { width: min(100%, 1120px); margin: 0 auto; padding: 24px 14px 52px; }
+    h1 { font-size: 23px; line-height: 1.25; margin: 0 0 7px; }
+    h2 { font-size: 20px; margin: 28px 0 10px; }
+    p { margin: 0; color: #b9c6b6; font-size: 14px; line-height: 1.45; }
+    .tabs { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 12px; }
+    .tabs button { flex: none; border: 1px solid #d9be8f; border-radius: 24px; background: #213f25; color: #fbf5e6; font: 700 14px Nunito, sans-serif; padding: 9px 14px; cursor: pointer; }
+    .cards { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }
+    figure { margin: 0; min-width: 0; }
+    figure a { display: block; }
+    figure img { display: block; width: 100%; height: auto; box-shadow: 0 10px 34px #0008; }
+    figcaption { padding: 11px 2px 6px; color: #c8d2c5; font-size: 14px; line-height: 1.3; }
+    figcaption strong { display: block; color: #fbf5e6; font-size: 18px; }
+    .credit { margin-top: 24px; color: #aab9a8; font-size: 12px; }
+    .credit a { color: #d9be8f; }
+    @media (max-width: 700px) {
+      .cards { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+      figure { flex: 0 0 100%; scroll-snap-align: start; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Clipping layout options</h1>
+    <p>Six main layouts and two end cards using the Oak Street water clip. On your phone, tap a number or swipe to compare.</p>
+    <h2>Main layouts</h2>
+    <div class="tabs" aria-label="Main layout choices">
+      <button onclick="show('main',0)">Main 1</button><button onclick="show('main',1)">Main 2</button><button onclick="show('main',2)">Main 3</button><button onclick="show('main',3)">Main 4</button><button onclick="show('main',4)">Main 5</button><button onclick="show('main',5)">Main 6</button>
+    </div>
+    <div class="cards" id="main">
+      <figure><a href="layout-still.png"><img src="layout-still.png" alt="Main 1: speaker, lower-right name, caption, photo, slim logo and website footer"></a><figcaption><strong>Main 1</strong>Speaker, name lower right, captions, image, slim footer.</figcaption></figure>
+      <figure><a href="option-2-still.png"><img src="option-2-still.png" alt="Main 2: speaker, upper-left name, caption, photo, larger branding footer"></a><figcaption><strong>Main 2</strong>Name upper left; larger branding footer.</figcaption></figure>
+      <figure><a href="main3-still.png"><img src="main3-still.png" alt="Main 3: headline, speaker, rounded photo area with captions"></a><figcaption><strong>Main 3</strong>Headline and speaker above a curved image and caption.</figcaption></figure>
+      <figure><a href="main4-still.png"><img src="main4-still.png" alt="Main 4: headline, diagonal split between speaker and image, captions below"></a><figcaption><strong>Main 4</strong>Headline, split video and image, captions below.</figcaption></figure>
+      <figure><a href="main5-still.png"><img src="main5-still.png" alt="Main 5: image with circular speaker portrait, captions, supporting text"></a><figcaption><strong>Main 5</strong>Image and speaker bubble above captions and supporting text.</figcaption></figure>
+      <figure><a href="main6-still.png"><img src="main6-still.png" alt="Main 6: speaker with upper-right name, captions, image and brand footer"></a><figcaption><strong>Main 6</strong>Name upper right; captions, image, and brand footer.</figcaption></figure>
+    </div>
+    <h2>End cards</h2>
+    <div class="tabs" aria-label="End card choices"><button onclick="show('end',0)">End 1</button><button onclick="show('end',1)">End 2</button></div>
+    <div class="cards" id="end">
+      <figure><a href="end1-still.png"><img src="end1-still.png" alt="End 1: Tim portrait with Oak Street badge, follow text and full-episode call to action"></a><figcaption><strong>End 1</strong>Tim portrait, follow information, full-episode prompt.</figcaption></figure>
+      <figure><a href="end2-still.png"><img src="end2-still.png" alt="End 2: Oak Street tree logo and simple follow for more prompt"></a><figcaption><strong>End 2</strong>Logo and a simple follow prompt.</figcaption></figure>
+    </div>
+    <p class="credit">Design stills only; the video has not changed. Supporting photo: Kevin Dooley, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>, cropped.</p>
+  </main>
+  <script>function show(id,i){const box=document.getElementById(id);const item=box.children[i];box.scrollTo({left:item.offsetLeft-box.children[0].offsetLeft,behavior:'instant'});}</script>
+</body>
+</html>

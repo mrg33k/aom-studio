@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oak Street clipping layout studies</title>
+  <style>
+    @font-face { font-family: Poppins; src: url("Poppins-ExtraBold.ttf"); font-weight: 800; }
+    @font-face { font-family: Nunito; src: url("NunitoSans-Bold.ttf"); font-weight: 700; }
+    @font-face { font-family: Slab; src: url("RobotoSlab-ExtraBold.ttf"); font-weight: 800; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #101a13; }
+    .artboard { position: relative; width: 1080px; height: 1920px; overflow: hidden; color: #fbf5e6; background: #213f25; margin-bottom: 20px; }
+    .artboard img { max-width: none; }
+    .headline { position: absolute; inset: 0 0 auto; height: 355px; background: #213f25; z-index: 2; display: grid; place-items: center; text-align: center; }
+    .headline h2 { margin: 0; font: 800 90px/1.05 Slab, Georgia, serif; letter-spacing: -3px; }
+    .headline em { color: #a8cb56; font-style: normal; }
+    .name { position: absolute; z-index: 7; background: #1b291ff2; border: 2px solid #d9be8f; border-radius: 19px; padding: 17px 21px; width: 425px; box-shadow: 0 10px 30px #0006; }
+    .name strong { display: block; font: 800 44px/1.1 Poppins, sans-serif; letter-spacing: -.8px; white-space: nowrap; }
+    .name span { display: block; margin-top: 3px; color: #d9be8f; font: 700 26px/1.18 Nunito, sans-serif; }
+    .caption { position: absolute; z-index: 6; background: #213f25; color: #fbf5e6; display: grid; place-items: center; text-align: center; }
+    .caption p { margin: 0; font: 800 68px/1.18 Poppins, sans-serif; letter-spacing: -2px; }
+    .caption em { color: #a8cb56; font-style: normal; }
+    .photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 60%; }
+    .m3-speaker { position: absolute; top: 355px; left: 0; width: 1080px; height: 915px; overflow: hidden; }
+    .m3-speaker img { position: absolute; width: 1400px; height: 2489px; left: -160px; top: -324px; }
+    .m3-speaker::after { content: ""; position: absolute; inset: 650px 0 0; background: linear-gradient(transparent,#101a1388); }
+    #main3 .name { right: 44px; top: 1050px; }
+    .m3-photo { position: absolute; top: 1200px; width: 1080px; height: 720px; overflow: hidden; border-radius: 50% 50% 0 0 / 17% 17% 0 0; }
+    .m3-photo img { transform: scale(1.12); transform-origin: center 70%; }
+    .m3-caption { top: 1315px; left: 50px; width: 980px; height: 210px; border: 2px solid #d9be8f; border-radius: 24px; background: #1b291ff0; }
+    .m3-caption p { font-size: 64px; }
+    .m4-media { position: absolute; top: 355px; left: 0; width: 1080px; height: 1115px; overflow: hidden; background: #1b291f; }
+    .m4-person { position: absolute; inset: 0; overflow: hidden; }
+    .m4-person img { position: absolute; width: 1710px; height: 3040px; left: -550px; top: -395px; }
+    .m4-photo { position: absolute; inset: 0; clip-path: polygon(64% 0,100% 0,100% 100%,48% 100%); }
+    .m4-photo img { position: absolute; width: 1680px; height: 1115px; max-width: none; left: -230px; object-fit: cover; }
+    #main4 .name { left: 42px; top: 1260px; }
+    .m4-caption { top: 1470px; left: 0; width: 1080px; height: 450px; }
+    .m4-caption p { font-size: 78px; }
+    .m5-photo { position: absolute; top: 0; left: 0; width: 1080px; height: 1020px; overflow: hidden; }
+    .m5-photo img { transform: scale(1.18); transform-origin: center 63%; }
+    .m5-portrait { position: absolute; z-index: 4; right: 52px; top: 450px; width: 430px; height: 430px; border: 7px solid #d9be8f; border-radius: 50%; overflow: hidden; background: #1b291f; box-shadow: 0 18px 50px #0009; }
+    .m5-portrait img { position: absolute; width: 1080px; height: 1920px; left: -310px; top: -330px; }
+    #main5 .name { right: 49px; top: 855px; width: 430px; }
+    .m5-caption { top: 1020px; left: 0; width: 1080px; height: 210px; }
+    .m5-support { position: absolute; top: 1230px; width: 1080px; height: 690px; background: #1b291f; display: grid; place-items: center; text-align: center; padding: 55px; }
+    .m5-support p { margin: 0; font: 800 78px/1.18 Slab, Georgia, serif; letter-spacing: -2px; }
+    .m5-support em { color: #a8cb56; font-style: normal; }
+    .m6-speaker { position: absolute; top: 0; left: 0; width: 1080px; height: 760px; overflow: hidden; }
+    .m6-speaker img { position: absolute; width: 1282px; height: 2279px; left: -101px; top: -297px; }
+    #main6 .name { right: 38px; top: 130px; }
+    .m6-caption { top: 760px; left: 0; width: 1080px; height: 210px; }
+    .m6-photo { position: absolute; top: 970px; left: 0; width: 1080px; height: 670px; overflow: hidden; }
+    .m6-photo img { transform: scale(1.13); transform-origin: center 67%; }
+    .m6-footer { position: absolute; top: 1640px; left: 0; width: 1080px; height: 280px; background: #1b291f; display: flex; align-items: center; gap: 52px; padding: 0 96px; }
+    .m6-mark { flex: none; width: 156px; height: 156px; border: 2px solid #d9be8f; border-radius: 50%; display: grid; place-items: center; }
+    .m6-mark img { width: 115px; height: 115px; object-fit: contain; }
+    .m6-brand strong { display: block; font: 800 49px/1.05 Poppins, sans-serif; white-space: nowrap; }
+    .m6-brand span { display: block; margin-top: 10px; color: #d9be8f; font: 700 51px/1 Nunito, sans-serif; white-space: nowrap; }
+    .end { background: #1b291f; text-align: center; }
+    .e1-portrait { position: absolute; top: 165px; left: 260px; width: 560px; height: 560px; border: 8px solid #d9be8f; border-radius: 50%; overflow: hidden; background: #213f25; }
+    .e1-portrait img { position: absolute; width: 1080px; height: 1920px; left: -250px; top: -280px; }
+    .e1-badge { position: absolute; top: 560px; left: 705px; width: 165px; height: 165px; border: 4px solid #d9be8f; border-radius: 50%; background: #213f25; display: grid; place-items: center; }
+    .e1-badge img { width: 110px; height: 110px; object-fit: contain; }
+    .e1-follow { position: absolute; top: 815px; left: 60px; width: 960px; font: 800 83px/1.13 Poppins, sans-serif; letter-spacing: -3px; }
+    .e1-follow em { font-style: normal; color: #a8cb56; }
+    .e1-show { position: absolute; top: 1060px; width: 1080px; font: 700 43px Nunito, sans-serif; color: #d9be8f; }
+    .e1-cta { position: absolute; top: 1350px; left: 92px; width: 896px; height: 137px; border: 4px solid #d9be8f; border-radius: 70px; display: grid; place-items: center; font: 800 49px Poppins, sans-serif; }
+    .e1-site { position: absolute; top: 1698px; width: 1080px; font: 700 52px Nunito, sans-serif; }
+    .e2-mark { position: absolute; top: 350px; left: 300px; width: 480px; height: 480px; border: 8px solid #d9be8f; border-radius: 50%; display: grid; place-items: center; background: #213f25; }
+    .e2-mark img { width: 315px; height: 315px; object-fit: contain; }
+    .e2-brand { position: absolute; top: 945px; width: 1080px; font: 800 75px Poppins, sans-serif; }
+    .e2-follow { position: absolute; top: 1110px; width: 1080px; font: 800 100px/1.1 Poppins, sans-serif; }
+    .e2-follow em { color: #a8cb56; font-style: normal; }
+    .e2-site { position: absolute; top: 1695px; width: 1080px; font: 700 55px Nunito, sans-serif; }
+  </style>
+</head>
+<body>
+  <section class="artboard" id="main3" aria-label="Main option 3">
+    <div class="headline"><h2>ARIZONA’S<br><em>WATER MATH</em></h2></div>
+    <div class="m3-speaker"><img src="speaker-source.png" alt=""></div>
+    <div class="name"><strong>Tim Fergestad</strong><span>Oak Street Assets</span></div>
+    <div class="m3-photo photo"><img src="land-in-transition.jpg" alt=""></div>
+    <div class="caption m3-caption"><p>YOU ACTUALLY <em>SAVE</em><br>A TON OF WATER</p></div>
+  </section>
+  <section class="artboard" id="main4" aria-label="Main option 4">
+    <div class="headline"><h2>ARIZONA’S<br><em>WATER MATH</em></h2></div>
+    <div class="m4-media"><div class="m4-person"><img src="speaker-source.png" alt=""></div><div class="m4-photo photo"><img src="land-in-transition.jpg" alt=""></div></div>
+    <div class="name"><strong>Tim Fergestad</strong><span>Oak Street Assets</span></div>
+    <div class="caption m4-caption"><p>YOU ACTUALLY <em>SAVE</em><br>A TON OF WATER</p></div>
+  </section>
+  <section class="artboard" id="main5" aria-label="Main option 5">
+    <div class="m5-photo photo"><img src="land-in-transition.jpg" alt=""></div>
+    <div class="m5-portrait"><img src="speaker-source.png" alt=""></div>
+    <div class="name"><strong>Tim Fergestad</strong><span>Oak Street Assets</span></div>
+    <div class="caption m5-caption"><p>YOU ACTUALLY <em>SAVE</em><br>A TON OF WATER</p></div>
+    <div class="m5-support"><p>HOMES USE <em>LESS WATER</em><br>THAN THE FARMS<br>THEY REPLACE.</p></div>
+  </section>
+  <section class="artboard" id="main6" aria-label="Main option 6">
+    <div class="m6-speaker"><img src="speaker-source.png" alt=""></div>
+    <div class="name"><strong>Tim Fergestad</strong><span>Oak Street Assets</span></div>
+    <div class="caption m6-caption"><p>YOU ACTUALLY <em>SAVE</em><br>A TON OF WATER</p></div>
+    <div class="m6-photo photo"><img src="land-in-transition.jpg" alt=""></div>
+    <div class="m6-footer"><div class="m6-mark"><img src="tree-icon-lime.png" alt=""></div><div class="m6-brand"><strong>OAK STREET ASSETS</strong><span>oakstreetassets.com</span></div></div>
+  </section>
+  <section class="artboard end" id="end1" aria-label="End option 1">
+    <div class="e1-portrait"><img src="speaker-source.png" alt=""></div>
+    <div class="e1-badge"><img src="tree-icon-lime.png" alt=""></div>
+    <div class="e1-follow">FOLLOW<br><em>TIM FERGESTAD</em></div>
+    <div class="e1-show">PHOENIX PROSPERITY PODCAST</div>
+    <div class="e1-cta">FULL EPISODE · LINK IN BIO</div>
+    <div class="e1-site">oakstreetassets.com</div>
+  </section>
+  <section class="artboard end" id="end2" aria-label="End option 2">
+    <div class="e2-mark"><img src="tree-icon-lime.png" alt=""></div>
+    <div class="e2-brand">OAK STREET ASSETS</div>
+    <div class="e2-follow">FOLLOW<br><em>FOR MORE</em></div>
+    <div class="e2-site">oakstreetassets.com</div>
+  </section>
+</body>
+</html>
