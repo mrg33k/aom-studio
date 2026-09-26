@@ -4,140 +4,124 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#f7f6f3">
 <title>Morning</title>
 <style>
-/* /feed: Patrik's private morning report (2026-09-25).
-   Data comes straight from the studio Mac (rag.aheadofmarket.com/morning/*), gated by a bearer
-   token that only lives in Patrik's private link (#k=...) and this browser's localStorage.
-   Spacing on the 4px scale; type 12/14/16/24/32/40. */
-:root{--serif:"New York",Georgia,serif;--bg:#0f0e0c;--card:#1a1815;--card2:#221d15;--line:#2c2924;--gold-line:#4a3b22;--ivory:#f2ece1;--soft:#d6cfc3;--mute:#9a9286;--gold:#c79a4b;--ink:#16130e;--red:#d9644a;--red-bg:#3a1e17;--green:#7fae7a;--green-bg:#1c2a1c}
+/* /feed: Patrik's private morning report (v3, 2026-09-25).
+   Light, one color per section, everything folds to headlines. Data comes from the studio Mac
+   (rag.aheadofmarket.com/morning/*), gated by the token in Patrik's private link (#k=...).
+   Type 12/14/16/20/28, spacing on the 4px scale, one sans family. */
+:root{--bg:#f7f6f3;--card:#fff;--line:#e8e5df;--ink:#1d1b18;--soft:#4a463f;--mute:#8a847a;
+  --violet:#7c5cff;--orange:#ff7a1a;--blue:#2f7cf6;--green:#18a867;--yellow:#f2b705;--red:#ec4c4c;--teal:#0fb3a9;--pink:#e2489a;--indigo:#5561f2;--slate:#64748b}
 *{box-sizing:border-box;margin:0}
 html{-webkit-text-size-adjust:100%}
-body{background:var(--bg);color:var(--ivory);font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;font-size:16px;line-height:1.45;padding:24px 16px 96px}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,"SF Pro Text",Inter,system-ui,sans-serif;font-size:16px;line-height:1.5;padding:24px 16px 120px}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-.wrap{max-width:720px;margin:0 auto}
+a{color:inherit}
+.wrap{max-width:680px;margin:0 auto}
 .top{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.date{color:var(--mute);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
-select.days{background:transparent;color:var(--mute);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:12px}
-.new{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--gold);color:var(--gold);border-radius:999px;padding:8px 12px;font-size:14px;font-weight:600}
-.new[disabled]{opacity:.6;cursor:default}
-.spin{width:12px;height:12px;border:2px solid var(--gold);border-right-color:transparent;border-radius:50%;animation:s 1s linear infinite}
+.date{color:var(--mute);font-size:14px;font-weight:600}
+select.days{background:var(--card);color:var(--soft);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:14px}
+.new{display:inline-flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border-radius:999px;padding:8px 16px;font-size:14px;font-weight:600}
+.new[disabled]{opacity:.5;cursor:default}
+.spin{width:12px;height:12px;border:2px solid #fff;border-right-color:transparent;border-radius:50%;animation:s 1s linear infinite}
 @keyframes s{to{transform:rotate(360deg)}}
-h1{font-family:var(--serif);font-weight:600;font-size:40px;line-height:1.05;margin:16px 0 4px}
+h1{font-size:28px;line-height:1.2;font-weight:700;margin:12px 0 4px;letter-spacing:-.01em}
 .sub{color:var(--mute);font-size:14px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:24px 0 32px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
-.stat b{display:block;font-family:var(--serif);font-weight:600;font-size:32px;line-height:1;color:var(--gold)}
-.stat span{font-size:12px;color:var(--mute)}
-h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:32px 0 12px;display:flex;gap:8px;align-items:center}
-h2:after{content:"";flex:1;height:1px;background:var(--line)}
-.item{position:relative;transition:opacity .25s,transform .25s}
-.item.leaving{opacity:0;transform:translateX(24px)}
-.money{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--gold-line);border-radius:16px;padding:24px;margin-bottom:12px}
-.tag{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);padding-right:64px}
-.money h3{font-family:var(--serif);font-weight:600;font-size:24px;line-height:1.2;margin:8px 0}
-.money p{color:var(--soft)}
-.act{display:inline-flex;align-items:center;margin-top:16px;background:var(--gold);color:var(--ink);font-weight:600;font-size:14px;padding:8px 16px;border-radius:999px}
-.ctl{position:absolute;top:12px;right:12px;display:flex;gap:4px}
-.ctl button{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--mute);border:1px solid transparent}
-.ctl button:hover{border-color:var(--line);color:var(--ivory)}
-.ctl svg{width:16px;height:16px}
-.row{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:8px}
-.row .ctl{position:static}
-.who{font-weight:600}
-.what{color:var(--mute);font-size:14px;margin-top:4px}
-.ball{font-size:12px;font-weight:600;padding:4px 8px;border-radius:999px;white-space:nowrap}
-.you{background:var(--red-bg);color:var(--red)} .them{background:var(--green-bg);color:var(--green)}
-.moves{padding:0;counter-reset:n}
-.moves li{list-style:none;counter-increment:n;display:grid;grid-template-columns:32px 1fr auto;gap:16px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:8px}
-.moves li:before{content:counter(n);width:32px;height:32px;border-radius:50%;background:var(--gold);color:var(--ink);font-weight:700;display:grid;place-items:center;font-size:14px}
-.moves .ctl{position:static}
-.moves small{display:block;color:var(--mute);font-size:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:8px}
-.card p+p{margin-top:8px}
-.card .ctl{top:8px;right:8px}
-.pad-r{padding-right:72px}
-.bar{height:8px;background:var(--line);border-radius:8px;overflow:hidden;margin:12px 0 8px}
-.bar i{display:block;height:100%;background:var(--gold)}
-.mute{color:var(--mute);font-size:14px}
-.alert{display:grid;grid-template-columns:8px 1fr auto;gap:12px;align-items:start;padding:12px 0;border-bottom:1px solid var(--line)}
-.alert:last-child{border:0}
-.alert .ctl{position:static}
-.dot{width:8px;height:8px;border-radius:50%;margin-top:8px;background:var(--gold)}
-.dot.red{background:var(--red)}
-.prompt{border-left:2px solid var(--gold);padding-left:12px}
-.prompt a{color:var(--gold);font-size:14px}
-.cleared{margin-top:48px}
-.cleared .row{opacity:.7}
-.undo{color:var(--gold);font-size:14px;font-weight:600}
-.empty{color:var(--mute);font-size:14px;padding:8px 0}
-/* sheet */
-.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.applied{background:#e9f8f0;color:#0d6b42;border-radius:12px;padding:12px 16px;font-size:14px;margin-top:16px}
+.glance{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 24px}
+.chip{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:14px;font-weight:600;text-decoration:none}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.chip b{color:var(--c)}
+details.sec{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:12px;overflow:hidden;scroll-margin-top:16px}
+details.sec>summary{list-style:none;display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;padding:16px;cursor:pointer}
+details.sec>summary::-webkit-details-marker{display:none}
+.badge{width:40px;height:40px;border-radius:12px;background:var(--c);color:#fff;display:grid;place-items:center;font-weight:700;font-size:16px}
+.badge.dark{color:var(--ink)}
+.stitle{font-weight:700;font-size:16px}
+.speek{color:var(--mute);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chev{width:24px;height:24px;color:var(--mute);transition:transform .2s;flex:none}
+details[open]>summary .chev{transform:rotate(180deg)}
+.body{padding:0 16px 8px;border-top:1px solid var(--line)}
+details.it{border-bottom:1px solid var(--line)}
+details.it:last-child{border-bottom:0}
+details.it>summary{list-style:none;display:grid;grid-template-columns:8px 1fr auto;gap:12px;align-items:start;padding:16px 0;cursor:pointer}
+details.it>summary::-webkit-details-marker{display:none}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--c);margin-top:8px}
+.head{font-weight:600;font-size:16px;line-height:1.4}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:4px;font-size:12px;color:var(--mute)}
+.src{display:inline-flex;align-items:center;background:var(--bg);border-radius:6px;padding:2px 8px;font-weight:600}
+.tag{font-weight:600;color:var(--c)}
+.amt{font-weight:700;color:var(--ink)}
+.ball{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.you{background:#fde8e8;color:#c42f2f} .them{background:#e7f6ee;color:#12804e}
+.detail{padding:0 0 16px 20px;color:var(--soft);font-size:14px}
+.kv{display:grid;grid-template-columns:88px 1fr;gap:8px 12px}
+.kv b{color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.06em;padding-top:2px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.btn{border-radius:999px;padding:8px 16px;font-weight:600;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--soft)}
+.btn.go{background:var(--c,var(--ink));border-color:var(--c,var(--ink));color:#fff}
+.btn.go.dark{color:var(--ink)}
+.read-body{color:var(--soft);font-size:16px;padding-top:16px}
+.unseen{margin-top:12px;padding:0}
+.unseen li{list-style:none;position:relative;padding:8px 0 8px 20px;font-size:14px;color:var(--soft);border-top:1px solid var(--line)}
+.unseen li:before{content:"";position:absolute;left:4px;top:16px;width:6px;height:6px;border-radius:50%;background:var(--c)}
+pre.prompt{white-space:pre-wrap;font-family:inherit;font-size:14px;background:var(--bg);border-radius:8px;padding:12px;margin-top:8px;color:var(--soft)}
+.bar{height:8px;background:var(--line);border-radius:8px;overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;background:var(--c)}
+.empty{color:var(--mute);font-size:14px;padding:16px 0}
+.undo{color:var(--blue);font-size:14px;font-weight:600}
+.dock{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(rgba(247,246,243,0),var(--bg) 40%);display:flex;justify-content:center;pointer-events:none}
+.dock button{pointer-events:auto;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.scrim{position:fixed;inset:0;background:rgba(20,18,15,.4);display:none;align-items:flex-end;justify-content:center;z-index:10}
 .scrim.on{display:flex}
-.sheet{background:var(--card);border:1px solid var(--line);border-radius:16px 16px 0 0;width:100%;max-width:720px;padding:24px 16px 32px;max-height:88vh;overflow:auto}
-.sheet h3{font-family:var(--serif);font-size:24px;font-weight:600;margin-bottom:8px}
-.sheet label{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:16px 0 4px}
-.sheet input,.sheet textarea{width:100%;background:var(--bg);color:var(--ivory);border:1px solid var(--line);border-radius:8px;padding:12px;font:inherit;font-size:16px}
-.sheet textarea{min-height:160px;resize:vertical}
-.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:24px}
-.btn{border-radius:999px;padding:12px 16px;font-weight:600;font-size:14px;border:1px solid var(--gold);color:var(--gold)}
-.btn.primary{background:var(--gold);color:var(--ink)}
-.btn.plain{border-color:var(--line);color:var(--mute)}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
-.chip{border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:14px;color:var(--soft)}
-.chip.on{border-color:var(--gold);color:var(--gold)}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(96px);background:var(--ivory);color:var(--ink);font-weight:600;font-size:14px;padding:12px 16px;border-radius:999px;transition:transform .25s;z-index:20}
+.sheet{background:var(--card);border-radius:16px 16px 0 0;width:100%;max-width:680px;padding:24px 16px 32px;max-height:88vh;overflow:auto}
+.sheet h3{font-size:20px;font-weight:700;margin-bottom:8px}
+.sheet label{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:16px 0 4px;font-weight:600}
+.sheet input,.sheet textarea{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:12px;font:inherit;font-size:16px}
+.sheet textarea{min-height:140px;resize:vertical}
+.reasons{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.reason{border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:14px}
+.reason.on{border-color:var(--ink);background:var(--ink);color:#fff}
+.toast{position:fixed;left:50%;top:16px;transform:translateX(-50%) translateY(-96px);background:var(--ink);color:#fff;font-weight:600;font-size:14px;padding:12px 16px;border-radius:999px;transition:transform .25s;z-index:20}
 .toast.on{transform:translateX(-50%) translateY(0)}
-.applied{background:var(--green-bg);color:var(--green);border-radius:16px;padding:12px 16px;font-size:14px;margin-top:16px}
-.read{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;margin-top:24px}
-.read h3{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
-.read .big{font-family:var(--serif);font-size:24px;line-height:1.35;color:var(--ivory)}
-.read ul{margin-top:16px;padding:0}
-.read li{list-style:none;color:var(--soft);padding:8px 0 8px 24px;position:relative;border-top:1px solid var(--line)}
-.read li:before{content:"";position:absolute;left:4px;top:16px;width:8px;height:8px;border-radius:50%;background:var(--gold)}
-.idea{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--gold-line);border-radius:16px;padding:24px;margin-bottom:12px;display:grid;grid-template-columns:40px 1fr;gap:16px}
-.idea .num{font-family:var(--serif);font-size:32px;line-height:1;color:var(--gold)}
-.idea h3{font-family:var(--serif);font-weight:600;font-size:24px;line-height:1.2;margin:4px 0 12px;padding-right:48px}
-.kv{display:grid;grid-template-columns:72px 1fr;gap:4px 12px;font-size:14px;margin-top:8px}
-.kv b{color:var(--gold);font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding-top:2px}
-.kv span{color:var(--soft)}
-.size{display:inline-block;margin-top:16px;background:var(--gold);color:var(--ink);font-weight:600;font-size:14px;padding:4px 12px;border-radius:999px}
-.take{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:8px}
-.take .name{font-weight:600}
-.take .state{color:var(--mute);font-size:14px;margin:4px 48px 8px 0}
-.take .think{font-family:var(--serif);font-size:16px}
-.take .do{margin-top:8px;font-size:14px;color:var(--gold)}
-.pb{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
-.pill{font-size:12px;font-weight:600;padding:4px 8px;border-radius:999px;background:var(--line);color:var(--soft);white-space:nowrap}
-.written pre{white-space:pre-wrap;font-family:inherit;font-size:14px;color:var(--soft);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:8px}
-.fb{background:var(--card);border:1px solid var(--gold-line);border-radius:16px;padding:24px;margin-top:48px}
-.fb h3{font-family:var(--serif);font-size:24px;font-weight:600}
-.fb textarea{width:100%;min-height:120px;margin-top:12px;background:var(--bg);color:var(--ivory);border:1px solid var(--line);border-radius:8px;padding:12px;font:inherit;font-size:16px;resize:vertical}
 .lock{max-width:420px;margin:24vh auto 0;text-align:center}
-.lock h1{font-size:32px}
-@media(max-width:520px){h1{font-size:32px}.stat b{font-size:24px}.money{padding:16px}.money h3{font-size:24px}}
+.lock p{color:var(--mute)}
 </style></head>
 <body><div class="wrap" id="app"></div>
+<div class="dock"><button class="new" id="fb-open">Tell me what to change</button></div>
 <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
 <div class="toast" id="toast"></div>
 <script>
 (() => {
   const API = 'https://rag.aheadofmarket.com/morning';
-  const KEY = 'aom-morning-token';
+  const KEY = 'aom-morning-token', OPEN = 'aom-morning-open';
   const m = location.hash.match(/k=([A-Za-z0-9_-]+)/);
   if (m) { localStorage.setItem(KEY, m[1]); history.replaceState(null, '', location.pathname); }
   const token = localStorage.getItem(KEY);
   const app = document.getElementById('app');
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const ICON = {
-    done: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5l3 3 7-7"/></svg>',
-    x: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4l8 8M12 4l-8 8"/></svg>'
-  };
-  let state = { report: null, cleared: {}, generating: null, dates: [], day: null };
+  const CHEV = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>';
+  let state = { report: null, cleared: {}, generating: null, dates: [], day: null, feedback_count: 0 };
   const byId = {};
+  const openSecs = new Set(JSON.parse(localStorage.getItem(OPEN) || '[]'));
+
+  // One color per section, in reading order.
+  const SECTIONS = [
+    { key: 'read', title: 'The big picture', c: 'var(--violet)' },
+    { key: 'ideas', title: 'Ideas you might not see', c: 'var(--orange)' },
+    { key: 'others', title: 'Other computers', c: 'var(--pink)' },
+    { key: 'take', title: 'My take on what’s in flight', c: 'var(--blue)' },
+    { key: 'playbook', title: 'Add for clients', c: 'var(--green)' },
+    { key: 'money', title: 'Money in your inbox', c: 'var(--yellow)', dark: true },
+    { key: 'left', title: 'Waiting on you', c: 'var(--red)' },
+    { key: 'moves', title: 'Today’s moves', c: 'var(--teal)' },
+    { key: 'prompts', title: 'Prompts', c: 'var(--indigo)' },
+    { key: 'corner', title: 'Corner', c: 'var(--slate)' },
+    { key: 'alerts', title: 'Heads up', c: 'var(--red)' },
+  ];
 
   function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), 2200); }
-
   async function api(path, opts = {}) {
     const r = await fetch(API + path, { ...opts, headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' } });
     if (r.status === 401) { localStorage.removeItem(KEY); locked('That link has expired. Open your private link again.'); throw new Error('401'); }
@@ -145,10 +129,7 @@ h2:after{content:"";flex:1;height:1px;background:var(--line)}
     return r.json();
   }
   const act = body => api('/action', { method: 'POST', body: JSON.stringify(body) });
-
-  function locked(msg) {
-    app.innerHTML = `<div class="lock"><h1>This page is private.</h1><p class="mute">${esc(msg || 'Open it from your private link.')}</p></div>`;
-  }
+  function locked(msg) { app.innerHTML = `<div class="lock"><h1>This page is private.</h1><p>${esc(msg || 'Open it from your private link.')}</p></div>`; }
 
   async function load(day) {
     try {
@@ -157,89 +138,69 @@ h2:after{content:"";flex:1;height:1px;background:var(--line)}
       render();
       if (state.generating) setTimeout(() => load(), 30000);
     } catch (e) {
-      if (e.message !== '401') app.innerHTML = `<div class="lock"><h1>Can't reach the Mac.</h1><p class="mute">The studio Mac serves this page. If it's asleep or offline, try again in a bit.</p></div>`;
+      if (e.message !== '401') app.innerHTML = `<div class="lock"><h1>Can't reach the Mac.</h1><p>The studio Mac serves this page. If it's asleep or offline, try again in a bit.</p></div>`;
     }
   }
 
-  const ctl = (id, label) => `<div class="ctl"><button title="Done" aria-label="Done" data-do="done" data-id="${esc(id)}" data-label="${esc(label)}">${ICON.done}</button><button title="Dismiss" aria-label="Dismiss" data-do="dismiss" data-id="${esc(id)}" data-label="${esc(label)}">${ICON.x}</button></div>`;
   const live = arr => (arr || []).filter(x => x && !state.cleared[x.id]);
+  const src = x => x && x.source ? `<span class="src">${esc(x.source)}</span>` : '';
+  const ctlBtns = (id, label) => `<button class="btn" data-do="done" data-id="${esc(id)}" data-label="${esc(label)}">Done</button><button class="btn" data-do="dismiss" data-id="${esc(id)}" data-label="${esc(label)}">Dismiss</button>`;
+
+  function item(x, c, head, metaBits, detailHtml, extraActs = '') {
+    const label = x.title || x.name || x.who || x.add || x.text || '';
+    return `<details class="it" data-item="${esc(x.id)}" style="--c:${c}"><summary><span class="dot"></span><div><div class="head">${head}</div><div class="meta">${metaBits.filter(Boolean).join('')}${src(x)}</div></div>${CHEV}</summary>
+      <div class="detail">${detailHtml}<div class="acts">${extraActs}${ctlBtns(x.id, label)}</div></div></details>`;
+  }
+
+  function sections(r) {
+    const pr = r.prompts || {};
+    const out = {};
+    if (r.read) out.read = { count: '', peek: r.read.headline || r.read.body, html: `<p class="read-body">${esc(r.read.body)}</p>${(r.read.unseen || []).length ? `<ul class="unseen">${r.read.unseen.map(u => `<li>${esc(u)}</li>`).join('')}</ul>` : ''}${r.read.source ? `<div class="meta" style="margin:12px 0 8px">${src(r.read)}</div>` : ''}` };
+    const ideas = live(r.ideas);
+    if ((r.ideas || []).length) out.ideas = { count: ideas.length, peek: ideas[0] && ideas[0].title, html: ideas.map(x => item(x, 'var(--orange)', esc(x.title), [x.lane ? `<span class="tag">${esc(x.lane)}</span>` : '', x.size ? `<span class="amt">${esc(x.size)}</span>` : ''],
+      `<div class="kv"><b>Why</b><span>${esc(x.why)}</span><b>First step</b><span>${esc(x.how)}</span></div>`)).join('') };
+    const others = live(r.others);
+    if ((r.others || []).length || r.others_note) out.others = { count: others.length, peek: (others[0] && others[0].title) || r.others_note, html: (r.others_note ? `<p class="empty">${esc(r.others_note)}</p>` : '') + others.map(x => item(x, 'var(--pink)', esc(x.title), [x.machine ? `<span class="tag">${esc(x.machine)}</span>` : '', x.when ? `<span>${esc(x.when)}</span>` : ''], `<p>${esc(x.body || '')}</p>`)).join('') };
+    const take = live(r.take);
+    if ((r.take || []).length) out.take = { count: take.length, peek: take.map(t => t.name).join(', '), html: take.map(x => item(x, 'var(--blue)', `${esc(x.name)}`, [], `<p>${esc(x.think)}</p><div class="kv" style="margin-top:8px"><b>Where it is</b><span>${esc(x.state)}</span><b>What I'd do</b><span>${esc(x.do)}</span></div>`)).join('') };
+    const pb = live(r.playbook);
+    if ((r.playbook || []).length) out.playbook = { count: pb.length, peek: pb[0] && pb[0].add, html: pb.map(x => item(x, 'var(--green)', esc(x.add), [`<span class="tag">${esc(x.client)}</span>`, x.effort ? `<span>${esc(x.effort)} effort</span>` : ''], `<p>${esc(x.why)}</p>`)).join('') };
+    const money = live(r.money);
+    if ((r.money || []).length) out.money = { count: money.length, peek: money[0] && money[0].title, html: money.map(x => item(x, 'var(--yellow)', esc(x.title), [x.tag ? `<span class="tag" style="color:#a67c00">${esc(x.tag)}</span>` : ''], `<p>${esc(x.body)}</p>`, x.action ? `<button class="btn go dark" style="--c:var(--yellow)" data-open="${esc(x.id)}">${esc(x.action.label || 'Open')}</button>` : '')).join('') };
+    const left = live(r.left);
+    if ((r.left || []).length) out.left = { count: left.filter(x => x.ball !== 'them').length, peek: left.map(x => x.who.split(' · ')[0]).join(', '), html: left.map(x => item(x, 'var(--red)', esc(x.who), [`<span class="ball ${x.ball === 'them' ? 'them' : 'you'}">${x.ball === 'them' ? 'Their move' : 'Your move'}</span>`], `<p>${esc(x.what)}</p>`)).join('') };
+    const moves = live(r.moves);
+    const sys = r.system && !state.cleared[r.system.id] ? r.system : null;
+    if ((r.moves || []).length) out.moves = { count: moves.length, peek: moves[0] && moves[0].title, html: moves.map(x => item(x, 'var(--teal)', esc(x.title), [], `<p>${esc(x.sub)}</p>`)).join('') + (sys ? item(sys, 'var(--teal)', esc(sys.title || 'System to build') + ': ' + esc(sys.body), [], `<p>${esc(sys.sub || '')}</p>`) : '') };
+    const written = live(pr.written), found = live(pr.today);
+    if (written.length || found.length || pr.note) out.prompts = { count: written.length + found.length, peek: (written[0] && written[0].title) || pr.note, html:
+      written.map(p => item(p, 'var(--indigo)', esc(p.title), ['<span class="tag">Written for you</span>'], `<pre class="prompt">${esc(p.text)}</pre>`, `<button class="btn go" style="--c:var(--indigo)" data-copy="${esc(p.id)}">Copy prompt</button>`)).join('') +
+      found.map(p => item(p, 'var(--indigo)', esc(p.text.slice(0, 90)) + (p.text.length > 90 ? '...' : ''), [p.who ? `<span class="tag">${esc(p.who)}</span>` : '', p.engagement ? `<span>${esc(p.engagement)}</span>` : ''], `<pre class="prompt">${esc(p.text)}</pre>${p.url ? `<p style="margin-top:8px"><a href="${esc(p.url)}" target="_blank" rel="noopener">Source</a></p>` : ''}`)).join('') +
+      (pr.note ? `<p class="empty">${esc(pr.note)}</p>` : '') +
+      ((pr.leaderboard || []).length ? `<p class="empty"><b>This month:</b> ${pr.leaderboard.slice(0, 5).map((p, i) => `${i + 1}. ${esc(p.text.slice(0, 60))}`).join(' · ')}</p>` : '') };
+    if (r.corner) { const c = r.corner; out.corner = { count: '', peek: c.next, html: `<div style="padding:16px 0 8px;color:var(--soft);font-size:14px">${typeof c.pct === 'number' ? `<div class="bar" style="--c:var(--slate)"><i style="width:${Math.max(0, Math.min(100, c.pct))}%"></i></div>` : ''}<p>${esc(c.body)}</p><p style="margin-top:8px"><b>Next step:</b> ${esc(c.next)}</p>${c.source ? `<div class="meta" style="margin-top:8px">${src(c)}</div>` : ''}</div>` }; }
+    const alerts = live(r.alerts);
+    if ((r.alerts || []).length) out.alerts = { count: alerts.length, peek: alerts[0] && alerts[0].title, html: alerts.map(a => item(a, a.level === 'red' ? 'var(--red)' : 'var(--yellow)', esc(a.title), [], `<p>${esc(a.sub || '')}</p>`)).join('') };
+    return out;
+  }
 
   function render() {
     const r = state.report;
-    if (!r) { app.innerHTML = header() + `<p class="empty" style="margin-top:32px">No report yet for this day.</p>` + feedbackBox(); wire(); return; }
+    if (!r) { app.innerHTML = header() + `<p class="empty">No report yet for this day.</p>`; wire(); return; }
     const pr = r.prompts || {};
-    [...(r.money||[]), ...(r.left||[]), ...(r.moves||[]), ...(r.alerts||[]), ...(r.ideas||[]), ...(r.take||[]), ...(r.playbook||[]), ...(pr.today||[]), ...(pr.written||[]), r.system, r.idea].forEach(x => { if (x && x.id) byId[x.id] = x; });
-    const money = live(r.money), left = live(r.left), moves = live(r.moves), alerts = live(r.alerts);
-    const ideas = live(r.ideas), take = live(r.take), playbook = live(r.playbook), written = live(pr.written);
-    const system = r.system && !state.cleared[r.system.id] ? r.system : null;
-    const oldIdea = r.idea && !state.cleared[r.idea.id] ? r.idea : null;
+    [...(r.money||[]), ...(r.left||[]), ...(r.moves||[]), ...(r.alerts||[]), ...(r.ideas||[]), ...(r.take||[]), ...(r.playbook||[]), ...(r.others||[]), ...(pr.today||[]), ...(pr.written||[]), r.system].forEach(x => { if (x && x.id) byId[x.id] = x; });
+    const secs = sections(r);
     let h = header();
-    if (r.feedback_applied) h += `<div class="applied">${esc(r.feedback_applied)}</div>`;
-    if (r.read) h += `<div class="read"><h3>${esc(r.read.title || 'The big picture')}</h3><p class="big">${esc(r.read.body)}</p>${(r.read.unseen||[]).length ? `<ul>${r.read.unseen.map(u => `<li>${esc(u)}</li>`).join('')}</ul>` : ''}</div>`;
-    h += `<div class="stats">${(r.stats||[]).map(s => `<div class="stat"><b>${esc(s.n)}</b><span>${esc(s.label)}</span></div>`).join('')}</div>`;
-
-    if ((r.ideas||[]).length) {
-      h += `<h2>Ideas you might not see</h2>`;
-      h += ideas.length ? ideas.map(x => `<div class="idea item" data-item="${esc(x.id)}" style="position:relative">${ctl(x.id, x.title)}
-        <div class="num">${(r.ideas.indexOf(x) + 1)}</div><div><div class="tag">${esc(x.lane || '')}</div><h3>${esc(x.title)}</h3>
-        <div class="kv"><b>Why</b><span>${esc(x.why)}</span><b>First step</b><span>${esc(x.how)}</span></div>
-        ${x.size ? `<span class="size">${esc(x.size)}</span>` : ''}</div></div>`).join('') : `<p class="empty">You've cleared every idea.</p>`;
-    }
-
-    if ((r.take||[]).length) {
-      h += `<h2>My take on what's in flight</h2>`;
-      h += take.map(x => `<div class="take item" data-item="${esc(x.id)}" style="position:relative">${ctl(x.id, x.name)}<div class="name">${esc(x.name)}</div><div class="state">${esc(x.state)}</div><p class="think">${esc(x.think)}</p>${x.do ? `<p class="do">${esc(x.do)}</p>` : ''}</div>`).join('') || `<p class="empty">Nothing left here.</p>`;
-    }
-
-    if ((r.playbook||[]).length) {
-      h += `<h2>Add to the client playbook</h2>`;
-      h += playbook.map(x => `<div class="card item pad-r" data-item="${esc(x.id)}" style="position:relative">${ctl(x.id, x.client + ': ' + x.add)}<div class="pb"><span class="pill">${esc(x.client)}</span><div><p>${esc(x.add)}</p><p class="mute">${esc(x.why)}${x.effort ? ' · ' + esc(x.effort) + ' effort' : ''}</p></div></div></div>`).join('') || `<p class="empty">All added.</p>`;
-    }
-
-    h += `<h2>Money in your inbox</h2>`;
-    h += money.length ? money.map(x => `<div class="money item" data-item="${esc(x.id)}">${ctl(x.id, x.title)}
-      <div class="tag">${esc(x.tag)}</div><h3>${esc(x.title)}</h3><p>${esc(x.body)}</p>
-      ${x.action ? `<button class="act" data-open="${esc(x.id)}">${esc(x.action.label || 'Open')}</button>` : ''}</div>`).join('') : `<p class="empty">All handled.</p>`;
-
-    h += `<h2>Where things were left</h2>`;
-    h += left.length ? left.map(x => `<div class="row item" data-item="${esc(x.id)}"><div><div class="who">${esc(x.who)}</div><div class="what">${esc(x.what)}</div></div>
-      <span class="ball ${x.ball === 'them' ? 'them' : 'you'}">${x.ball === 'them' ? 'Them' : 'You'}</span>${ctl(x.id, x.who)}</div>`).join('') : `<p class="empty">Nobody waiting.</p>`;
-
-    h += `<h2>Today's moves</h2>`;
-    h += moves.length ? `<ol class="moves">${moves.map(x => `<li class="item" data-item="${esc(x.id)}"><div>${esc(x.title)}<small>${esc(x.sub)}</small></div>${ctl(x.id, x.title)}</li>`).join('')}</ol>` : `<p class="empty">All done.</p>`;
-    if (system) h += `<div class="card item pad-r" data-item="${esc(system.id)}" style="margin-top:16px;position:relative">${ctl(system.id, system.body)}<p><b>${esc(system.title || 'System to build')}:</b> ${esc(system.body)}</p>${system.sub ? `<p class="mute">${esc(system.sub)}</p>` : ''}</div>`;
-    if (oldIdea) h += `<h2>Idea just for you</h2><div class="card item pad-r" data-item="${esc(oldIdea.id)}" style="position:relative">${ctl(oldIdea.id, oldIdea.body)}<p>${esc(oldIdea.body)}</p></div>`;
-
-    h += `<h2>Prompts</h2>`;
-    if (written.length) h += written.map(p => `<div class="card item pad-r written" data-item="${esc(p.id)}" style="position:relative">${ctl(p.id, p.title)}<p><b>${esc(p.title)}</b></p><pre>${esc(p.text)}</pre><button class="act" data-copy="${esc(p.id)}">Copy prompt</button></div>`).join('');
-    const today = live(pr.today);
-    if (today.length) h += today.map(p => `<div class="card item pad-r" data-item="${esc(p.id)}" style="position:relative">${ctl(p.id, p.text)}<div class="prompt"><p>${esc(p.text)}</p><p class="mute">${esc(p.who || '')} ${esc(p.engagement || '')} ${p.url ? `· <a href="${esc(p.url)}" target="_blank" rel="noopener">source</a>` : ''}</p></div></div>`).join('');
-    if (pr.note) h += `<div class="card"><p class="mute">${esc(pr.note)}</p></div>`;
-    if ((pr.leaderboard || []).length) h += `<div class="card"><p><b>This month's leaderboard</b></p>${pr.leaderboard.slice(0, 5).map((p, i) => `<p class="mute">${i + 1}. ${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener" style="color:var(--gold)">${esc(p.text)}</a>` : esc(p.text)}</p>`).join('')}</div>`;
-
-    if (r.corner) {
-      const c = r.corner;
-      h += `<h2>Corner</h2><div class="card"><p><b>Getting it ready for you as the only user</b></p>
-        ${typeof c.pct === 'number' ? `<div class="bar"><i style="width:${Math.max(0, Math.min(100, c.pct))}%"></i></div>` : ''}
-        <p class="mute">${esc(c.body)}</p><p><b>Next step:</b> ${esc(c.next)}</p></div>`;
-    }
-
-    if (alerts.length) h += `<h2>Heads up</h2><div class="card">${alerts.map(a => `<div class="alert item" data-item="${esc(a.id)}"><span class="dot ${a.level === 'red' ? 'red' : ''}"></span><div><b>${esc(a.title)}</b>${a.sub ? `<div class="mute">${esc(a.sub)}</div>` : ''}</div>${ctl(a.id, a.title)}</div>`).join('')}</div>`;
-
-    h += feedbackBox();
-
+    if (r.feedback_applied) h += `<div class="applied"><b>From your note:</b> ${esc(r.feedback_applied)}</div>`;
+    h += `<div class="glance">${SECTIONS.filter(s => secs[s.key] && secs[s.key].count > 0).map(s => `<a class="chip" href="#sec-${s.key}" data-jump="${s.key}" style="--c:${s.c}"><i></i>${esc(s.title)} <b>${secs[s.key].count}</b></a>`).join('')}</div>`;
+    h += SECTIONS.filter(s => secs[s.key]).map(s => {
+      const x = secs[s.key];
+      return `<details class="sec" id="sec-${s.key}" data-sec="${s.key}" style="--c:${s.c}" ${openSecs.has(s.key) ? 'open' : ''}><summary><span class="badge ${s.dark ? 'dark' : ''}">${x.count === '' ? '&bull;' : x.count}</span><div style="min-width:0"><div class="stitle">${esc(s.title)}</div><div class="speek">${esc(x.peek || '')}</div></div>${CHEV}</summary><div class="body">${x.html || '<p class="empty">All clear.</p>'}</div></details>`;
+    }).join('');
     const clearedHere = Object.entries(state.cleared).filter(([id]) => byId[id]);
-    if (clearedHere.length) h += `<div class="cleared"><h2>Cleared (${clearedHere.length})</h2>${clearedHere.map(([id, c]) => `<div class="row"><div><div class="who">${esc(c.label || id)}</div><div class="what">${c.status === 'done' ? 'Done' : 'Dismissed'}${c.note ? ' · ' + esc(c.note) : ''}</div></div><span></span><button class="undo" data-undo="${esc(id)}">Undo</button></div>`).join('')}</div>`;
-
+    if (clearedHere.length) h += `<details class="sec" style="--c:var(--slate)"><summary><span class="badge">${clearedHere.length}</span><div><div class="stitle">Cleared</div><div class="speek">Things you marked done or dismissed</div></div>${CHEV}</summary><div class="body">${clearedHere.map(([id, c]) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)"><div><div style="font-size:14px;font-weight:600">${esc(c.label || id)}</div><div class="meta">${c.status === 'done' ? 'Done' : 'Dismissed'}${c.note ? ' · ' + esc(c.note) : ''}</div></div><button class="undo" data-undo="${esc(id)}">Undo</button></div>`).join('')}</div></details>`;
     app.innerHTML = h;
     wire();
-  }
-
-  function feedbackBox() {
-    const gen = state.generating;
-    return `<div class="fb"><h3>Tell me what to change</h3><p class="mute">Anything: what to cut, what to go deeper on, ideas you want me to chase. Every note shapes every report after this one.${state.feedback_count ? ' ' + state.feedback_count + ' notes so far.' : ''}</p>
-      <textarea id="fb-text" placeholder="e.g. More on clipping. Skip the Corner section. Give me ideas for Ambition."></textarea>
-      <div class="btns"><button class="btn primary" id="fb-go" ${gen ? 'disabled' : ''}>${gen ? 'Making a new one' : 'Send and remake report'}</button><button class="btn plain" id="fb-save">Just send</button></div></div>`;
   }
 
   function header() {
@@ -247,11 +208,9 @@ h2:after{content:"";flex:1;height:1px;background:var(--line)}
     const d = r.id ? new Date(r.id + 'T12:00:00') : new Date();
     const label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
     const gen = state.generating;
-    return `<div class="top"><div class="date">${esc(label)}</div>
-      <div style="display:flex;gap:8px;align-items:center">
+    return `<div class="top"><div class="date">${esc(label)}</div><div style="display:flex;gap:8px;align-items:center">
         ${state.dates.length > 1 ? `<select class="days" id="days">${state.dates.map(x => `<option ${x === state.day ? 'selected' : ''}>${x}</option>`).join('')}</select>` : ''}
-        <button class="new" id="new" ${gen ? 'disabled' : ''}>${gen ? '<span class="spin"></span>Making it' : 'New report'}</button>
-      </div></div>
+        <button class="new" id="new" ${gen ? 'disabled' : ''}>${gen ? '<span class="spin"></span>Making it' : 'New report'}</button></div></div>
       <h1>${esc(r.greeting || 'Good morning, Patrik.')}</h1><div class="sub">${esc(r.sources || '')}</div>`;
   }
 
@@ -261,26 +220,44 @@ h2:after{content:"";flex:1;height:1px;background:var(--line)}
   document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
   async function clearItem(kind, id, label, note) {
-    const el = app.querySelector(`[data-item="${CSS.escape(id)}"]`);
-    if (el) el.classList.add('leaving');
     try {
       await act({ type: kind, id, label, note });
       state.cleared[id] = { status: kind === 'dismiss' ? 'dismissed' : 'done', label, note, at: new Date().toISOString() };
-      setTimeout(render, 250);
+      render();
       toast(kind === 'dismiss' ? "Dismissed. It won't come back." : 'Marked done.');
-    } catch (e) { if (el) el.classList.remove('leaving'); toast("Didn't save. Try again."); }
+    } catch (e) { toast("Didn't save. Try again."); }
   }
 
   function askDismiss(id, label) {
-    const reasons = ['Not relevant', 'Already handled', "Don't suggest this kind again"];
-    sheet(`<h3>Dismiss this?</h3><p class="mute">${esc(label)}</p><label>Why (helps tomorrow's report)</label>
-      <div class="chips">${reasons.map(r => `<button class="chip" data-reason="${esc(r)}">${esc(r)}</button>`).join('')}</div>
-      <div class="btns"><button class="btn primary" id="go">Dismiss</button><button class="btn plain" id="cancel">Cancel</button></div>`);
+    const reasons = ['Not relevant', 'Already handled', 'Wrong or out of date', "Don't suggest this kind again"];
+    sheet(`<h3>Dismiss this?</h3><p style="color:var(--mute);font-size:14px">${esc(label)}</p><label>Why (tomorrow's report learns from it)</label>
+      <div class="reasons">${reasons.map(r => `<button class="reason" data-reason="${esc(r)}">${esc(r)}</button>`).join('')}</div>
+      <div class="acts" style="margin-top:24px"><button class="btn go" style="--c:var(--ink)" id="go">Dismiss</button><button class="btn" id="cancel">Cancel</button></div>`);
     let note = '';
-    document.querySelectorAll('.chip').forEach(c => c.onclick = () => { document.querySelectorAll('.chip').forEach(x => x.classList.remove('on')); c.classList.add('on'); note = c.dataset.reason; });
+    document.querySelectorAll('.reason').forEach(c => c.onclick = () => { document.querySelectorAll('.reason').forEach(x => x.classList.remove('on')); c.classList.add('on'); note = c.dataset.reason; });
     document.getElementById('cancel').onclick = close;
     document.getElementById('go').onclick = () => { close(); clearItem('dismiss', id, label, note); };
   }
+
+  function openFeedback() {
+    const gen = state.generating;
+    sheet(`<h3>Tell me what to change</h3><p style="color:var(--mute);font-size:14px">Anything: what's wrong or out of date, what to cut, what to go deeper on. Every note shapes every report after this one.${state.feedback_count ? ' ' + state.feedback_count + ' notes so far.' : ''}</p>
+      <textarea id="fb-text" placeholder="e.g. The Kohrs thing is wrong. More on clipping. Ideas for Ambition."></textarea>
+      <div class="acts" style="margin-top:16px"><button class="btn go" style="--c:var(--ink)" id="fb-go" ${gen ? 'disabled' : ''}>${gen ? 'Already making one' : 'Send and remake report'}</button><button class="btn" id="fb-save">Just send</button></div>`);
+    const sendFb = async (regenerate) => {
+      const text = (document.getElementById('fb-text').value || '').trim();
+      if (!text) { toast('Type a note first.'); return; }
+      try {
+        const r = await act({ type: 'feedback', text, regenerate, report: state.day });
+        close(); state.feedback_count = (state.feedback_count || 0) + 1;
+        if (r.message === 'generating' || r.message === 'already generating') { state.generating = { started_at: new Date().toISOString() }; render(); setTimeout(() => load(), 30000); toast('Got it. Making a new one, about 10 minutes.'); }
+        else toast(regenerate ? 'Got it. The next report will use it.' : 'Got it. Saved for the next report.');
+      } catch (e) { toast("Didn't send. Try again."); }
+    };
+    document.getElementById('fb-go').onclick = () => sendFb(true);
+    document.getElementById('fb-save').onclick = () => sendFb(false);
+  }
+  document.getElementById('fb-open').onclick = () => { if (token) openFeedback(); };
 
   function openAction(id) {
     const x = byId[id]; if (!x || !x.action) return;
@@ -288,17 +265,14 @@ h2:after{content:"";flex:1;height:1px;background:var(--line)}
     if (a.type === 'draft') {
       sheet(`<h3>Reply</h3><label>To</label><input id="f-to" value="${esc(a.to)}"><label>Subject</label><input id="f-su" value="${esc(a.subject)}">
         <label>Message</label><textarea id="f-body">${esc(a.body)}</textarea>
-        <div class="btns"><button class="btn primary" id="gmail">Open in Gmail</button><button class="btn" id="copy">Copy</button><button class="btn plain" id="sent">I sent it</button></div>`);
+        <div class="acts" style="margin-top:16px"><button class="btn go" style="--c:var(--ink)" id="gmail">Open in Gmail</button><button class="btn" id="copy">Copy</button><button class="btn" id="sent">I sent it</button></div>`);
       const val = k => document.getElementById(k).value;
-      document.getElementById('gmail').onclick = () => {
-        const u = 'https://mail.google.com/mail/?authuser=' + encodeURIComponent(a.from || 'hello@aom-inhouse.com') + '&view=cm&fs=1&to=' + encodeURIComponent(val('f-to')) + '&su=' + encodeURIComponent(val('f-su')) + '&body=' + encodeURIComponent(val('f-body'));
-        window.open(u, '_blank', 'noopener');
-      };
+      document.getElementById('gmail').onclick = () => window.open('https://mail.google.com/mail/?authuser=' + encodeURIComponent(a.from || 'hello@aom-inhouse.com') + '&view=cm&fs=1&to=' + encodeURIComponent(val('f-to')) + '&su=' + encodeURIComponent(val('f-su')) + '&body=' + encodeURIComponent(val('f-body')), '_blank', 'noopener');
       document.getElementById('copy').onclick = async () => { try { await navigator.clipboard.writeText(val('f-body')); toast('Copied.'); } catch (e) { toast("Couldn't copy."); } };
       document.getElementById('sent').onclick = () => { close(); clearItem('done', id, x.title, 'replied'); };
     } else if (a.type === 'approve-outreach') {
-      sheet(`<h3>${esc(a.label || 'Approve')}?</h3><p class="mute">This lets the daily drip start first emails to everyone on the ${esc(a.day)} list. Follow-ups continue on their own.</p>
-        <div class="btns"><button class="btn primary" id="go">Approve</button><button class="btn plain" id="cancel">Cancel</button></div>`);
+      sheet(`<h3>${esc(a.label || 'Approve')}?</h3><p style="color:var(--mute);font-size:14px">This lets the daily drip start first emails to everyone on the ${esc(a.day)} list. Follow-ups continue on their own.</p>
+        <div class="acts" style="margin-top:24px"><button class="btn go" style="--c:var(--ink)" id="go">Approve</button><button class="btn" id="cancel">Cancel</button></div>`);
       document.getElementById('cancel').onclick = close;
       document.getElementById('go').onclick = async () => {
         close(); toast('Approving...');
@@ -309,31 +283,20 @@ h2:after{content:"";flex:1;height:1px;background:var(--line)}
   }
 
   function wire() {
+    app.querySelectorAll('details.sec[data-sec]').forEach(d => d.addEventListener('toggle', () => { d.open ? openSecs.add(d.dataset.sec) : openSecs.delete(d.dataset.sec); localStorage.setItem(OPEN, JSON.stringify([...openSecs])); }));
+    app.querySelectorAll('[data-jump]').forEach(a => a.onclick = e => { e.preventDefault(); const d = document.getElementById('sec-' + a.dataset.jump); if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth' }); } });
     app.querySelectorAll('[data-do]').forEach(b => b.onclick = () => b.dataset.do === 'dismiss' ? askDismiss(b.dataset.id, b.dataset.label) : clearItem('done', b.dataset.id, b.dataset.label, ''));
     app.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openAction(b.dataset.open));
-    app.querySelectorAll('[data-undo]').forEach(b => b.onclick = async () => { try { await act({ type: 'undo', id: b.dataset.undo }); delete state.cleared[b.dataset.undo]; render(); toast('Back on the list.'); } catch (e) { toast("Didn't undo."); } });
     app.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(byId[b.dataset.copy].text); toast('Copied.'); } catch (e) { toast("Couldn't copy."); } });
-    const sendFb = async (regenerate) => {
-      const ta = document.getElementById('fb-text'); const text = (ta.value || '').trim();
-      if (!text) { toast('Type a note first.'); return; }
-      try {
-        const r = await act({ type: 'feedback', text, regenerate, report: state.day });
-        ta.value = ''; state.feedback_count = (state.feedback_count || 0) + 1;
-        if (r.message === 'generating' || r.message === 'already generating') { state.generating = { started_at: new Date().toISOString() }; render(); setTimeout(() => load(), 30000); toast('Got it. Making a new one now.'); }
-        else if (regenerate) toast('Got it. The next report will use it.');
-        else toast('Got it. Saved for the next report.');
-      } catch (e) { toast("Didn't send. Try again."); }
-    };
-    const fg = document.getElementById('fb-go'); if (fg) fg.onclick = () => sendFb(true);
-    const fs = document.getElementById('fb-save'); if (fs) fs.onclick = () => sendFb(false);
+    app.querySelectorAll('[data-undo]').forEach(b => b.onclick = async () => { try { await act({ type: 'undo', id: b.dataset.undo }); delete state.cleared[b.dataset.undo]; render(); toast('Back on the list.'); } catch (e) { toast("Didn't undo."); } });
     const days = document.getElementById('days'); if (days) days.onchange = () => load(days.value);
     const nb = document.getElementById('new');
     if (nb) nb.onclick = async () => {
       nb.disabled = true;
       try {
         const r = await act({ type: 'regenerate' });
-        if (r.message === 'generating' || r.message === 'already generating') { state.generating = { started_at: new Date().toISOString() }; render(); setTimeout(() => load(), 30000); toast('Making a fresh one.'); }
-        else { toast('Asked for a new one. It lands with the next run.'); nb.disabled = false; }
+        if (r.message === 'generating' || r.message === 'already generating') { state.generating = { started_at: new Date().toISOString() }; render(); setTimeout(() => load(), 30000); toast('Making a fresh one, about 10 minutes.'); }
+        else { toast('Asked for a new one.'); nb.disabled = false; }
       } catch (e) { nb.disabled = false; toast("Didn't go through."); }
     };
   }
