@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phoenix Prosperity clipping layout | Design still</title>
+  <style>
+    @font-face { font-family: Poppins; src: url("Poppins-ExtraBold.ttf"); font-weight: 800; }
+    @font-face { font-family: Poppins; src: url("Poppins-Bold.ttf"); font-weight: 700; }
+    @font-face { font-family: Nunito; src: url("NunitoSans-Bold.ttf"); font-weight: 700; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #101a13; color: #fbf5e6; font-family: Nunito, sans-serif; }
+    main { padding: 24px 14px 50px; text-align: center; }
+    h1 { font: 700 20px/1.25 Nunito, sans-serif; margin: 0 0 8px; }
+    .intro { color: #adbcad; font: 700 14px/1.4 Nunito, sans-serif; margin: 0 auto 24px; max-width: 520px; }
+    .viewport { position: relative; margin: 0 auto; width: min(100%, 540px); aspect-ratio: 9 / 16; box-shadow: 0 24px 80px #0009; overflow: hidden; }
+    .post { position: absolute; top: 0; left: 0; width: 1080px; height: 1920px; transform-origin: top left; background: #213f25; text-align: left; overflow: hidden; }
+    .speaker { position: absolute; top: 0; left: 0; width: 1080px; height: 840px; overflow: hidden; background: #1b291f; }
+    .speaker img { position: absolute; width: 1282px; height: 2279px; left: -101px; top: -297px; max-width: none; }
+    .speaker::after { content: ""; position: absolute; inset: 600px 0 0; background: linear-gradient(transparent, #101a1399); }
+    .name { position: absolute; right: 30px; top: 545px; z-index: 2; border: 2px solid #d9be8f; border-radius: 18px; background: #1b291feb; width: 356px; padding: 15px 20px; box-shadow: 0 8px 26px #0005; }
+    .name strong { display: block; color: #fbf5e6; font: 800 30px/1.15 Poppins, sans-serif; letter-spacing: -.6px; white-space: nowrap; }
+    .name span { display: block; color: #d9be8f; font: 700 21px/1.25 Nunito, sans-serif; margin-top: 2px; }
+    .caption { position: absolute; top: 840px; left: 0; width: 1080px; height: 220px; background: #213f25; display: flex; align-items: center; justify-content: center; text-align: center; padding: 18px 50px 25px; }
+    .caption p { margin: 0; color: #fbf5e6; font: 800 68px/1.2 Poppins, sans-serif; letter-spacing: -2px; text-transform: uppercase; }
+    .caption em { font-style: normal; color: #a8cb56; margin-left: .15em; }
+    .support { position: absolute; top: 1060px; left: 0; width: 1080px; height: 670px; overflow: hidden; background: #1b291f; }
+    .support img { width: 100%; height: 100%; object-fit: cover; object-position: center 54%; transform: scale(1.13); transform-origin: center 67%; }
+    .footer { position: absolute; top: 1730px; left: 0; width: 1080px; height: 190px; background: #1b291f; display: flex; align-items: center; padding: 0 78px; gap: 77px; }
+    .footer img { width: 260px; height: auto; flex: none; }
+    .footer .url { color: #fbf5e6; font: 700 35px/1 Nunito, sans-serif; white-space: nowrap; letter-spacing: 1px; }
+    .notes { max-width: 540px; margin: 20px auto 0; color: #adbcad; font: 700 13px/1.5 Nunito, sans-serif; text-align: left; }
+    .notes a { color: #d9be8f; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Layout sketch applied to the Oak Street clip</h1>
+    <p class="intro">One design still for structure review. The video edit has not changed.</p>
+    <div class="viewport" id="viewport">
+      <div class="post" id="post" role="img" aria-label="Vertical clipping layout: Tim at top, name beside him, captions below, farmland and homes photo, Oak Street footer">
+        <div class="speaker"><img src="speaker-source.png" alt=""></div>
+        <div class="name"><strong>Tim Fergestad</strong><span>Oak Street Assets</span></div>
+        <div class="caption"><p>You actually <em>save</em><br>a ton of water</p></div>
+        <div class="support"><img src="land-in-transition.jpg" alt="Farmland beside Arizona homes"></div>
+        <div class="footer"><img src="oak-street-logo.png" alt="Oak Street Assets"><div class="url">oakstreetassets.com</div></div>
+      </div>
+    </div>
+    <p class="notes">Design still from the existing Oak Street water clip. Supporting photo: Kevin Dooley, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>, cropped for this layout. The name label would appear briefly in motion.</p>
+  </main>
+  <script>
+    function fit() {
+      const viewport = document.getElementById('viewport');
+      document.getElementById('post').style.transform = `scale(${viewport.clientWidth / 1080})`;
+    }
+    window.addEventListener('resize', fit);
+    fit();
+  </script>
+</body>
+</html>
