@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#071727">
+  <title>Kody Romero · Current design frames</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, -apple-system, sans-serif; background: #071727; color: #f7f1e5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header { max-width: 1100px; margin: auto; padding: 22px 18px 8px; }
+    h1 { font: 600 clamp(28px, 6vw, 48px)/1.08 Georgia, serif; margin: 4px 0 10px; }
+    p { margin: 0; color: #bdc9d2; line-height: 1.5; }
+    nav { display: flex; gap: 8px; overflow-x: auto; padding: 16px 18px 12px; max-width: 1100px; margin: auto; scrollbar-width: none; }
+    nav a { white-space: nowrap; text-decoration: none; border: 1px solid #7d8792; color: #f7f1e5; border-radius: 999px; padding: 7px 12px; font-size: 14px; }
+    nav a:focus-visible, figure a:focus-visible { outline: 2px solid #d1ad63; outline-offset: 3px; }
+    .frames { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-inline: contain; padding: 0 max(18px, calc((100vw - 1100px) / 2)) 24px; }
+    figure { flex: 0 0 min(100%, 590px); margin: 0; scroll-snap-align: center; background: #10283b; border: 1px solid #40556b; border-radius: 15px; padding: 12px; }
+    figure img { display: block; width: 100%; height: min(72vh, 900px); object-fit: contain; background: #061322; border-radius: 8px; }
+    figcaption { display: flex; justify-content: space-between; gap: 14px; padding: 11px 4px 1px; font-size: 15px; }
+    .time { color: #d5b677; white-space: nowrap; }
+    footer { max-width: 1100px; margin: auto; padding: 0 18px 24px; font-size: 14px; }
+    @media (min-width: 800px) { figure { flex-basis: 460px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kody’s current design</h1>
+    <p>Five frames from the video as it stands. Swipe through the opening, middle, and end. No new edit is shown here.</p>
+  </header>
+  <nav aria-label="Jump to a frame">
+    <a href="#opening">Opening</a><a href="#heat">110° fact</a><a href="#garden">Outdoors</a><a href="#pool">Pool</a><a href="#ending">Ending</a>
+  </nav>
+  <main class="frames" aria-label="Current video frames">
+    <figure id="opening"><a href="/design-reviews/kody-heat-current-20260926/01-opening-bubble.jpg"><img src="/design-reviews/kody-heat-current-20260926/01-opening-bubble.jpg" alt="Opening frame with Kody speaking, the Phoenix image, headline, and temporary name bubble"></a><figcaption><span>01 · Opening and name bubble</span><span class="time">1.0 s</span></figcaption></figure>
+    <figure id="heat"><a href="/design-reviews/kody-heat-current-20260926/02-heat-stat.jpg"><img src="/design-reviews/kody-heat-current-20260926/02-heat-stat.jpg" alt="Middle frame with the 110 degree fact graphic and Kody speaking" loading="lazy"></a><figcaption><span>02 · Heat fact</span><span class="time">9.5 s</span></figcaption></figure>
+    <figure id="garden"><a href="/design-reviews/kody-heat-current-20260926/03-outdoor-garden.jpg"><img src="/design-reviews/kody-heat-current-20260926/03-outdoor-garden.jpg" alt="Middle frame with a Phoenix garden picture and outdoor-planning message" loading="lazy"></a><figcaption><span>03 · Outdoors in July</span><span class="time">16.0 s</span></figcaption></figure>
+    <figure id="pool"><a href="/design-reviews/kody-heat-current-20260926/04-pool-payoff.jpg"><img src="/design-reviews/kody-heat-current-20260926/04-pool-payoff.jpg" alt="Late frame with pool picture, checklist, and Kody speaking" loading="lazy"></a><figcaption><span>04 · Pool payoff</span><span class="time">26.0 s</span></figcaption></figure>
+    <figure id="ending"><a href="/design-reviews/kody-heat-current-20260926/05-end-card.jpg"><img src="/design-reviews/kody-heat-current-20260926/05-end-card.jpg" alt="End card with Kody portrait, Arizona Living show identity, and full-video call to action" loading="lazy"></a><figcaption><span>05 · End card</span><span class="time">29.2 s</span></figcaption></figure>
+  </main>
+  <footer>Tap any frame for the full-size image.</footer>
+</body>
+</html>
