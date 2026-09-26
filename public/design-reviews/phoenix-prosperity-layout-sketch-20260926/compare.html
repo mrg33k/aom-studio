@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oak Street clipping layouts | Option 1 and 2</title>
+  <style>
+    @font-face { font-family: Nunito; src: url("NunitoSans-Bold.ttf"); font-weight: 700; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #101a13; color: #fbf5e6; font-family: Nunito, sans-serif; }
+    main { width: min(100%, 1120px); margin: 0 auto; padding: 24px 14px 48px; }
+    h1 { font-size: 22px; line-height: 1.2; margin: 0 0 7px; }
+    .intro { color: #b8c5b6; font-size: 14px; margin: 0 0 18px; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+    .tabs button { border: 1px solid #d9be8f; border-radius: 24px; background: #213f25; color: #fbf5e6; font: 700 15px Nunito, sans-serif; padding: 10px 17px; cursor: pointer; }
+    .track { display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: thin; }
+    figure { margin: 0; flex: 0 0 calc((100% - 18px) / 2); scroll-snap-align: start; }
+    figure img { display: block; width: 100%; height: auto; box-shadow: 0 10px 34px #0008; }
+    figcaption { padding: 12px 2px 5px; font-size: 14px; color: #c8d2c5; }
+    figcaption strong { display: block; color: #fbf5e6; font-size: 18px; }
+    .credit { font-size: 12px; color: #aab9a8; line-height: 1.5; margin-top: 18px; }
+    .credit a { color: #d9be8f; }
+    @media (max-width: 700px) { figure { flex-basis: 100%; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Two clipping layouts on the same Oak Street clip</h1>
+    <p class="intro">Swipe between the options on your phone. Only the layout changes.</p>
+    <div class="tabs"><button type="button" onclick="show(0)">Option 1</button><button type="button" onclick="show(1)">Option 2</button></div>
+    <div class="track" id="track">
+      <figure id="first"><img src="layout-still.png" alt="Option 1: Tim's name next to his face, captions, farmland photo, small footer"><figcaption><strong>Option 1</strong>Name beside Tim; smaller footer.</figcaption></figure>
+      <figure id="second"><img src="option-2-still.png" alt="Option 2: Tim's name at upper left, captions, farmland photo, larger branding footer"><figcaption><strong>Option 2</strong>Name upper left; stronger branding footer.</figcaption></figure>
+    </div>
+    <p class="credit">Static design previews. The video has not changed. Photo: Kevin Dooley, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>, cropped.</p>
+  </main>
+  <script>function show(i) { const track = document.getElementById('track'); track.scrollTo({left:i * (track.clientWidth + 18),behavior:'instant'}); }</script>
+</body>
+</html>
