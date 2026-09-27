@@ -302,10 +302,10 @@
       const visual = document.createElement('div');
       visual.className = 'support-visual';
       visual.setAttribute('aria-label', 'Farm to homes land-use illustration');
-      visual.innerHTML = `<svg viewBox="0 0 900 180" role="img" aria-hidden="true"><g fill="none" stroke="#d9be8f" stroke-width="10" stroke-linejoin="round" stroke-linecap="round"><path d="M68 105 150 38l82 67v57H68zM68 105h164M123 162v-50h54v50M42 163h217"/><path d="M646 107 750 32l104 75v56H646zM682 163v-43h50v43M770 163v-43h50v43M620 163h260"/><path d="M302 92h276m-36-28 36 28-36 28"/></g><text x="150" y="175" text-anchor="middle" fill="#fbf5e6" font-size="24" font-weight="700">FARMS</text><text x="750" y="175" text-anchor="middle" fill="#fbf5e6" font-size="24" font-weight="700">HOMES</text></svg>`;
+      visual.innerHTML = `<svg viewBox="0 0 220 220" role="img" aria-hidden="true"><g fill="none" stroke="#d9be8f" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"><path d="M30 85 110 22l80 63v38H30zM30 85h160M83 123V78h54v45M18 123h184"/><path d="m110 137 0 20m-16-14 16 14 16-14"/><path d="M35 187 110 145l75 42v26H35zM71 213v-27h28v27M125 213v-27h28v27M20 213h180"/></g></svg>`;
       support.append(visual);
       const visualStyle = document.createElement('style');
-      visualStyle.textContent = '#main5 .m5-support{display:flex;flex-direction:column;justify-content:center;gap:38px;padding:50px 64px} #main5 .m5-support p{font-size:65px;line-height:1.1} #main5 .support-visual{width:100%;height:180px} #main5 .support-visual svg{display:block;width:100%;height:100%}';
+      visualStyle.textContent = '#main5 .m5-support{display:flex;flex-direction:row;align-items:flex-start;gap:25px;padding:32px 35px} #main5 .m5-support p{flex:1;font-size:58px;line-height:1.08;text-align:left} #main5 .support-visual{order:-1;flex:none;width:220px;height:220px} #main5 .support-visual svg{display:block;width:100%;height:100%}';
       shadow.append(visualStyle);
     }
     // Main 1's footer logo has an intrinsic height. On a fresh phone load it
