@@ -17,6 +17,8 @@ h1{font:700 clamp(30px,6vw,43px)/1.08 Poppins,Nunito,sans-serif;letter-spacing:-
 .review-bar{max-width:680px;margin:0 auto 15px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .tool-button,.bottom-actions button,.draft-actions button{min-height:43px;border-radius:10px;border:1px solid #647767;background:#263c2a;color:#fbf5e6;padding:0 14px;font-size:14px}
 .tool-button.active,.bottom-actions #saveNow,.draft-actions #savePin{background:#a8cb56;color:#14230f;border-color:#a8cb56}
+.tool-button[hidden]{display:none}
+.candidate-preview #moveButton,.candidate-preview #pinButton,.candidate-preview .grid-switch,.candidate-preview #interaction,.candidate-preview .layer-panel,.candidate-preview .bottom-actions{display:none!important}
 .grid-switch{display:flex;align-items:center;gap:7px;min-height:43px;font-size:13px;color:#e0e8db}.grid-switch input{accent-color:#a8cb56;width:18px;height:18px}
 .ig-switch{margin-left:auto;display:flex;gap:9px;align-items:center;min-height:43px;font-size:13px;white-space:nowrap;cursor:pointer}
 .ig-switch input{position:absolute;opacity:0;width:1px;height:1px}

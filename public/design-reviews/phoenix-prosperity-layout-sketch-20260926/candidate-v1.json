@@ -1,0 +1,265 @@
+{
+  "layouts": {
+    "main1": {
+      "name": {
+        "x": 672,
+        "y": 696,
+        "w": 384,
+        "h": 120
+      },
+      "caption": {
+        "x": 0,
+        "y": 840,
+        "w": 1080,
+        "h": 216
+      },
+      "website": {
+        "x": 408,
+        "y": 1792,
+        "w": 600,
+        "h": 64
+      },
+      "speaker": {
+        "x": 0,
+        "y": 0,
+        "w": 1080,
+        "h": 840
+      }
+    },
+    "main2": {
+      "name": {
+        "x": 0,
+        "y": 600,
+        "w": 408,
+        "h": 120
+      },
+      "footer": {
+        "x": 0,
+        "y": 1632,
+        "w": 1080,
+        "h": 288
+      },
+      "website": {
+        "x": 480,
+        "y": 1776,
+        "w": 504,
+        "h": 48
+      },
+      "brand": {
+        "x": 504,
+        "y": 1728,
+        "w": 480,
+        "h": 48
+      },
+      "logo": {
+        "x": 168,
+        "y": 1680,
+        "w": 192,
+        "h": 192
+      }
+    },
+    "main3": {
+      "caption": {
+        "x": 48,
+        "y": 1008,
+        "w": 984,
+        "h": 216,
+        "z": 4
+      },
+      "name": {
+        "x": 24,
+        "y": 1296,
+        "w": 408,
+        "h": 120,
+        "z": 5
+      },
+      "photo": {
+        "x": 0,
+        "y": 528,
+        "w": 1080,
+        "h": 672,
+        "z": 1
+      },
+      "speaker": {
+        "x": 0,
+        "y": 1128,
+        "w": 1080,
+        "h": 792,
+        "z": 3
+      },
+      "headline": {
+        "x": -120,
+        "y": 72,
+        "w": 1320,
+        "h": 432,
+        "z": 2
+      }
+    },
+    "main4": {
+      "photo": {
+        "x": 0,
+        "y": 432,
+        "w": 1080,
+        "h": 960,
+        "z": 1
+      },
+      "speaker": {
+        "x": 0,
+        "y": 432,
+        "w": 1080,
+        "h": 960,
+        "z": 2
+      },
+      "name": {
+        "x": 24,
+        "y": 1056,
+        "w": 408,
+        "h": 120,
+        "z": 5
+      },
+      "caption": {
+        "x": 0,
+        "y": 1392,
+        "w": 1080,
+        "h": 384,
+        "z": 4
+      },
+      "headline": {
+        "x": 0,
+        "y": 72,
+        "w": 1080,
+        "h": 360,
+        "z": 3
+      }
+    },
+    "main5": {
+      "portrait": {
+        "x": 792,
+        "y": 600,
+        "w": 240,
+        "h": 240
+      },
+      "name": {
+        "x": 624,
+        "y": 864,
+        "w": 432,
+        "h": 120
+      },
+      "support": {
+        "x": 72,
+        "y": 1200,
+        "w": 936,
+        "h": 672
+      },
+      "caption": {
+        "x": 0,
+        "y": 984,
+        "w": 1080,
+        "h": 216
+      }
+    },
+    "main6": {
+      "name": {
+        "x": 624,
+        "y": 624,
+        "w": 432,
+        "h": 120
+      }
+    },
+    "end1": {
+      "portrait": {
+        "x": 912,
+        "y": 816,
+        "w": 144,
+        "h": 144
+      },
+      "follow": {
+        "x": 168,
+        "y": 888,
+        "w": 720,
+        "h": 144
+      },
+      "show": {
+        "x": 72,
+        "y": 1056,
+        "w": 936,
+        "h": 48
+      },
+      "cta": {
+        "x": 96,
+        "y": 1152,
+        "w": 888,
+        "h": 144
+      },
+      "badge": {
+        "x": 360,
+        "y": 504,
+        "w": 360,
+        "h": 360
+      }
+    },
+    "end2": {
+      "logo": {
+        "x": 288,
+        "y": 408,
+        "w": 480,
+        "h": 480
+      },
+      "brand": {
+        "x": 0,
+        "y": 912,
+        "w": 1080,
+        "h": 120
+      },
+      "follow": {
+        "x": 168,
+        "y": 1056,
+        "w": 744,
+        "h": 144
+      }
+    }
+  },
+  "pins": {
+    "main1": [],
+    "main2": [],
+    "main3": [
+      {
+        "id": "p-muj79sq3-o95gs",
+        "x": 0.3704545454545455,
+        "y": 0.3603415999215976,
+        "text": "This was supposed to be with a round top on the image but I couldnt change the layer order. Should still have proper room between the headline.",
+        "created": "2026-09-27T02:29:11.979Z"
+      }
+    ],
+    "main4": [
+      {
+        "id": "p-muj7bbj3-b5fus",
+        "x": 0.47954545454545455,
+        "y": 0.4447166057736904,
+        "text": "IN this version the image switches between the original video and supporting graphics",
+        "created": "2026-09-27T02:30:23.007Z"
+      }
+    ],
+    "main5": [
+      {
+        "id": "p-muj7240t-cyojc",
+        "x": 0.4772727272727273,
+        "y": 0.6888927590729286,
+        "text": "Should have visual icons or graphics of somekind to support the text being mindful of where the instagram/tiktok overlays live",
+        "created": "2026-09-27T02:23:13.373Z"
+      }
+    ],
+    "main6": [],
+    "end1": [],
+    "end2": []
+  },
+  "instagramOn": true,
+  "updated": "2026-09-27T03:06:19.454Z",
+  "status": "alignment candidate; Patrik raw draft remains the source of truth",
+  "based_on": "patrik-raw-layout-draft-20260926.json",
+  "behavior": {
+    "main3": "rounded-top photo below headline; caption at handoff to speaker",
+    "main4": "one media stage switches between speaker video and supporting graphic; no permanent split",
+    "main5": "supporting text includes a topic-specific icon or diagram, clear of platform controls"
+  }
+}

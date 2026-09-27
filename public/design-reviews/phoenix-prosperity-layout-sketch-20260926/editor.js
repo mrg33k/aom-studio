@@ -1,6 +1,7 @@
 (() => {
   const W = 1080, H = 1920;
   const reviewKey = new URLSearchParams(location.search).get('key') || '';
+  const isCandidate = new URLSearchParams(location.search).get('preview') === 'candidate-v1';
   const API = '/api/design-review/clip-layout';
   const STORE = 'oak-street-layout-review-v1';
   const isLocalFile = location.protocol === 'file:';
@@ -93,6 +94,7 @@
     setStatus('Sending your saved draft for review…');
   }
   function queueSave() {
+    if (isCandidate) { setStatus('Preview only · original draft is safe'); return; }
     revision++;
     backup();
     setStatus('Saving…');
@@ -100,6 +102,7 @@
     saveTimer = setTimeout(saveState, 650);
   }
   async function saveState() {
+    if (isCandidate) { setStatus('Preview only · original draft is safe'); return; }
     clearTimeout(saveTimer);
     if (!reviewKey) { setStatus('Saved on this phone only'); return; }
     if (isLocalFile) { transferLocalDraft(); return; }
@@ -314,7 +317,15 @@
     if (ticket !== renderTicket) return;
     drawHits();
     renderPins();
-    history.replaceState(null, '', `?key=${encodeURIComponent(reviewKey)}&layout=${option.id}`);
+    $('mediaSwap').hidden = !isCandidate || option.id !== 'main4';
+    $('mediaSwap').textContent = 'Show supporting visual';
+    if (isCandidate && option.id === 'main4') {
+      const photo = partMap.get('photo');
+      photo.element.style.clipPath = 'none';
+      photo.element.style.zIndex = '1';
+    }
+    const query = isCandidate ? `preview=candidate-v1&layout=${option.id}` : `key=${encodeURIComponent(reviewKey)}&layout=${option.id}`;
+    history.replaceState(null, '', `?${query}`);
   }
   function mode(pin) {
     pinMode = pin;
@@ -378,14 +389,26 @@
     if (save) queueSave();
   }
   async function init() {
+    if (isCandidate) {
+      document.body.classList.add('candidate-preview');
+      document.querySelector('.page-head h1').textContent = 'Aligned layout study';
+      document.querySelector('.page-head p').textContent = 'These frames follow Patrik’s edited layouts with aligned edges and repaired layers. The original draft is unchanged.';
+    }
     for (const item of OPTIONS) {
       const b = document.createElement('button');
       b.type = 'button'; b.textContent = item.label; b.dataset.id = item.id;
       b.onclick = () => showOption(item.id).catch(() => setStatus('Could not open that layout'));
       $('layoutTabs').append(b);
     }
-    try { const backupState = JSON.parse(localStorage.getItem(STORE) || 'null'); if (backupState) state = backupState; } catch (_) {}
-    if (reviewKey && isLocalFile && hasDraft(state)) {
+    if (isCandidate) {
+      const response = await fetch('candidate-v1.json', { cache: 'no-store' });
+      if (!response.ok) throw new Error('Candidate is unavailable');
+      state = await response.json();
+      setStatus('Preview only · original draft is safe');
+    } else try { const backupState = JSON.parse(localStorage.getItem(STORE) || 'null'); if (backupState) state = backupState; } catch (_) {}
+    if (isCandidate) {
+      // Never replace the user's review state with an exploratory candidate.
+    } else if (reviewKey && isLocalFile && hasDraft(state)) {
       transferLocalDraft();
     } else if (reviewKey && !isLocalFile) {
       try {
@@ -407,6 +430,13 @@
     $('savePin').onclick = commitPin;
     $('cancelPin').onclick = () => { draft = null; $('pinDraft').hidden = true; mode(false); };
     $('instagramToggle').onchange = e => setInstagram(e.target.checked);
+    $('mediaSwap').onclick = () => {
+      const photo = partMap.get('photo');
+      if (!photo || option.id !== 'main4') return;
+      const show = photo.element.style.zIndex !== '6';
+      photo.element.style.zIndex = show ? '6' : '1';
+      $('mediaSwap').textContent = show ? 'Show speaker video' : 'Show supporting visual';
+    };
     $('snapToggle').onchange = e => { $('gridOverlay').style.display = e.target.checked ? 'block' : 'none'; };
     $('gridOverlay').style.display = $('snapToggle').checked ? 'block' : 'none';
     $('layerBack').onclick = () => changeLayer(-1);
