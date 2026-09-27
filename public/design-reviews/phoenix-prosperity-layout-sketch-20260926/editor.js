@@ -42,7 +42,7 @@
   const cache = new Map();
   let state = { layouts: {}, pins: {}, instagramOn: false };
   let option = OPTIONS[0], partMap = new Map(), selected = null, pinMode = false, draft = null;
-  let saveTimer = null, saving = false, saveAgain = false, scale = 1, revision = 0;
+  let saveTimer = null, saving = false, saveAgain = false, scale = 1, revision = 0, renderTicket = 0;
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
   const numericBox = b => ({ x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.w), h: Math.round(b.h) });
@@ -205,16 +205,22 @@
     part.hit.addEventListener('pointercancel', stop, { once: true });
   }
   async function showOption(id) {
-    option = OPTIONS.find(o => o.id === id) || OPTIONS[0];
+    const ticket = ++renderTicket;
+    const next = OPTIONS.find(o => o.id === id) || OPTIONS[0];
+    option = next;
     draft = null;
     $('pinDraft').hidden = true;
     selectPart(null);
-    for (const button of $('layoutTabs').children) button.classList.toggle('active', button.dataset.id === option.id);
-    const doc = await template(option.file);
-    const source = doc.querySelector(option.source);
+    $('selectionLabel').textContent = `Loading ${next.label}…`;
+    for (const button of $('layoutTabs').children) button.classList.toggle('active', button.dataset.id === next.id);
+    const doc = await template(next.file);
+    if (ticket !== renderTicket) return;
+    const source = doc.querySelector(next.source);
     const style = doc.querySelector('style');
     if (!source || !style) throw new Error('Layout source is incomplete');
     const shadow = $('canvas').shadowRoot || $('canvas').attachShadow({ mode: 'open' });
+    $('interaction').replaceChildren();
+    $('pinsOnCanvas').replaceChildren();
     shadow.replaceChildren();
     const css = document.createElement('style');
     css.textContent = `:host{display:block;position:relative;width:1080px;height:1920px;overflow:hidden;} *{box-sizing:border-box;} ${style.textContent}`;
@@ -230,10 +236,13 @@
       new Promise(resolve => setTimeout(resolve, 5000)),
     ]);
     await document.fonts.ready;
+    if (ticket !== renderTicket) return;
     // Give the browser a layout pass before measuring the editable pieces.
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    if (ticket !== renderTicket) return;
     flattenNestedPieces();
     await new Promise(resolve => requestAnimationFrame(resolve));
+    if (ticket !== renderTicket) return;
     drawHits();
     renderPins();
     history.replaceState(null, '', `?key=${encodeURIComponent(reviewKey)}&layout=${option.id}`);
