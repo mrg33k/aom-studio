@@ -402,8 +402,8 @@
   async function init() {
     if (isCandidate) {
       document.body.classList.add('candidate-preview');
-      document.querySelector('.page-head h1').textContent = 'Aligned layout study';
-      document.querySelector('.page-head p').textContent = 'These frames follow Patrik’s edited layouts with aligned edges and repaired layers. The original draft is unchanged.';
+      document.querySelector('.page-head h1').textContent = 'Earlier alignment study';
+      document.querySelector('.page-head p').innerHTML = 'This study still has overlaps. The <a href="https://www.figma.com/design/S8pJxyZEVhk5H3Y2GuGKbl/AOM-Kit-%25E2%2580%2594-Department-Console-v1?node-id=28-16" target="_blank" rel="noopener">CLIPS REELZ Figma wireframes</a> now guide spacing. The original draft is unchanged.';
     }
     for (const item of OPTIONS) {
       const b = document.createElement('button');
