@@ -55,16 +55,32 @@
   const setStatus = msg => { $('saveStatus').textContent = msg; };
   const backup = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (_) {} };
   const hasDraft = value => value && (Object.values(value.layouts || {}).some(parts => Object.keys(parts || {}).length) || Object.values(value.pins || {}).some(pins => pins?.length));
-  function transferLocalDraft() {
-    // A local file cannot use the relative API path. A form can send the
-    // browser's existing draft to the same keyed endpoint without CORS.
+  async function transferLocalDraft() {
+    // A local file cannot use the relative API path. Send a simple cross-origin
+    // request to the final host; the bare domain redirects and may drop a POST
+    // from an embedded file browser.
+    const endpoint = `https://www.aheadofmarket.com${API}?key=${encodeURIComponent(reviewKey)}`;
+    const payload = new URLSearchParams({ state: JSON.stringify(state) });
+    try {
+      if (navigator.sendBeacon(endpoint, payload)) {
+        setStatus('Sending your saved draft for review…');
+        return;
+      }
+    } catch (_) {}
+    try {
+      await fetch(endpoint, { method: 'POST', mode: 'no-cors', body: payload, keepalive: true });
+      setStatus('Draft sent for review');
+      return;
+    } catch (_) {}
+    // An iframe form is a final fallback for browsers that disable beacons
+    // and no-cors fetch from file pages.
     const frame = document.createElement('iframe');
     frame.name = 'layout-draft-transfer';
     frame.hidden = true;
     document.body.append(frame);
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = `https://aheadofmarket.com${API}?key=${encodeURIComponent(reviewKey)}`;
+    form.action = endpoint;
     form.target = frame.name;
     form.hidden = true;
     const input = document.createElement('input');
@@ -86,6 +102,7 @@
   async function saveState() {
     clearTimeout(saveTimer);
     if (!reviewKey) { setStatus('Saved on this phone only'); return; }
+    if (isLocalFile) { transferLocalDraft(); return; }
     if (saving) { saveAgain = true; return; }
     saving = true;
     const sentRevision = revision;
