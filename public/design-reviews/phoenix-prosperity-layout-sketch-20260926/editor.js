@@ -219,6 +219,17 @@
     const css = document.createElement('style');
     css.textContent = `:host{display:block;position:relative;width:1080px;height:1920px;overflow:hidden;} *{box-sizing:border-box;} ${style.textContent}`;
     shadow.append(css, source.cloneNode(true));
+    // Main 1's footer logo has an intrinsic height. On a fresh phone load it
+    // can measure as zero until the image arrives, leaving no drag handle.
+    const images = [...shadow.querySelectorAll('img')];
+    await Promise.race([
+      Promise.all(images.map(img => img.complete ? Promise.resolve() : new Promise(resolve => {
+        img.addEventListener('load', resolve, { once: true });
+        img.addEventListener('error', resolve, { once: true });
+      }))),
+      new Promise(resolve => setTimeout(resolve, 5000)),
+    ]);
+    await document.fonts.ready;
     // Give the browser a layout pass before measuring the editable pieces.
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     flattenNestedPieces();
