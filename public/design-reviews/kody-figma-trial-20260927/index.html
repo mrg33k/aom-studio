@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kody clipping layout trial</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,system-ui,sans-serif;background:#061321;color:#f5f7fa}
+    *{box-sizing:border-box}body{margin:0}main{max-width:900px;margin:auto;padding:24px 16px 64px}
+    h1{font-size:clamp(24px,5vw,40px);margin:0 0 8px}p{line-height:1.45;color:#b7c7d6;margin:0 0 18px}
+    .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:18px 0}
+    button{background:#142c43;color:white;border:1px solid #567086;border-radius:12px;padding:11px 15px;font:700 15px Inter,system-ui;cursor:pointer}
+    button[aria-pressed=true]{background:#f6c96b;color:#07182a;border-color:#f6c96b}
+    label{margin-left:auto;font-size:15px;display:flex;align-items:center;gap:8px}
+    input{width:20px;height:20px;accent-color:#f6c96b}
+    figure{margin:0 auto;width:min(100%,430px)}img{display:block;width:100%;height:auto;border:1px solid #426078;border-radius:8px}
+    figcaption{color:#b7c7d6;font-size:14px;margin-top:10px}a{color:#f6c96b}
+    .note{border-left:3px solid #f6c96b;padding:10px 15px;margin-top:20px;background:#0d2338;color:#e9eef3}
+  </style>
+</head>
+<body><main>
+  <h1>Kody layout trial</h1>
+  <p>Two endings built from editable Figma wireframes, applied to Kody’s existing Arizona Living look. These are still design tests, not a finished clip.</p>
+  <div class="controls" role="group" aria-label="Choose frame">
+    <button data-frame="main" aria-pressed="true">Main</button>
+    <button data-frame="end-1" aria-pressed="false">Portrait ending</button>
+    <button data-frame="end-2" aria-pressed="false">Brand ending</button>
+    <label><input type="checkbox" id="overlay"> Instagram controls</label>
+  </div>
+  <figure><img id="proof" src="kody-main-figma-1.jpg" alt="Kody main clipping layout"><figcaption id="caption">Story 1 wireframe with Kody footage and a Phoenix garden image.</figcaption></figure>
+  <div class="note" id="note">The inherited main-frame footer sits under Instagram’s bottom controls. It needs a measured Figma revision before production.</div>
+  <p style="margin-top:20px">Wireframes: <a href="https://www.figma.com/design/S8pJxyZEVhk5H3Y2GuGKbl/AOM-Kit-%25E2%2580%2594-Department-Console-v1?node-id=28-66">portrait ending</a> · <a href="https://www.figma.com/design/S8pJxyZEVhk5H3Y2GuGKbl/AOM-Kit-%25E2%2580%2594-Department-Console-v1?node-id=28-90">brand ending</a>. Garden photo: <a href="https://commons.wikimedia.org/wiki/File:DBG_Phoenix.JPG">Felix Gottwald, CC BY-SA 3.0</a>, cropped.</p>
+</main><script>
+  const frames={main:['kody-main-figma-1.jpg','kody-main-instagram-on.jpg','Story 1 wireframe with Kody footage and a Phoenix garden image.','The inherited main-frame footer sits under Instagram’s bottom controls. It needs a measured Figma revision before production.'],
+    'end-1':['kody-end-1.jpg','kody-end-1-instagram-on.jpg','Portrait, show, speaker, follow prompt, episode CTA, and elevated identity footer.','The portrait ending’s footer was moved up in Figma after the first overlay check. Its identity text now clears the bottom controls.'],
+    'end-2':['kody-end-2.jpg','kody-end-2-instagram-on.jpg','Brand mark, show, follow prompt, and contact link.','The brand ending keeps all essential copy above the bottom controls.']};
+  let current='main';const image=document.querySelector('#proof'),overlay=document.querySelector('#overlay');
+  function render(){const f=frames[current];image.src=f[overlay.checked?1:0];image.alt=document.querySelector(`[data-frame="${current}"]`).textContent+' design frame';document.querySelector('#caption').textContent=f[2];document.querySelector('#note').textContent=f[3];document.querySelectorAll('[data-frame]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.frame===current)));}
+  document.querySelectorAll('[data-frame]').forEach(b=>b.addEventListener('click',()=>{current=b.dataset.frame;render()}));overlay.addEventListener('change',render);
+</script></body></html>
