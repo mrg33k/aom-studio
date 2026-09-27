@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#101a13">
+  <title>Oak Street layout review</title>
+  <link rel="stylesheet" href="editor.css">
+</head>
+<body>
+  <main class="workspace">
+    <header class="page-head">
+      <div class="eyebrow">OAK STREET / DESIGN REVIEW</div>
+      <h1>Shape the clip</h1>
+      <p>Drag a piece to move it. Pull a corner to resize it. Pin a note where you want me to look.</p>
+    </header>
+
+    <nav class="layout-tabs" id="layoutTabs" aria-label="Choose a layout"></nav>
+
+    <div class="review-bar">
+      <button type="button" id="moveButton" class="tool-button active" aria-pressed="true">Move pieces</button>
+      <button type="button" id="pinButton" class="tool-button" aria-pressed="false">Pin a note</button>
+      <label class="ig-switch"><span>Instagram overlay</span><input type="checkbox" id="instagramToggle" role="switch"><span class="switch-track" aria-hidden="true"></span></label>
+    </div>
+
+    <div class="artboard-wrap">
+      <div class="canvas-viewport" id="canvasViewport">
+        <div class="scaled-stack" id="scaledStack">
+          <div id="canvas"></div>
+          <div id="interaction" aria-label="Move or resize design pieces"></div>
+          <div id="pinSurface" aria-label="Tap to place a comment pin"></div>
+          <div id="pinsOnCanvas"></div>
+          <div id="instagramOverlay" aria-hidden="true">
+            <div class="ig-top-fade"></div>
+            <div class="ig-header"><span class="ig-back">‹</span><strong>Reels</strong><span class="ig-camera">◎</span></div>
+            <div class="ig-side-fade"></div>
+            <div class="ig-actions">
+              <div><svg viewBox="0 0 32 32"><path d="M16 28 4.4 16.8C-3 9.6 8 1.4 16 9.2c8-7.8 19-0.4 11.6 7.6Z"/></svg><span>2,184</span></div>
+              <div><svg viewBox="0 0 32 32"><path d="M5 5h22v17H14L7 28v-6H5z"/></svg><span>78</span></div>
+              <div><svg viewBox="0 0 32 32"><path d="m3 15 25-11-7 24-5-10zM16 18 28 4"/></svg></div>
+              <div><svg viewBox="0 0 32 32"><path d="M8 3h16v26l-8-5-8 5z"/></svg></div>
+              <div class="ig-more">•••</div>
+              <div class="ig-music-disc">♫</div>
+            </div>
+            <div class="ig-bottom-fade"></div>
+            <div class="ig-caption-block">
+              <div class="ig-account"><span class="ig-avatar">O</span><strong>oakstreetassets</strong><span class="ig-follow">Follow</span></div>
+              <div class="ig-post-caption">Arizona's water story is changing... <b>more</b></div>
+              <div class="ig-audio">♫ Original audio · Oak Street Assets</div>
+            </div>
+            <div class="ig-progress"></div>
+            <div class="ig-nav"><span>⌂</span><span>⌕</span><span>⊞</span><span>♡</span><span class="ig-nav-avatar">O</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="under-canvas">
+      <div id="selectionLabel">Tap a piece, then drag it.</div>
+      <div id="saveStatus" role="status" aria-live="polite">Loading review…</div>
+    </div>
+
+    <section class="comment-panel" aria-labelledby="notesHeading">
+      <div class="panel-heading"><div><div class="eyebrow">POINT-AND-TELL</div><h2 id="notesHeading">Pinned notes</h2></div><span id="noteCount">0</span></div>
+      <div id="pinDraft" class="pin-draft" hidden>
+        <label for="pinText">Note for pin <span id="draftNumber"></span></label>
+        <textarea id="pinText" rows="3" maxlength="700" placeholder="Tell me what feels off here or what to try."></textarea>
+        <div class="draft-actions"><button type="button" id="savePin">Save pin</button><button type="button" id="cancelPin" class="quiet-button">Cancel</button></div>
+      </div>
+      <div id="notesList" class="notes-list"></div>
+    </section>
+    <div class="bottom-actions"><button type="button" id="resetLayout" class="quiet-button">Reset this layout</button><button type="button" id="saveNow">Save changes</button></div>
+    <p class="footnote">The Instagram controls are a placement preview. The live app may differ by phone and account. Design stills only; the video has not changed. Supporting photo: Kevin Dooley, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>.</p>
+  </main>
+  <script src="editor.js" defer></script>
+</body>
+</html>
