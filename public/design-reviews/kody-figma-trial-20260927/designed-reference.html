@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kody clipping design reference</title>
+  <style>
+    :root{color-scheme:dark;font-family:Inter,system-ui,sans-serif;background:#071521;color:#f7f3eb}
+    *{box-sizing:border-box}body{margin:0}main{max-width:980px;margin:auto;padding:24px 16px 64px}
+    h1{font:600 clamp(28px,5vw,48px)/1.05 Georgia,serif;letter-spacing:-.025em;margin:0 0 10px}
+    p{line-height:1.45;color:#c1cbd0;margin:0 0 16px;max-width:68ch}a{color:#f6c96b}
+    .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:22px 0}
+    button{font:700 15px Inter,system-ui;background:#172b3b;border:1px solid #65798a;color:#fff;border-radius:999px;padding:11px 18px;cursor:pointer}
+    button[aria-pressed=true]{background:#f6c96b;border-color:#f6c96b;color:#071521}
+    label{display:inline-flex;align-items:center;gap:9px;margin-left:auto;color:#e8ecee;font-size:15px}
+    input{width:21px;height:21px;accent-color:#f6c96b}
+    .stage{display:grid;grid-template-columns:minmax(0,430px) minmax(0,430px);gap:20px;align-items:start}
+    figure{margin:0;min-width:0}figure img{display:block;width:100%;height:auto;border:1px solid #4a5d66;border-radius:8px;background:#0a2036}
+    figcaption{margin:10px 0 0;color:#cbd5d9;font-size:14px;line-height:1.45}
+    figcaption strong{color:#f6c96b}aside{margin-top:23px;border-left:3px solid #f6c96b;padding:10px 16px;background:#112a3b;color:#d4dee2;line-height:1.45}
+    @media(max-width:720px){.stage{grid-template-columns:minmax(0,1fr)}.stage figure{max-width:430px;margin:auto}.stage figure:last-child{order:2}label{margin-left:0;width:100%}}
+  </style>
+</head>
+<body><main>
+  <h1>Kody: designed layout reference</h1>
+  <p>The same speaker → caption → supporting image → brand structure, now treated as one editorial composition. Compare it with the earlier proof and test the Instagram controls.</p>
+  <div class="controls" role="group" aria-label="Choose frame">
+    <button data-frame="main" aria-pressed="true">Main frame</button>
+    <button data-frame="end" aria-pressed="false">Ending</button>
+    <label><input id="overlay" type="checkbox"> Instagram controls</label>
+  </div>
+  <div class="stage">
+    <figure><img id="designed" src="kody-designed-reference.jpg" alt="Designed Kody main frame"><figcaption><strong>Design reference.</strong> <span id="design-caption">The quote bridges the footage and desert photo; Kody's name stays by his face.</span></figcaption></figure>
+    <figure><img id="earlier" src="kody-main-figma-1.jpg" alt="Earlier Kody main proof"><figcaption><strong>Earlier proof.</strong> <span id="earlier-caption">The same content in separate, rigid bands.</span></figcaption></figure>
+  </div>
+  <aside>This is an art-direction concept. Rebuild the chosen look with the original video frame, licensed photo, and editable text in the measured Figma layout before rendering a clip.</aside>
+  <p style="margin-top:20px"><a href="index.html">Earlier trial</a> · <a href="spacing-study.html">Ending spacing study</a> · <a href="https://www.figma.com/design/S8pJxyZEVhk5H3Y2GuGKbl/AOM-Kit-%25E2%2580%2594-Department-Console-v1?node-id=28-15">Figma wireframes</a></p>
+</main>
+<script>
+  const frames={main:{designed:['kody-designed-reference.jpg','kody-designed-reference-instagram.jpg'],earlier:['kody-main-figma-1.jpg','kody-main-instagram-on.jpg'],designCaption:'The quote bridges the footage and desert photo; Kody\'s name stays by his face.',earlierCaption:'The same content in separate, rigid bands.'},end:{designed:['kody-designed-end.jpg','kody-designed-end-instagram.jpg'],earlier:['kody-end-1.jpg','kody-end-1-instagram-on.jpg'],designCaption:'The portrait leads into the show identity, one episode action, and a desert continuation.',earlierCaption:'The portrait, brand, CTA, and handle sit in separate bands.'}};
+  let frame='main';const overlay=document.querySelector('#overlay');
+  function render(){const f=frames[frame],i=overlay.checked?1:0;document.querySelector('#designed').src=f.designed[i];document.querySelector('#earlier').src=f.earlier[i];document.querySelector('#designed').alt=`Designed Kody ${frame} frame${i?' with Instagram controls':''}`;document.querySelector('#earlier').alt=`Earlier Kody ${frame} proof${i?' with Instagram controls':''}`;document.querySelector('#design-caption').textContent=f.designCaption;document.querySelector('#earlier-caption').textContent=f.earlierCaption;document.querySelectorAll('[data-frame]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.frame===frame)))}
+  document.querySelectorAll('[data-frame]').forEach(b=>b.addEventListener('click',()=>{frame=b.dataset.frame;render()}));overlay.addEventListener('change',render);render();
+</script></body></html>
