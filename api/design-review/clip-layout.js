@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
-import { stateGet, stateSet } from '../_lib/stateStore.js';
+import { stateGet } from '../_lib/stateStore.js';
+import { convexMutation } from '../_lib/verifyTenant.js';
 
 const KIND = 'clip_layout_review';
 const SCOPE = 'phoenix-prosperity-20260926';
@@ -51,7 +52,11 @@ export default async function handler(req, res) {
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'GET or POST only' });
   const state = cleanState(req.body);
-  const ok = await stateSet(KIND, SCOPE, WORLD, state);
-  if (!ok) return res.status(500).json({ error: 'Could not save the review.' });
+  try {
+    await convexMutation('state:put', { kind: KIND, scopeId: SCOPE, worldSlug: WORLD, value: state, updatedBy: 'clip-layout-review' });
+  } catch (error) {
+    console.error('[clip-layout-review] state:put failed:', error?.message || error);
+    return res.status(500).json({ error: 'Could not save the review.' });
+  }
   return res.status(200).json({ ok: true, updated: state.updated });
 }
