@@ -444,8 +444,10 @@
     $('mediaSwap').onclick = () => {
       const photo = partMap.get('photo');
       if (!photo || option.id !== 'main4') return;
-      const show = photo.element.style.zIndex !== '6';
-      photo.element.style.zIndex = show ? '6' : '1';
+      const show = photo.element.style.zIndex !== '3';
+      photo.element.style.zIndex = show ? '3' : '1';
+      const name = partMap.get('name');
+      if (name) name.element.style.visibility = show ? 'hidden' : 'visible';
       $('mediaSwap').textContent = show ? 'Show speaker video' : 'Show supporting visual';
     };
     $('snapToggle').onchange = e => { $('gridOverlay').style.display = e.target.checked ? 'block' : 'none'; };
