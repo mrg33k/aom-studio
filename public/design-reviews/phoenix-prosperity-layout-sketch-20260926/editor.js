@@ -3,6 +3,7 @@
   const reviewKey = new URLSearchParams(location.search).get('key') || '';
   const API = '/api/design-review/clip-layout';
   const STORE = 'oak-street-layout-review-v1';
+  const isLocalFile = location.protocol === 'file:';
   const OPTIONS = [
     { id: 'main1', label: 'Main 1', file: 'index.html', source: '#post', parts: [
       ['speaker', 'Speaker video', '.speaker'], ['caption', 'Captions', '.caption'], ['photo', 'Supporting photo', '.support'],
@@ -46,8 +47,35 @@
 
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
   const numericBox = b => ({ x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.w), h: Math.round(b.h) });
+  const snapped = (value, e) => $('snapToggle').checked && !e?.altKey ? Math.round(value / 24) * 24 : value;
+  function savePart(part) {
+    layoutState()[part.id] = { ...numericBox(part.box), ...(part.zExplicit ? { z: part.z } : {}) };
+    queueSave();
+  }
   const setStatus = msg => { $('saveStatus').textContent = msg; };
   const backup = () => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (_) {} };
+  const hasDraft = value => value && (Object.values(value.layouts || {}).some(parts => Object.keys(parts || {}).length) || Object.values(value.pins || {}).some(pins => pins?.length));
+  function transferLocalDraft() {
+    // A local file cannot use the relative API path. A form can send the
+    // browser's existing draft to the same keyed endpoint without CORS.
+    const frame = document.createElement('iframe');
+    frame.name = 'layout-draft-transfer';
+    frame.hidden = true;
+    document.body.append(frame);
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `https://aheadofmarket.com${API}?key=${encodeURIComponent(reviewKey)}`;
+    form.target = frame.name;
+    form.hidden = true;
+    const input = document.createElement('input');
+    input.name = 'state';
+    input.value = JSON.stringify(state);
+    form.append(input);
+    document.body.append(form);
+    form.submit();
+    form.remove();
+    setStatus('Sending your saved draft for review…');
+  }
   function queueSave() {
     revision++;
     backup();
@@ -93,7 +121,9 @@
     const b = part.base;
     part.element.style.transformOrigin = 'top left';
     part.element.style.transform = `translate(${box.x - b.x}px, ${box.y - b.y}px) scale(${box.w / b.w}, ${box.h / b.h})`;
+    if (part.zExplicit) part.element.style.zIndex = String(part.z);
     Object.assign(part.hit.style, { left: `${box.x}px`, top: `${box.y}px`, width: `${box.w}px`, height: `${box.h}px` });
+    part.hit.style.zIndex = String(part.z);
   }
   function flattenNestedPieces() {
     const root = $('canvas').shadowRoot.querySelector(option.source);
@@ -128,18 +158,37 @@
     selected = id;
     for (const [key, part] of partMap) part.hit.classList.toggle('selected', key === id);
     const p = partMap.get(id);
-    $('selectionLabel').textContent = p ? `${p.label} · drag to move, pull a corner to resize` : 'Tap a piece, then drag it.';
+    $('selectionLabel').textContent = p ? `${p.label} · ${Math.round(p.box.w)} × ${Math.round(p.box.h)}` : 'Tap a piece, then drag it.';
+    for (const button of $('partList').children) button.classList.toggle('active', button.dataset.id === id);
+    $('layerBack').disabled = !p;
+    $('layerFront').disabled = !p;
+  }
+  function changeLayer(direction) {
+    if (!selected) return;
+    const ordered = [...partMap.values()].sort((a, b) => a.z - b.z);
+    const index = ordered.findIndex(part => part.id === selected);
+    const next = index + direction;
+    if (next < 0 || next >= ordered.length) return;
+    [ordered[index], ordered[next]] = [ordered[next], ordered[index]];
+    ordered.forEach((part, i) => {
+      part.z = i + 1;
+      part.zExplicit = true;
+      applyPart(part);
+      layoutState()[part.id] = { ...numericBox(part.box), z: part.z };
+    });
+    queueSave();
   }
   function drawHits() {
     $('interaction').replaceChildren();
+    $('partList').replaceChildren();
     partMap = new Map();
-    for (const [id, label, selector] of option.parts) {
+    for (const [index, [id, label, selector]] of option.parts.entries()) {
       const el = $('canvas').shadowRoot.querySelector(`[data-editor-part="${id}"]`) || $('canvas').shadowRoot.querySelector(selector);
       if (!el) continue;
       const base = contentPosition(el);
       if (base.w < 1 || base.h < 1) continue;
       const saved = layoutState()[id];
-      const box = saved ? { ...saved } : numericBox(base);
+      const box = saved ? numericBox(saved) : numericBox(base);
       const hit = document.createElement('div');
       hit.className = 'hit-box';
       hit.dataset.label = label;
@@ -154,18 +203,22 @@
         handle.dataset.corner = corner;
         hit.append(handle);
       }
-      const part = { id, label, element: el, hit, base, box };
+      const part = { id, label, element: el, hit, base, box, z: Number.isInteger(saved?.z) ? saved.z : index + 1, zExplicit: Number.isInteger(saved?.z) };
       partMap.set(id, part);
       $('interaction').append(hit);
+      const button = document.createElement('button');
+      button.type = 'button'; button.textContent = label; button.dataset.id = id;
+      button.onclick = () => selectPart(id);
+      $('partList').append(button);
       applyPart(part);
       hit.addEventListener('pointerdown', e => beginMove(e, part));
       hit.addEventListener('keydown', e => {
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
           e.preventDefault(); selectPart(id);
-          const step = e.shiftKey ? 20 : 5;
+          const step = e.shiftKey ? 120 : $('snapToggle').checked ? 24 : 5;
           part.box.x += e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
           part.box.y += e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
-          applyPart(part); layoutState()[id] = numericBox(part.box); queueSave();
+          applyPart(part); savePart(part);
         } else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectPart(id); }
       });
     }
@@ -190,15 +243,14 @@
         if (w < 45) { if (corner.includes('w')) x -= 45 - w; w = 45; }
         if (h < 45) { if (corner.includes('n')) y -= 45 - h; h = 45; }
       }
-      part.box = { x: clamp(x, -W, W * 2), y: clamp(y, -H, H * 2), w: clamp(w, 45, W * 2), h: clamp(h, 45, H * 2) };
+      part.box = { x: clamp(snapped(x, ev), -W, W * 2), y: clamp(snapped(y, ev), -H, H * 2), w: clamp(snapped(w, ev), 45, W * 2), h: clamp(snapped(h, ev), 45, H * 2) };
       applyPart(part);
     };
     const stop = () => {
       part.hit.removeEventListener('pointermove', moving);
       part.hit.removeEventListener('pointerup', stop);
       part.hit.removeEventListener('pointercancel', stop);
-      layoutState()[part.id] = numericBox(part.box);
-      queueSave();
+      savePart(part);
     };
     part.hit.addEventListener('pointermove', moving);
     part.hit.addEventListener('pointerup', stop, { once: true });
@@ -316,7 +368,9 @@
       $('layoutTabs').append(b);
     }
     try { const backupState = JSON.parse(localStorage.getItem(STORE) || 'null'); if (backupState) state = backupState; } catch (_) {}
-    if (reviewKey) {
+    if (reviewKey && isLocalFile && hasDraft(state)) {
+      transferLocalDraft();
+    } else if (reviewKey && !isLocalFile) {
       try {
         const response = await fetch(API, { headers: { 'X-Review-Key': reviewKey }, cache: 'no-store' });
         if (!response.ok) throw new Error('Review link rejected');
@@ -336,7 +390,19 @@
     $('savePin').onclick = commitPin;
     $('cancelPin').onclick = () => { draft = null; $('pinDraft').hidden = true; mode(false); };
     $('instagramToggle').onchange = e => setInstagram(e.target.checked);
+    $('snapToggle').onchange = e => { $('gridOverlay').style.display = e.target.checked ? 'block' : 'none'; };
+    $('gridOverlay').style.display = $('snapToggle').checked ? 'block' : 'none';
+    $('layerBack').onclick = () => changeLayer(-1);
+    $('layerFront').onclick = () => changeLayer(1);
     $('saveNow').onclick = saveState;
+    $('exportDraft').onclick = () => {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url; link.download = `clipping-layout-draft-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
     $('resetLayout').onclick = async () => {
       if (!confirm(`Reset ${option.label} to its original layout?`)) return;
       delete state.layouts[option.id];

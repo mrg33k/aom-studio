@@ -42,7 +42,8 @@ function cleanState(input) {
       if (nums.some(n => !Number.isFinite(n))) continue;
       const [x, y, w, h] = nums;
       if (x < -1080 || x > 2160 || y < -1920 || y > 3840 || w < 25 || w > 2160 || h < 25 || h > 3840) continue;
-      layouts[id][name] = { x, y, w, h };
+      const z = Number(box.z);
+      layouts[id][name] = { x, y, w, h, ...(Number.isInteger(z) && z >= 0 && z <= 100 ? { z } : {}) };
     }
   }
   for (const [id, list] of Object.entries(input?.pins || {})) {
@@ -71,7 +72,12 @@ export default async function handler(req, res) {
     }
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'GET or POST only' });
-  const state = cleanState(req.body);
+  let submitted = req.body;
+  if (typeof submitted?.state === 'string') {
+    try { submitted = JSON.parse(submitted.state); }
+    catch (_) { return res.status(400).json({ error: 'Invalid review state.' }); }
+  }
+  const state = cleanState(submitted);
   try {
     await writeFile(state, String(req.headers['x-review-key'] || req.query?.key || ''));
   } catch (error) {

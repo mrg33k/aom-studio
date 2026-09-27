@@ -21,6 +21,7 @@
     <div class="review-bar">
       <button type="button" id="moveButton" class="tool-button active" aria-pressed="true">Move pieces</button>
       <button type="button" id="pinButton" class="tool-button" aria-pressed="false">Pin a note</button>
+      <label class="grid-switch"><input type="checkbox" id="snapToggle" checked> Snap to grid</label>
       <label class="ig-switch"><span>Instagram overlay</span><input type="checkbox" id="instagramToggle" role="switch"><span class="switch-track" aria-hidden="true"></span></label>
     </div>
 
@@ -28,6 +29,7 @@
       <div class="canvas-viewport" id="canvasViewport">
         <div class="scaled-stack" id="scaledStack">
           <div id="canvas"></div>
+          <div id="gridOverlay" aria-hidden="true"></div>
           <div id="interaction" aria-label="Move or resize design pieces"></div>
           <div id="pinSurface" aria-label="Tap to place a comment pin"></div>
           <div id="pinsOnCanvas"></div>
@@ -60,6 +62,10 @@
       <div id="selectionLabel">Tap a piece, then drag it.</div>
       <div id="saveStatus" role="status" aria-live="polite">Loading review…</div>
     </div>
+    <div class="layer-panel" aria-label="Layer controls">
+      <div id="partList" class="part-list"></div>
+      <div class="layer-actions"><button type="button" id="layerBack" disabled>Send backward</button><button type="button" id="layerFront" disabled>Bring forward</button></div>
+    </div>
 
     <section class="comment-panel" aria-labelledby="notesHeading">
       <div class="panel-heading"><div><div class="eyebrow">POINT-AND-TELL</div><h2 id="notesHeading">Pinned notes</h2></div><span id="noteCount">0</span></div>
@@ -70,7 +76,7 @@
       </div>
       <div id="notesList" class="notes-list"></div>
     </section>
-    <div class="bottom-actions"><button type="button" id="resetLayout" class="quiet-button">Reset this layout</button><button type="button" id="saveNow">Save changes</button></div>
+    <div class="bottom-actions"><button type="button" id="resetLayout" class="quiet-button">Reset this layout</button><button type="button" id="exportDraft" class="quiet-button">Download draft</button><button type="button" id="saveNow">Save changes</button></div>
     <p class="footnote">The Instagram controls are a placement preview. The live app may differ by phone and account. Design stills only; the video has not changed. Supporting photo: Kevin Dooley, <a href="https://creativecommons.org/licenses/by/2.0/">CC BY 2.0</a>.</p>
   </main>
   <script src="editor.js" defer></script>
