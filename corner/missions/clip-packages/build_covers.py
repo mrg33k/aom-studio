@@ -91,6 +91,7 @@ def save(im, slug, name):
 
 
 H2 = 2340  # phone screen (9:19.5). Cards are phones, so covers are drawn at phone proportions.
+KODY_TOP = 420  # masthead height; the reel frame (and the card's looping clip) sits below it: KODY_TOP / H2 = 17.95%
 
 
 def cover_fit(im, w, h, focus_x=0.5, focus_y=0.5):
@@ -127,52 +128,85 @@ def save2(im, slug):
     print('wrote', p.relative_to(HOME), p.stat().st_size // 1024, 'KB')
 
 
+def masthead(im, texture_src, crop, tint=None):
+    """Brand masthead band (0..KODY_TOP) cut from the client's own GPT texture, so the logo has a designed home."""
+    tex = Image.open(texture_src).convert('RGB')
+    tex = cover_fit(tex.crop(crop), W, KODY_TOP, 0.5, 0.5)
+    if tint:
+        tex = Image.blend(tex, Image.new('RGB', tex.size, tint), 0.35)
+    im.paste(tex, (0, 0))
+
+
 def ambition():
-    # Ambition's GPT reel system (brand-kits/ambition-mechanical/templates/reel-slab-window): halftone navy plate,
-    # red torn-paper title strip, footage in the window. Badge sits on the seam like a sticker.
-    T = EA / '.claude/skills/clip/brand-kits/ambition-mechanical/templates/reel-slab-window_plate.png'
-    plate = Image.open(T).convert('RGBA')
-    plate = plate.resize((W, round(plate.height * W / plate.width)), Image.LANCZOS)   # 1080 x 1974
-    top = 120
-    band = plate.crop((0, 0, W, 434))
+    # Ambition's real finished reel (public/videos/ambition-vertical.mp4, "unit serving multiple operating rooms
+    # went down... patients... safe"): the 12.6 s frame, rooftop unit on the crane against the deep blue sky,
+    # under a masthead cut from its GPT reel plate. The card loops the reel over the frame (same slot as Kody).
+    import subprocess, imageio_ffmpeg, tempfile
+    tmp = Path(tempfile.gettempdir()) / 'ambition-frame.png'
+    subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), '-v', 'error', '-y', '-ss', '12.6', '-i',
+                    str(HOME / 'public/videos/ambition-vertical.mp4'), '-frames:v', '1', str(tmp)], check=True)
+    frame = Image.open(tmp).convert('RGB').resize((W, 1920), Image.LANCZOS)
     im = Image.new('RGB', (W, H2), (14, 22, 38))
-    photo = punch(cover_fit(Image.open(AMB / 'public/images/ambition/PS520046.jpg').convert('RGB'), W, H2 - (top + 434), 0.5, 0.35))
-    im.paste(photo, (0, top + 434))
-    texture = plate.crop((0, 0, W, top)).transpose(Image.FLIP_TOP_BOTTOM)
-    im.paste(texture, (0, 0), texture)
-    im.paste(band, (0, top), band)
+    T = EA / '.claude/skills/clip/brand-kits/ambition-mechanical/templates'
+    masthead(im, T / 'reel-endcard_plate.png', (0, 730, 527, 965))
+    im.paste(frame, (0, KODY_TOP))
+    # hook on Ambition's own red torn-paper strip (cut from its GPT reel plate), true to the reel's captions
+    strip = Image.open(T / 'reel-slab-window_plate.png').convert('RGBA').crop((10, 45, 405, 168))
+    strip = strip.resize((980, 300), Image.LANCZOS)
+    im.paste(strip, (40, KODY_TOP + 60), strip)
+    dd = ImageDraw.Draw(im)
+    fh = font('BarlowCondensed-ExtraBold.ttf', 104)
+    for i, line in enumerate(('OPERATING ROOMS', 'WENT DOWN.')):
+        l, t, r, b = dd.textbbox((0, 0), line, font=fh)
+        dd.text((100 - l, KODY_TOP + 108 + i * 106 - t), line, font=fh, fill=(255, 255, 255))
+    badge = Image.open(EA / '.claude/skills/clip/brand-kits/ambition-mechanical/logo-badge.png').convert('RGBA').resize((250, 250), Image.LANCZOS)
     d = ImageDraw.Draw(im)
-    # strip in the plate spans ~x 50-880, y 40-160 (scaled); set the hook on it
-    f, (l, t, r, b) = fit_text(d, 'CRANE DAY', 'BarlowCondensed-ExtraBold.ttf', 760, 150)
-    d.text((70 - l, top + 100 - (b - t) // 2 - t), 'CRANE DAY', font=f, fill=(255, 255, 255))
-    f2 = font('BarlowCondensed-ExtraBold.ttf', 84)
-    d.text((64, top + 250), 'NEW CHILLER ON THE HOOK', font=f2, fill=(255, 255, 255), stroke_width=4, stroke_fill=(14, 22, 38))
-    badge = Image.open(EA / '.claude/skills/clip/brand-kits/ambition-mechanical/logo-badge.png').convert('RGBA').resize((330, 330), Image.LANCZOS)
-    bx, by = 1080 - 56 - 330, top + 434 + 60   # sticker on the footage, just under the seam
-    d.ellipse((bx - 12, by - 12, bx + 342, by + 342), fill=(14, 22, 38))
-    im.paste(badge, (bx, by), badge)
+    cx, cy = W // 2, 205
+    d.ellipse((cx - 137, cy - 137, cx + 137, cy + 137), fill=(229, 44, 42))
+    im.paste(badge, (cx - 125, cy - 125), badge)
+    d.rectangle((0, KODY_TOP - 6, W, KODY_TOP), fill=(229, 44, 42))
     save2(im, 'ambition')
 
 
 def wolfpack():
-    # Wolfpack's own look (site + GPT posts): paper ground, heavy dark type, one phrase in the logo's blue,
-    # full-colour logo as the masthead, job photo filling the lower screen.
-    ink, blue, paper = (12, 14, 18), (47, 128, 196), (242, 241, 236)
-    im = Image.new('RGB', (W, H2), paper)
+    # No Wolfpack reel footage reachable yet, so its frame is built like one of its reels: the best job photo
+    # full-bleed, reel-style hook, and the before/after sewer-camera shots Wolfpack already publishes.
+    ink, blue, white = (12, 14, 18), (47, 128, 196), (255, 255, 255)
+    im = Image.new('RGB', (W, H2), ink)
+    # masthead: dark with a blue glow, full logo knocked out
+    band = Image.new('RGB', (W, KODY_TOP), ink)
+    glow = Image.new('L', (W, KODY_TOP), 0)
+    ImageDraw.Draw(glow).ellipse((W // 2 - 520, -260, W // 2 + 520, KODY_TOP + 200), fill=110)
+    glow = glow.filter(ImageFilter.GaussianBlur(90))
+    band = Image.composite(Image.new('RGB', band.size, blue), band, glow)
+    im.paste(band, (0, 0))
+    paste_logo(im, HOME / 'public/wolfpack-site/assets/wolfpack-logo-knockout.png', 300, center=W // 2, top=70)
+    photo = punch(cover_fit(Image.open(HOME / 'public/wolfpack-site/assets/jet-hero.jpg').convert('RGB'), W, 1920, 0.42, 0.5))
+    photo = shade(photo, top=0.55, mid=0.0, bottom=0.55, color=ink)
+    im.paste(photo, (0, KODY_TOP))
     d = ImageDraw.Draw(im)
-    lw = paste_logo(im, HOME / 'public/wolfpack-site/assets/wolfpack-logo.png', 330, left=64, top=150)
-    lab = font('Inter-SemiBold.ttf', 34)
-    for i, line in enumerate(('SERVICE CALL', 'PHOENIX, AZ')):
-        d.text((64 + lw + 40, 360 + i * 50), line, font=lab, fill=(90, 94, 102))
-    d.rectangle((64, 540, W - 64, 546), fill=ink)
-    f, (l, t, r, b) = fit_text(d, 'SEWER LINE', 'ArchivoBlack-Regular.ttf', W - 128, 170)
-    d.text((64 - l, 600 - t), 'SEWER LINE', font=f, fill=ink)
-    y = 600 + (b - t) + 26
-    f2, (l2, t2, r2, b2) = fit_text(d, 'JETTED CLEAN.', 'ArchivoBlack-Regular.ttf', W - 128, 170)
-    d.text((64 - l2, y - t2), 'JETTED CLEAN.', font=f2, fill=blue)
-    py = y + (b2 - t2) + 70
-    photo = punch(cover_fit(Image.open(HOME / 'public/wolfpack-site/assets/hero-jetting.jpg').convert('RGB'), W, H2 - py, 0.42, 0.5))
-    im.paste(photo, (0, py))
+    d.rectangle((0, KODY_TOP - 6, W, KODY_TOP), fill=blue)
+    y = KODY_TOP + 90
+    f, (l, t, r, b) = fit_text(d, 'SEWER LINE,', 'Montserrat-Black.ttf', W - 140, 140, stroke=8)
+    d.text(((W - (r - l)) // 2 - l, y - t), 'SEWER LINE,', font=f, fill=white, stroke_width=8, stroke_fill=ink)
+    y += (b - t) + 34
+    f2, (l2, t2, r2, b2) = fit_text(d, 'BEFORE & AFTER', 'Montserrat-Black.ttf', W - 220, 110)
+    bw = (r2 - l2) + 56
+    d.rounded_rectangle(((W - bw) // 2, y - 18, (W + bw) // 2, y + (b2 - t2) + 22), radius=18, fill=blue)
+    d.text(((W - (r2 - l2)) // 2 - l2, y - t2), 'BEFORE & AFTER', font=f2, fill=white)
+    # before/after camera insets, like the reel's own split
+    lab = font('Montserrat-Black.ttf', 44)
+    for i, (src, label) in enumerate((('pipe-before.jpg', 'BEFORE'), ('pipe-after.jpg', 'AFTER'))):
+        cx = 290 + i * 500
+        cy = KODY_TOP + 1320
+        r = 210
+        ph = cover_fit(Image.open(HOME / 'public/wolfpack-site/assets' / src).convert('RGB'), 2 * r, 2 * r)
+        face_bubble(im, ph, (cx, cy), r, blue if i else (199, 80, 47))
+        lw = d.textbbox((0, 0), label, font=lab)
+        d.rounded_rectangle((cx - (lw[2] - lw[0]) // 2 - 24, cy + r + 10, cx + (lw[2] - lw[0]) // 2 + 24, cy + r + 84), radius=12,
+                            fill=blue if i else (199, 80, 47))
+        d.text((cx - (lw[2] - lw[0]) // 2 - lw[0], cy + r + 20 - lw[1]), label, font=lab, fill=white)
+    d.polygon([(W // 2 - 26, KODY_TOP + 1290), (W // 2 + 30, KODY_TOP + 1320), (W // 2 - 26, KODY_TOP + 1350)], fill=white)
     save2(im, 'wolfpack')
 
 
@@ -216,7 +250,6 @@ def kody_logo():
     print('wrote', p.relative_to(HOME))
 
 
-KODY_TOP = 420  # the card overlays Kody's looping clip at this offset (KODY_TOP / H2 of the screen)
 
 
 def kody():

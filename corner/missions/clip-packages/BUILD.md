@@ -46,3 +46,17 @@ background was flat, and the cards still felt short.
   covers blurred and drifting, so the section carries the clients' colours.
 
 **Status:** R3 pushed to `clips-packages`; still awaiting clip ids before merge.
+
+### R4 — 2026-09-28 — Ambition and Wolfpack rebuilt as real reels
+Patrik: Ambition and Wolfpack still looked bad next to Kody and Oak Street. Cause: those two were real reel frames;
+Ambition/Wolfpack were library photos with a layout on top.
+- Ambition now uses its real finished reel (`public/videos/ambition-vertical.mp4`, operating-rooms RTU job): the
+  12.6 s frame (unit on the crane, deep blue sky, the reel's own "patients" caption) under a masthead cut from its
+  GPT reel plate (halftone navy, badge on a red disc), hook "OPERATING ROOMS WENT DOWN." on the plate's own red
+  torn strip. The reel is clip 1 of the package (`ambition/rtu.mp4`, 3.4 MB), so Ambition plays today.
+  Package is now: that reel, Elephante part two, EWG (Eagle Air Park dropped to keep three).
+- Wolfpack is built like one of its reels: blue-glow masthead with the knockout logo, `jet-hero.jpg` full bleed,
+  "SEWER LINE, BEFORE & AFTER" hook, and its own before/after sewer-camera shots as round insets.
+  Swap for a real Wolfpack reel frame once one is reachable (all Wolfpack video is in Drive, 50 MB+).
+
+**Status:** R4 pushed; 10 clips still need gumlet ids before merge.
