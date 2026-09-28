@@ -60,3 +60,13 @@ Ambition/Wolfpack were library photos with a layout on top.
   Swap for a real Wolfpack reel frame once one is reachable (all Wolfpack video is in Drive, 50 MB+).
 
 **Status:** R4 pushed; 10 clips still need gumlet ids before merge.
+
+### R5 — 2026-09-28 — Headline A/B test, logos clear of the phone earpiece
+- Headline is now an A/B test, independent of the hero-order test: a = "Long-form to short-form",
+  b = "Your videos, cut by our team". Sticky per browser (localStorage `aom_ab_clips`), `?clipsab=a|b` forces,
+  `?clipsab=off` forgets. GA4 user property `exp_clips_head`; every event (section_view/section_time, clips_pack_open,
+  clips_play, lead_submit, generate_lead) carries `abc`. The hero test's page_location is untouched.
+- Ambition badge (180 px on a red disc) and Wolfpack logo (210 px) shrunk and moved below the earpiece;
+  Oak Street logo nudged down to match. Kody unchanged.
+
+**Status:** R5 pushed; 10 clips still need gumlet ids before merge.

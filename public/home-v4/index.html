@@ -24,6 +24,9 @@ window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(argume
 (function(){var q=new URLSearchParams(location.search).get('ab'),k='aom_ab_hero',v='';try{if(q==='off')localStorage.removeItem(k);else if(q==='a'||q==='b')localStorage.setItem(k,q);v=localStorage.getItem(k)||'';if(v!=='a'&&v!=='b'){v=Math.random()<.5?'a':'b';localStorage.setItem(k,v);}}catch(e){v=(q==='a'||q==='b')?q:'a';}
 window.__AB=v;
 gtag('set','user_properties',{exp_hero_order:v});
+// A/B test (2026-09-28): Clips headline. a = "Long-form to short-form", b = "Your videos, cut by our team".
+// Independent of the hero test. Sticky per browser; ?clipsab=a|b forces, ?clipsab=off forgets. Every event carries abc.
+(function(){var q=new URLSearchParams(location.search).get('clipsab'),k='aom_ab_clips',c='';try{if(q==='off')localStorage.removeItem(k);else if(q==='a'||q==='b')localStorage.setItem(k,q);c=localStorage.getItem(k)||'';if(c!=='a'&&c!=='b'){c=Math.random()<.5?'a':'b';localStorage.setItem(k,c);}}catch(e){c=(q==='a'||q==='b')?q:'a';}window.__ABC=c;gtag('set','user_properties',{exp_clips_head:c});})();
 // page_location carries the variant so every event can be split by it in the Data API without registering custom dimensions
 gtag('config','G-XRC3GJ475X',{page_location:location.origin+location.pathname+'?ab='+v,exp_hero_order:v});})();
 </script>
@@ -705,7 +708,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;backgrou
       <div data-clipshead="" style="display:flex;align-items:flex-end;justify-content:space-between;gap:1rem 2.4rem;flex-wrap:wrap;padding:0 var(--gx)">
         <div style="min-width:0">
           <span data-rv="" data-d="0" style="display:block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#C4A46A;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Clips</span>
-          <h2 data-rv="" data-d=".06" style="margin:.35rem 0 0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2rem,min(3.3vw,6vh),3.8rem);line-height:.9;letter-spacing:-.03em;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Their show. <span style="color:#C4A46A">Their brand<i style="display:inline-block;width:.13em;height:.13em;background:#F6F6F4;margin-left:.07em"></i></span></h2>
+          <h2 data-rv="" data-d=".06" style="margin:.35rem 0 0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2rem,min(3.3vw,6vh),3.8rem);line-height:.9;letter-spacing:-.03em;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">{{ clipsHeadA }} <span style="color:#C4A46A">{{ clipsHeadB }}<i style="display:inline-block;width:.13em;height:.13em;background:#F6F6F4;margin-left:.07em"></i></span></h2>
         </div>
         <div data-rv="" data-d=".14" style="display:flex;align-items:flex-end;gap:1.6rem;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
           <p style="margin:0;max-width:30ch;color:#E6E5E0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(.95rem,min(1.1vw,2.1vh),1.12rem);font-weight:500;line-height:1.4">Vertical clips in each client's own colors, type and logo. Tap a phone to watch the package.</p>
@@ -1058,6 +1061,8 @@ const PACKS = [
     font: "'DM Serif Display',Georgia,serif", fw: 400, upper: false, logo: 'kody/logo.png', avatar: 'kody/avatar.png', logoH: '2.6rem', board: 'kody/board.jpg', cover: 'kody/cover.jpg', loop: 'kody/heat-loop.mp4',
     clips: [{ t: '“It’s a dry heat” stops mattering at 110°', mp4: 'kody/heat.mp4', cover: 'kody/cover.jpg' }, { t: 'Phoenix is affordable, but not dirt cheap' }, { t: 'Why 55+ communities feel empty every summer' }] },
 ];
+// Clips headline A/B (see the head script): [white part, gold part]
+const CLIPS_HEAD = { a: ['Long-form to', 'short-form'], b: ['Your videos,', 'cut by our team'] };
 const clipAsset = f => f ? 'assets/clips/' + f : '';
 // A package card is a phone: dark bezel, 9:16 screen, sized to own most of the viewport height.
 const PHONE = 'position:relative;flex:none;display:block;height:min(calc(var(--vph,100svh) - 13rem),54rem);aspect-ratio:9 / 19.5;padding:7px;box-sizing:border-box;border-radius:44px;border:0;background:#161616;box-shadow:0 0 0 1px rgba(246,246,244,.16),0 26px 60px rgba(0,0,0,.55);color:#F6F6F4;cursor:pointer;scroll-snap-align:start;transition:transform .35s cubic-bezier(.16,1,.3,1)';
@@ -1190,6 +1195,7 @@ class Component extends DCLogic {
       submitClips: ev => { ev.preventDefault(); this.sendClips(ev.currentTarget); },
       clipsSent: this.state.clipsSent, clipsNotSent: !this.state.clipsSent, clipsError: this.state.clipsError,
       clipsSendLabel: this.state.clipsSending ? 'Sending…' : 'Get my clips', clipsLinkRef: this.ref('clipsLink'),
+      clipsHeadA: CLIPS_HEAD[window.__ABC === 'b' ? 'b' : 'a'][0], clipsHeadB: CLIPS_HEAD[window.__ABC === 'b' ? 'b' : 'a'][1],
       menuClips: () => { this.setState({ menuOpen: false }); this.scrollTo('#clips'); },
       industries: INDUSTRIES,
       stack: STACK, logos: [...LOGOS, ...LOGOS].map((l, i) => ({ ...l, key: i })),
@@ -1339,7 +1345,7 @@ class Component extends DCLogic {
   // and, when keyed, as name_key (queryable from the Data API today with no setup). Every event carries the A/B variant.
   track(name, key, params) {
     if (typeof gtag !== 'function') return;
-    const p = Object.assign({ ab: window.__AB || '' }, params || {});
+    const p = Object.assign({ ab: window.__AB || '', abc: window.__ABC || '' }, params || {});
     try {
       gtag('event', name, p);
       if (key) { const slug = String(key).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 39 - name.length); if (slug) gtag('event', name + '_' + slug, p); }
@@ -1372,7 +1378,7 @@ class Component extends DCLogic {
       if (!r.ok) throw new Error('status ' + r.status);
       this.setState({ clipsSent: true, clipsSending: false });
       this.track('lead_submit', 'clips', { form: 'clips', intent: 'free-clips' });
-      if (typeof gtag === 'function') gtag('event', 'generate_lead', { form: 'clips', intent: 'free-clips', ab: window.__AB || '' });
+      if (typeof gtag === 'function') gtag('event', 'generate_lead', { form: 'clips', intent: 'free-clips', ab: window.__AB || '', abc: window.__ABC || '' });
     } catch (e) {
       this.track('lead_error', 'clips', { form: 'clips' });
       this.setState({ clipsSending: false, clipsError: 'That didn’t go through. Email the link to ' + MAIL + ' instead.' });

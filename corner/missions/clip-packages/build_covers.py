@@ -159,11 +159,11 @@ def ambition():
     for i, line in enumerate(('OPERATING ROOMS', 'WENT DOWN.')):
         l, t, r, b = dd.textbbox((0, 0), line, font=fh)
         dd.text((100 - l, KODY_TOP + 108 + i * 106 - t), line, font=fh, fill=(255, 255, 255))
-    badge = Image.open(EA / '.claude/skills/clip/brand-kits/ambition-mechanical/logo-badge.png').convert('RGBA').resize((250, 250), Image.LANCZOS)
+    badge = Image.open(EA / '.claude/skills/clip/brand-kits/ambition-mechanical/logo-badge.png').convert('RGBA').resize((180, 180), Image.LANCZOS)
     d = ImageDraw.Draw(im)
-    cx, cy = W // 2, 205
-    d.ellipse((cx - 137, cy - 137, cx + 137, cy + 137), fill=(229, 44, 42))
-    im.paste(badge, (cx - 125, cy - 125), badge)
+    cx, cy = W // 2, 272   # below the phone earpiece
+    d.ellipse((cx - 100, cy - 100, cx + 100, cy + 100), fill=(229, 44, 42))
+    im.paste(badge, (cx - 90, cy - 90), badge)
     d.rectangle((0, KODY_TOP - 6, W, KODY_TOP), fill=(229, 44, 42))
     save2(im, 'ambition')
 
@@ -180,7 +180,7 @@ def wolfpack():
     glow = glow.filter(ImageFilter.GaussianBlur(90))
     band = Image.composite(Image.new('RGB', band.size, blue), band, glow)
     im.paste(band, (0, 0))
-    paste_logo(im, HOME / 'public/wolfpack-site/assets/wolfpack-logo-knockout.png', 300, center=W // 2, top=70)
+    paste_logo(im, HOME / 'public/wolfpack-site/assets/wolfpack-logo-knockout.png', 210, center=W // 2, top=168)
     photo = punch(cover_fit(Image.open(HOME / 'public/wolfpack-site/assets/jet-hero.jpg').convert('RGB'), W, 1920, 0.42, 0.5))
     photo = shade(photo, top=0.55, mid=0.0, bottom=0.55, color=ink)
     im.paste(photo, (0, KODY_TOP))
@@ -217,7 +217,7 @@ def oak_street():
     green, lime, cream = (33, 63, 37), (121, 178, 40), (251, 245, 230)
     im = Image.new('RGB', (W, H2), green)
     d = ImageDraw.Draw(im)
-    paste_logo(im, EA / 'corner/users/aom/projects/outreach/clipping-sample/oak-street-brand/logo-for-dark-bg.png', 250, center=W // 2, top=120)
+    paste_logo(im, EA / 'corner/users/aom/projects/outreach/clipping-sample/oak-street-brand/logo-for-dark-bg.png', 210, center=W // 2, top=160)
     y = text_block(d, [
         ('HOW A FIRE', 'RobotoSlab-ExtraBold.ttf', 150, cream, None),
         ('MADE INVESTORS', 'RobotoSlab-ExtraBold.ttf', 104, cream, None),
