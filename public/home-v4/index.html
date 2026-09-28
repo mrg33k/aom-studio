@@ -63,17 +63,13 @@ button{font:inherit}
 @keyframes tileLife{0%{transform:scale(1.02) translate3d(-.6%,0,0)}52%{transform:scale(1.08) translate3d(.7%,-.5%,0)}100%{transform:scale(1.04) translate3d(0,.6%,0)}}
 html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;background:#060606}
 [data-screen-label="Home v4"]{--revw:0px;--revd:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch} /* hero review cards off until real client words exist (the four names were placeholders) */
-/* clips: packages + free-clips form. Tablet stacks the head; phones swipe the packages sideways. */
-@media (max-width: 1100px){ [data-clipshead]{grid-template-columns:1fr !important} [data-clipsform]{justify-self:start !important} }
+/* clips: phone rail. Scrollbar hidden (arrows on desktop, swipe on touch). Phones: section sizes to content. */
+[data-packrow]::-webkit-scrollbar{display:none}
 @media (max-width: 720px){
   #clips{height:auto !important;min-height:0 !important}
-  #clips > [data-clipswrap]{height:auto !important;padding-top:clamp(2.6rem,7vh,4rem) !important;padding-bottom:clamp(2.6rem,7vh,4rem) !important}
-  [data-clipsform]{max-width:none !important}
-  [data-clipsform] > div{flex-wrap:wrap}
-  [data-clipsform] button[type="submit"]{flex:1 1 100% !important}
-  [data-packrow]{justify-content:flex-start !important;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 calc(-1 * var(--gx));padding:0 var(--gx) .4rem;scrollbar-width:none}
-  [data-packrow]::-webkit-scrollbar{display:none}
-  [data-pack]{flex:none !important;height:auto !important;width:64vw !important;scroll-snap-align:start}
+  #clips > [data-clipswrap]{height:auto !important;padding-top:clamp(2.6rem,7vh,4rem) !important;padding-bottom:clamp(2rem,5vh,3rem) !important}
+  [data-railnav]{display:none !important}
+  [data-pack]{height:auto !important;width:78vw !important}
   [data-packclips]{justify-content:flex-start !important;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:.4rem;scrollbar-width:none}
   [data-packclip]{scroll-snap-align:start}
   [data-packclip] > div[role="button"]{height:auto !important;width:72vw !important}
@@ -695,56 +691,60 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;backgrou
     </div>
   </section>
 
-  <!-- CLIPS: one branded package per client (3 clips each), tap a card to open it. Data = PACKS in the script. -->
+  <!-- CLIPS: one branded package per client (3 clips each) as phone-sized cards, tap to open. The last phone is the
+       free-clips form ("your show here"). Data = PACKS in the script; covers built by corner/missions/clip-packages/build_covers.py. -->
   <section id="clips" data-slide="" data-screen-label="Clips" style="position:relative;height:var(--vph,100svh);scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;z-index:1;background:#060606">
-    <div data-clipswrap="" style="position:relative;z-index:3;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:clamp(1.2rem,3.4vh,2.4rem);padding:clamp(4.5rem,10vh,7rem) var(--gx) clamp(2rem,5vh,3.5rem);width:100%">
-      <div data-clipshead="" style="display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);align-items:end;column-gap:clamp(2rem,6vw,7rem);row-gap:1.4rem">
+    <div data-clipswrap="" style="position:relative;z-index:3;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:clamp(1rem,2.6vh,1.8rem);padding:clamp(4.4rem,8.4vh,5.6rem) 0 clamp(1rem,2.4vh,1.8rem);width:100%">
+      <div data-clipshead="" style="display:flex;align-items:flex-end;justify-content:space-between;gap:1.2rem 3rem;flex-wrap:wrap;padding:0 var(--gx)">
         <div style="min-width:0">
           <span data-rv="" data-d="0" style="display:block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#C4A46A;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Clips</span>
-          <h2 style="margin:clamp(.6rem,1.6vh,1rem) 0 0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.4rem,min(5.2vw,9vh),5.6rem);line-height:.9;letter-spacing:-.03em">
-            <span data-rv="" data-d=".06" style="display:block;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Their show.</span>
-            <span data-rv="" data-d=".14" style="display:block;color:#C4A46A;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Their brand<i style="display:inline-block;width:.13em;height:.13em;background:#F6F6F4;margin-left:.07em"></i></span>
-          </h2>
-          <p data-rv="" data-d=".22" style="margin:clamp(.9rem,2.2vh,1.6rem) 0 0;max-width:44ch;color:#E6E5E0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(1rem,min(1.35vw,2.5vh),1.3rem);font-weight:500;line-height:1.4;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Short vertical clips cut from long videos and job-site footage, built on each client's own colors, type and logo so they look like their own team made them. Tap a package to watch.</p>
+          <h2 data-rv="" data-d=".06" style="margin:clamp(.4rem,1.2vh,.8rem) 0 0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.2rem,min(4.6vw,8vh),5rem);line-height:.9;letter-spacing:-.03em;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Their show. <span style="color:#C4A46A">Their brand<i style="display:inline-block;width:.13em;height:.13em;background:#F6F6F4;margin-left:.07em"></i></span></h2>
+          <p data-rv="" data-d=".14" style="margin:clamp(.5rem,1.4vh,.9rem) 0 0;max-width:52ch;color:#E6E5E0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(.98rem,min(1.2vw,2.3vh),1.2rem);font-weight:500;line-height:1.4;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Vertical clips from long videos and job-site footage, in each client's own colors, type and logo. Tap a package to watch.</p>
         </div>
-        <form data-clipsform="" onSubmit="{{ submitClips }}" data-rv="" data-d=".3" style="min-width:0;width:100%;box-sizing:border-box;max-width:30rem;justify-self:end;padding:clamp(1rem,2.4vh,1.5rem);border:1px solid rgba(196,164,106,.45);border-radius:22px;background:rgba(196,164,106,.06);opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
-          <sc-if value="{{ clipsNotSent }}" hint-placeholder-val="{{ true }}">
-            <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
-            <span style="display:block;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(1.15rem,1.7vw,1.5rem);line-height:1;letter-spacing:-.01em;color:#F6F6F4">Send a link, get 3 free clips</span>
-            <span style="display:block;margin-top:.45rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.92rem;font-weight:500;line-height:1.4;color:rgba(246,246,244,.7)">An episode, a webinar or a job video. We cut three in your brand.</span>
-            <input ref="{{ clipsLinkRef }}" type="url" name="notes" required="" placeholder="Link to your video" aria-label="Link to your video" style="display:block;box-sizing:border-box;width:100%;margin-top:.9rem;min-height:50px;padding:.8rem 1.1rem;border:1px solid rgba(246,246,244,.42);border-radius:999px;background:rgba(6,6,6,.6);color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1rem;font-weight:500;outline:0">
-            <div style="display:flex;gap:.5rem;margin-top:.55rem">
-              <input type="email" name="email" required="" placeholder="Your email" aria-label="Your email" style="flex:1;min-width:0;box-sizing:border-box;min-height:50px;padding:.8rem 1.1rem;border:1px solid rgba(246,246,244,.42);border-radius:999px;background:rgba(6,6,6,.6);color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1rem;font-weight:500;outline:0">
-              <button type="submit" style="flex:none;min-height:50px;padding:.8rem 1.4rem;border-radius:999px;border:0;background:#C4A46A;color:#060606;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background-color .18s ease" style-hover="background-color:#A8884C">{{ clipsSendLabel }}</button>
-            </div>
-            <span style="display:block;margin-top:.5rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.85rem;font-weight:500;color:#E8A07A">{{ clipsError }}</span>
-          </sc-if>
-          <sc-if value="{{ clipsSent }}" hint-placeholder-val="{{ false }}">
-            <span style="display:block;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(1.15rem,1.7vw,1.5rem);line-height:1;color:#C4A46A">Got it</span>
-            <span style="display:block;margin-top:.45rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1rem;font-weight:500;line-height:1.4;color:#E6E5E0">We'll watch it and send your three clips to that email.</span>
-          </sc-if>
-        </form>
+          <div data-railnav="" data-rv="" data-d=".2" style="display:flex;gap:.5rem;flex:none;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
+            <button onClick="{{ railPrev }}" aria-label="Previous packages" style="width:48px;height:48px;border-radius:50%;border:1px solid rgba(246,246,244,.35);background:transparent;color:#F6F6F4;font-size:1.2rem;cursor:pointer;transition:border-color .18s,color .18s" style-hover="border-color:#C4A46A;color:#C4A46A">←</button>
+            <button onClick="{{ railNext }}" aria-label="Next packages" style="width:48px;height:48px;border-radius:50%;border:1px solid rgba(246,246,244,.35);background:transparent;color:#F6F6F4;font-size:1.2rem;cursor:pointer;transition:border-color .18s,color .18s" style-hover="border-color:#C4A46A;color:#C4A46A">→</button>
+          </div>
       </div>
-      <div data-packrow="" data-rv="" data-d=".26" style="display:flex;justify-content:center;gap:clamp(.7rem,1.4vw,1.2rem);opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
+      <div ref="{{ railRef2 }}" data-packrow="" data-rv="" data-d=".22" style="display:flex;gap:clamp(.8rem,1.4vw,1.3rem);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding:0 var(--gx);padding:.4rem var(--gx) .6rem;scrollbar-width:none;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
         <sc-for list="{{ packs }}" as="p" hint-placeholder-count="4">
-          <button data-pack="" onClick="{{ p.open }}" aria-label="{{ p.aria }}" style="{{ p.cardStyle }}" style-hover="transform:translateY(-6px);border-color:rgba(246,246,244,.55)">
-            <img src="{{ p.board }}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:{{ p.boardDisp }};opacity:.34;animation:drift 14s ease-in-out infinite alternate">
-            <img src="{{ p.cover }}" alt="" loading="lazy" style="position:absolute;left:0;right:0;bottom:0;top:3.4rem;width:100%;height:calc(100% - 3.4rem);object-fit:cover;object-position:top;display:{{ p.coverDisp }}">
-            <span aria-hidden="true" style="{{ p.glowStyle }}"><img src="{{ p.logo }}" alt="" style="width:62%;height:auto;opacity:.92"></span>
-            <video data-cliploop="" src="{{ p.loop }}" muted="" loop="" autoplay="" playsinline="" preload="metadata" style="position:absolute;left:0;right:0;bottom:0;top:3.4rem;width:100%;height:calc(100% - 3.4rem);object-fit:cover;object-position:top;display:{{ p.loopDisp }}"></video>
-            <span aria-hidden="true" style="{{ p.shadeStyle }}"></span>
-            <span style="position:absolute;left:0;right:0;top:0;height:3.4rem;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 .95rem;background:{{ p.bg }}">
-              <img src="{{ p.logo }}" alt="" style="display:{{ p.logoDisp }};height:2.1rem;width:auto;max-width:60%;object-fit:contain">
-              <span style="{{ p.monoStyle }}">{{ p.mono }}</span>
-              <span style="font-family:'Space Grotesk',system-ui,sans-serif;font-size:.66rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#F6F6F4;padding:.3rem .55rem;border-radius:999px;background:rgba(6,6,6,.5)">{{ p.count }}</span>
-            </span>
-            <span style="position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:flex-start;gap:.3rem;padding:1rem .95rem 1.05rem;text-align:left">
-              <span style="font-family:'Space Grotesk',system-ui,sans-serif;font-size:.66rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:{{ p.accent }}">{{ p.kind }}</span>
-              <span style="{{ p.nameStyle }}">{{ p.name }}</span>
-              <span style="font-family:'Space Grotesk',system-ui,sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(246,246,244,.78)">Open package <span aria-hidden="true">&rarr;</span></span>
+          <button data-pack="" onClick="{{ p.open }}" aria-label="{{ p.aria }}" style="{{ p.cardStyle }}" style-hover="transform:translateY(-6px)">
+            <span style="{{ p.screenStyle }}">
+              <span style="{{ p.bandStyle }}">
+                <span aria-hidden="true" style="position:absolute;top:.6rem;left:50%;width:4.2rem;height:.5rem;margin-left:-2.1rem;border-radius:999px;background:#060606"></span>
+                <img src="{{ p.logo }}" alt="{{ p.name }}" style="display:block;height:{{ p.logoH }};width:auto;max-width:86%;object-fit:contain;margin-top:.7rem">
+              </span>
+              <img src="{{ p.cover }}" alt="" loading="lazy" style="position:absolute;left:0;right:0;bottom:0;top:{{ p.band }};width:100%;height:calc(100% - {{ p.band }});object-fit:cover;object-position:top;display:{{ p.coverDisp }}">
+              <video data-cliploop="" src="{{ p.loop }}" muted="" loop="" autoplay="" playsinline="" preload="metadata" style="position:absolute;left:0;right:0;bottom:0;top:{{ p.band }};width:100%;height:calc(100% - {{ p.band }});object-fit:cover;object-position:top;display:{{ p.loopDisp }}"></video>
+              <span aria-hidden="true" style="{{ p.shadeStyle }}"></span>
+              <span style="position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:flex-start;gap:.3rem;padding:1rem 1.1rem 1.2rem;text-align:left">
+                <span style="font-family:'Space Grotesk',system-ui,sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:{{ p.accent }}">{{ p.kind }} · {{ p.count }}</span>
+                <span style="{{ p.nameStyle }}">{{ p.name }}</span>
+                <span style="margin-top:.2rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(246,246,244,.8)">Open package <span aria-hidden="true">&rarr;</span></span>
+              </span>
             </span>
           </button>
         </sc-for>
+        <form data-clipsform="" data-pack="" onSubmit="{{ submitClips }}" style="{{ formCardStyle }}">
+          <span style="{{ formScreenStyle }}">
+            <span aria-hidden="true" style="position:absolute;top:.6rem;left:50%;width:4.2rem;height:.5rem;margin-left:-2.1rem;border-radius:999px;background:#060606"></span>
+            <sc-if value="{{ clipsNotSent }}" hint-placeholder-val="{{ true }}">
+              <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
+              <span style="display:block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#C4A46A">Your show here</span>
+              <span style="display:block;margin-top:.7rem;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(1.7rem,2.3vw,2.3rem);line-height:.95;letter-spacing:-.02em;color:#F6F6F4">Send a link.<span style="display:block;color:#C4A46A">Get 3 free clips.</span></span>
+              <span style="display:block;margin-top:.8rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.95rem;font-weight:500;line-height:1.4;color:rgba(246,246,244,.72)">An episode, a webinar or a job video. We cut three in your brand, like these.</span>
+              <span style="display:block;flex:1"></span>
+              <input ref="{{ clipsLinkRef }}" type="url" name="notes" required="" placeholder="Link to your video" aria-label="Link to your video" style="display:block;box-sizing:border-box;width:100%;min-height:50px;padding:.8rem 1.1rem;border:1px solid rgba(246,246,244,.42);border-radius:999px;background:rgba(6,6,6,.6);color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1rem;font-weight:500;outline:0">
+              <input type="email" name="email" required="" placeholder="Your email" aria-label="Your email" style="display:block;box-sizing:border-box;width:100%;margin-top:.55rem;min-height:50px;padding:.8rem 1.1rem;border:1px solid rgba(246,246,244,.42);border-radius:999px;background:rgba(6,6,6,.6);color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1rem;font-weight:500;outline:0">
+              <button type="submit" style="display:block;width:100%;margin-top:.7rem;min-height:54px;padding:.8rem 1.4rem;border-radius:999px;border:0;background:#C4A46A;color:#060606;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.05rem;font-weight:700;cursor:pointer;transition:background-color .18s ease" style-hover="background-color:#A8884C">{{ clipsSendLabel }}</button>
+              <span style="display:block;margin-top:.5rem;min-height:1.1em;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.85rem;font-weight:500;color:#E8A07A">{{ clipsError }}</span>
+            </sc-if>
+            <sc-if value="{{ clipsSent }}" hint-placeholder-val="{{ false }}">
+              <span style="display:block;margin-top:auto;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:2.2rem;line-height:.95;color:#C4A46A">Got it</span>
+              <span style="display:block;margin:.7rem 0 auto;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1.05rem;font-weight:500;line-height:1.4;color:#E6E5E0">We'll watch it and send your three clips to that email.</span>
+            </sc-if>
+          </span>
+        </form>
       </div>
     </div>
   </section>
@@ -905,7 +905,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;backgrou
       <div onClick="{{ stop }}" data-packsheet="" style="position:relative;z-index:1;width:min(1180px,100%);max-height:100%;overflow:auto;box-sizing:border-box;padding:clamp(1rem,3vh,2rem) clamp(.2rem,1vw,1rem);animation:riseIn .7s cubic-bezier(.16,1,.3,1) both">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem">
           <div style="display:flex;align-items:center;gap:1rem;min-width:0">
-            <img src="{{ pack.logo }}" alt="" style="display:{{ pack.logoDisp }};height:clamp(40px,6vh,58px);width:auto;max-width:9rem;object-fit:contain;flex:none">
+            <img src="{{ pack.logo }}" alt="" style="display:{{ pack.logoDisp }};height:clamp(64px,10vh,96px);width:auto;max-width:min(22rem,60vw);object-fit:contain;flex:none">
             <span style="{{ pack.monoStyle }}">{{ pack.mono }}</span>
             <div style="min-width:0">
               <span style="display:block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:{{ pack.accent }}">{{ pack.kind }}</span>
@@ -1037,19 +1037,21 @@ const KEYS = ['A', 'B', 'C', 'D'];
 // Card cover falls back to the first clip's gumlet thumbnail once ids are in. Add a client = add one entry.
 const PACKS = [
   { slug: 'ambition', name: 'Ambition Mechanical', show: 'Commercial HVAC, Phoenix', kind: 'Job-site reels', bg: '#0E1626', accent: '#E52C2A',
-    font: "'Barlow Condensed','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'ambition/logo.png', board: 'ambition/board.jpg', cover: 'ambition/cover.jpg',
+    font: "'Barlow Condensed','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'ambition/logo.png', logoH: '4.4rem', board: 'ambition/board.jpg', cover: 'ambition/cover.jpg',
     clips: [{ t: 'Elephante, part two' }, { t: 'EWG' }, { t: 'Eagle Air Park' }] },
   { slug: 'wolfpack', name: 'Wolfpack Companies', show: 'Plumbing and drain service, Phoenix', kind: 'Service reels', bg: '#0C0E12', accent: '#4A98D2',
-    font: "'Montserrat','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'wolfpack/logo.png',
+    font: "'Montserrat','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'wolfpack/logo.png', logoH: '4.8rem', cover: 'wolfpack/cover.jpg',
     clips: [{ t: 'Toilet diaphragm repair' }, { t: 'Sewer line' }, { t: 'Vecina' }] },
   { slug: 'oak-street', name: 'Oak Street Assets', show: 'Phoenix Prosperity Podcast', kind: 'Podcast clips', bg: '#213F25', accent: '#79B228',
-    font: "'Zilla Slab',Rockwell,Georgia,serif", fw: 700, upper: false, logo: 'oak-street/logo.png', board: 'oak-street/board.jpg', cover: 'oak-street/fire.jpg',
+    font: "'Zilla Slab',Rockwell,Georgia,serif", fw: 700, upper: false, logo: 'oak-street/logo.png', logoH: '4rem', board: 'oak-street/board.jpg', cover: 'oak-street/cover.jpg',
     clips: [{ t: 'How a fire made investors $1 million', cover: 'oak-street/fire.jpg' }, { t: 'The $265 billion reason to watch Phoenix' }, { t: 'Why new homes in Arizona actually save water' }] },
   { slug: 'kody', name: 'Kody Romero', show: 'Arizona Living', kind: 'YouTube clips', bg: '#0B1A2E', accent: '#BCA062',
-    font: "'DM Serif Display',Georgia,serif", fw: 400, upper: false, mono: 'KR', board: 'kody/board.jpg', cover: 'kody/heat.jpg', loop: 'kody/heat-loop.mp4',
-    clips: [{ t: '“It’s a dry heat” stops mattering at 110°', mp4: 'kody/heat.mp4', cover: 'kody/heat.jpg' }, { t: 'Phoenix is affordable, but not dirt cheap' }, { t: 'Why 55+ communities feel empty every summer' }] },
+    font: "'DM Serif Display',Georgia,serif", fw: 400, upper: false, logo: 'kody/logo.png', logoH: '2.6rem', board: 'kody/board.jpg', cover: 'kody/cover.jpg', loop: 'kody/heat-loop.mp4',
+    clips: [{ t: '“It’s a dry heat” stops mattering at 110°', mp4: 'kody/heat.mp4', cover: 'kody/cover.jpg' }, { t: 'Phoenix is affordable, but not dirt cheap' }, { t: 'Why 55+ communities feel empty every summer' }] },
 ];
 const clipAsset = f => f ? 'assets/clips/' + f : '';
+// A package card is a phone: dark bezel, 9:16 screen, sized to own most of the viewport height.
+const PHONE = 'position:relative;flex:none;display:block;height:min(calc(var(--vph,100svh) - 19rem),44rem);aspect-ratio:9 / 16;padding:6px;box-sizing:border-box;border-radius:36px;border:0;background:#161616;box-shadow:0 0 0 1px rgba(246,246,244,.16),0 26px 60px rgba(0,0,0,.55);color:#F6F6F4;cursor:pointer;scroll-snap-align:start;transition:transform .35s cubic-bezier(.16,1,.3,1)';
 const packFace = (k, big) => `display:block;margin-top:.15rem;font-family:${k.font};font-weight:${k.fw};text-transform:${k.upper ? 'uppercase' : 'none'};font-size:${big ? 'clamp(1.7rem,3.2vw,2.6rem)' : 'clamp(1.35rem,1.9vw,1.75rem)'};line-height:1;letter-spacing:${k.upper ? '.01em' : '0'};color:#F6F6F4`;
 const packMono = (k, big) => k.mono ? `display:grid;place-items:center;flex:none;width:${big ? '3.4rem' : '2.4rem'};height:${big ? '3.4rem' : '2.4rem'};border:1px solid ${k.accent};border-radius:50%;font-family:${k.font};font-size:${big ? '1.3rem' : '.95rem'};color:${k.accent}` : 'display:none';
 
@@ -1144,15 +1146,18 @@ class Component extends DCLogic {
 
       packs: PACKS.map(k => {
         const first = k.clips.find(c => c.id), cover = clipAsset(k.cover) || (first ? poster(first.id, 540) : '');
-        const bare = !cover && !k.board && !k.loop;
-        return { key: k.slug, name: k.name, kind: k.kind, accent: k.accent, bg: k.bg,
-          glowStyle: bare ? `position:absolute;left:0;right:0;top:3.4rem;height:58%;display:grid;place-items:center;background:radial-gradient(60% 55% at 50% 50%, ${k.accent}55 0%, ${k.accent}14 55%, transparent 80%)` : 'display:none', mono: k.mono || '', count: k.clips.length + ' clips', aria: `Open the ${k.name} clip package`,
-          open: () => this.openPack(k), board: clipAsset(k.board), boardDisp: k.board ? 'block' : 'none', cover, coverDisp: cover ? 'block' : 'none',
-          loop: clipAsset(k.loop), loopDisp: k.loop ? 'block' : 'none', logo: clipAsset(k.logo), logoDisp: k.logo ? 'block' : 'none',
-          monoStyle: packMono(k, false), nameStyle: packFace(k, false),
-          cardStyle: `position:relative;flex:0 1 auto;height:min(48vh,32rem);aspect-ratio:9 / 16;overflow:hidden;padding:0;border-radius:20px;border:1px solid rgba(246,246,244,.16);background:${k.bg};cursor:pointer;color:#F6F6F4;transition:transform .35s cubic-bezier(.16,1,.3,1),border-color .25s ease`,
-          shadeStyle: `position:absolute;inset:0;background:linear-gradient(to bottom, ${k.bg} 0%, ${k.bg} 3.4rem, rgba(6,6,6,0) calc(3.4rem + 1px), rgba(6,6,6,0) 44%, ${k.bg}F2 76%, ${k.bg} 100%)` };
+        const band = '6.4rem';
+        return { key: k.slug, name: k.name, kind: k.kind, accent: k.accent, bg: k.bg, count: k.clips.length + ' clips', aria: `Open the ${k.name} clip package`,
+          open: () => this.openPack(k), band, logo: clipAsset(k.logo), logoH: k.logoH || '4rem',
+          cover, coverDisp: cover ? 'block' : 'none', loop: clipAsset(k.loop), loopDisp: k.loop ? 'block' : 'none', nameStyle: packFace(k, false),
+          cardStyle: PHONE, screenStyle: `position:relative;display:block;width:100%;height:100%;overflow:hidden;border-radius:30px;background:${k.bg}`,
+          bandStyle: `position:absolute;left:0;right:0;top:0;height:${band};z-index:2;display:flex;align-items:center;justify-content:center;background:${k.bg};box-shadow:0 1px 0 ${k.accent}55`,
+          shadeStyle: `position:absolute;left:0;right:0;bottom:0;top:${band};background:linear-gradient(to bottom, transparent 0%, transparent 56%, ${k.bg}E0 78%, ${k.bg} 100%)` };
       }),
+      formCardStyle: PHONE + ';cursor:default',
+      formScreenStyle: "position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:100%;height:100%;overflow:hidden;border-radius:30px;padding:2.4rem 1.3rem 1.3rem;background:radial-gradient(120% 70% at 50% 0%, rgba(196,164,106,.2) 0%, rgba(196,164,106,.04) 55%, #0B0B0A 100%);text-align:left",
+      railRef2: this.ref('rail2'),
+      railPrev: () => this.railStep(-1), railNext: () => this.railStep(1),
       packOpen: !!this.state.pack,
       pack: (() => { const k = PACKS.find(x => x.slug === this.state.pack); if (!k) return {};
         return { name: k.name, show: k.show, kind: k.kind, accent: k.accent, mono: k.mono || '', aria: `${k.name} clip package`, board: clipAsset(k.board), boardDisp: k.board ? 'block' : 'none',
@@ -1342,6 +1347,7 @@ class Component extends DCLogic {
   closeVideo() { if (!this.state.video) return; this.flushVideo(); this.setState({ video: null }); }
 
   openPack(k) { this.track('clips_pack_open', k.slug, { pack: k.name }); this.setState({ pack: k.slug, packClip: -1 }); }
+  railStep(dir) { const r = this.el.rail2; if (!r) return; const c = r.querySelector('[data-pack]'); r.scrollBy({ left: dir * ((c ? c.offsetWidth : 320) + 20), behavior: 'smooth' }); }
   closePack() { if (!this.state.pack) return; this.setState({ pack: null, packClip: -1 }); }
   playClip(k, c, i) { if (!c.mp4 && !c.id) return; this.track('clips_play', k.slug, { pack: k.name, clip: c.t }); this.setState({ packClip: i }); }
   // Free-clips form. Same /api/aom-lead endpoint and spam checks as the other forms; the link rides in `notes`.

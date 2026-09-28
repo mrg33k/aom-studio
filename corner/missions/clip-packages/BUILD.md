@@ -17,3 +17,17 @@ Ambition ×3, Wolfpack ×3, Oak Street ×3 (fire/TSMC/water), Kody ×2 (cost, su
 30 s look-proof render; swap for the final render if it changed.
 
 **Status:** built, pushed to branch `clips-packages`, awaiting clip ids.
+
+### R2 — 2026-09-28 — Phone-sized cards, thumbnail covers, big logos (Patrik's notes)
+- Covers are now YouTube-style thumbnails of each client's most social moment, built by
+  `build_covers.py` (this folder): Ambition = crane day (chiller on the hook), Wolfpack = hydro jetting,
+  Oak Street = fire before/after with Tim's face, Kody = his "dry heat" frame (kept as is, Patrik liked it).
+  Ambition and Wolfpack covers come from their photo libraries, not from the three picked reels; re-run the
+  script on a real frame once those clips are on gumlet.
+- Cards are phones: bezel, 9:16 screen, height = viewport minus the header (max 44rem), in a swipe rail with
+  arrow buttons on desktop. The free-clips form is the last phone ("Your show here").
+- Logos sit large and centered in a brand-color header band on every card; Kody got a KR + "Arizona Living"
+  wordmark (he has no logo file). Overlay header logo enlarged to match.
+- Rechecked at 1440×900 and 390×844: phones fit whole on desktop, rail scrolls to the form, overlay opens.
+
+**Status:** R2 pushed to `clips-packages`; still awaiting clip ids before merge.
