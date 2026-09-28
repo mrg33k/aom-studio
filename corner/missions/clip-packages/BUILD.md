@@ -80,3 +80,24 @@ Ambition/Wolfpack were library photos with a layout on top.
   and the subline "The swap that keeps surgeries running." from the reel's own captions.
 
 **Status:** R6 pushed; 10 clips still need gumlet ids before merge.
+
+### R7 — 2026-09-28 — Every clip gets its own cover
+Patrik: every video in the samples needs a cover as good as the package covers, specific to that video.
+- `build_covers.py` `clip_covers()` writes `<slug>/c1..c3.jpg` (1080x2340 source, 720x1560 out); c1 = the package cover.
+  One template per client system, hook and imagery taken from that clip's own content:
+  - Kody (plans + BUILD-READY): heat (real frame) / "Phoenix is affordable, but not dirt cheap" + suburbs under the
+    mountains + "Costs are likely to rise" / "Why 55+ communities feel empty every summer" + Sun City + "Before they buy,
+    not after." Masthead, serif hook with one gold word, his desk shot, caption bar with one amber word, photo panel.
+  - Oak Street (clip plans): fire / "$265 billion reason to watch Phoenix" + TSMC Fab 21 + $265B stat / "Why new homes in
+    Arizona save water" + the farms -> now neighborhoods. Logo masthead, slab hook with lime box, Tim on the seam.
+  - Wolfpack: sewer before/after / "Toilet won't stop running? The fix: a new diaphragm" (pm-hero) / Vecina restaurant
+    plumbing top out with the job list from its LinkedIn draft (new floor drains, fresh copper, 2" gas line, 8 drops).
+  - Ambition (reel captions): operating rooms / Élephante "Dirty filters every 3 months" + "Arizona is a very dusty
+    place." / EWG "Swamp coolers out. Real AC in." + "New units craned onto the roof." LinkedIn navy system.
+- CC BY / BY-SA credit lines are drawn on every stock photo (Kody, Oak Street).
+- Clip titles in PACKS now name each video; package-view tiles are phones (9:19.5) so covers show whole; header logo
+  hidden on phones (each cover already carries it).
+- Covers from library photos (not reel frames): Wolfpack toilet + Vecina, Ambition Élephante + EWG. Swap to real
+  frames when those reels are reachable.
+
+**Status:** R7 pushed; 10 clips still need gumlet ids before merge.

@@ -76,6 +76,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;backgrou
   [data-clipsbg]{grid-template-columns:repeat(2,1fr) !important}
   [data-packclips]{justify-content:flex-start !important;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:.4rem;scrollbar-width:none}
   [data-packclip]{scroll-snap-align:start}
+  [data-packlogo]{display:none !important}
   [data-packclip] > div[role="button"]{height:auto !important;width:72vw !important}
 }
 @media (max-width: 720px){ #story > div:first-child{grid-template-columns:1fr !important} #dept [data-d=".34"]{grid-template-columns:1fr 1fr !important} }
@@ -917,7 +918,7 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;backgrou
       <div onClick="{{ stop }}" data-packsheet="" style="position:relative;z-index:1;width:min(1180px,100%);max-height:100%;overflow:auto;box-sizing:border-box;padding:clamp(1rem,3vh,2rem) clamp(.2rem,1vw,1rem);animation:riseIn .7s cubic-bezier(.16,1,.3,1) both">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem">
           <div style="display:flex;align-items:center;gap:1rem;min-width:0">
-            <img src="{{ pack.logo }}" alt="" style="display:{{ pack.logoDisp }};height:clamp(64px,10vh,96px);width:auto;max-width:min(22rem,60vw);object-fit:contain;flex:none">
+            <img data-packlogo="" src="{{ pack.logo }}" alt="" style="display:{{ pack.logoDisp }};height:clamp(64px,10vh,96px);width:auto;max-width:min(22rem,60vw);object-fit:contain;flex:none">
             <span style="{{ pack.monoStyle }}">{{ pack.mono }}</span>
             <div style="min-width:0">
               <span style="display:block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:{{ pack.accent }}">{{ pack.kind }}</span>
@@ -1050,16 +1051,16 @@ const KEYS = ['A', 'B', 'C', 'D'];
 const PACKS = [
   { slug: 'kody', name: 'Kody Romero', show: 'Arizona Living', kind: 'YouTube clips', bg: '#0B1A2E', accent: '#BCA062', watchInk: '#0B1A2E',
     font: "'DM Serif Display',Georgia,serif", fw: 400, upper: false, logo: 'kody/logo.png', avatar: 'kody/avatar.png', logoH: '2.6rem', board: 'kody/board.jpg', cover: 'kody/cover.jpg', loop: 'kody/heat-loop.mp4',
-    clips: [{ t: '“It’s a dry heat” stops mattering at 110°', mp4: 'kody/heat.mp4', cover: 'kody/cover.jpg' }, { t: 'Phoenix is affordable, but not dirt cheap' }, { t: 'Why 55+ communities feel empty every summer' }] },
+    clips: [{ t: '“It’s a dry heat” stops mattering at 110°', mp4: 'kody/heat.mp4', cover: 'kody/c1.jpg' }, { t: 'Phoenix is affordable, but not dirt cheap', cover: 'kody/c2.jpg' }, { t: 'Why 55+ communities feel empty every summer', cover: 'kody/c3.jpg' }] },
   { slug: 'wolfpack', name: 'Wolfpack Companies', show: 'Plumbing and drain service, Phoenix', kind: 'Service reels', bg: '#0C0E12', accent: '#4A98D2',
     font: "'Montserrat','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'wolfpack/logo.png', avatar: 'wolfpack/avatar.png', logoH: '4.8rem', cover: 'wolfpack/cover.jpg',
-    clips: [{ t: 'Toilet diaphragm repair' }, { t: 'Sewer line' }, { t: 'Vecina' }] },
+    clips: [{ t: 'Sewer line, before and after', cover: 'wolfpack/c1.jpg' }, { t: 'Toilet won’t stop running? The diaphragm fix', cover: 'wolfpack/c2.jpg' }, { t: 'Vecina: a restaurant plumbing top out', cover: 'wolfpack/c3.jpg' }] },
   { slug: 'oak-street', name: 'Oak Street Assets', show: 'Phoenix Prosperity Podcast', kind: 'Podcast clips', bg: '#213F25', accent: '#79B228', watchInk: '#10210F',
     font: "'Zilla Slab',Rockwell,Georgia,serif", fw: 700, upper: false, logo: 'oak-street/logo.png', avatar: 'oak-street/avatar.png', logoH: '4rem', board: 'oak-street/board.jpg', cover: 'oak-street/cover.jpg',
-    clips: [{ t: 'How a fire made investors $1 million', cover: 'oak-street/fire.jpg' }, { t: 'The $265 billion reason to watch Phoenix' }, { t: 'Why new homes in Arizona actually save water' }] },
+    clips: [{ t: 'How a fire made investors $1 million', cover: 'oak-street/c1.jpg' }, { t: 'The $265 billion reason to watch Phoenix', cover: 'oak-street/c2.jpg' }, { t: 'Why new homes in Arizona actually save water', cover: 'oak-street/c3.jpg' }] },
   { slug: 'ambition', name: 'Ambition Mechanical', show: 'Commercial HVAC, Phoenix', kind: 'Job-site reels', bg: '#0E1626', accent: '#E52C2A',
     font: "'Barlow Condensed','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'ambition/logo.png', avatar: 'ambition/avatar.png', logoH: '4.4rem', board: 'ambition/board.jpg', cover: 'ambition/cover.jpg',
-    clips: [{ t: 'Operating rooms went down. Ambition was called in.', mp4: 'ambition/rtu.mp4', cover: 'ambition/rtu.jpg' }, { t: 'Elephante, part two' }, { t: 'EWG' }] },
+    clips: [{ t: 'Operating rooms went down. Ambition was called in.', mp4: 'ambition/rtu.mp4', cover: 'ambition/c1.jpg' }, { t: 'Élephante: dirty filters every 3 months', cover: 'ambition/c2.jpg' }, { t: 'EWG: swamp coolers out, real AC in', cover: 'ambition/c3.jpg' }] },
 ];
 // Clips headline A/B (see the head script): [white part, gold part]
 const CLIPS_HEAD = { a: ['Long-form to', 'short-form'], b: ['Your videos,', 'cut by our team'] };
@@ -1188,7 +1189,7 @@ class Component extends DCLogic {
             titleCardStyle: cover || on ? 'display:none' : `position:absolute;left:1.1rem;right:1.1rem;top:50%;transform:translateY(-50%);text-align:left;${packFace(k, false)};font-size:clamp(1.4rem,2vw,1.9rem);line-height:1.08`,
             playStyle: ready && !on ? `position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:grid;place-items:center;width:3.6rem;height:3.6rem;border-radius:50%;background:${k.accent};box-shadow:0 8px 30px rgba(0,0,0,.45)` : 'display:none',
             pendingStyle: ready ? 'display:none' : "position:absolute;left:.8rem;bottom:.8rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.66rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#F6F6F4;padding:.3rem .55rem;border-radius:999px;background:rgba(6,6,6,.55)",
-            tileStyle: `position:relative;display:block;height:min(50vh,33rem);aspect-ratio:9 / 16;overflow:hidden;border-radius:18px;border:1px solid ${k.accent}66;background:#060606;cursor:${ready ? 'pointer' : 'default'};outline:0` };
+            tileStyle: `position:relative;display:block;height:min(58vh,38rem);aspect-ratio:9 / 19.5;overflow:hidden;border-radius:26px;border:5px solid #161616;box-shadow:0 0 0 1px rgba(246,246,244,.16),0 18px 40px rgba(0,0,0,.45);background:#060606;cursor:${ready ? 'pointer' : 'default'};outline:0` };
         }); })(),
       closePack: () => this.closePack(),
       packToForm: () => { this.closePack(); this.scrollTo('#clips'); setTimeout(() => { if (this.el.clipsLink) this.el.clipsLink.focus({ preventScroll: true }); }, 700); },

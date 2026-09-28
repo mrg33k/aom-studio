@@ -311,5 +311,240 @@ def avatars():
     print('wrote avatars')
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# Per-clip covers (R7): every clip in every package gets its own cover in its client's system, hook and imagery
+# taken from that clip's own content (plans, captions, the post that went with it). Files: <slug>/c1..c3.jpg.
+# c1 of each package is the package card cover (cover.jpg). Photos under CC BY / BY-SA carry their credit line.
+# ---------------------------------------------------------------------------------------------------------------
+KO = EA / 'corner/users/aom/projects/outreach/clipping-sample'
+
+
+def save_clip(im, slug, n):
+    p = OUT / slug / f'c{n}.jpg'
+    im.convert('RGB').resize((720, 1560), Image.LANCZOS).save(p, quality=80, optimize=True, progressive=True)
+    print('wrote', p.relative_to(HOME), p.stat().st_size // 1024, 'KB')
+
+
+def credit(d, text, x, y, col=(255, 255, 255)):
+    f = font('Inter-SemiBold.ttf', 24)
+    d.text((x + 1, y + 1), text, font=f, fill=(0, 0, 0))
+    d.text((x, y), text, font=f, fill=col)
+
+
+def chip(d, text, x, y, bg, fg=(255, 255, 255), size=40, fname='Inter-ExtraBold.ttf', pad=18, radius=10):
+    f = font(fname, size)
+    l, t, r, b = d.textbbox((0, 0), text, font=f)
+    d.rounded_rectangle((x, y, x + (r - l) + 2 * pad, y + (b - t) + 2 * pad), radius=radius, fill=bg)
+    d.text((x + pad - l, y + pad - t), text, font=f, fill=fg)
+    return y + (b - t) + 2 * pad
+
+
+def rounded_paste(im, ph, x, y, radius):
+    m = Image.new('L', ph.size, 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, ph.width - 1, ph.height - 1), radius=radius, fill=255)
+    im.paste(ph, (x, y), m)
+
+
+# ---- Kody: Arizona Living masthead, serif hook with one gold word, his desk shot, caption bar, photo panel ----
+def kody_clip(n, hook, face_src, caption, photo, tag, cred, card):
+    gold, amber, cream = (188, 160, 98), (246, 173, 85), (247, 241, 230)
+    navy = (11, 26, 46)
+    im = Image.new('RGB', (W, H2), navy)
+    d = ImageDraw.Draw(im)
+    for i in range(14):   # quiet contour lines, as on his plates
+        r = 260 + i * 70
+        d.ellipse((W - 180 - r, 820 - r, W - 180 + r, 820 + r), outline=(20, 40, 66), width=2)
+    paste_logo(im, OUT / 'kody' / 'logo.png', 128, center=W // 2, top=190)
+    d.line((W // 2 - 140, KODY_TOP - 40, W // 2 + 140, KODY_TOP - 40), fill=gold, width=3)
+    y = KODY_TOP + 20
+    for parts in hook:   # each line = [(text, is_gold), ...], shrunk to fit the screen
+        size = 96
+        while True:
+            fh = font('DMSerifDisplay-Regular.ttf', size)
+            widths = [d.textbbox((0, 0), t, font=fh) for t, _ in parts]
+            total = sum(b[2] - b[0] for b in widths)
+            if total <= W - 130 or size <= 60:
+                break
+            size -= 4
+        x = (W - total) // 2
+        for (t, g), bb in zip(parts, widths):
+            d.text((x - bb[0], y - bb[1]), t, font=fh, fill=gold if g else cream)
+            x += bb[2] - bb[0]
+        y += 112
+    d.line((W // 2 - 190, y + 10, W // 2 + 190, y + 10), fill=gold, width=3)
+    fy = y + 50
+    face = cover_fit(Image.open(face_src).convert('RGB').crop((330, 20, 950, 600)), W, 560, 0.5, 0.35)
+    im.paste(punch(face), (0, fy))
+    cy = fy + 560 + 30   # caption bar, one amber word
+    fc = font('Inter-ExtraBold.ttf', 60)
+    widths = [d.textbbox((0, 0), t, font=fc) for t, _ in caption]
+    total = sum(b[2] - b[0] for b in widths)
+    d.rounded_rectangle((40, cy, W - 40, cy + 110), radius=10, fill=(8, 18, 34))
+    x = (W - total) // 2
+    for (t, a), bb in zip(caption, widths):
+        d.text((x - bb[0], cy + 55 - (bb[3] - bb[1]) // 2 - bb[1]), t, font=fc, fill=amber if a else (255, 255, 255))
+        x += bb[2] - bb[0]
+    py = cy + 150
+    ph = punch(cover_fit(Image.open(photo).convert('RGB'), W - 80, 560))
+    rounded_paste(im, ph, 40, py, 16)
+    chip(d, tag, 64, py + 24, (8, 18, 34), cream, 34, 'DMSerifDisplay-Regular.ttf', 16, 8)
+    credit(d, cred, 64, py + 560 - 44)
+    # the clip's own badge line, set like his 110-degree card
+    ky = py + 600
+    d.rounded_rectangle((40, ky, W - 40, ky + 190), radius=14, fill=(16, 34, 58), outline=(40, 64, 96), width=2)
+    fk = font('Inter-ExtraBold.ttf', 30)
+    l, t, r, b = d.textbbox((0, 0), card[0], font=fk)
+    d.text(((W - (r - l)) // 2 - l, ky + 28 - t), card[0], font=fk, fill=cream)
+    d.line((W // 2 - 60, ky + 76, W // 2 + 60, ky + 76), fill=gold, width=3)
+    f2, (l, t, r, b) = fit_text(d, card[1], 'DMSerifDisplay-Regular.ttf', W - 160, 76)
+    d.text(((W - (r - l)) // 2 - l, ky + 96 - t), card[1], font=f2, fill=(255, 255, 255))
+    save_clip(im, 'kody', n)
+
+
+# ---- Oak Street: logo masthead, slab-serif hook with a lime box, before/after photo panels, Tim on the seam ----
+def oak_clip(n, hook, boxed, top_photo, top_tag, bottom, cred):
+    green, lime, cream = (33, 63, 37), (121, 178, 40), (251, 245, 230)
+    src = Image.open(KO / 'oak-street-brand/current-clip-frame.jpg').convert('RGB')
+    im = Image.new('RGB', (W, H2), green)
+    d = ImageDraw.Draw(im)
+    paste_logo(im, KO / 'oak-street-brand/logo-for-dark-bg.png', 210, center=W // 2, top=160)
+    y = 440
+    for i, line in enumerate(hook):
+        f, (l, t, r, b) = fit_text(d, line, 'RobotoSlab-ExtraBold.ttf', W - 128, 150 if i == 0 else 104)
+        d.text((64 - l, y - t), line, font=f, fill=cream)
+        y += (b - t) + 14
+    y = text_block(d, [(boxed, 'RobotoSlab-ExtraBold.ttf', 132, (27, 41, 31), lime)], y + 16, None)
+    fy = y + 50
+    im.paste(punch(cover_fit(Image.open(top_photo).convert('RGB'), W, 620)), (0, fy))
+    chip(d, top_tag, 40, fy + 36, (200, 45, 40), (255, 255, 255), 44, 'Poppins-ExtraBold.ttf', 16, 8)
+    ay = fy + 620
+    d.rectangle((0, ay - 4, W, ay + 4), fill=lime)
+    kind = bottom[0]
+    if kind == 'photo':
+        _, bph, btag = bottom
+        im.paste(punch(cover_fit(Image.open(bph).convert('RGB'), W, H2 - ay - 4)), (0, ay + 4))
+        chip(d, btag, 40, ay + 40, green, (255, 255, 255), 44, 'Poppins-ExtraBold.ttf', 16, 8)
+    else:   # stat band
+        _, value, label = bottom
+        f = font('RobotoSlab-ExtraBold.ttf', 250)
+        l, t, r, b = d.textbbox((0, 0), value, font=f)
+        d.text(((W - (r - l)) // 2 - l, ay + 110 - t), value, font=f, fill=lime)
+        fl = font('Poppins-ExtraBold.ttf', 44)
+        l2, t2, r2, b2 = d.textbbox((0, 0), label, font=fl)
+        d.text(((W - (r2 - l2)) // 2 - l2, ay + 110 + (b - t) + 40 - t2), label, font=fl, fill=cream)
+    credit(d, cred, 40, ay - 50)
+    face_bubble(im, src.crop((838, 912, 1040, 1114)), (860, ay), 170, lime)
+    save_clip(im, 'oak-street', n)
+
+
+# ---- Wolfpack: blue-glow masthead, full-bleed job photo, white hook + blue box, a proof element below ----
+def wolf_clip(n, line1, boxed, photo, focus_x, extra):
+    ink, blue, white = (12, 14, 18), (47, 128, 196), (255, 255, 255)
+    im = Image.new('RGB', (W, H2), ink)
+    band = Image.new('RGB', (W, KODY_TOP), ink)
+    glow = Image.new('L', (W, KODY_TOP), 0)
+    ImageDraw.Draw(glow).ellipse((W // 2 - 520, -260, W // 2 + 520, KODY_TOP + 200), fill=110)
+    band = Image.composite(Image.new('RGB', band.size, blue), band, glow.filter(ImageFilter.GaussianBlur(90)))
+    im.paste(band, (0, 0))
+    paste_logo(im, HOME / 'public/wolfpack-site/assets/wolfpack-logo-knockout.png', 210, center=W // 2, top=168)
+    ph = punch(cover_fit(Image.open(photo).convert('RGB'), W, 1920, focus_x, 0.5))
+    im.paste(shade(ph, top=0.6, mid=0.0, bottom=0.6, color=ink), (0, KODY_TOP))
+    d = ImageDraw.Draw(im)
+    d.rectangle((0, KODY_TOP - 6, W, KODY_TOP), fill=blue)
+    y = KODY_TOP + 90
+    f, (l, t, r, b) = fit_text(d, line1, 'Montserrat-Black.ttf', W - 140, 140, stroke=8)
+    d.text(((W - (r - l)) // 2 - l, y - t), line1, font=f, fill=white, stroke_width=8, stroke_fill=ink)
+    y += (b - t) + 34
+    f2, (l2, t2, r2, b2) = fit_text(d, boxed, 'Montserrat-Black.ttf', W - 220, 104)
+    bw = (r2 - l2) + 56
+    d.rounded_rectangle(((W - bw) // 2, y - 18, (W + bw) // 2, y + (b2 - t2) + 22), radius=18, fill=blue)
+    d.text(((W - (r2 - l2)) // 2 - l2, y - t2), boxed, font=f2, fill=white)
+    if extra[0] == 'checks':   # job checklist, like their site cards
+        yy = KODY_TOP + 1180
+        for item in extra[1]:
+            fi = font('Montserrat-Black.ttf', 50)
+            l, t, r, b = d.textbbox((0, 0), item, font=fi)
+            d.rounded_rectangle((70, yy, 70 + 90 + (r - l) + 40, yy + 96), radius=16, fill=(255, 255, 255))
+            d.ellipse((88, yy + 20, 144, yy + 76), fill=blue)
+            d.line([(102, yy + 49), (113, yy + 60), (132, yy + 36)], fill=white, width=8)
+            d.text((164 - l, yy + 48 - (b - t) // 2 - t), item, font=fi, fill=ink)
+            yy += 122
+    elif extra[0] == 'fix':
+        fi = font('Montserrat-Black.ttf', 56)
+        text = extra[1]
+        l, t, r, b = d.textbbox((0, 0), text, font=fi)
+        x0 = (W - (r - l)) // 2 - 40
+        yy = KODY_TOP + 1320
+        d.rounded_rectangle((x0, yy, x0 + (r - l) + 80, yy + 120), radius=20, fill=white)
+        d.text((x0 + 40 - l, yy + 60 - (b - t) // 2 - t), text, font=fi, fill=ink)
+    save_clip(im, 'wolfpack', n)
+
+
+# ---- Ambition: LinkedIn series (halftone navy, badge on white, white + red Barlow caps, footage fading in) ----
+def amb_clip(n, line1, line2, photo, sub, focus=(0.5, 0.4)):
+    red, white = (229, 44, 42), (255, 255, 255)
+    im = Image.new('RGB', (W, H2), (14, 20, 38))
+    glow = Image.new('L', (W, H2), 0)
+    ImageDraw.Draw(glow).ellipse((-W // 2, -H2 // 3, W + W // 2, H2 // 2), fill=255)
+    im = Image.composite(Image.new('RGB', (W, H2), (26, 33, 64)), im, glow.filter(ImageFilter.GaussianBlur(260)))
+    dots = Image.new('RGBA', (W, H2), (0, 0, 0, 0))
+    dd = ImageDraw.Draw(dots)
+    for yy in range(0, H2, 24):
+        for xx in range(0, W, 24):
+            dd.ellipse((xx, yy, xx + 3, yy + 3), fill=(255, 255, 255, 18))
+    im.paste(dots, (0, 0), dots)
+    d = ImageDraw.Draw(im)
+    cx, cy, r = W // 2, 250, 98
+    d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=white)
+    badge = Image.open(EA / '.claude/skills/clip/brand-kits/ambition-mechanical/logo-badge.png').convert('RGBA').resize((180, 180), Image.LANCZOS)
+    im.paste(badge, (cx - 90, cy - 90), badge)
+    y = 410
+    for text, col, start in ((line1, white, 200), (line2, red, 230)):
+        f, (l, t, r2, b) = fit_text(d, text, 'BarlowCondensed-ExtraBold.ttf', W - 110, start)
+        d.text(((W - (r2 - l)) // 2 - l, y - t), text, font=f, fill=col)
+        y += (b - t) + 26
+    ph_h = 1260
+    ph = punch(cover_fit(Image.open(photo).convert('RGB'), W, ph_h, *focus))
+    fade = Image.new('L', (1, ph_h))
+    for yy in range(ph_h):
+        t = yy / ph_h
+        fade.putpixel((0, yy), int(255 * min(1, t / 0.14, (1 - t) / 0.3)))
+    py = y + 30
+    im.paste(ph, (0, py), fade.resize((W, ph_h)))
+    fs = font('BarlowCondensed-SemiBold.ttf', 66)
+    l, t, r2, b = d.textbbox((0, 0), sub, font=fs)
+    d.text(((W - (r2 - l)) // 2 - l, py + ph_h - 170 - t), sub, font=fs, fill=white)
+    save_clip(im, 'ambition', n)
+
+
+def clip_covers():
+    import shutil
+    for slug in ('kody', 'wolfpack', 'oak-street', 'ambition'):
+        shutil.copy(OUT / slug / 'cover.jpg', OUT / slug / 'c1.jpg')   # clip 1 = the package cover
+    face = KO / 'prospects/kody-romero/src/face_still.png'
+    kody_clip(2, [[('Phoenix is affordable,', False)], [('but not ', False), ('dirt cheap', True)]], face,
+              [('a budget and an ', False), ('affordable', True), (' city', False)],
+              KO / 'prospects/kody-romero/photo-picks/m2-suburb-homes-mountains.jpg', 'Moving from the Midwest?',
+              'Photo: kevin dooley, CC BY 2.0', ('NEW WATER INFRASTRUCTURE', 'Costs are likely to rise'))
+    kody_clip(3, [[('Why 55+ communities', False)], [('feel ', False), ('empty', True), (' every summer', False)]], face,
+              [('empties out every single ', False), ('summer', True)],
+              KO / 'prospects/kody-romero/photo-picks/s1-sun-city-aerial.jpg', 'Sun City, Arizona',
+              'Photo: Ken Lund, CC BY-SA 2.0', ('WHAT I WALK CLIENTS THROUGH', 'Before they buy, not after.'))
+    oak_clip(2, ['THE $265 BILLION', 'REASON TO WATCH'], 'PHOENIX', KO / 'plans/images/tsmc-fab21.jpg',
+             'TSMC ARIZONA, NORTH PHOENIX', ('stat', '$265B', "TSMC'S INVESTMENT IN PHOENIX"),
+             'Photo: TrickHunter, CC BY-SA 4.0')
+    oak_clip(3, ['WHY NEW HOMES', 'IN ARIZONA'], 'SAVE WATER', KO / 'plans/images/waddell-sprinklers.jpg',
+             'THE FARMS', ('photo', KO / 'plans/images/land-in-transition.jpg', 'NOW: NEIGHBORHOODS'),
+             'Photos: kevin dooley, CC BY 2.0')
+    wolf_clip(2, "TOILET WON'T", 'STOP RUNNING?', HOME / 'public/wolfpack-site/assets/pm-hero.jpg', 0.5,
+              ('fix', 'THE FIX: A NEW DIAPHRAGM'))
+    wolf_clip(3, 'RESTAURANT', 'PLUMBING TOP OUT', HOME / 'public/wolfpack-site/assets/fog-hero.jpg', 0.55,
+              ('checks', ['NEW FLOOR DRAINS', 'FRESH COPPER', '2" GAS LINE, 8 DROPS']))
+    amb_clip(2, 'DIRTY FILTERS', 'EVERY 3 MONTHS.', AMB / 'public/images/ambition/PS521300.jpg',
+             'Arizona is a very dusty place.', (0.5, 0.45))
+    amb_clip(3, 'SWAMP COOLERS OUT.', 'REAL AC IN.', AMB / 'public/images/ambition/PS520058.jpg',
+             'New units craned onto the roof.', (0.45, 0.4))
+
+
 if __name__ == '__main__':
-    kody_logo(); oak_street(); ambition(); wolfpack(); kody(); avatars()
+    kody_logo(); oak_street(); ambition(); wolfpack(); kody(); avatars(); clip_covers()
