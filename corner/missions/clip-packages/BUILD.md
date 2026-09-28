@@ -31,3 +31,18 @@ Ambition ×3, Wolfpack ×3, Oak Street ×3 (fire/TSMC/water), Kody ×2 (cost, su
 - Rechecked at 1440×900 and 390×844: phones fit whole on desktop, rail scrolls to the form, overlay opens.
 
 **Status:** R2 pushed to `clips-packages`; still awaiting clip ids before merge.
+
+### R3 — 2026-09-28 — Covers in each brand's own reel design, true phone proportions, live background
+Patrik: Ambition/Wolfpack looked alike (same blocky names), logos sat in a plain black band, the section
+background was flat, and the cards still felt short.
+- Covers are now 1080x2340 (a phone screen, 9:19.5), each in that client's own reel system with the logo
+  placed where the system puts it: Ambition = its GPT reel plate (halftone navy, red torn strip) with the badge as
+  a sticker on the footage; Wolfpack = its paper/Archivo/blue look with the full-colour logo as a masthead;
+  Oak Street = logo masthead over the fire before/after; Kody = Arizona Living wordmark over his real frame
+  (his looping clip plays exactly over that frame on the card).
+- The black logo band is gone. The bottom of each phone is an Instagram-style account row (round avatar,
+  name, kind · 3 clips, play button in the client's accent), neutral platform type so brand type stays in the art.
+- Phones are 9:19.5 with a notch and sized to the viewport under a one-line header; background is the four
+  covers blurred and drifting, so the section carries the clients' colours.
+
+**Status:** R3 pushed to `clips-packages`; still awaiting clip ids before merge.

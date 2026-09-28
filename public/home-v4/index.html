@@ -69,7 +69,8 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;backgrou
   #clips{height:auto !important;min-height:0 !important}
   #clips > [data-clipswrap]{height:auto !important;padding-top:clamp(2.6rem,7vh,4rem) !important;padding-bottom:clamp(2rem,5vh,3rem) !important}
   [data-railnav]{display:none !important}
-  [data-pack]{height:auto !important;width:78vw !important}
+  [data-pack]{height:auto !important;width:80vw !important}
+  [data-clipsbg]{grid-template-columns:repeat(2,1fr) !important}
   [data-packclips]{justify-content:flex-start !important;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:.4rem;scrollbar-width:none}
   [data-packclip]{scroll-snap-align:start}
   [data-packclip] > div[role="button"]{height:auto !important;width:72vw !important}
@@ -691,48 +692,56 @@ html,body{height:100%;overflow:hidden;overscroll-behavior:none;margin:0;backgrou
     </div>
   </section>
 
-  <!-- CLIPS: one branded package per client (3 clips each) as phone-sized cards, tap to open. The last phone is the
-       free-clips form ("your show here"). Data = PACKS in the script; covers built by corner/missions/clip-packages/build_covers.py. -->
+  <!-- CLIPS: one phone per client, each opening on that client's reel design (covers: corner/missions/clip-packages/
+       build_covers.py), tap to open the package. Last phone = free-clips form. Data = PACKS in the script. -->
   <section id="clips" data-slide="" data-screen-label="Clips" style="position:relative;height:var(--vph,100svh);scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;z-index:1;background:#060606">
-    <div data-clipswrap="" style="position:relative;z-index:3;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;gap:clamp(1rem,2.6vh,1.8rem);padding:clamp(4.4rem,8.4vh,5.6rem) 0 clamp(1rem,2.4vh,1.8rem);width:100%">
-      <div data-clipshead="" style="display:flex;align-items:flex-end;justify-content:space-between;gap:1.2rem 3rem;flex-wrap:wrap;padding:0 var(--gx)">
+    <div aria-hidden="true" data-clipsbg="" style="position:absolute;inset:-10%;z-index:0;display:grid;grid-template-columns:repeat(4,1fr);gap:0;filter:blur(40px) saturate(1.5) brightness(1.1);opacity:.9;pointer-events:none">
+      <sc-for list="{{ packs }}" as="p" hint-placeholder-count="4">
+        <div style="{{ p.bgStyle }}"><img src="{{ p.cover }}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></div>
+      </sc-for>
+    </div>
+    <div aria-hidden="true" style="position:absolute;inset:0;z-index:1;background:radial-gradient(100% 80% at 50% 60%, rgba(6,6,6,0) 0%, rgba(6,6,6,.35) 65%, rgba(6,6,6,.8) 100%),linear-gradient(to bottom, rgba(6,6,6,.7) 0%, rgba(6,6,6,.15) 22%, rgba(6,6,6,.1) 82%, rgba(6,6,6,.7) 100%)"></div>
+    <div data-clipswrap="" style="position:relative;z-index:3;height:100%;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end;gap:clamp(.8rem,2vh,1.4rem);padding:clamp(4.2rem,8vh,5.2rem) 0 clamp(.9rem,2vh,1.4rem);width:100%">
+      <div data-clipshead="" style="display:flex;align-items:flex-end;justify-content:space-between;gap:1rem 2.4rem;flex-wrap:wrap;padding:0 var(--gx)">
         <div style="min-width:0">
           <span data-rv="" data-d="0" style="display:block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.74rem;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#C4A46A;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Clips</span>
-          <h2 data-rv="" data-d=".06" style="margin:clamp(.4rem,1.2vh,.8rem) 0 0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2.2rem,min(4.6vw,8vh),5rem);line-height:.9;letter-spacing:-.03em;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Their show. <span style="color:#C4A46A">Their brand<i style="display:inline-block;width:.13em;height:.13em;background:#F6F6F4;margin-left:.07em"></i></span></h2>
-          <p data-rv="" data-d=".14" style="margin:clamp(.5rem,1.4vh,.9rem) 0 0;max-width:52ch;color:#E6E5E0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(.98rem,min(1.2vw,2.3vh),1.2rem);font-weight:500;line-height:1.4;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Vertical clips from long videos and job-site footage, in each client's own colors, type and logo. Tap a package to watch.</p>
+          <h2 data-rv="" data-d=".06" style="margin:.35rem 0 0;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(2rem,min(3.3vw,6vh),3.8rem);line-height:.9;letter-spacing:-.03em;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">Their show. <span style="color:#C4A46A">Their brand<i style="display:inline-block;width:.13em;height:.13em;background:#F6F6F4;margin-left:.07em"></i></span></h2>
         </div>
-          <div data-railnav="" data-rv="" data-d=".2" style="display:flex;gap:.5rem;flex:none;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
-            <button onClick="{{ railPrev }}" aria-label="Previous packages" style="width:48px;height:48px;border-radius:50%;border:1px solid rgba(246,246,244,.35);background:transparent;color:#F6F6F4;font-size:1.2rem;cursor:pointer;transition:border-color .18s,color .18s" style-hover="border-color:#C4A46A;color:#C4A46A">←</button>
-            <button onClick="{{ railNext }}" aria-label="Next packages" style="width:48px;height:48px;border-radius:50%;border:1px solid rgba(246,246,244,.35);background:transparent;color:#F6F6F4;font-size:1.2rem;cursor:pointer;transition:border-color .18s,color .18s" style-hover="border-color:#C4A46A;color:#C4A46A">→</button>
+        <div data-rv="" data-d=".14" style="display:flex;align-items:flex-end;gap:1.6rem;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
+          <p style="margin:0;max-width:30ch;color:#E6E5E0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:clamp(.95rem,min(1.1vw,2.1vh),1.12rem);font-weight:500;line-height:1.4">Vertical clips in each client's own colors, type and logo. Tap a phone to watch the package.</p>
+          <div data-railnav="" style="display:flex;gap:.5rem;flex:none">
+            <button onClick="{{ railPrev }}" aria-label="Previous packages" style="width:48px;height:48px;border-radius:50%;border:1px solid rgba(246,246,244,.4);background:rgba(6,6,6,.35);color:#F6F6F4;font-size:1.2rem;cursor:pointer;transition:border-color .18s,color .18s" style-hover="border-color:#C4A46A;color:#C4A46A">←</button>
+            <button onClick="{{ railNext }}" aria-label="Next packages" style="width:48px;height:48px;border-radius:50%;border:1px solid rgba(246,246,244,.4);background:rgba(6,6,6,.35);color:#F6F6F4;font-size:1.2rem;cursor:pointer;transition:border-color .18s,color .18s" style-hover="border-color:#C4A46A;color:#C4A46A">→</button>
           </div>
+        </div>
       </div>
-      <div ref="{{ railRef2 }}" data-packrow="" data-rv="" data-d=".22" style="display:flex;gap:clamp(.8rem,1.4vw,1.3rem);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding:0 var(--gx);padding:.4rem var(--gx) .6rem;scrollbar-width:none;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
+      <div ref="{{ railRef2 }}" data-packrow="" data-rv="" data-d=".2" style="display:flex;gap:clamp(1rem,1.8vw,1.8rem);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding:0 var(--gx);padding:.3rem var(--gx) .5rem;scrollbar-width:none;opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)">
         <sc-for list="{{ packs }}" as="p" hint-placeholder-count="4">
-          <button data-pack="" onClick="{{ p.open }}" aria-label="{{ p.aria }}" style="{{ p.cardStyle }}" style-hover="transform:translateY(-6px)">
+          <button data-pack="" onClick="{{ p.open }}" aria-label="{{ p.aria }}" style="{{ p.cardStyle }}" style-hover="transform:translateY(-8px)">
             <span style="{{ p.screenStyle }}">
-              <span style="{{ p.bandStyle }}">
-                <span aria-hidden="true" style="position:absolute;top:.6rem;left:50%;width:4.2rem;height:.5rem;margin-left:-2.1rem;border-radius:999px;background:#060606"></span>
-                <img src="{{ p.logo }}" alt="{{ p.name }}" style="display:block;height:{{ p.logoH }};width:auto;max-width:86%;object-fit:contain;margin-top:.7rem">
-              </span>
-              <img src="{{ p.cover }}" alt="" loading="lazy" style="position:absolute;left:0;right:0;bottom:0;top:{{ p.band }};width:100%;height:calc(100% - {{ p.band }});object-fit:cover;object-position:top;display:{{ p.coverDisp }}">
-              <video data-cliploop="" src="{{ p.loop }}" muted="" loop="" autoplay="" playsinline="" preload="metadata" style="position:absolute;left:0;right:0;bottom:0;top:{{ p.band }};width:100%;height:calc(100% - {{ p.band }});object-fit:cover;object-position:top;display:{{ p.loopDisp }}"></video>
-              <span aria-hidden="true" style="{{ p.shadeStyle }}"></span>
-              <span style="position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:flex-start;gap:.3rem;padding:1rem 1.1rem 1.2rem;text-align:left">
-                <span style="font-family:'Space Grotesk',system-ui,sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:{{ p.accent }}">{{ p.kind }} · {{ p.count }}</span>
-                <span style="{{ p.nameStyle }}">{{ p.name }}</span>
-                <span style="margin-top:.2rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(246,246,244,.8)">Open package <span aria-hidden="true">&rarr;</span></span>
+              <img src="{{ p.cover }}" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top">
+              <video data-cliploop="" src="{{ p.loop }}" muted="" loop="" autoplay="" playsinline="" preload="metadata" style="{{ p.loopStyle }}"></video>
+              <span aria-hidden="true" style="position:absolute;top:.62rem;left:50%;width:32%;height:1.3rem;transform:translateX(-50%);border-radius:999px;background:#000"></span>
+              <span aria-hidden="true" style="position:absolute;left:0;right:0;bottom:0;height:34%;background:linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,.55) 45%, rgba(0,0,0,.85) 100%)"></span>
+              <span style="position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:.7rem;padding:0 .95rem 1.15rem;text-align:left">
+                <img src="{{ p.avatar }}" alt="" style="flex:none;width:2.7rem;height:2.7rem;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.9)">
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:.12rem">
+                  <span style="font-family:'Inter',system-ui,sans-serif;font-size:.86rem;font-weight:700;letter-spacing:-.01em;color:#FFF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span>
+                  <span style="font-family:'Inter',system-ui,sans-serif;font-size:.78rem;font-weight:400;color:rgba(255,255,255,.78);white-space:nowrap">{{ p.kind }} · {{ p.count }}</span>
+                </span>
+                <span aria-hidden="true" style="{{ p.watchStyle }}"><span style="display:block;width:0;height:0;margin-left:.18rem;border-style:solid;border-width:.42rem 0 .42rem .68rem;border-color:transparent transparent transparent currentColor"></span></span>
               </span>
             </span>
           </button>
         </sc-for>
         <form data-clipsform="" data-pack="" onSubmit="{{ submitClips }}" style="{{ formCardStyle }}">
           <span style="{{ formScreenStyle }}">
-            <span aria-hidden="true" style="position:absolute;top:.6rem;left:50%;width:4.2rem;height:.5rem;margin-left:-2.1rem;border-radius:999px;background:#060606"></span>
+            <span aria-hidden="true" style="position:absolute;top:.62rem;left:50%;width:32%;height:1.3rem;transform:translateX(-50%);border-radius:999px;background:#000"></span>
             <sc-if value="{{ clipsNotSent }}" hint-placeholder-val="{{ true }}">
               <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
               <span style="display:block;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#C4A46A">Your show here</span>
-              <span style="display:block;margin-top:.7rem;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(1.7rem,2.3vw,2.3rem);line-height:.95;letter-spacing:-.02em;color:#F6F6F4">Send a link.<span style="display:block;color:#C4A46A">Get 3 free clips.</span></span>
-              <span style="display:block;margin-top:.8rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.95rem;font-weight:500;line-height:1.4;color:rgba(246,246,244,.72)">An episode, a webinar or a job video. We cut three in your brand, like these.</span>
+              <span style="display:block;margin-top:.8rem;font-family:'Inter Tight','Inter',system-ui,sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(1.9rem,2.5vw,2.6rem);line-height:.95;letter-spacing:-.02em;color:#F6F6F4">Send a link.<span style="display:block;color:#C4A46A">Get 3 free clips.</span></span>
+              <span style="display:block;margin-top:.9rem;font-family:'Space Grotesk',system-ui,sans-serif;font-size:.98rem;font-weight:500;line-height:1.4;color:rgba(246,246,244,.75)">An episode, a webinar or a job video. We cut three in your brand, like these.</span>
               <span style="display:block;flex:1"></span>
               <input ref="{{ clipsLinkRef }}" type="url" name="notes" required="" placeholder="Link to your video" aria-label="Link to your video" style="display:block;box-sizing:border-box;width:100%;min-height:50px;padding:.8rem 1.1rem;border:1px solid rgba(246,246,244,.42);border-radius:999px;background:rgba(6,6,6,.6);color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1rem;font-weight:500;outline:0">
               <input type="email" name="email" required="" placeholder="Your email" aria-label="Your email" style="display:block;box-sizing:border-box;width:100%;margin-top:.55rem;min-height:50px;padding:.8rem 1.1rem;border:1px solid rgba(246,246,244,.42);border-radius:999px;background:rgba(6,6,6,.6);color:#F6F6F4;font-family:'Space Grotesk',system-ui,sans-serif;font-size:1rem;font-weight:500;outline:0">
@@ -1037,21 +1046,21 @@ const KEYS = ['A', 'B', 'C', 'D'];
 // Card cover falls back to the first clip's gumlet thumbnail once ids are in. Add a client = add one entry.
 const PACKS = [
   { slug: 'ambition', name: 'Ambition Mechanical', show: 'Commercial HVAC, Phoenix', kind: 'Job-site reels', bg: '#0E1626', accent: '#E52C2A',
-    font: "'Barlow Condensed','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'ambition/logo.png', logoH: '4.4rem', board: 'ambition/board.jpg', cover: 'ambition/cover.jpg',
+    font: "'Barlow Condensed','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'ambition/logo.png', avatar: 'ambition/avatar.png', logoH: '4.4rem', board: 'ambition/board.jpg', cover: 'ambition/cover.jpg',
     clips: [{ t: 'Elephante, part two' }, { t: 'EWG' }, { t: 'Eagle Air Park' }] },
   { slug: 'wolfpack', name: 'Wolfpack Companies', show: 'Plumbing and drain service, Phoenix', kind: 'Service reels', bg: '#0C0E12', accent: '#4A98D2',
-    font: "'Montserrat','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'wolfpack/logo.png', logoH: '4.8rem', cover: 'wolfpack/cover.jpg',
+    font: "'Montserrat','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'wolfpack/logo.png', avatar: 'wolfpack/avatar.png', logoH: '4.8rem', cover: 'wolfpack/cover.jpg',
     clips: [{ t: 'Toilet diaphragm repair' }, { t: 'Sewer line' }, { t: 'Vecina' }] },
-  { slug: 'oak-street', name: 'Oak Street Assets', show: 'Phoenix Prosperity Podcast', kind: 'Podcast clips', bg: '#213F25', accent: '#79B228',
-    font: "'Zilla Slab',Rockwell,Georgia,serif", fw: 700, upper: false, logo: 'oak-street/logo.png', logoH: '4rem', board: 'oak-street/board.jpg', cover: 'oak-street/cover.jpg',
+  { slug: 'oak-street', name: 'Oak Street Assets', show: 'Phoenix Prosperity Podcast', kind: 'Podcast clips', bg: '#213F25', accent: '#79B228', watchInk: '#10210F',
+    font: "'Zilla Slab',Rockwell,Georgia,serif", fw: 700, upper: false, logo: 'oak-street/logo.png', avatar: 'oak-street/avatar.png', logoH: '4rem', board: 'oak-street/board.jpg', cover: 'oak-street/cover.jpg',
     clips: [{ t: 'How a fire made investors $1 million', cover: 'oak-street/fire.jpg' }, { t: 'The $265 billion reason to watch Phoenix' }, { t: 'Why new homes in Arizona actually save water' }] },
-  { slug: 'kody', name: 'Kody Romero', show: 'Arizona Living', kind: 'YouTube clips', bg: '#0B1A2E', accent: '#BCA062',
-    font: "'DM Serif Display',Georgia,serif", fw: 400, upper: false, logo: 'kody/logo.png', logoH: '2.6rem', board: 'kody/board.jpg', cover: 'kody/cover.jpg', loop: 'kody/heat-loop.mp4',
+  { slug: 'kody', name: 'Kody Romero', show: 'Arizona Living', kind: 'YouTube clips', bg: '#0B1A2E', accent: '#BCA062', watchInk: '#0B1A2E',
+    font: "'DM Serif Display',Georgia,serif", fw: 400, upper: false, logo: 'kody/logo.png', avatar: 'kody/avatar.png', logoH: '2.6rem', board: 'kody/board.jpg', cover: 'kody/cover.jpg', loop: 'kody/heat-loop.mp4',
     clips: [{ t: '“It’s a dry heat” stops mattering at 110°', mp4: 'kody/heat.mp4', cover: 'kody/cover.jpg' }, { t: 'Phoenix is affordable, but not dirt cheap' }, { t: 'Why 55+ communities feel empty every summer' }] },
 ];
 const clipAsset = f => f ? 'assets/clips/' + f : '';
 // A package card is a phone: dark bezel, 9:16 screen, sized to own most of the viewport height.
-const PHONE = 'position:relative;flex:none;display:block;height:min(calc(var(--vph,100svh) - 19rem),44rem);aspect-ratio:9 / 16;padding:6px;box-sizing:border-box;border-radius:36px;border:0;background:#161616;box-shadow:0 0 0 1px rgba(246,246,244,.16),0 26px 60px rgba(0,0,0,.55);color:#F6F6F4;cursor:pointer;scroll-snap-align:start;transition:transform .35s cubic-bezier(.16,1,.3,1)';
+const PHONE = 'position:relative;flex:none;display:block;height:min(calc(var(--vph,100svh) - 13rem),54rem);aspect-ratio:9 / 19.5;padding:7px;box-sizing:border-box;border-radius:44px;border:0;background:#161616;box-shadow:0 0 0 1px rgba(246,246,244,.16),0 26px 60px rgba(0,0,0,.55);color:#F6F6F4;cursor:pointer;scroll-snap-align:start;transition:transform .35s cubic-bezier(.16,1,.3,1)';
 const packFace = (k, big) => `display:block;margin-top:.15rem;font-family:${k.font};font-weight:${k.fw};text-transform:${k.upper ? 'uppercase' : 'none'};font-size:${big ? 'clamp(1.7rem,3.2vw,2.6rem)' : 'clamp(1.35rem,1.9vw,1.75rem)'};line-height:1;letter-spacing:${k.upper ? '.01em' : '0'};color:#F6F6F4`;
 const packMono = (k, big) => k.mono ? `display:grid;place-items:center;flex:none;width:${big ? '3.4rem' : '2.4rem'};height:${big ? '3.4rem' : '2.4rem'};border:1px solid ${k.accent};border-radius:50%;font-family:${k.font};font-size:${big ? '1.3rem' : '.95rem'};color:${k.accent}` : 'display:none';
 
@@ -1146,16 +1155,17 @@ class Component extends DCLogic {
 
       packs: PACKS.map(k => {
         const first = k.clips.find(c => c.id), cover = clipAsset(k.cover) || (first ? poster(first.id, 540) : '');
-        const band = '6.4rem';
-        return { key: k.slug, name: k.name, kind: k.kind, accent: k.accent, bg: k.bg, count: k.clips.length + ' clips', aria: `Open the ${k.name} clip package`,
-          open: () => this.openPack(k), band, logo: clipAsset(k.logo), logoH: k.logoH || '4rem',
-          cover, coverDisp: cover ? 'block' : 'none', loop: clipAsset(k.loop), loopDisp: k.loop ? 'block' : 'none', nameStyle: packFace(k, false),
-          cardStyle: PHONE, screenStyle: `position:relative;display:block;width:100%;height:100%;overflow:hidden;border-radius:30px;background:${k.bg}`,
-          bandStyle: `position:absolute;left:0;right:0;top:0;height:${band};z-index:2;display:flex;align-items:center;justify-content:center;background:${k.bg};box-shadow:0 1px 0 ${k.accent}55`,
-          shadeStyle: `position:absolute;left:0;right:0;bottom:0;top:${band};background:linear-gradient(to bottom, transparent 0%, transparent 56%, ${k.bg}E0 78%, ${k.bg} 100%)` };
+        const tile = PACKS.indexOf(k);
+        return { key: k.slug, name: k.name, kind: k.kind, accent: k.accent, count: k.clips.length + ' clips', aria: `Open the ${k.name} clip package`,
+          open: () => this.openPack(k), cover, avatar: clipAsset(k.avatar), loop: clipAsset(k.loop), nameStyle: packFace(k, false),
+          // Kody's cover is his real frame under a masthead; the looping clip sits exactly over that frame (420/2340).
+          loopStyle: k.loop ? 'position:absolute;left:0;right:0;top:17.95%;width:100%;height:82.05%;object-fit:cover;object-position:top;display:block' : 'display:none',
+          cardStyle: PHONE, screenStyle: `position:relative;display:block;width:100%;height:100%;overflow:hidden;border-radius:37px;background:${k.bg}`,
+          watchStyle: `flex:none;display:grid;place-items:center;width:2.5rem;height:2.5rem;border-radius:50%;background:${k.accent};color:${k.watchInk || '#FFF'};box-shadow:0 4px 14px rgba(0,0,0,.4)`,
+          bgStyle: `position:relative;overflow:hidden;background:${k.bg};animation:drift ${16 + tile * 3}s ease-in-out infinite alternate;animation-delay:-${tile * 4}s` };
       }),
       formCardStyle: PHONE + ';cursor:default',
-      formScreenStyle: "position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:100%;height:100%;overflow:hidden;border-radius:30px;padding:2.4rem 1.3rem 1.3rem;background:radial-gradient(120% 70% at 50% 0%, rgba(196,164,106,.2) 0%, rgba(196,164,106,.04) 55%, #0B0B0A 100%);text-align:left",
+      formScreenStyle: "position:relative;display:flex;flex-direction:column;box-sizing:border-box;width:100%;height:100%;overflow:hidden;border-radius:37px;padding:3rem 1.4rem 1.4rem;background:radial-gradient(120% 70% at 50% 0%, rgba(196,164,106,.2) 0%, rgba(196,164,106,.04) 55%, #0B0B0A 100%);text-align:left",
       railRef2: this.ref('rail2'),
       railPrev: () => this.railStep(-1), railNext: () => this.railStep(1),
       packOpen: !!this.state.pack,
