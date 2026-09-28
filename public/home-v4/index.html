@@ -1048,18 +1048,18 @@ const KEYS = ['A', 'B', 'C', 'D'];
 // web encode) or `id` (its gumlet id); with neither it shows as "Uploading". Paths are under assets/clips/.
 // Card cover falls back to the first clip's gumlet thumbnail once ids are in. Add a client = add one entry.
 const PACKS = [
-  { slug: 'ambition', name: 'Ambition Mechanical', show: 'Commercial HVAC, Phoenix', kind: 'Job-site reels', bg: '#0E1626', accent: '#E52C2A',
-    font: "'Barlow Condensed','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'ambition/logo.png', avatar: 'ambition/avatar.png', logoH: '4.4rem', board: 'ambition/board.jpg', cover: 'ambition/cover.jpg',
-    clips: [{ t: 'Operating rooms went down. Ambition was called in.', mp4: 'ambition/rtu.mp4', cover: 'ambition/rtu.jpg' }, { t: 'Elephante, part two' }, { t: 'EWG' }] },
+  { slug: 'kody', name: 'Kody Romero', show: 'Arizona Living', kind: 'YouTube clips', bg: '#0B1A2E', accent: '#BCA062', watchInk: '#0B1A2E',
+    font: "'DM Serif Display',Georgia,serif", fw: 400, upper: false, logo: 'kody/logo.png', avatar: 'kody/avatar.png', logoH: '2.6rem', board: 'kody/board.jpg', cover: 'kody/cover.jpg', loop: 'kody/heat-loop.mp4',
+    clips: [{ t: '“It’s a dry heat” stops mattering at 110°', mp4: 'kody/heat.mp4', cover: 'kody/cover.jpg' }, { t: 'Phoenix is affordable, but not dirt cheap' }, { t: 'Why 55+ communities feel empty every summer' }] },
   { slug: 'wolfpack', name: 'Wolfpack Companies', show: 'Plumbing and drain service, Phoenix', kind: 'Service reels', bg: '#0C0E12', accent: '#4A98D2',
     font: "'Montserrat','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'wolfpack/logo.png', avatar: 'wolfpack/avatar.png', logoH: '4.8rem', cover: 'wolfpack/cover.jpg',
     clips: [{ t: 'Toilet diaphragm repair' }, { t: 'Sewer line' }, { t: 'Vecina' }] },
   { slug: 'oak-street', name: 'Oak Street Assets', show: 'Phoenix Prosperity Podcast', kind: 'Podcast clips', bg: '#213F25', accent: '#79B228', watchInk: '#10210F',
     font: "'Zilla Slab',Rockwell,Georgia,serif", fw: 700, upper: false, logo: 'oak-street/logo.png', avatar: 'oak-street/avatar.png', logoH: '4rem', board: 'oak-street/board.jpg', cover: 'oak-street/cover.jpg',
     clips: [{ t: 'How a fire made investors $1 million', cover: 'oak-street/fire.jpg' }, { t: 'The $265 billion reason to watch Phoenix' }, { t: 'Why new homes in Arizona actually save water' }] },
-  { slug: 'kody', name: 'Kody Romero', show: 'Arizona Living', kind: 'YouTube clips', bg: '#0B1A2E', accent: '#BCA062', watchInk: '#0B1A2E',
-    font: "'DM Serif Display',Georgia,serif", fw: 400, upper: false, logo: 'kody/logo.png', avatar: 'kody/avatar.png', logoH: '2.6rem', board: 'kody/board.jpg', cover: 'kody/cover.jpg', loop: 'kody/heat-loop.mp4',
-    clips: [{ t: '“It’s a dry heat” stops mattering at 110°', mp4: 'kody/heat.mp4', cover: 'kody/cover.jpg' }, { t: 'Phoenix is affordable, but not dirt cheap' }, { t: 'Why 55+ communities feel empty every summer' }] },
+  { slug: 'ambition', name: 'Ambition Mechanical', show: 'Commercial HVAC, Phoenix', kind: 'Job-site reels', bg: '#0E1626', accent: '#E52C2A',
+    font: "'Barlow Condensed','Inter Tight',system-ui,sans-serif", fw: 800, upper: true, logo: 'ambition/logo.png', avatar: 'ambition/avatar.png', logoH: '4.4rem', board: 'ambition/board.jpg', cover: 'ambition/cover.jpg',
+    clips: [{ t: 'Operating rooms went down. Ambition was called in.', mp4: 'ambition/rtu.mp4', cover: 'ambition/rtu.jpg' }, { t: 'Elephante, part two' }, { t: 'EWG' }] },
 ];
 // Clips headline A/B (see the head script): [white part, gold part]
 const CLIPS_HEAD = { a: ['Long-form to', 'short-form'], b: ['Your videos,', 'cut by our team'] };

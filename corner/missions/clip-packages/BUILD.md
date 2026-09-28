@@ -70,3 +70,13 @@ Ambition/Wolfpack were library photos with a layout on top.
   Oak Street logo nudged down to match. Kody unchanged.
 
 **Status:** R5 pushed; 10 clips still need gumlet ids before merge.
+
+### R6 — 2026-09-28 — Ambition cover in its LinkedIn system; new order
+- Order is now Kody, Wolfpack, Oak Street, Ambition (Patrik).
+- Ambition cover rebuilt in the system of its approved LinkedIn/"Social Posts" series (AOM-EA
+  ambition-mechanical/deliverables/social/carousel-field-crew): radial navy #1A2140 -> #0E1426 with the 16 px
+  halftone grid, round badge on a white disc under the earpiece, "OPERATING ROOMS" white / "WENT DOWN." red in
+  Barlow Condensed, the real reel's crane frame (12.4 s, cropped above the caption band) fading into the navy,
+  and the subline "The swap that keeps surgeries running." from the reel's own captions.
+
+**Status:** R6 pushed; 10 clips still need gumlet ids before merge.

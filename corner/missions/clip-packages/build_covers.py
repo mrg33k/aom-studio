@@ -138,33 +138,54 @@ def masthead(im, texture_src, crop, tint=None):
 
 
 def ambition():
-    # Ambition's real finished reel (public/videos/ambition-vertical.mp4, "unit serving multiple operating rooms
-    # went down... patients... safe"): the 12.6 s frame, rooftop unit on the crane against the deep blue sky,
-    # under a masthead cut from its GPT reel plate. The card loops the reel over the frame (same slot as Kody).
+    # Ambition's LinkedIn/"Social Posts" system (AOM-EA ambition-mechanical/deliverables/social/carousel-field-crew):
+    # radial navy #1A2140 -> #0E1426 with a 16 px halftone dot grid, round badge on a white disc, huge Barlow
+    # Condensed caps (white line + red line), real footage fading into the navy. Footage = its real reel
+    # (public/videos/ambition-vertical.mp4) at 12.4 s, cropped above the burned-in caption band.
     import subprocess, imageio_ffmpeg, tempfile
-    tmp = Path(tempfile.gettempdir()) / 'ambition-frame.png'
-    subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), '-v', 'error', '-y', '-ss', '12.6', '-i',
-                    str(HOME / 'public/videos/ambition-vertical.mp4'), '-frames:v', '1', str(tmp)], check=True)
-    frame = Image.open(tmp).convert('RGB').resize((W, 1920), Image.LANCZOS)
-    im = Image.new('RGB', (W, H2), (14, 22, 38))
-    T = EA / '.claude/skills/clip/brand-kits/ambition-mechanical/templates'
-    masthead(im, T / 'reel-endcard_plate.png', (0, 730, 527, 965))
-    im.paste(frame, (0, KODY_TOP))
-    # hook on Ambition's own red torn-paper strip (cut from its GPT reel plate), true to the reel's captions
-    strip = Image.open(T / 'reel-slab-window_plate.png').convert('RGBA').crop((10, 45, 405, 168))
-    strip = strip.resize((980, 300), Image.LANCZOS)
-    im.paste(strip, (40, KODY_TOP + 60), strip)
-    dd = ImageDraw.Draw(im)
-    fh = font('BarlowCondensed-ExtraBold.ttf', 104)
-    for i, line in enumerate(('OPERATING ROOMS', 'WENT DOWN.')):
-        l, t, r, b = dd.textbbox((0, 0), line, font=fh)
-        dd.text((100 - l, KODY_TOP + 108 + i * 106 - t), line, font=fh, fill=(255, 255, 255))
-    badge = Image.open(EA / '.claude/skills/clip/brand-kits/ambition-mechanical/logo-badge.png').convert('RGBA').resize((180, 180), Image.LANCZOS)
+    red, white = (229, 44, 42), (255, 255, 255)
+    # ground: radial navy + halftone
+    im = Image.new('RGB', (W, H2), (14, 20, 38))
+    glow = Image.new('L', (W, H2), 0)
+    ImageDraw.Draw(glow).ellipse((-W // 2, -H2 // 3, W + W // 2, H2 // 2), fill=255)
+    glow = glow.filter(ImageFilter.GaussianBlur(260))
+    im = Image.composite(Image.new('RGB', (W, H2), (26, 33, 64)), im, glow)
+    dots = Image.new('RGBA', (W, H2), (0, 0, 0, 0))
+    dd = ImageDraw.Draw(dots)
+    for y in range(0, H2, 24):
+        for x in range(0, W, 24):
+            dd.ellipse((x, y, x + 3, y + 3), fill=(255, 255, 255, 18))
+    im.paste(dots, (0, 0), dots)
     d = ImageDraw.Draw(im)
-    cx, cy = W // 2, 272   # below the phone earpiece
-    d.ellipse((cx - 100, cy - 100, cx + 100, cy + 100), fill=(229, 44, 42))
+    # badge on white, clear of the earpiece
+    cx, cy, r = W // 2, 250, 98
+    d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=white)
+    badge = Image.open(EA / '.claude/skills/clip/brand-kits/ambition-mechanical/logo-badge.png').convert('RGBA').resize((180, 180), Image.LANCZOS)
     im.paste(badge, (cx - 90, cy - 90), badge)
-    d.rectangle((0, KODY_TOP - 6, W, KODY_TOP), fill=(229, 44, 42))
+    # headline: white line, red line, centred like the series cover
+    y = 410
+    for text, col, start in (('OPERATING ROOMS', white, 200), ('WENT DOWN.', red, 230)):
+        f, (l, t, r2, b) = fit_text(d, text, 'BarlowCondensed-ExtraBold.ttf', W - 110, start)
+        d.text(((W - (r2 - l)) // 2 - l, y - t), text, font=f, fill=col)
+        y += (b - t) + 26
+    # real reel frame, faded into the navy top and bottom
+    tmp = Path(tempfile.gettempdir()) / 'ambition-frame.png'
+    subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), '-v', 'error', '-y', '-ss', '12.4', '-i',
+                    str(HOME / 'public/videos/ambition-vertical.mp4'), '-frames:v', '1', str(tmp)], check=True)
+    frame = Image.open(tmp).convert('RGB').crop((0, 0, 720, 840))
+    ph_h = 1260
+    photo = punch(cover_fit(frame, W, ph_h, 0.5, 0.35))
+    fade = Image.new('L', (1, ph_h))
+    for yy in range(ph_h):
+        t = yy / ph_h
+        fade.putpixel((0, yy), int(255 * min(1, t / 0.14, (1 - t) / 0.3)))
+    py = y + 30
+    im.paste(photo, (0, py), fade.resize((W, ph_h)))
+    # subline from the reel's own captions ("this keeps ... surgeries running")
+    fs = font('BarlowCondensed-SemiBold.ttf', 66)
+    sub = 'The swap that keeps surgeries running.'
+    l, t, r2, b = d.textbbox((0, 0), sub, font=fs)
+    d.text(((W - (r2 - l)) // 2 - l, py + ph_h - 170 - t), sub, font=fs, fill=white)
     save2(im, 'ambition')
 
 
