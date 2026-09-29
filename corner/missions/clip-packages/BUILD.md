@@ -101,3 +101,15 @@ Patrik: every video in the samples needs a cover as good as the package covers, 
   frames when those reels are reachable.
 
 **Status:** R7 pushed; 10 clips still need gumlet ids before merge.
+
+### R8 — 2026-09-29 — Production-clean, merged to main
+Patrik: "get it done." No Gumlet credentials exist in this environment, so the 10 remaining reels can't be uploaded
+from here. Shipped anyway, clean:
+- A clip without a video shows its cover only: no "Uploading" badge, no play button, no dead-looking state.
+  Kody's dry-heat clip and Ambition's operating-rooms reel play (local mp4s).
+- Every waiting clip has `id: ''` in PACKS; pasting its gumlet id puts it live (play button appears automatically).
+- QA (headless Chromium, 1440x900 + 390x844, both headline variants): 4 packages + form render, overlay opens/closes
+  (Escape), waiting tiles inert, no page errors.
+
+**Status:** merged to main (live). Open: 10 gumlet ids; then re-cover Wolfpack toilet/Vecina and Ambition
+Élephante/EWG from real frames.
